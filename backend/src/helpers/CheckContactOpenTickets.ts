@@ -22,13 +22,13 @@ const CheckContactOpenTickets = async (
   if (ticket) {
     const userName = ticket.user?.name; // acessa o nome do usuário através do objeto ticket
 
-    logger.info('Debug chamado ja Aberto ' + (userName ? userName : 'Sem Nome'));
+    logger.info('Debug chamado ja Aberto ' + (userName ? userName : 'Sin nombre'));
 
     if (userName) {
-      throw new AppError(`Já existe um chamado aberto para este contato com ${userName}`);
+      throw new AppError(`Ya existe una conversación abierta para este contacto con ${userName}`);
     } else {
       logger.info('Debug Ticket ja Aberto ' + 'Sem Nome');
-      throw new AppError("Já existe um chamado aberto para este contato com Sem Nome");
+      throw new AppError("Ya existe una conversación abierta para este contacto sin nombre");
     }
   }
 };

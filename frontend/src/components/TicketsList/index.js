@@ -160,6 +160,7 @@ const reducer = (state, action) => {
 
 const TicketsList = (props) => {
 	const {
+		handleChangeTab,
 		status,
 		searchParam,
 		showAll,
@@ -291,6 +292,7 @@ const TicketsList = (props) => {
 			}
 		});
 
+	if (status) {
 		socket.on("appMessage", (data) => {
 			if (data.action === "create" && shouldUpdateTicket(data.ticket)) {
 				dispatch({
@@ -308,6 +310,7 @@ const TicketsList = (props) => {
 				});
 			}
 		});
+	}
 
 		return () => {
 			socket.disconnect();
@@ -357,7 +360,7 @@ const TicketsList = (props) => {
 					) : (
 						<>
 							{ticketsList.map((ticket) => (
-								<TicketListItem ticket={ticket} key={ticket.id} />
+								<TicketListItem handleChangeTab={handleChangeTab}ticket={ticket} key={ticket.id} />
 							))}
 						</>
 					)}

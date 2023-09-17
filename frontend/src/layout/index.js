@@ -30,7 +30,7 @@ import api from "../services/api";
 import toastError from "../errors/toastError";
 import { system } from "../config.json";
 import { systemVersion } from "../../package.json";
-import logodash from "../assets/logo-dash.png";
+import logodash from "../assets/logo-dash.jpeg";
 
 const drawerWidth = 240;
 
@@ -206,7 +206,7 @@ const LoggedInLayout = ({ children }) => {
         open={drawerOpen}
       >
         <div className={classes.toolbarIcon}>
-          <img src={logodash} alt="logo" />
+          <img src={logodash} style={{width:"60%"}} alt="logo" />
           <IconButton color="secondary" onClick={() => setDrawerOpen(!drawerOpen)}>
             <ChevronLeftIcon />
           </IconButton>

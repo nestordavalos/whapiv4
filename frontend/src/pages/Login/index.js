@@ -21,7 +21,7 @@ import { i18n } from "../../translate/i18n";
 import { AuthContext } from "../../context/Auth/AuthContext";
 import { system } from "../../config.json";
 import { systemVersion } from "../../../package.json";
-import logo from '../../assets/logo.png';
+import logo from '../../assets/logo.jpeg';
 
 
 const useStyles = makeStyles(theme => ({

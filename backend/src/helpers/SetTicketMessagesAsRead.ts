@@ -23,6 +23,7 @@ const SetTicketMessagesAsRead = async (ticket: Ticket): Promise<void> => {
       `${ticket.contact.number}@${ticket.isGroup ? "g" : "c"}.us`
     );
   } catch (err) {
+    console.log(err);
     logger.warn(
       `Could not mark messages as read. Maybe whatsapp session disconnected? Err: ${err}`
     );

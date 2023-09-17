@@ -42,7 +42,8 @@ const FindOrCreateTicketService = async (
       await ticket.update({
         status: "pending",
         userId: null,
-        unreadMessages
+        unreadMessages,
+        isBot: true
       });
     }
   }
@@ -67,7 +68,8 @@ const FindOrCreateTicketService = async (
       await ticket.update({
         status: "pending",
         userId: null,
-        unreadMessages
+        unreadMessages,
+        isBot: true
       });
     }
   }
@@ -77,6 +79,7 @@ const FindOrCreateTicketService = async (
       contactId: groupContact ? groupContact.id : contact.id,
       status: "pending",
       isGroup: !!groupContact,
+      isBot: true,
       unreadMessages,
       whatsappId
     });

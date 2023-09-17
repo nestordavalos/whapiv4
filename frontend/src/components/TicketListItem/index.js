@@ -141,7 +141,7 @@ const useStyles = makeStyles(theme => ({
 	}
 }));
 
-const TicketListItem = ({ ticket }) => {
+const TicketListItem = ({ handleChangeTab, ticket }) => {
 	const classes = useStyles();
 	const history = useHistory();
 	const [loading, setLoading] = useState(false);
@@ -212,6 +212,7 @@ const TicketListItem = ({ ticket }) => {
 		if (isMounted.current) {
 			setLoading(false);
 		}
+		handleChangeTab(null, "open");
 		history.push(`/tickets/${id}`);
 	}; const queueName = selectedTicket => {
 		let name = null;
@@ -552,7 +553,7 @@ const TicketListItem = ({ ticket }) => {
 						<IconButton
 							className={classes.bottomButton}
 							color="primary"
-							onClick={e => handleViewTicket(ticket.id)} >
+							onClick={e => handleViewTicket(ticket.id, , handleChangeTab)} >
 							<VisibilityIcon />
 						</IconButton>
 					</Tooltip>

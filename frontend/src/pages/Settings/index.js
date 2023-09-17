@@ -176,7 +176,7 @@ const Settings = () => {
 
 		<div className={classes.root}>
 			<Paper className={classes.paper} style={{ margin: '10px' }}>
-				<Typography variant="h4"><b>Configurações Gerais</b></Typography>
+				<Typography variant="h4"><b>Configuración general</b></Typography>
 			</Paper>
 			<div maxWidth="sm">
 				<div style={{ display: 'flex' }}>

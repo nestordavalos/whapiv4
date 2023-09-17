@@ -22,4 +22,22 @@
 		<noscript>Você precisa de JavaScript para rodar essa aplicação.</noscript>
 		<div id="root"></div>
 	</body>
+    <script>
+		window.chatwootSettings = {"position":"left","type":"expanded_bubble","launcherTitle":"hable con soporte"};
+		(function(d,t) {
+		  var BASE_URL="https://portal.chat2one.com";
+		  var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+		  g.src=BASE_URL+"/packs/js/sdk.js";
+		  g.defer = true;
+		  g.async = true;
+		  s.parentNode.insertBefore(g,s);
+		  g.onload=function(){
+			window.chatwootSDK.run({
+			  websiteToken: 'iw6YGVp1WyW3QzEz9mK77d6a',
+			  baseUrl: BASE_URL
+			})
+		  }
+		})(document,"script");
+	  </script>
+	  
 </html>

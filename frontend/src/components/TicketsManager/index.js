@@ -108,7 +108,7 @@ const TicketsManager = () => {
 
   const [searchParam, setSearchParam] = useState("");
   const [tab, setTab] = useState("open");
-  const [tabOpen] = useState("open");
+  const [tabOpen, setTabOpen] = useState("open");
   const [newTicketModalOpen, setNewTicketModalOpen] = useState(false);
   const [showAllTickets, setShowAllTickets] = useState(false);
   const { user } = useContext(AuthContext);
@@ -147,6 +147,10 @@ const TicketsManager = () => {
 
   const handleChangeTab = (e, newValue) => {
     setTab(newValue);
+  };
+
+  const handleChangeTabOpen = (e, newValue) => {
+    setTabOpen(newValue);
   };
 
   const applyPanelStyle = (status) => {
@@ -276,14 +280,13 @@ const TicketsManager = () => {
       <TabPanel value={tab} name="pending" className={classes.ticketsWrapper}>
       <TagsFilter onFiltered={handleSelectedTags} />
         <TicketsList
+        handleChangeTab={handleChangeTab}
           status="pending"
           showAll={true}
           selectedQueueIds={selectedQueueIds}
           updateCount={(val) => setPendingCount(val)}
         />
       </TabPanel>
-
-
 
       <TabPanel value={tab} name="closed" className={classes.ticketsWrapper}>
       <TagsFilter onFiltered={handleSelectedTags} />

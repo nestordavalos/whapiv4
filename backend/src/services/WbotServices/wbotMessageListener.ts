@@ -27,12 +27,12 @@ import CreateOrUpdateContactService from "../ContactServices/CreateOrUpdateConta
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
 import FindOrCreateTicketService from "../TicketServices/FindOrCreateTicketService";
 import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
-
 import ShowWhatsaAppHours from "../WhatsappService/ShowWhatsaAppHours";
 import { debounce } from "../../helpers/Debounce";
 import UpdateTicketService from "../TicketServices/UpdateTicketService";
 import CreateContactService from "../ContactServices/CreateContactService";
 import formatBody from "../../helpers/Mustache";
+import { sayChatbot } from "./ChatBotListener";
 import UserRating from "../../models/UserRating";
 import TicketTraking from "../../models/TicketTraking";
 import SendWhatsAppMessage from "./SendWhatsAppMessage";
@@ -48,21 +48,30 @@ interface Session extends Client {
 const writeFileAsync = promisify(writeFile);
 
 const verifyContact = async (msgContact: WbotContact): Promise<Contact> => {
-  // const profilePicUrl = await msgContact.getProfilePicUrl();
-
-  const contactData = {
-    name: msgContact.name || msgContact.pushname || msgContact.id.user,
-    number: msgContact.id.user,
-    // profilePicUrl,
-    isGroup: msgContact.isGroup
-  };
-
-  const contact = CreateOrUpdateContactService(contactData);
-
-  return contact;
+  try {
+    const profilePicUrl = await msgContact.getProfilePicUrl();
+    const contactData = {
+      name: msgContact.name || msgContact.pushname || msgContact.id.user,
+      number: msgContact.id.user,
+      profilePicUrl,
+      isGroup: msgContact.isGroup
+    };
+    const contact = CreateOrUpdateContactService(contactData);
+    return contact;
+  } catch (err) {
+    const profilePicUrl = "/default-profile.png"; // Foto de perfil padrão
+    const contactData = {
+      name: msgContact.name || msgContact.pushname || msgContact.id.user,
+      number: msgContact.id.user,
+      profilePicUrl,
+      isGroup: msgContact.isGroup
+    };
+    const contact = CreateOrUpdateContactService(contactData);
+    return contact;
+  }
 };
 
-const verifyQuotedMessage = async (
+export const verifyQuotedMessage = async (
   msg: WbotMessage
 ): Promise<Message | null> => {
   if (!msg.hasQuotedMsg) return null;
@@ -164,15 +173,15 @@ const verifyMediaMessage = async (
 
   switch (media.mimetype.split("/")[0]) {
     case 'audio':
-      $tipoArquivo = '🔉 Mensagem de audio';
+      $tipoArquivo = '🔉 Mensaje de audio';
       break;
 
     case 'image':
-      $tipoArquivo = '🖼️ Arquivo de imagem';
+      $tipoArquivo = '🖼️ Archivo de imagen';
       break;
 
     case 'video':
-      $tipoArquivo = '🎬 Arquivo de vídeo';
+      $tipoArquivo = '🎬 Archivo de vídeo';
       break;
 
     case 'document':
@@ -184,18 +193,18 @@ const verifyMediaMessage = async (
       break;
 
     case 'ciphertext':
-      $tipoArquivo = '⚠️ Notificação';
+      $tipoArquivo = '⚠️ Notificación';
       break;
 
     case 'e2e_notification':
-      $tipoArquivo = '⛔ Notificação';
+      $tipoArquivo = '⛔ Notificación';
       break;
 
     case 'revoked':
-      $tipoArquivo = '❌ Apagado';
+      $tipoArquivo = '❌ Borrado';
       break;
     default:
-      $tipoArquivo = '📎 Arquivo';
+      $tipoArquivo = '📎 Archivo';
       break;
   }
 
@@ -292,11 +301,7 @@ const verifyQueue = async (
   ticket: Ticket,
   contact: Contact
 ) => {
-  const { queues, greetingMessage, isDisplay } = await ShowWhatsAppService(
-    wbot.id!
-
-
-  );
+  const { queues, greetingMessage, isDisplay } = await ShowWhatsAppService(wbot.id!);
 
   const {
     defineWorkHours,
@@ -2067,8 +2072,10 @@ const verifyQueue = async (
 
     return;
   }
+
   const selectedOption = msg.body;
   const choosenQueue = queues[+selectedOption - 1];
+
   if (choosenQueue) {
     const Hr = new Date();
 
@@ -2110,11 +2117,19 @@ const verifyQueue = async (
         ticketId: ticket.id
       });
 
+    if (choosenQueue.chatbots.length > 0) {
+      let options = "";
+      choosenQueue.chatbots.forEach((chatbot, index) => {
+        options += `🔹 *${index + 1}* - ${chatbot.name}\n`;
+      });
+
       const chat = await msg.getChat();
       await chat.sendStateTyping();
-      const greetingMessage = choosenQueue.greetingMessage;
-      if (greetingMessage) {
-        const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
+
+      const body = formatBody(
+        `\u200e${choosenQueue.greetingMessage}\n\n${options}\n*#* *Para volver al menu principal*`,
+        ticket
+      );
 
         const sentMessage = await wbot.sendMessage(
           `${contact.number}@c.us`,
@@ -2123,7 +2138,17 @@ const verifyQueue = async (
 
         await verifyMessage(sentMessage, ticket, contact);
       }
+
+    if (!choosenQueue.chatbots.length) {
+      const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
+      const sentMessage = await wbot.sendMessage(
+        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
+        body
+      );
+
+      await verifyMessage(sentMessage, ticket, contact);
     }
+  }
   } else {
     let options = "";
 
@@ -2133,13 +2158,13 @@ const verifyQueue = async (
     queues.forEach((queue, index) => {
       if (queue.startWork && queue.endWork) {
         if (isDisplay) {
-          options += `*${index + 1}* - ${queue.name} das ${queue.startWork
+          options += `🔹 *${index + 1}* - ${queue.name} das ${queue.startWork
             } as ${queue.endWork}\n`;
         } else {
-          options += `*${index + 1}* - ${queue.name}\n`;
+          options += `🔹 *${index + 1}* - ${queue.name}\n`;
         }
       } else {
-        options += `*${index + 1}* - ${queue.name}\n`;
+        options += `🔹 *${index + 1}*- ${queue.name}\n`;
       }
     });
 
@@ -2160,18 +2185,18 @@ const verifyQueue = async (
     debouncedSentMessage();
   }
 };
-
+console.log();
 const isValidMsg = (msg: WbotMessage): boolean => {
   if (msg.from === "status@broadcast") return false;
   if (
     msg.type === "chat" ||
     msg.type === "audio" ||
+    msg.type === "call_log" ||
     msg.type === "ptt" ||
     msg.type === "video" ||
     msg.type === "image" ||
     msg.type === "document" ||
     msg.type === "vcard" ||
-    msg.type === "call_log" ||
     // msg.type === "multi_vcard" ||
     msg.type === "sticker" ||
     msg.type === "e2e_notification" || // Ignore Empty Messages Generated When Someone Changes His Account from Personal to Business or vice-versa
@@ -2290,16 +2315,6 @@ const handleMessage = async (
     }
 
 
-    ticket = await FindOrCreateTicketService(
-      contact,
-      wbot.id!,
-      unreadMessages,
-      queueId,
-      tagsId,
-      userId,
-      groupContact
-    );
-
     if (msg.body === "#" && ticket.userId === null) {
       await ticket.update({
         queueOptionId: null,
@@ -2309,6 +2324,16 @@ const handleMessage = async (
       await verifyQueue(wbot, msg, ticket, ticket.contact);
       return;
     }
+
+    // if (msg.body === "#" && ticket.userId === null) {
+    //   await ticket.update({
+    //     queueOptionId: null,
+    //     chatbot: true,
+    //     queueId: null,
+    //   });
+    //   await verifyQueue(wbot, msg, ticket, ticket.contact);
+    //   return;
+    // }
 
     const ticketTraking = await FindOrCreateATicketTrakingService({
       ticketId: ticket.id,
@@ -2352,10 +2377,10 @@ const handleMessage = async (
       !chat.isGroup &&
       !msg.fromMe &&
       !ticket.userId &&
-      whatsapp.queues.length >= 1
-    ) {
-      await verifyQueue(wbot, msg, ticket, contact);
-    }
+       whatsapp.queues.length >= 1
+     ) {
+       await verifyQueue(wbot, msg, ticket, contact);
+     }
 
     // Atualiza o ticket se a ultima mensagem foi enviada por mim, para que possa ser finalizado. Se for grupo, nao finaliza
     try {
@@ -2368,6 +2393,12 @@ const handleMessage = async (
     } catch (e) {
       Sentry.captureException(e);
       console.log(e);
+    }
+
+    if (ticket.queue && ticket.queueId) {
+      if (!ticket.user) {
+        await sayChatbot(ticket.queueId, wbot, ticket, contact, msg);
+      }
     }
 
     if (msg.type === "vcard") {
@@ -2400,67 +2431,6 @@ const handleMessage = async (
         console.log(error);
       }
     }
-
-    /* if (msg.type === "multi_vcard") {
-                  try {
-                    const array = msg.vCards.toString().split("\n");
-                    let name = "";
-                    let number = "";
-                    const obj = [];
-                    const conts = [];
-                    for (let index = 0; index < array.length; index++) {
-                      const v = array[index];
-                      const values = v.split(":");
-                      for (let ind = 0; ind < values.length; ind++) {
-                        if (values[ind].indexOf("+") !== -1) {
-                          number = values[ind];
-                        }
-                        if (values[ind].indexOf("FN") !== -1) {
-                          name = values[ind + 1];
-                        }
-                        if (name !== "" && number !== "") {
-                          obj.push({
-                            name,
-                            number
-                          });
-                          name = "";
-                          number = "";
-                        }
-                      }
-                    }
-
-                    // eslint-disable-next-line no-restricted-syntax
-                    for await (const ob of obj) {
-                      try {
-                        const cont = await CreateContactService({
-                          name: ob.name,
-                          number: ob.number.replace(/\D/g, "")
-                        });
-                        conts.push({
-                          id: cont.id,
-                          name: cont.name,
-                          number: cont.number
-                        });
-                      } catch (error) {
-                        if (error.message === "ERR_DUPLICATED_CONTACT") {
-                          const cont = await GetContactService({
-                            name: ob.name,
-                            number: ob.number.replace(/\D/g, ""),
-                            email: ""
-                          });
-                          conts.push({
-                            id: cont.id,
-                            name: cont.name,
-                            number: cont.number
-                          });
-                        }
-                      }
-                    }
-                    msg.body = JSON.stringify(conts);
-                  } catch (error) {
-                    console.log(error);
-                  }
-                } */
 
     // eslint-disable-next-line block-scoped-var
     if (msg.type === "call_log" && callSetting === "disabled") {

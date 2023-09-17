@@ -29,7 +29,7 @@ import api from "../../services/api";
 import toastError from "../../errors/toastError";
 
 import { system } from "../../config.json";
-import logo from '../../assets/logo.png';
+import logo from '../../assets/logo.jpeg';
 
 const Copyright = () => {
 	return (

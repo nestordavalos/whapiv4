@@ -100,11 +100,7 @@ const MainListItems = (props) => {
 
   return (
     <div onClick={drawerClose}>
-      <ListItemLink
-        to="/"
-        primary="Dashboard"
-        icon={<DashboardOutlined />}
-      />
+
       <ListItemLink
         to="/tickets"
         primary={i18n.t("mainDrawer.listItems.tickets")}
@@ -134,6 +130,11 @@ const MainListItems = (props) => {
             <ListSubheader inset className={classes.sub}>
               {i18n.t("mainDrawer.listItems.administration")}
             </ListSubheader>
+            <ListItemLink
+        to="/"
+        primary="Dashboard"
+        icon={<DashboardOutlined />}
+      />
             <ListItemLink
               to="/connections"
               primary={i18n.t("mainDrawer.listItems.connections")}

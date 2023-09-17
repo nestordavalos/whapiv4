@@ -11,6 +11,8 @@ import Queue from "../models/Queue";
 import WhatsappQueue from "../models/WhatsappQueue";
 import UserQueue from "../models/UserQueue";
 import QuickAnswer from "../models/QuickAnswer";
+import Chatbot from "../models/Chatbot";
+import DialogChatBots from "../models/DialogChatBots";
 import Tag from "../models/Tag";
 import ContactTag from "../models/ContactTag";
 import UserRating from "../models/UserRating";
@@ -33,6 +35,8 @@ const models = [
   WhatsappQueue,
   UserQueue,
   QuickAnswer,
+  Chatbot,
+  DialogChatBots,
   Tag,
   ContactTag,
   UserRating,

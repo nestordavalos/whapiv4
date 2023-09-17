@@ -15,7 +15,9 @@ const TicketInfo = ({ contact, ticket, onClick }) => {
 			title={`${contact.name}`}
 			subheader={
 				ticket.user &&
-				`Chamado Nº ${ticket.id}`
+				`#Conversación Nº ${ticket.id}
+				${ticket.queue ? ' | Sector: ' + ticket.queue.name : ' | Sector: Sin Sector'}
+				${ticket.whatsapp? '| Whatsapp: ' + ticket.whatsapp.name : ' | Whatsapp: Sin Whatsapp'}`
 			}
 		/>
 	);

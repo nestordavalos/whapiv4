@@ -40,7 +40,8 @@ const CreateTicketService = async ({
     userId,
     queueId,
     fromMe,
-    isMsgGroup
+    isMsgGroup,
+    isBot: false
   });
 
   const ticket = await Ticket.findByPk(id, { include: ["contact"] });

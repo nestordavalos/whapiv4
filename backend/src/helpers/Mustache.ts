@@ -10,10 +10,10 @@ export const msgsd = (): string => {
 
   const hh = new Date().getHours();
 
-  if (hh >= 6) { ms = "Bom Dia"; }
-  if (hh > 11) { ms = "Boa Tarde"; }
-  if (hh > 17) { ms = "Boa Noite"; }
-  if (hh > 23 || hh < 6) { ms = "Boa Madrugada"; }
+  if (hh >= 6) { ms = "Buen Dia"; }
+  if (hh > 11) { ms = "Buenas Tardes"; }
+  if (hh > 17) { ms = "Buenas Noches"; }
+  if (hh > 23 || hh < 6) { ms = "Buenos Dias"; }
 
   return ms;
 };

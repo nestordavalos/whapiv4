@@ -38,6 +38,9 @@ class Ticket extends Model<Ticket> {
   @Column
   isGroup: boolean;
 
+  @Default(false)
+  @Column
+  isBot: boolean;
   @CreatedAt
   createdAt: Date;
 

@@ -649,7 +649,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                                   onChange={handleChange}
                                 />
                               }
-                              label="Definir horário de expediente"
+                              label="Definir horário de Atención"
                               labelPlacement="end"
                             />
                           </Tooltip>

@@ -22,7 +22,7 @@ import SentimentNeutralIcon from "@mui/icons-material/SentimentNeutral";
 import Score from "@material-ui/icons/Score";
 
 import { makeStyles } from "@material-ui/core/styles";
-import { grey, blue } from "@material-ui/core/colors";
+import { grey } from "@material-ui/core/colors";
 import { toast } from "react-toastify";
 
 
@@ -342,7 +342,7 @@ const Dashboard = () => {
         <>
           <Grid item xs={12} sm={6} md={4}>
             <TextField
-              label="Data Inicial"
+              label="Fecha Inicial"
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
@@ -354,7 +354,7 @@ const Dashboard = () => {
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
             <TextField
-              label="Data Final"
+              label="Fecha Final"
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
@@ -377,7 +377,7 @@ const Dashboard = () => {
               value={period}
               onChange={(e) => handleChangePeriod(e.target.value)}
             >
-              <MenuItem value={0}>Nenhum selecionado</MenuItem>
+              <MenuItem value={0}>Ninguna seleccionada</MenuItem>
               <MenuItem value={3}>Últimos 3 dias</MenuItem>
               <MenuItem value={7}>Últimos 7 dias</MenuItem>
               <MenuItem value={15}>Últimos 15 dias</MenuItem>
@@ -385,7 +385,7 @@ const Dashboard = () => {
               <MenuItem value={60}>Últimos 60 dias</MenuItem>
               <MenuItem value={90}>Últimos 90 dias</MenuItem>
             </Select>
-            <FormHelperText>Selecione o período desejado</FormHelperText>
+            <FormHelperText>Seleccione el período deseado</FormHelperText>
           </FormControl>
         </Grid>
       );
@@ -404,10 +404,10 @@ const Dashboard = () => {
                 value={filterType}
                 onChange={(e) => handleChangeFilterType(e.target.value)}
               >
-                <MenuItem value={1}>Filtro por Data</MenuItem>
+                <MenuItem value={1}>Filtro por Fecha</MenuItem>
                 <MenuItem value={2}>Filtro por Período</MenuItem>
               </Select>
-              <FormHelperText>Selecione o período desejado</FormHelperText>
+              <FormHelperText>Seleccione el período deseado</FormHelperText>
             </FormControl>
           </Grid>
 
@@ -498,7 +498,7 @@ const Dashboard = () => {
                       component="h2"
                       className={classes.cardTitle}
                     >
-                      {"Em atendimento"}
+                      {"En Conversación"}
                     </Typography>
                   </div>
                   <div className={classes.cardAvatar}>

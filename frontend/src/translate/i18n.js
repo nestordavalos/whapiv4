@@ -6,7 +6,7 @@ import { messages } from "./languages";
 i18n.use(LanguageDetector).init({
 	debug: false,
 	defaultNS: ["translations"],
-	fallbackLng: "en",
+	fallbackLng: "es",
 	ns: ["translations"],
 	resources: messages,
 });

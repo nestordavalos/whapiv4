@@ -80,14 +80,14 @@ const createContact = async (
     }
   }
 
-  const createTicket = await FindOrCreateTicketService({
-    whatsappId: whatsapp.id,
+  const createTicket = await FindOrCreateTicketService(
     contact,
-    unreadMessages: 0,
+    whatsapp.id,
+    1,
     queueId,
     tagsId,
-    userId
-  });
+    userId,
+);
 
   const ticket = await ShowTicketService(createTicket.id);
 

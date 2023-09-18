@@ -247,7 +247,7 @@ const LoggedInLayout = ({ children }) => {
             className={classes.title}
           >
 
-            {i18n.t("mainDrawer.appBar.message.hi")} <b>{user.name}</b>, {i18n.t("mainDrawer.appBar.message.text")} <b>{system.name || "Mktsend"}</b>
+            {i18n.t("mainDrawer.appBar.message.hi")} <b>{user.name}</b>, {i18n.t("mainDrawer.appBar.message.text")} <b>{system.name || "T-Chateo"}</b>
           </span>
           {user.id && <NotificationsPopOver />}
 

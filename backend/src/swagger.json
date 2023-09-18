@@ -1,24 +1,24 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "Documentação da API mktsend",
-        "description": "Documentação da API mktsend",
+        "title": "Documentación API taichauka",
+        "description": "Documentación API taichauka",
         "contact": {
-            "whatsapp": "https://wa.me/5517991565280"
+            "whatsapp": "https://wa.me/595985523065"
         },
         "version": "1.1.0"
     },
     "servers": [
         {
             "url": "https://localhost/8080",
-            "description": "API mktsend"
+            "description": "API taichauka"
         }
     ],
     "paths": {
         "/api/send": {
             "post": {
-                "summary": "Envio de Mensagens",
-                "description": "Envio de Mensagens",
+                "summary": "Enviando mensajes",
+                "description": "Enviando mensajes",
                 "tags": [
                     "SEND"
                 ],
@@ -36,18 +36,19 @@
                             "examples": {
                                 "SEND1": {
                                     "value": {
-                                        "number": "5522999999999",
-                                        "body": "Mensagem de Teste da API"
+                                        "whatsappId": "1",
+                                        "number": "595985000000",
+                                        "body": "Mensaje de prueba API"
                                     }
                                 },
                                 "SEND2": {
                                     "value": {
-                                        "number": "5522999999999",
-                                        "body": "Mensagem de Teste da API",
-                                        "whatsappId": "ID do Setor",
-                                        "queueId": "ID do Setor",
-                                        "tagsId": "ID da Tag",
-                                        "userId": "ID do atendente"
+                                        "number": "595985000000",
+                                        "body": "Mensaje de prueba API",
+                                        "whatsappId": "ID de Sector",
+                                        "queueId": "ID de Setcor",
+                                        "tagsId": "ID de Tag",
+                                        "userId": "ID de user"
                                     }
                                 }
                             }
@@ -67,7 +68,7 @@
                         }
                     },
                     "401": {
-                        "description": "Acesso não autorizado!"
+                        "description": "¡Acceso no autorizado!"
                     },
                     "500": {
                         "description": "Erro interno!"
@@ -77,7 +78,7 @@
         },
         "/api/queue/list": {
             "get": {
-                "summary": "Busca lista de Setores",
+                "summary": "Busca lista de Sectores",
                 "tags": [
                     "Queue"
                 ],
@@ -105,37 +106,37 @@
                 "properties": {
                     "number": {
                         "name": "number",
-                        "description": "Número de telefone para enviar a mensagem. Deve incluir o código do país (sem sinal de adição ou zero à esquerda).",
+                        "description": "Número de teléfono para enviar el mensaje. Debe incluir el código de país (sin signo más ni cero inicial).",
                         "required": true,
                         "type": "number"
                     },
                     "body": {
                         "name": "body",
-                        "description": "Corpo da mensagem a ser enviada.",
+                        "description": "Cuerpo del mensaje a enviar.",
                         "required": true,
                         "type": "string"
                     },
                     "whatsappId": {
                         "name": "whatsappId",
-                        "description": "Corpo da mensagem a ser enviada.",
+                        "description": "Cuerpo del mensaje a enviar.",
                         "required": false,
                         "type": "number"
                     },
                     "queueId": {
                         "name": "queueId",
-                        "description": "Corpo da mensagem a ser enviada.",
+                        "description": "Cuerpo del mensaje a enviar.",
                         "required": false,
                         "type": "number"
                     },
                     "tagsId": {
                         "name": "tagsId",
-                        "description": "Corpo da mensagem a ser enviada.",
+                        "description": "Cuerpo del mensaje a enviar.",
                         "required": false,
                         "type": "number"
                     },
                     "userId": {
                         "name": "userId",
-                        "description": "Corpo da mensagem a ser enviada.",
+                        "description": "Cuerpo del mensaje a enviar.",
                         "required": false,
                         "type": "number"
                     }

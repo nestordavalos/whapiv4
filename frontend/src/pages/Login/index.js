@@ -1,5 +1,5 @@
 import React, { useState, useContext } from "react";
-// import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink } from "react-router-dom";
 
 import {
   Button,
@@ -9,12 +9,12 @@ import {
   // Box,
   Typography,
   Container,
-  // InputAdornment,
-  // IconButton,
+  InputAdornment,
+  IconButton,
   Link
 } from '@material-ui/core';
 
-// import { Visibility, VisibilityOff } from '@material-ui/icons';
+import { Visibility, VisibilityOff } from '@material-ui/icons';
 import { makeStyles } from "@material-ui/core/styles";
 import { i18n } from "../../translate/i18n";
 
@@ -28,7 +28,7 @@ const useStyles = makeStyles(theme => ({
   root: {
     width: "100vw",
     height: "100vh",
-    backgroundImage: "url(https://mkthub.tech/wp-content/uploads/2022/02/old-black-background-grunge-texture-dark-wallpaper-blackboard-chalkboard-room-wall-1-scaled-1.jpg)",
+    backgroundImage: "url(https://nydcompany.com/ok/black-background.jpg)",
     backgroundRepeat: "no-repeat",
     backgroundSize: "100% 100%",
     backgroundPosition: "center",
@@ -69,6 +69,7 @@ const Login = () => {
   const classes = useStyles();
 
   const [user, setUser] = useState({ email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
 
   const { handleLogin } = useContext(AuthContext);
 
@@ -87,10 +88,10 @@ const Login = () => {
         <CssBaseline />
         <div className={classes.paper}>
           <div>
-            <img style={{ margin: "0 auto", height: "80px", width: "100%" }} src={logo} alt="Whats" />
+            <img style={{ margin: "0 auto", height: "70px", width: "100%" }} src={logo} alt="Whats" />
           </div>
           <Typography component="h1" variant="h5">
-            {i18n.t("login.title")}
+            Login
           </Typography>
           <form className={classes.form} noValidate onSubmit={handlSubmit}>
             <TextField
@@ -99,7 +100,7 @@ const Login = () => {
               required
               fullWidth
               id="email"
-              label={i18n.t("login.form.email")}
+              label="E-mail"
               name="email"
               value={user.email}
               onChange={handleChangeInput}
@@ -112,12 +113,25 @@ const Login = () => {
               required
               fullWidth
               name="password"
-              label={i18n.t("login.form.password")}
+              label="Contraseña"
               type="password"
               id="password"
               value={user.password}
               onChange={handleChangeInput}
               autoComplete="current-password"
+              type={showPassword ? 'text' : 'password'}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={() => setShowPassword((e) => !e)}
+                  >
+                    {showPassword ? <VisibilityOff color="secondary" /> : <Visibility color="secondary" />}
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
             />
             <Button
               type="submit"
@@ -126,7 +140,7 @@ const Login = () => {
               color="primary"
               className={classes.submit}
             >
-              {i18n.t("login.buttons.submit")}
+              Entrar
             </Button>
             {/* <Grid container>
 						<Grid item>
@@ -144,7 +158,7 @@ const Login = () => {
 
           <Typography variant="body2" color="textSecondary" align="center">
             <Link color="inherit" href={system.url}>
-              {system.name} - CNPJ: 34.211.165/0001-24
+              {system.name}
               <br></br>
               Todos os direitos reservados - <b>v{systemVersion}</b>
               <br></br>

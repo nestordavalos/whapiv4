@@ -64,12 +64,12 @@ const useTickets = ({
                 }
             }
 
-            const closeTicket = async(ticket) => {
-                await api.put(`/tickets/${ticket.id}`, {
-                    status: "closed",
-                    userId: ticket.userId || null,
-                })
-            }
+            // const closeTicket = async(ticket) => {
+            //     await api.put(`/tickets/${ticket.id}`, {
+            //         status: "closed",
+            //         userId: ticket.userId || null,
+            //     })
+            // }
 
             fetchTickets()
         }, 500)

@@ -394,7 +394,7 @@ const UserModal = ({ open, onClose, userId }) => {
 
 
 								<div className={classes.divider}>
-									<span className={classes.dividerText}>Liberações</span>
+									<span className={classes.dividerText}>Permisos</span>
 								</div>
 
 								<Can

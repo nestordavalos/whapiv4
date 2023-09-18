@@ -31,7 +31,7 @@ const syncUnreadMessages = async (wbot: Session) => {
     /*const messages = await chat.fetchMessages({limit: 10});
 
     for (const message of messages) {
-      console.log('IMPORTACIÓN DE MENSAJES LEGADOS: ' + message.body[0]);
+      console.log('IMPORTACIÃ“N DE MENSAJES LEGADOS: ' + message.body[0]);
       await handleMessage(message, wbot);
 
       await handleMsgAck(message, 2);

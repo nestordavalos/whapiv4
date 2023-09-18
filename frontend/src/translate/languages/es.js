@@ -51,7 +51,8 @@ const messages = {
       dashboard: {
         charts: {
           perDay: {
-            title: "Boletos de hoy:",
+            title: "Conversaciones de hoy:",
+            titleAll: "Todos os Chamados: ",
           },
         },
         messages: {
@@ -144,7 +145,8 @@ const messages = {
           defineHourExpedient: "Establecer horario de oficina",
           longText: "Marque esta opción para establecer el horario de oficina para las citas.",
           token: "Token",
-          checkHourExpedient: "Consultar Horario de Oficina"
+          checkHourExpedient: "Consultar Horario de Oficina",
+          group: "Recibir Mensaje de Grupo",
         },
         buttons: {
           okAdd: "Agregar",
@@ -361,9 +363,10 @@ const messages = {
           message: "Mensaje de",
         },
         tabs: {
-          open: { title: "Bandeja de entrada" },
+          open: { title: "Entrada" },
           closed: { title: "Resuelto" },
           search: { title: "Buscar" },
+          group: { title: "Grupos" },
         },
         search: {
           placeholder: "Obtener tickets y mensajes",
@@ -373,8 +376,8 @@ const messages = {
         },
       },
       transferTicketModal: {
-        title: "Boleto de transferencia",
-        fieldLabel: "Escriba para obtener asistentes",
+        title: "transferencia de Conversaciones",
+        fieldLabel: "Escriba para obtener Agentes",
         fieldConnectionLabel: "Transferir a conexión",
         fieldQueueLabel: "Transferir a Sector",
         fieldConnectionPlaceholder: "Seleccione una conexión",
@@ -388,7 +391,7 @@ const messages = {
         pendingHeader: "Esperando",
         assignedHeader: "Asignado",
         noTicketsTitle: "¡Aquí no hay nada!",
-        noTicketsMessage: "No se encontraron boletos con este estado o término de búsqueda",
+        noTicketsMessage: "No se encontraron conversaciones con este estado o término de búsqueda",
         connectionTitle: "Conexión actualmente en uso.",
         items: {
           queueless: "Sin sector",
@@ -410,7 +413,7 @@ const messages = {
         },
       },
       newTicketModal: {
-        title: "Crear ticket",
+        title: "Crear una Conversación",
         fieldLabel: "Entrar para buscar contacto",
         add: "Agregar",
         buttons: {
@@ -420,15 +423,15 @@ const messages = {
       },
       mainDrawer: {
         listItems: {
-          dashboard: "Tablero",
+          dashboard: "Dashboard",
           connections: "Conexiones",
-          tickets: "Boletos",
+          tickets: "Conversaciones",
           contacts: "Contactos",
           quickAnswers: "Respuestas rápidas",
-          etiquetas: "Etiquetas",
+          tags: "Etiquetas",
           queues: "Sectores",
           administration: "Administración",
-          users: "Asistentes",
+          users: "Agentes",
           settings: "Configuración",
           sendMsg: "Enviando Mensajes",
           sendMedia: "Enviando medios",
@@ -436,7 +439,7 @@ const messages = {
           apidocs: "Documentación",
           apititle: "API",
           apikey: "Clave API",
-          token: "Ficha"
+          token: "Token"
         },
         appBar: {
           message: {
@@ -530,7 +533,7 @@ const messages = {
         },
       },
       users: {
-        title: "Asistentes",
+        title: "Agentes",
         table: {
           id: "ID",
           name: "Nombre",
@@ -539,7 +542,7 @@ const messages = {
           whatsapp: "Conexión estándar",
           startWork: "Hora de inicio",
           endWork: "Tiempo de finalización",
-          acciones: "Acciones",
+          actions: "Acciónes"
         },
         buttons: {
           add: "Agregar asistente",
@@ -558,7 +561,7 @@ const messages = {
         settings: {
           userCreation: {
             name: "Creación de asistente",
-            note: "Permitir la creación de asistentes",
+            note: "Permitir la creación de Agentes",
             options: {
               enabled: "Habilitado",
               disabled: "Deshabilitado",
@@ -566,7 +569,7 @@ const messages = {
           },
           allTicket: {
             name: "Todo el mundo puede ver el ticket sin departamento.",
-            note: "Active esta función para que todos los usuarios vean los boletos sin sector.",
+            note: "Active esta función para que todos los usuarios vean los conversaciones sin sector.",
             options: {
               enabled: "Habilitado",
               disabled: "Deshabilitado",
@@ -657,6 +660,7 @@ const messages = {
             resolve: "Resolver",
             reopen: "Reabrir",
             accept: "Aceptar",
+            finish: "Finalizar",
           },
         },
       },
@@ -715,12 +719,12 @@ const messages = {
         ERR_DELETE_WAPP_MSG: "No se pudo eliminar el mensaje de WhatsApp.",
         ERR_OTHER_OPEN_TICKET: "Ya hay un ticket abierto para este contacto.",
         ERR_SESSION_EXPIRED: "Sesión caducada. Inicie sesión.",
-        ERR_USER_CREATION_DISABLED: "La creación de asistentes ha sido deshabilitada por el administrador.",
+        ERR_USER_CREATION_DISABLED: "La creación de Agentes ha sido deshabilitada por el administrador.",
         ERR_NO_PERMISSION: "No tienes permiso para acceder a este recurso.",
         ERR_DUPLICATED_CONTACT: "Ya existe un contacto con este número.",
         ERR_NO_SETTING_FOUND: "No se encontraron configuraciones con esta ID.",
         ERR_NO_CONTACT_FOUND: "No se encontró ningún contacto con esta ID.",
-        ERR_NO_TICKET_FOUND: "No se encontraron boletos con esta ID.",
+        ERR_NO_TICKET_FOUND: "No se encontraron conversaciones con esta ID.",
         ERR_NO_USER_FOUND: "No se encontró ningún asistente con esta ID.",
         ERR_NO_WAPP_FOUND: "No se encontró WhatsApp con este ID.",
         ERR_CREATING_MESSAGE: "Error al crear el mensaje en la base de datos.",
@@ -728,9 +732,10 @@ const messages = {
         ERR_FETCH_WAPP_MSG: "Error al obtener el mensaje en WhatsApp, puede ser demasiado antiguo.",
         ERR_QUEUE_COLOR_ALREADY_EXISTS: "Este color ya está en uso, elige otro.",
         ERR_WAPP_GREETING_REQUIRED: "El mensaje de saludo es obligatorio cuando hay más de un Sector.",
-        ERR_USER_CREATION_COUNT: "Límite de asistentes alcanzado, comuníquese con soporte para cambiar",
+        ERR_USER_CREATION_COUNT: "Límite de Agentes alcanzado, comuníquese con soporte para cambiar",
         ERR_CONNECTION_CREATION_COUNT: "Límite de conexión alcanzado, comuníquese con soporte para cambiar.",
         ERR_NO_TAG_FOUND: "Etiqueta no encontrada.",
+        ERR_OUT_OF_HOURS: "Fora do Horário de Expediente!",
       },
     },
   },

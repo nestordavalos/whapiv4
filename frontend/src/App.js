@@ -3,7 +3,7 @@ import Routes from "./routes";
 import "react-toastify/dist/ReactToastify.css";
 
 import { createTheme, ThemeProvider } from "@material-ui/core/styles";
-import { ptBR } from "@material-ui/core/locale";
+import { esES } from "@material-ui/core/locale";
 
 import { CssBaseline } from "@material-ui/core";
 
@@ -113,8 +113,8 @@ const App = () => {
     const i18nlocale = localStorage.getItem("i18nextLng");
     const browserLocale = i18nlocale.substring(0, 2) + i18nlocale.substring(3, 5);
 
-    if (browserLocale === "ptBR") {
-      setLocale(ptBR);
+    if (browserLocale === "esES") {
+      setLocale(esES);
     }
   }, []);
 

@@ -1,4 +1,4 @@
-# Manual de Instação do mktsend em Localhost
+# Manual de Instação do T-Chateo em Localhost
 
 OBS: Ter instalado o Banco de Dados, podendo usar o Xamp, o Wamp ou qualquer um de sua preferência.
 
@@ -7,19 +7,19 @@ OBS: Ter instalado o Banco de Dados, podendo usar o Xamp, o Wamp ou qualquer um 
 1. Criar Banco de dados
 
 ```bash
-CREATE DATABASE mktsend CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE DATABASE T-Chateo CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 ```
 
 2. Clonar o repositório
 
 ```bash
-git clone https://github.com/FilipeCamillo/Press-Ticket mktsend
+git clone https://github.com/FilipeCamillo/Press-Ticket T-Chateo
 ```
 
-3. Entrar no diretório backend do mktsend
+3. Entrar no diretório backend do T-Chateo
 
 ```bash
-cd mktsend/backend
+cd T-Chateo/backend
 ```
 
 4. Criar o arquivo .env e inserir as informações do item 5
@@ -39,7 +39,7 @@ DB_HOST=localhost
 DB_TIMEZONE=-03:00  
 DB_USER=root  
 DB_PASS=  
-DB_NAME=mktsend 
+DB_NAME=T-Chateo 
 
 USER_LIMIT=3  
 CONNECTIONS_LIMIT=1

@@ -161,7 +161,7 @@ const MainListItems = (props) => {
               icon={<SettingsOutlined />}
             />
             <Divider className={classes.divider} />
-            <ListSubheader inset className={classes.sub}>
+            {/* <ListSubheader inset className={classes.sub}>
               {i18n.t("mainDrawer.listItems.apititle")}
             </ListSubheader>
             <ListItemLink
@@ -177,7 +177,7 @@ const MainListItems = (props) => {
               icon={
                 <MenuBook />
               }
-            />
+            /> */}
             <ListItemLink
               to="/apikey"
               primary={i18n.t("mainDrawer.listItems.apikey")}

@@ -2198,7 +2198,7 @@ const isValidMsg = (msg: WbotMessage): boolean => {
     msg.type === "document" ||
     msg.type === "vcard" ||
     // msg.type === "multi_vcard" ||
-    msg.type === "sticker" ||
+    // msg.type === "sticker" ||
     msg.type === "e2e_notification" || // Ignore Empty Messages Generated When Someone Changes His Account from Personal to Business or vice-versa
     msg.type === "notification_template" || // Ignore Empty Messages Generated When Someone Changes His Account from Personal to Business or vice-versa
     msg.author !== null || // Ignore Group Messages
@@ -2436,7 +2436,7 @@ const handleMessage = async (
     if (msg.type === "call_log" && callSetting === "disabled") {
       const sentMessage = await wbot.sendMessage(
         `${contact.number}@c.us`,
-        "*Mensagem Automática:*\nAs chamadas de voz e vídeo estão desabilitas para esse WhatsApp, favor enviar uma mensagem de texto. Obrigado"
+        "*Mensagem Automática:*\nLas llamadas de voz y video están deshabilitadas para este WhatsApp, envíe un mensaje de texto. Gracias"
       );
       await verifyMessage(sentMessage, ticket, contact);
     }

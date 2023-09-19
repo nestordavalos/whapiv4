@@ -699,7 +699,7 @@ const messages = {
           cancel: "Cancelar",
         },
       },
-      tablegeoOptionsMenu: {
+      messageOptionsMenu: {
         delete: "Eliminar",
         reply: "Responder",
         confirmationModal: {

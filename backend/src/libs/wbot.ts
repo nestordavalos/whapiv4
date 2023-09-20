@@ -111,9 +111,9 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
 
       wbot.on("authenticated", async session => {
         logger.info(`Session: ${sessionName} AUTHENTICATED`);
-               await whatsapp.update({
-                 session: JSON.stringify(session)
-               });
+              //  await whatsapp.update({
+              //    session: JSON.stringify(session)
+              //  });
       });
 
       wbot.on("auth_failure", async msg => {

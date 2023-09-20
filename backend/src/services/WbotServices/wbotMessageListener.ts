@@ -414,7 +414,7 @@ const verifyQueue = async (
                   const debouncedSentMessage = debounce(
                     async () => {
                       const sentMessage = await wbot.sendMessage(
-                        `${contact.number}@c.us`,
+                        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                         body
                       );
                       verifyMessage(sentMessage, ticket, contact);
@@ -439,7 +439,7 @@ const verifyQueue = async (
                   const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
                   const sentMessage = await wbot.sendMessage(
-                    `${contact.number}@c.us`,
+                    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                     body
                   );
 
@@ -482,7 +482,7 @@ const verifyQueue = async (
                 const debouncedSentMessage = debounce(
                   async () => {
                     const sentMessage = await wbot.sendMessage(
-                      `${contact.number}@c.us`,
+                      `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                       body
                     );
                     verifyMessage(sentMessage, ticket, contact);
@@ -508,7 +508,7 @@ const verifyQueue = async (
                 const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
 
@@ -541,7 +541,7 @@ const verifyQueue = async (
             const debouncedSentMessage = debounce(
               async () => {
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
                 verifyMessage(sentMessage, ticket, contact);
@@ -559,7 +559,7 @@ const verifyQueue = async (
             const debouncedSentMessage = debounce(
               async () => {
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
                 verifyMessage(sentMessage, ticket, contact);
@@ -577,7 +577,7 @@ const verifyQueue = async (
           const debouncedSentMessage = debounce(
             async () => {
               const sentMessage = await wbot.sendMessage(
-                `${contact.number}@c.us`,
+                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                 body
               );
               verifyMessage(sentMessage, ticket, contact);
@@ -652,7 +652,7 @@ const verifyQueue = async (
                   const debouncedSentMessage = debounce(
                     async () => {
                       const sentMessage = await wbot.sendMessage(
-                        `${contact.number}@c.us`,
+                        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                         body
                       );
                       verifyMessage(sentMessage, ticket, contact);
@@ -676,7 +676,7 @@ const verifyQueue = async (
                   const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
                   const sentMessage = await wbot.sendMessage(
-                    `${contact.number}@c.us`,
+                    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                     body
                   );
 
@@ -717,7 +717,7 @@ const verifyQueue = async (
                 const debouncedSentMessage = debounce(
                   async () => {
                     const sentMessage = await wbot.sendMessage(
-                      `${contact.number}@c.us`,
+                      `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                       body
                     );
                     verifyMessage(sentMessage, ticket, contact);
@@ -743,7 +743,7 @@ const verifyQueue = async (
                 const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
 
@@ -775,7 +775,7 @@ const verifyQueue = async (
             const debouncedSentMessage = debounce(
               async () => {
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
                 verifyMessage(sentMessage, ticket, contact);
@@ -793,7 +793,7 @@ const verifyQueue = async (
             const debouncedSentMessage = debounce(
               async () => {
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
                 verifyMessage(sentMessage, ticket, contact);
@@ -811,7 +811,7 @@ const verifyQueue = async (
           const debouncedSentMessage = debounce(
             async () => {
               const sentMessage = await wbot.sendMessage(
-                `${contact.number}@c.us`,
+                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                 body
               );
               verifyMessage(sentMessage, ticket, contact);
@@ -886,7 +886,7 @@ const verifyQueue = async (
                   const debouncedSentMessage = debounce(
                     async () => {
                       const sentMessage = await wbot.sendMessage(
-                        `${contact.number}@c.us`,
+                        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                         body
                       );
                       verifyMessage(sentMessage, ticket, contact);
@@ -910,7 +910,7 @@ const verifyQueue = async (
                   const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
                   const sentMessage = await wbot.sendMessage(
-                    `${contact.number}@c.us`,
+                    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                     body
                   );
 
@@ -951,7 +951,7 @@ const verifyQueue = async (
                 const debouncedSentMessage = debounce(
                   async () => {
                     const sentMessage = await wbot.sendMessage(
-                      `${contact.number}@c.us`,
+                      `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                       body
                     );
                     verifyMessage(sentMessage, ticket, contact);
@@ -977,7 +977,7 @@ const verifyQueue = async (
                 const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
 
@@ -1009,7 +1009,7 @@ const verifyQueue = async (
             const debouncedSentMessage = debounce(
               async () => {
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
                 verifyMessage(sentMessage, ticket, contact);
@@ -1027,7 +1027,7 @@ const verifyQueue = async (
             const debouncedSentMessage = debounce(
               async () => {
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
                 verifyMessage(sentMessage, ticket, contact);
@@ -1045,7 +1045,7 @@ const verifyQueue = async (
           const debouncedSentMessage = debounce(
             async () => {
               const sentMessage = await wbot.sendMessage(
-                `${contact.number}@c.us`,
+                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                 body
               );
               verifyMessage(sentMessage, ticket, contact);
@@ -1120,7 +1120,7 @@ const verifyQueue = async (
                   const debouncedSentMessage = debounce(
                     async () => {
                       const sentMessage = await wbot.sendMessage(
-                        `${contact.number}@c.us`,
+                        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                         body
                       );
                       verifyMessage(sentMessage, ticket, contact);
@@ -1144,7 +1144,7 @@ const verifyQueue = async (
                   const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
                   const sentMessage = await wbot.sendMessage(
-                    `${contact.number}@c.us`,
+                    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                     body
                   );
 
@@ -1185,7 +1185,7 @@ const verifyQueue = async (
                 const debouncedSentMessage = debounce(
                   async () => {
                     const sentMessage = await wbot.sendMessage(
-                      `${contact.number}@c.us`,
+                      `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                       body
                     );
                     verifyMessage(sentMessage, ticket, contact);
@@ -1211,7 +1211,7 @@ const verifyQueue = async (
                 const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
 
@@ -1243,7 +1243,7 @@ const verifyQueue = async (
             const debouncedSentMessage = debounce(
               async () => {
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
                 verifyMessage(sentMessage, ticket, contact);
@@ -1261,7 +1261,7 @@ const verifyQueue = async (
             const debouncedSentMessage = debounce(
               async () => {
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
                 verifyMessage(sentMessage, ticket, contact);
@@ -1279,7 +1279,7 @@ const verifyQueue = async (
           const debouncedSentMessage = debounce(
             async () => {
               const sentMessage = await wbot.sendMessage(
-                `${contact.number}@c.us`,
+                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                 body
               );
               verifyMessage(sentMessage, ticket, contact);
@@ -1359,7 +1359,7 @@ const verifyQueue = async (
                   const debouncedSentMessage = debounce(
                     async () => {
                       const sentMessage = await wbot.sendMessage(
-                        `${contact.number}@c.us`,
+                        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                         body
                       );
                       verifyMessage(sentMessage, ticket, contact);
@@ -1383,7 +1383,7 @@ const verifyQueue = async (
                   const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
                   const sentMessage = await wbot.sendMessage(
-                    `${contact.number}@c.us`,
+                    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                     body
                   );
 
@@ -1424,7 +1424,7 @@ const verifyQueue = async (
                 const debouncedSentMessage = debounce(
                   async () => {
                     const sentMessage = await wbot.sendMessage(
-                      `${contact.number}@c.us`,
+                      `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                       body
                     );
                     verifyMessage(sentMessage, ticket, contact);
@@ -1450,7 +1450,7 @@ const verifyQueue = async (
                 const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
 
@@ -1482,7 +1482,7 @@ const verifyQueue = async (
             const debouncedSentMessage = debounce(
               async () => {
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
                 verifyMessage(sentMessage, ticket, contact);
@@ -1500,7 +1500,7 @@ const verifyQueue = async (
             const debouncedSentMessage = debounce(
               async () => {
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
                 verifyMessage(sentMessage, ticket, contact);
@@ -1518,7 +1518,7 @@ const verifyQueue = async (
           const debouncedSentMessage = debounce(
             async () => {
               const sentMessage = await wbot.sendMessage(
-                `${contact.number}@c.us`,
+                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                 body
               );
               verifyMessage(sentMessage, ticket, contact);
@@ -1593,7 +1593,7 @@ const verifyQueue = async (
                   const debouncedSentMessage = debounce(
                     async () => {
                       const sentMessage = await wbot.sendMessage(
-                        `${contact.number}@c.us`,
+                        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                         body
                       );
                       verifyMessage(sentMessage, ticket, contact);
@@ -1617,7 +1617,7 @@ const verifyQueue = async (
                   const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
                   const sentMessage = await wbot.sendMessage(
-                    `${contact.number}@c.us`,
+                    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                     body
                   );
 
@@ -1658,7 +1658,7 @@ const verifyQueue = async (
                 const debouncedSentMessage = debounce(
                   async () => {
                     const sentMessage = await wbot.sendMessage(
-                      `${contact.number}@c.us`,
+                      `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                       body
                     );
                     verifyMessage(sentMessage, ticket, contact);
@@ -1684,7 +1684,7 @@ const verifyQueue = async (
                 const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
 
@@ -1716,7 +1716,7 @@ const verifyQueue = async (
             const debouncedSentMessage = debounce(
               async () => {
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
                 verifyMessage(sentMessage, ticket, contact);
@@ -1734,7 +1734,7 @@ const verifyQueue = async (
             const debouncedSentMessage = debounce(
               async () => {
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
                 verifyMessage(sentMessage, ticket, contact);
@@ -1752,7 +1752,7 @@ const verifyQueue = async (
           const debouncedSentMessage = debounce(
             async () => {
               const sentMessage = await wbot.sendMessage(
-                `${contact.number}@c.us`,
+                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                 body
               );
               verifyMessage(sentMessage, ticket, contact);
@@ -1827,7 +1827,7 @@ const verifyQueue = async (
                   const debouncedSentMessage = debounce(
                     async () => {
                       const sentMessage = await wbot.sendMessage(
-                        `${contact.number}@c.us`,
+                        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                         body
                       );
                       verifyMessage(sentMessage, ticket, contact);
@@ -1851,7 +1851,7 @@ const verifyQueue = async (
                   const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
                   const sentMessage = await wbot.sendMessage(
-                    `${contact.number}@c.us`,
+                    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                     body
                   );
 
@@ -1892,7 +1892,7 @@ const verifyQueue = async (
                 const debouncedSentMessage = debounce(
                   async () => {
                     const sentMessage = await wbot.sendMessage(
-                      `${contact.number}@c.us`,
+                      `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                       body
                     );
                     verifyMessage(sentMessage, ticket, contact);
@@ -1918,7 +1918,7 @@ const verifyQueue = async (
                 const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
 
@@ -1950,7 +1950,7 @@ const verifyQueue = async (
             const debouncedSentMessage = debounce(
               async () => {
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
                 verifyMessage(sentMessage, ticket, contact);
@@ -1968,7 +1968,7 @@ const verifyQueue = async (
             const debouncedSentMessage = debounce(
               async () => {
                 const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@c.us`,
+                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                   body
                 );
                 verifyMessage(sentMessage, ticket, contact);
@@ -1986,7 +1986,7 @@ const verifyQueue = async (
           const debouncedSentMessage = debounce(
             async () => {
               const sentMessage = await wbot.sendMessage(
-                `${contact.number}@c.us`,
+                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                 body
               );
               verifyMessage(sentMessage, ticket, contact);
@@ -2032,7 +2032,7 @@ const verifyQueue = async (
           const debouncedSentMessage = debounce(
             async () => {
               const sentMessage = await wbot.sendMessage(
-                `${contact.number}@c.us`,
+                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
                 body
               );
               verifyMessage(sentMessage, ticket, contact);
@@ -2056,7 +2056,7 @@ const verifyQueue = async (
           const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
 
           const sentMessage = await wbot.sendMessage(
-            `${contact.number}@c.us`,
+            `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
             body
           );
 
@@ -2100,7 +2100,7 @@ const verifyQueue = async (
         const debouncedSentMessage = debounce(
           async () => {
             const sentMessage = await wbot.sendMessage(
-              `${contact.number}@c.us`,
+              `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
               body
             );
             verifyMessage(sentMessage, ticket, contact);
@@ -2132,7 +2132,7 @@ const verifyQueue = async (
       );
 
         const sentMessage = await wbot.sendMessage(
-          `${contact.number}@c.us`,
+          `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
           body
         );
 
@@ -2142,7 +2142,7 @@ const verifyQueue = async (
     if (!choosenQueue.chatbots.length) {
       const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
       const sentMessage = await wbot.sendMessage(
-        `${contact.number}@c.us`,
+        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
         body
       );
 
@@ -2173,7 +2173,7 @@ const verifyQueue = async (
     const debouncedSentMessage = debounce(
       async () => {
         const sentMessage = await wbot.sendMessage(
-          `${contact.number}@c.us`,
+          `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
           body
         );
         verifyMessage(sentMessage, ticket, contact);
@@ -2435,7 +2435,7 @@ const handleMessage = async (
     // eslint-disable-next-line block-scoped-var
     if (msg.type === "call_log" && callSetting === "disabled") {
       const sentMessage = await wbot.sendMessage(
-        `${contact.number}@c.us`,
+        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
         "*Mensagem Automática:*\nLas llamadas de voz y video están deshabilitadas para este WhatsApp, envíe un mensaje de texto. Gracias"
       );
       await verifyMessage(sentMessage, ticket, contact);

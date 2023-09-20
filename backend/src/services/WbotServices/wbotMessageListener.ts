@@ -2142,7 +2142,7 @@ const verifyQueue = async (
     if (!choosenQueue.chatbots.length) {
       const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
       const sentMessage = await wbot.sendMessage(
-        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
+        `${contact.number}@c.us`,
         body
       );
 

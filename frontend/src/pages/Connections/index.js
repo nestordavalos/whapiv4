@@ -25,6 +25,7 @@ import {
 	SignalCellular4Bar,
 	CropFree,
 	DeleteOutline,
+	SyncOutlined,
 	WhatsApp
 } from "@material-ui/icons";
 
@@ -291,6 +292,14 @@ const Connections = () => {
 		);
 	};
 
+	const restartpm2 = async () => {
+		try {
+			await api.post('/restartpm2');
+		} catch (err) {
+			toastError(err);
+		}
+	}
+
 	return (
 		<MainContainer>
 			<ConfirmationModal
@@ -314,6 +323,15 @@ const Connections = () => {
 			<MainHeader>
 				<Title>{i18n.t("connections.title")} ({whatsApps.length})</Title>
 				<MainHeaderButtonsWrapper>
+					<Tooltip title={i18n.t("connections.buttons.restart")}>
+						<Button
+							variant="contained"
+							color="primary"
+							onClick={restartpm2}
+						>
+							<SyncOutlined />
+						</Button>
+					</Tooltip>
 					<Tooltip title={i18n.t("connections.buttons.add")}>
 						<Button
 							variant="contained"

@@ -14,6 +14,7 @@ import apiRoutes from "./apiRoutes";
 import chatBot from "./chatBotRoutes";
 import tagRoutes from "./tagRoutes";
 import dashboardRoutes from "./dashboardRoutes"
+import systemRoutes from "./systemRoutes";
 
 const routes = Router();
 
@@ -31,5 +32,6 @@ routes.use(chatBot);
 routes.use("/api", apiRoutes);
 routes.use(tagRoutes);
 routes.use(dashboardRoutes);
+routes.use(systemRoutes);
 
 export default routes;

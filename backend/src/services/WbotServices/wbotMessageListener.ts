@@ -2226,7 +2226,7 @@ const handleMessage = async (
   else if (Settingdb?.value === "enabled" || !showMessageGroupConnection.isGroup) {
     const chat = await msg.getChat();
     if (
-      msg.type === "sticker" ||
+      // msg.type === "sticker" ||
       msg.type === "e2e_notification" ||
       msg.type === "notification_template" ||
       msg.from === "status@broadcast" ||

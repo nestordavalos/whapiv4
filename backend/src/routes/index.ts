@@ -13,7 +13,7 @@ import quickAnswerRoutes from "./quickAnswerRoutes";
 import apiRoutes from "./apiRoutes";
 import chatBot from "./chatBotRoutes";
 import tagRoutes from "./tagRoutes";
-import dashboardRoutes from "./dashboardRoutes"
+import dashboardRoutes from "./dashboardRoutes";
 import systemRoutes from "./systemRoutes";
 
 const routes = Router();

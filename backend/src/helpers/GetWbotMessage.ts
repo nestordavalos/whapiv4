@@ -13,7 +13,7 @@ export const GetWbotMessage = async (
     `${ticket.contact.number}@${ticket.isGroup ? "g" : "c"}.us`
   );
 
-  let limit = 20;
+  let limit = 50;
 
   const fetchWbotMessagesGradually = async (): Promise<void | WbotMessage> => {
     const chatMessages = await wbotChat.fetchMessages({ limit });
@@ -21,7 +21,7 @@ export const GetWbotMessage = async (
     const msgFound = chatMessages.find(msg => msg.id.id === messageId);
 
     if (!msgFound && limit < 100) {
-      limit += 20;
+      limit += 50;
       return fetchWbotMessagesGradually();
     }
 

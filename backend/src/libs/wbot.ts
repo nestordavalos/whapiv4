@@ -54,6 +54,7 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
       const wbot: Session = new Client({
         session: sessionCfg,
         authStrategy: new LocalAuth({ clientId: `bd_${whatsapp.id}` }),
+        restartOnAuthFail: false,
         puppeteer: {
           args: [
             "--no-sandbox",
@@ -84,7 +85,8 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
             "--disable-accelerated-jpeg-decoding",
             "--disable-accelerated-mjpeg-decode",
             "--disable-app-list-dismiss-on-blur",
-            "--disable-accelerated-video-decode"
+            "--disable-accelerated-video-decode",
+            "--disable-gpu-driver-soluciones-para-errores"
           ],
           ignoreDefaultArgs: ["--disable-automation"],
           executablePath: process.env.CHROME_BIN || undefined

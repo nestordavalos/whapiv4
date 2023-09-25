@@ -86,6 +86,7 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
             "--disable-app-list-dismiss-on-blur",
             "--disable-accelerated-video-decode"
           ],
+          ignoreDefaultArgs: ["--disable-automation"],
           executablePath: process.env.CHROME_BIN || undefined
         }
       });

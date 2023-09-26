@@ -246,8 +246,8 @@ const verifyMediaMessage = async (
 const prepareLocation = (msg: WbotMessage): WbotMessage => {
   const gmapsUrl = `https://maps.google.com/maps?q=${msg.location.latitude}%2C${msg.location.longitude}&z=17`;
   msg.body = `data:image/png;base64,${msg.body}|${gmapsUrl}`;
-  msg.body += `|${msg.location.options.address
-    ? msg.location.options.address
+  msg.body += `|${msg.location.description
+    ? msg.location.description
     : `${msg.location.latitude}, ${msg.location.longitude}`
     }`;
   return msg;
@@ -277,8 +277,8 @@ export const verifyMessage = async (
       fromMe: msg.fromMe,
       lastMessage:
         msg.type === "location"
-          ? msg.location.options.address
-            ? "🢅" + "⠀" + `Localization - ${msg.location.options.address.split("\\n")[0]}`
+          ? msg.location.description
+            ? "🢅" + "⠀" + `Localization - ${msg.location.description.split("\\n")[0]}`
             : "🢅" + "⠀" + "🗺️:" + "Localization"
           : "🢅" + "⠀" + msg.body
     });
@@ -286,8 +286,8 @@ export const verifyMessage = async (
     await ticket.update({//aqui mapei texto que chega do chat
       lastMessage:
         msg.type === "location"
-          ? msg.location.options.address
-            ? "🢇" + "⠀" + "🗺️:" + `Localization - ${msg.location.options.address.split("\\n")[0]}`
+          ? msg.location.description
+            ? "🢇" + "⠀" + "🗺️:" + `Localization - ${msg.location.description.split("\\n")[0]}`
             : "🢇" + "⠀" + "🗺️:" + "Localization"
           : "🢇" + "⠀" + msg.body
     });

@@ -1,5 +1,5 @@
 import moment from "moment";
-// import * as Sentry from "@sentry/node";
+import * as Sentry from "@sentry/node";
 import CheckContactOpenTickets from "../../helpers/CheckContactOpenTickets";
 import SetTicketMessagesAsRead from "../../helpers/SetTicketMessagesAsRead";
 import { getIO } from "../../libs/socket";

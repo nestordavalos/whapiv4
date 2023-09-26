@@ -2073,6 +2073,15 @@ const verifyQueue = async (
     return;
   }
 
+  if (queues.length === 0) {
+    await UpdateTicketService({
+      ticketData: { queueId: queues[0].id },
+      ticketId: ticket.id
+    });
+
+    return;
+  }
+
   const selectedOption = msg.body;
   const choosenQueue = queues[+selectedOption - 1];
 

@@ -70,8 +70,6 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
             "--disable-extensions",
             "--disable-default-apps",
             "--enable-features=NetworkService",
-            "--disable-setuid-sandbox",
-            "--no-sandbox",
             "--disable-webgl",
             "--disable-threaded-animation",
             "--disable-threaded-scrolling",

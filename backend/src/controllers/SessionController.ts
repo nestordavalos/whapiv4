@@ -4,7 +4,7 @@ import AppError from "../errors/AppError";
 import AuthUserService from "../services/UserServices/AuthUserService";
 import { SendRefreshToken } from "../helpers/SendRefreshToken";
 import { RefreshTokenService } from "../services/AuthServices/RefreshTokenService";
-// import FindUserFromToken from "../services/AuthServices/FindUserFromToken";
+import FindUserFromToken from "../services/AuthServices/FindUserFromToken";
 import User from "../models/User";
 
 export const store = async (req: Request, res: Response): Promise<Response> => {

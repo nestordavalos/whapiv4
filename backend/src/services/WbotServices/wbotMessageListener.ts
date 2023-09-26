@@ -269,7 +269,8 @@ export const verifyMessage = async (
     fromMe: msg.fromMe,
     mediaType: msg.type,
     read: msg.fromMe,
-    quotedMsgId: quotedMsg?.id
+    quotedMsgId: quotedMsg?.id,
+    ack: msg.ack
   };
 
   if (msg.fromMe == true) {
@@ -2239,7 +2240,8 @@ const handleMessage = async (
       msg.type === "e2e_notification" ||
       msg.type === "notification_template" ||
       msg.from === "status@broadcast" ||
-      // msg.author === null ||
+      msg.author !== null &&
+      msg.author !== undefined ||
       chat.isGroup
     ) {
       return;
@@ -2324,15 +2326,15 @@ const handleMessage = async (
     }
 
 
-    if (msg.body === "#" && ticket.userId === null) {
-      await ticket.update({
-        queueOptionId: null,
-        chatbot: true,
-        queueId: null,
-      });
-      await verifyQueue(wbot, msg, ticket, ticket.contact);
-      return;
-    }
+    // if (msg.body === "#" && ticket.userId === null) {
+    //   await ticket.update({
+    //     queueOptionId: null,
+    //     chatbot: true,
+    //     queueId: null,
+    //   });
+    //   await verifyQueue(wbot, msg, ticket, ticket.contact);
+    //   return;
+    // }
 
     // if (msg.body === "#" && ticket.userId === null) {
     //   await ticket.update({
@@ -2543,11 +2545,11 @@ const handleRating = async (msg: WbotMessage, ticket: Ticket, ticketTraking: Tic
 };
 
 const handleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
-  await new Promise(r => setTimeout(r, 1000));
+  await new Promise(r => setTimeout(r, 500));
 
   const io = getIO();
 
-  // console.log("entrou no ack" + msg.body)
+  // console.log("entrou no ack " + msg.body)
   try {
     const messageToUpdate = await Message.findByPk(msg.id.id, {
       include: [

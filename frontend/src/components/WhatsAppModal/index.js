@@ -559,6 +559,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                         name="timeInactiveMessage"
                       >
                         <MenuItem value={"0"}>Desabilitado</MenuItem>
+                        <MenuItem value={"0.08"}>5 minutos</MenuItem>
                         <MenuItem value={"0.25"}>15 minutos</MenuItem>
                         <MenuItem value={"1"}>1 hora</MenuItem>
                         <MenuItem value={"4"}>4 horas</MenuItem>

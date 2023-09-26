@@ -188,7 +188,8 @@ export const removeWbot = (whatsappId: number): void => {
       sessions[sessionIndex].destroy();
       sessions.splice(sessionIndex, 1);
     }
-  } catch (err: any) {
+  }
+  catch (err: any) {
     logger.error(err);
   }
-};
+}

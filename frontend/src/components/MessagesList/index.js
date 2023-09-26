@@ -858,7 +858,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
                   {message.quotedMsg && renderQuotedMessage(message)}
                   <MarkdownWrapper>{message.body}</MarkdownWrapper>
                   <span className={classes.timestamp}>
-                    {format(parseISO(message.createdAt), "HH:mm")}
+                    {format(parseISO(message.createdAt), "dd/MM/yyyy HH:mm")}
                   </span>
                 </div>
               </div>
@@ -905,7 +905,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
                   {message.quotedMsg && renderQuotedMessage(message)}
                   <MarkdownWrapper>{message.body}</MarkdownWrapper>
                   <span className={classes.timestamp}>
-                    {format(parseISO(message.createdAt), "HH:mm")}
+                    {format(parseISO(message.createdAt), "dd/MM/yyyy - HH:mm")}
                     {renderMessageAck(message)}
                   </span>
                 </div>

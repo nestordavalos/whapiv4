@@ -48,7 +48,7 @@ const SendWhatsAppMessage = async ({
     } else {
     throw new AppError("ERR_SENDING_WAPP_MSG");
   }
-}
+ }
 };
 
 export default SendWhatsAppMessage;

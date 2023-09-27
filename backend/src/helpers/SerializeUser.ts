@@ -20,7 +20,7 @@ interface SerializedUser {
   endWork: string;
 }
 
-export const SerializeUser = async (user: User): Promise<SerializedUser> => {
+export const SerializeUser = (user: User): SerializedUser => {
   return {
     id: user.id,
     name: user.name,

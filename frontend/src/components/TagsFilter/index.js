@@ -1,6 +1,5 @@
-//import { Paper } from "@material-ui/core";
 import { Chip, Paper, TextField } from "@material-ui/core";
-import Autocomplete from "@material-ui/lab/Autocomplete";
+// import Autocomplete from "@material-ui/lab/Autocomplete";
 import React, { useEffect, useState } from "react";
 import toastError from "../../errors/toastError";
 import api from "../../services/api";
@@ -33,7 +32,7 @@ export function TagsFilter ({ onFiltered }) {
 
     return (
         <Paper style={{padding: 10}}>
-            <Autocomplete
+            {/* <Autocomplete
                 multiple
                 size="small"
                 options={tags}
@@ -48,13 +47,13 @@ export function TagsFilter ({ onFiltered }) {
                             label={option.name}
                             {...getTagProps({ index })}
                             size="small"
-                        /> 
+                        />
                     ))
                 }
                 renderInput={(params) => (
                     <TextField {...params} variant="outlined" placeholder="Filtro por Tags" />
                 )}
-            />
+            /> */}
         </Paper>
     )
 }

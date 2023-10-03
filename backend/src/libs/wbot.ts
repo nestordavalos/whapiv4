@@ -87,7 +87,6 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
             "--disable-gpu-driver-soluciones-para-errores"
           ],
           ignoreDefaultArgs: ["--disable-automation"],
-          handleSIGINT: false,
           executablePath: process.env.CHROME_BIN || undefined
         }
       });

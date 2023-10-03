@@ -122,7 +122,6 @@ export const update = async (
       });
     }
   }
-
   if (ticket.status === "closed" && ticket.isGroup === false && ticketData.isFinished) {
     
   }

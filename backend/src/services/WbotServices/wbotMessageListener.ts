@@ -48,27 +48,18 @@ interface Session extends Client {
 const writeFileAsync = promisify(writeFile);
 
 const verifyContact = async (msgContact: WbotContact): Promise<Contact> => {
-  try {
-    const profilePicUrl = await msgContact.getProfilePicUrl();
-    const contactData = {
-      name: msgContact.name || msgContact.pushname || msgContact.id.user,
-      number: msgContact.id.user,
-      profilePicUrl,
-      isGroup: msgContact.isGroup
-    };
-    const contact = CreateOrUpdateContactService(contactData);
-    return contact;
-  } catch (err) {
-    const profilePicUrl = "/default-profile.png"; // Foto de perfil padrão
-    const contactData = {
-      name: msgContact.name || msgContact.pushname || msgContact.id.user,
-      number: msgContact.id.user,
-      profilePicUrl,
-      isGroup: msgContact.isGroup
-    };
-    const contact = CreateOrUpdateContactService(contactData);
-    return contact;
-  }
+  // const profilePicUrl = await msgContact.getProfilePicUrl();
+
+  const contactData = {
+    name: msgContact.name || msgContact.pushname || msgContact.id.user,
+    number: msgContact.id.user,
+    // profilePicUrl,
+    isGroup: msgContact.isGroup
+  };
+
+  const contact = CreateOrUpdateContactService(contactData);
+
+  return contact;
 };
 
 export const verifyQuotedMessage = async (
@@ -2324,17 +2315,6 @@ const handleMessage = async (
       console.log("entrou aquii IF 2193")
       return;
     }
-
-
-    // if (msg.body === "#" && ticket.userId === null) {
-    //   await ticket.update({
-    //     queueOptionId: null,
-    //     chatbot: true,
-    //     queueId: null,
-    //   });
-    //   await verifyQueue(wbot, msg, ticket, ticket.contact);
-    //   return;
-    // }
 
     // if (msg.body === "#" && ticket.userId === null) {
     //   await ticket.update({

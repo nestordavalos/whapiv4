@@ -144,7 +144,7 @@ const useStyles = makeStyles(theme => ({
 const TicketListItem = ({ handleChangeTab, ticket }) => {
 	const classes = useStyles();
 	const history = useHistory();
-	const [loading, setLoading] = useState(false);
+	const [loading, setLoading] = useState("false");
 	const { ticketId } = useParams();
 	const isMounted = useRef(true);
 	const { user } = useContext(AuthContext);
@@ -199,18 +199,18 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 	}
 
 	const handleAcepptTicket = async id => {
-		setLoading(true);
+		setLoading("true");
 		try {
 			await api.put(`/tickets/${id}`, {
 				status: "open",
 				userId: user?.id,
 			});
 		} catch (err) {
-			setLoading(false);
+			setLoading("false");
 			toastError(err);
 		}
 		if (isMounted.current) {
-			setLoading(false);
+			setLoading("false");
 		}
 		handleChangeTab(null, "open");
 		history.push(`/tickets/${id}`);
@@ -233,53 +233,59 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 	};
 
 	const handleReopenTicket = async id => {
-		setLoading(true);
+		setLoading("true");
 		try {
 			await api.put(`/tickets/${id}`, {
 				status: "open",
 				userId: user?.id,
 			});
 		} catch (err) {
-			setLoading(false);
+			setLoading("false");
 			toastError(err);
 		}
 		if (isMounted.current) {
-			setLoading(false);
+			setLoading("false");
 		}
 		history.push(`/tickets/${id}`);
 	};
 
 	const handleViewTicket = async id => {
-		setLoading(true);
+		setLoading("true");
 		try {
 			await api.put(`/tickets/${id}`, {
 				status: "pending",
 			});
 		} catch (err) {
-			setLoading(false);
+			setLoading("false");
 			toastError(err);
 		}
 		if (isMounted.current) {
-			setLoading(false);
+			setLoading("false");
 		}
 		history.push(`/tickets/${id}`);
 	};
 
-	const handleClosedTicket = async id => {
-		setLoading(true);
+	const handleClosedTicket = async (e, status, userId, isFinished) => {
+		setLoading("true");
 		try {
-			await api.put(`/tickets/${id}`, {
-				status: "closed",
-				userId: user?.id,
+			await api.put(`/tickets/${ticket.id}`, {
+				status: status,
+				userId: userId || null,
+				isFinished: isFinished,
+				ticketData: ticket
+
 			});
+
+			setLoading("false");
+			if (status === "open") {
+				history.push(`/tickets/${ticket.id}`);
+			} else {
+				history.push("/tickets");
+			}
 		} catch (err) {
-			setLoading(false);
+			setLoading("false");
 			toastError(err);
 		}
-		if (isMounted.current) {
-			setLoading(false);
-		}
-		history.push(`/tickets/${id}`);
 	};
 
 	const handleSelectTicket = id => {
@@ -289,7 +295,8 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 	// Nome do atendente
 	const [uName, setUserName] = useState(null);
 
-	if (ticket.status === "pending" || ticket.status === "closed") {
+	// if (ticket.status === "pending" || ticket.status === "closed") {
+	if (ticket.status === "pending") {	
 
 	} else {
 
@@ -393,12 +400,12 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 									if (ticket.lastMessage) {
 										if (ticket.lastMessage.includes("🢅") === true) {
 											return (
-												<img src={sendIcon} alt="Msg Enviada" width="12px" />
+												<img src={sendIcon} alt="Msg Enviado" width="12px" />
 											)
 										} else if (ticket.lastMessage.includes("🢇") === true) {
 
 											return (
-												<img src={receiveIcon} alt="Msg Recebida" width="12px" />
+												<img src={receiveIcon} alt="Msg Recibido" width="12px" />
 											)
 										}
 									}
@@ -408,7 +415,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 										.replace("🢇", "")
 										.replace("🢅", "")}</MarkdownWrapper>
 								) : (
-									<p></p>	// <MarkdownWrapper>{ticket.lastMessage.slice(0, 20) + (ticket.lastMessage.length > 20 ? " ..." : "")}</MarkdownWrapper>
+									<><p></p>// <MarkdownWrapper>{ticket.lastMessage.slice(0, 20) + (ticket.lastMessage.length > 20 ? " ..." : "")}</MarkdownWrapper></>
 								)}
 							</Typography>
 
@@ -466,7 +473,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 															color: "white"
 
 														}}
-														badgeContent={ticket.queue?.name || "No sector"}
+														badgeContent={ticket.queue?.name || "Sin Sector"}
 													/>
 												</Tooltip>
 											)
@@ -553,7 +560,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 						<IconButton
 							className={classes.bottomButton}
 							color="primary"
-							onClick={e => handleViewTicket(ticket.id, , handleChangeTab)} >
+							onClick={e => handleViewTicket(ticket.id, handleChangeTab)} >
 							<VisibilityIcon />
 						</IconButton>
 					</Tooltip>
@@ -573,7 +580,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 						<IconButton
 							className={classes.bottomButton}
 							color="primary"
-							onClick={e => handleViewTicket(ticket.id)} >
+							onClick={e => handleViewTicket(ticket.id, handleChangeTab)} >
 							<UndoRoundedIcon />
 						</IconButton>
 					</Tooltip>
@@ -583,7 +590,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 						<IconButton
 							className={classes.bottomButton}
 							color="primary"
-							onClick={e => handleClosedTicket(ticket.id)} >
+							onClick={e => handleClosedTicket(e, "closed", user.id, false)} >
 							<CancelIcon />
 						</IconButton>
 					</Tooltip>

@@ -38,3 +38,4 @@ ENTRYPOINT ["dumb-init", "--"]
 CMD dockerize -wait tcp://${DB_HOST}:3306 \
   && npx sequelize db:migrate \
   && node dist/server.js
+  

@@ -47,9 +47,9 @@
     "yup": "^0.32.8"
   },
   "scripts": {
-    "start": "react-scripts --openssl-legacy-provider  start",
+    "start": "react-scripts --openssl-legacy-provider start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "react-scripts --openssl-legacy-provider test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

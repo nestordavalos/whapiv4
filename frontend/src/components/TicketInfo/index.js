@@ -11,12 +11,11 @@ const TicketInfo = ({ contact, ticket, onClick }) => {
 			style={{ cursor: "pointer", height: "55px" }}
 			titleTypographyProps={{ noWrap: true }}
 			subheaderTypographyProps={{ noWrap: true }}
-			avatar={<Avatar style={{height: 40, width: 40, borderRadius: 4,}}src={contact.profilePicUrl} alt="contact_image" />}
-			title={`${contact.name}`}
+			avatar={<Avatar style={{ height: 40, width: 40, borderRadius: 4, }}src={contact.profilePicUrl} alt="contact_image" />}
+			title={`${contact.name} | #Conversación Nº ${ticket.id}`}
 			subheader={
 				ticket.user &&
-				`#Conversación Nº ${ticket.id}
-				${ticket.queue ? ' | Sector: ' + ticket.queue.name : ' | Sector: Sin Sector'}
+				`Asignado A: ${ticket.user.name} ${ticket.queue ? ' | Sector: ' + ticket.queue.name : ' | Sector: Sin Sector'}
 				${ticket.whatsapp? '| Whatsapp: ' + ticket.whatsapp.name : ' | Whatsapp: Sin Whatsapp'}`
 			}
 		/>

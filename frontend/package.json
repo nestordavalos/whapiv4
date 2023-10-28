@@ -42,11 +42,12 @@
     "react-toastify": "^6.0.9",
     "recharts": "^2.0.2",
     "socket.io-client": "^3.0.5",
+    "react-trello": "^2.2.11",
     "use-sound": "^2.0.1",
     "yup": "^0.32.8"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "react-scripts --openssl-legacy-provider  start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

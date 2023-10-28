@@ -38,7 +38,7 @@ Um sistema de tickets muito simples baseado em mensagens do WhatsApp, que permit
 | Ubuntu 18.04 | Ubuntu 20.04 |
 ## Referência
 
-- O Sistema mkthub foi desenvolvido com base no [Sistema Whaticket](https://github.com/canove/whaticket) desenvolvido por [Cassio Santos](https://github.com/canove) e [Press ticket](https://github.com/rtenorioh/Press-Ticket) desenvolvido por [Robson Tenorio](https://github.com/rtenorioh)
+- O Sistema mkthub foi desenvolvido com base no [Sistema whapi](https://github.com/canove/whapi) desenvolvido por [Cassio Santos](https://github.com/canove) e [Press ticket](https://github.com/rtenorioh/Press-Ticket) desenvolvido por [Robson Tenorio](https://github.com/rtenorioh)
 
 
 ## WhatsApp

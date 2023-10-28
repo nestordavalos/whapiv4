@@ -289,7 +289,8 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 	// Nome do atendente
 	const [uName, setUserName] = useState(null);
 
-	if (ticket.status === "pending" || ticket.status === "closed") {
+	// if (ticket.status === "pending" || ticket.status === "closed") {
+	if (ticket.status === "pending") {	
 
 	} else {
 
@@ -553,7 +554,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 						<IconButton
 							className={classes.bottomButton}
 							color="primary"
-							onClick={e => handleViewTicket(ticket.id, , handleChangeTab)} >
+							onClick={e => handleViewTicket(ticket.id, handleChangeTab)} >
 							<VisibilityIcon />
 						</IconButton>
 					</Tooltip>
@@ -573,7 +574,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 						<IconButton
 							className={classes.bottomButton}
 							color="primary"
-							onClick={e => handleViewTicket(ticket.id)} >
+							onClick={e => handleViewTicket(ticket.id, handleChangeTab)} >
 							<UndoRoundedIcon />
 						</IconButton>
 					</Tooltip>

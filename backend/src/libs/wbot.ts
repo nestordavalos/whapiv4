@@ -84,7 +84,11 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
             "--disable-accelerated-mjpeg-decode",
             "--disable-app-list-dismiss-on-blur",
             "--disable-accelerated-video-decode",
-            "--disable-gpu-driver-soluciones-para-errores"
+            "--disable-gpu-driver-soluciones-para-errores",
+            '--disable-gpu',
+            "--no-first-run",
+            "--no-zygote",
+            '--disable-dev-shm-usage'
           ],
           ignoreDefaultArgs: ["--disable-automation"],
           executablePath: process.env.CHROME_BIN || undefined

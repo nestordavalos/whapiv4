@@ -12,7 +12,7 @@ export const initIO = (httpServer: Server): SocketIO => {
     }
   });
 
-  io.on("connection", async socket => {
+  io.on("connection", socket => {
     logger.info("Client Connected");
     socket.on("joinChatBox", (ticketId: string) => {
       logger.info("A client joined a ticket channel");

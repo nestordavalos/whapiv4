@@ -399,7 +399,11 @@ const messages = {
           spy: "Espía",
           close: "Cerca",
           reopen: "Reabrir",
-          return: "Mover a espera"
+          return: "Mover a espera",
+          connection: "Conexión",
+          user: "Asistente",
+          queue: "Sector",
+          tags: "Etiquetas"
         },
         buttons: {
           accept: "Responder",
@@ -549,6 +553,7 @@ const messages = {
         },
         toasts: {
           deleted: "asistente eliminado con éxito.",
+          updated: "Asistente actualizado con éxito."
         },
         confirmationModal: {
           deleteTitle: "Eliminar",

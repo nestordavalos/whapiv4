@@ -134,7 +134,7 @@ const ListTicketsService = async ({
     };
   }
 
-  const limit = 20;
+  const limit = 100;
   const offset = limit * (+pageNumber - 1);
 
   const listSettingsService = await ListSettingsServiceOne({ key: "ASC" });

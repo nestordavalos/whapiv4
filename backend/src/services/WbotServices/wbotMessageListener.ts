@@ -2554,7 +2554,7 @@ const handleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
 
   const io = getIO();
 
-  // console.log("entrou no ack " + msg.body)
+  console.log("ingreso el ack " + msg.body)
   try {
     const messageToUpdate = await Message.findByPk(msg.id.id, {
       include: [

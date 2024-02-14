@@ -40,7 +40,7 @@ const syncUnreadMessages = async (wbot: Session) => {
 };
 
 export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       logger.level = "trace";
       const io = getIO();

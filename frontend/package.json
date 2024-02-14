@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "version": "0.1.0",
-  "systemVersion": "1.4.7.3",
+  "systemVersion": "1.4.7.4",
   "private": true,
   "dependencies": {
     "@emotion/styled": "11.11.0",
@@ -41,13 +41,13 @@
     "react-scripts": "3.4.3",
     "react-toastify": "^6.0.9",
     "recharts": "^2.0.2",
-    "socket.io-client": "^3.0.5",
+    "socket.io-client": "^4.7.3",
     "react-trello": "^2.2.11",
     "use-sound": "^2.0.1",
     "yup": "^0.32.8"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "react-scripts --openssl-legacy-provider start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

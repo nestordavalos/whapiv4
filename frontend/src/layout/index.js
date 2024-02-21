@@ -283,11 +283,11 @@ const LoggedInLayout = ({ children }) => {
                 {i18n.t("mainDrawer.appBar.user.logout")}
               </MenuItem>
               <Divider />
-              <span className={classes.systemCss}>
+              {/* <span className={classes.systemCss}>
                 <Link color="inherit" href={"https://mkthub.tech"}>
                   v{systemVersion}
                 </Link>
-              </span>
+              </span> */}
             </Menu>
           </div>
         </Toolbar>

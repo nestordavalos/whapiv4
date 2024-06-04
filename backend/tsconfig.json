@@ -12,5 +12,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
+  },
+  "devDependencies": {
+    "lodash": "^4.17.21",
+    "@types/node": "^16.7.13",
+    "@types/pino-pretty": "^5.0.0"
   }
 }

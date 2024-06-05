@@ -53,7 +53,9 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
 
       const wbot: Session = new Client({
         session: sessionCfg,
-        authStrategy: new LocalAuth({ clientId: `bd_${whatsapp.id}` }),
+        authStrategy: new LocalAuth({
+          dataPath: "sessions",
+          }),
         //authStrategy: new LocalAuth({ clientId: `bd_${whatsapp.id}` }),
         restartOnAuthFail: false,
         webVersionCache: {

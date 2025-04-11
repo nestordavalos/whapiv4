@@ -1,10 +1,12 @@
+import path from "path";
 import qrCode from "qrcode-terminal";
-import { Client, LocalAuth } from "whatsapp-web.js";
-import { getIO } from "./socket";
-import Whatsapp from "../models/Whatsapp";
+import { Client, LocalAuth, MessageMedia } from "whatsapp-web.js";
 import AppError from "../errors/AppError";
+import Whatsapp from "../models/Whatsapp";
+import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
+import { handleMessage } from "../services/WbotServices/wbotMessageListener";
 import { logger } from "../utils/logger";
-import { handleMsgAck, handleMessage } from "../services/WbotServices/wbotMessageListener";
+import { getIO } from "./socket";
 
 interface Session extends Client {
   id?: number;
@@ -13,29 +15,28 @@ interface Session extends Client {
 const sessions: Session[] = [];
 
 const syncUnreadMessages = async (wbot: Session) => {
-  const chats = await wbot.getChats();
-  /* eslint-disable no-restricted-syntax */
-  /* eslint-disable no-await-in-loop */
-  for (const chat of chats) {
-    if (chat.unreadCount > 0) {
-      const unreadMessages = await chat.fetchMessages({
-        limit: chat.unreadCount
-      });
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    const chats = await wbot.getChats();
+    console.log(`Total de chats carregados: ${chats.length}`);
 
-      for (const msg of unreadMessages) {
-        await handleMessage(msg, wbot);
+    /* eslint-disable no-restricted-syntax */
+    /* eslint-disable no-await-in-loop */
+    for (const chat of chats) {
+      if (chat.unreadCount > 0) {
+        const unreadMessages = await chat.fetchMessages({
+          limit: chat.unreadCount
+        });
+
+        for (const msg of unreadMessages) {
+          await handleMessage(msg, wbot);
+        }
+
+        await chat.sendSeen();
       }
-
-      await chat.sendSeen();
     }
-    /*const messages = await chat.fetchMessages({limit: 10});
-
-    for (const message of messages) {
-      console.log('IMPORTACIÓN DE MENSAJES LEGADOS: ' + message.body[0]);
-      await handleMessage(message, wbot);
-
-      await handleMsgAck(message, 2);
-    }*/
+  } catch (error) {
+    console.error("Erro ao carregar os chats:", error);
   }
 };
 
@@ -54,19 +55,20 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
       const wbot: Session = new Client({
         session: sessionCfg,
         authStrategy: new LocalAuth({ clientId: `bd_${whatsapp.id}` }),
-        restartOnAuthFail: false,
         puppeteer: {
           args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--log-level=3",
+            "--no-sandbox", // Desativa a sandbox de segurança
+            "--disable-setuid-sandbox", // Desativa setuid
+            "--disable-dev-shm-usage", // Usa disco em vez de /dev/shm
+            // "--single-process", // Força um único processo
+            "--log-level=3", // Reduz a verbosidade dos logs
             "--no-default-browser-check",
             "--disable-site-isolation-trials",
             "--no-experiments",
             "--ignore-gpu-blacklist",
             "--ignore-certificate-errors",
             "--ignore-certificate-errors-spki-list",
-            "--disable-gpu",
+            "--disable-gpu", // Desativa a GPU (não necessária em headless)
             "--disable-extensions",
             "--disable-default-apps",
             "--enable-features=NetworkService",
@@ -84,16 +86,14 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
             "--disable-accelerated-mjpeg-decode",
             "--disable-app-list-dismiss-on-blur",
             "--disable-accelerated-video-decode",
-            "--disable-gpu-driver-soluciones-para-errores",
-            '--disable-gpu',
-            "--no-first-run",
-            "--no-zygote",
-            '--disable-dev-shm-usage'
+            "--disable-background-timer-throttling", // Reduz o uso de timers em segundo plano
+            "--disable-features=IsolateOrigins,site-per-process", // Otimiza o isolamento de sites
+            // "--renderer-process-limit=2", // Limita o número de processos de renderização
           ],
-          ignoreDefaultArgs: ["--disable-automation"],
-          executablePath: process.env.CHROME_BIN || undefined
-        }
+          executablePath: process.env.CHROME_BIN || undefined,
+        },
       });
+      
 
       wbot.initialize();
 
@@ -110,15 +110,13 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
 
         io.emit("whatsappSession", {
           action: "update",
-          session: whatsapp
+          session: whatsapp,
+          number: ""
         });
       });
 
       wbot.on("authenticated", async session => {
         logger.info(`Session: ${sessionName} AUTHENTICATED`);
-              //  await whatsapp.update({
-              //    session: JSON.stringify(session)
-              //  });
       });
 
       wbot.on("auth_failure", async msg => {
@@ -133,7 +131,8 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
         const retry = whatsapp.retries;
         await whatsapp.update({
           status: "DISCONNECTED",
-          retries: retry + 1
+          retries: retry + 1,
+          number: ""
         });
 
         io.emit("whatsappSession", {

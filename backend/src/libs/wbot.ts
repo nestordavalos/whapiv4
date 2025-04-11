@@ -167,6 +167,15 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
         wbot.sendPresenceAvailable();
         await syncUnreadMessages(wbot);
 
+        // ✅ Escucha de mensajes entrantes en tiempo real
+        wbot.on("message", async (message) => {
+          try {
+            await handleMessage(message, wbot);
+          } catch (err) {
+            logger.error("Error procesando mensaje entrante:", err);
+          }
+        });
+
         resolve(wbot);
       });
     } catch (err: any) {

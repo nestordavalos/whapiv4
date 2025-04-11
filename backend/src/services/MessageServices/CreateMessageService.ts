@@ -13,6 +13,7 @@ interface MessageData {
   mediaType?: string;
   mediaUrl?: string;
 }
+
 interface Request {
   messageData: MessageData;
 }
@@ -20,8 +21,13 @@ interface Request {
 const CreateMessageService = async ({
   messageData
 }: Request): Promise<Message> => {
+  // 🔍 Log inicial del contenido que se intenta guardar
+  console.log("🔄 CreateMessageService - messageData:", JSON.stringify(messageData, null, 2));
+
+  // Guardar o actualizar mensaje
   await Message.upsert(messageData);
 
+  // Intentar recuperar el mensaje completo con relaciones
   const message = await Message.findByPk(messageData.id, {
     include: [
       "contact",
@@ -29,7 +35,8 @@ const CreateMessageService = async ({
         model: Ticket,
         as: "ticket",
         include: [
-          "contact", "queue",
+          "contact",
+          "queue",
           {
             model: Whatsapp,
             as: "whatsapp",
@@ -46,6 +53,7 @@ const CreateMessageService = async ({
   });
 
   if (!message) {
+    console.error("❌ No se encontró el mensaje luego de upsert. ID:", messageData.id);
     throw new Error("ERR_CREATING_MESSAGE");
   }
 

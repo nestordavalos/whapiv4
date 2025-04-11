@@ -54,7 +54,26 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
       })
     );
   } else {
-    await SendWhatsAppMessage({ body, ticket, quotedMsg });
+    const sentMessage = await SendWhatsAppMessage({ body, ticket, quotedMsg });
+
+    if (!sentMessage) {
+      return res.status(500).json({ error: "No se pudo enviar el mensaje." });
+    }
+
+    const messageData = {
+      id: sentMessage.id.id,
+      ticketId: ticket.id,
+      contactId: undefined,
+      body: sentMessage.body || body,
+      fromMe: true,
+      read: true,
+      mediaType: sentMessage.type,
+      quotedMsgId: quotedMsg?.id,
+      ack: sentMessage.ack
+    };
+
+    const CreateMessageService = (await import("../services/MessageServices/CreateMessageService")).default;
+    await CreateMessageService({ messageData });
   }
 
   return res.send();

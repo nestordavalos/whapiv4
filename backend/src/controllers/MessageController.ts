@@ -44,13 +44,28 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   const medias = req.files as Express.Multer.File[];
 
   const ticket = await ShowTicketService(ticketId);
-
   SetTicketMessagesAsRead(ticket);
 
-  if (medias) {
+  const CreateMessageService = (await import("../services/MessageServices/CreateMessageService")).default;
+
+  if (medias && medias.length > 0) {
     await Promise.all(
       medias.map(async (media: Express.Multer.File) => {
-        await SendWhatsAppMedia({ media, ticket });
+        const sentMessage = await SendWhatsAppMedia({ media, ticket });
+
+        const messageData = {
+          id: sentMessage.id.id,
+          ticketId: ticket.id,
+          contactId: undefined,
+          body: sentMessage.body || "[archivo]",
+          fromMe: true,
+          read: true,
+          mediaType: sentMessage.type,
+          mediaUrl: sentMessage.hasOwnProperty('mediaUrl') ? (sentMessage as any).mediaUrl : null,
+          ack: sentMessage.ack
+        };
+
+        await CreateMessageService({ messageData });
       })
     );
   } else {
@@ -72,7 +87,6 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
       ack: sentMessage.ack
     };
 
-    const CreateMessageService = (await import("../services/MessageServices/CreateMessageService")).default;
     await CreateMessageService({ messageData });
   }
 

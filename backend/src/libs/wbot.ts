@@ -93,12 +93,33 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
           executablePath: process.env.CHROME_BIN || undefined,
         },
       });
-      
 
-      wbot.initialize();
+      const pairingCodeEnabled = true;
+      let pairingCodeRequested = false;
 
-      wbot.on("qr", async qr => {
+      wbot.on("qr", async (qr) => {
         logger.info("Session:", sessionName);
+
+        if (pairingCodeEnabled && !pairingCodeRequested && whatsapp.number) {
+          try {
+            const code = await wbot.requestPairingCode(whatsapp.number);
+            logger.info(`🔐 Código de emparejamiento generado: ${code}`);
+            pairingCodeRequested = true;
+
+            await whatsapp.update({ pairingCode: code, status: "PAIRING", qrcode: null });
+
+            io.emit("whatsappSession", {
+              action: "update",
+              session: whatsapp,
+              number: ""
+            });
+
+            return;
+          } catch (error) {
+            logger.error("❌ Error al solicitar pairing code:", error);
+          }
+        }
+
         qrCode.generate(qr, { small: true });
         await whatsapp.update({ qrcode: qr, status: "qrcode", retries: 0 });
 
@@ -115,14 +136,12 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
         });
       });
 
-      wbot.on("authenticated", async session => {
+      wbot.on("authenticated", async () => {
         logger.info(`Session: ${sessionName} AUTHENTICATED`);
       });
 
       wbot.on("auth_failure", async msg => {
-        console.error(
-          `Session: ${sessionName} AUTHENTICATION FAILURE! Reason: ${msg}`
-        );
+        logger.error(`Session: ${sessionName} AUTHENTICATION FAILURE! Reason: ${msg}`);
 
         if (whatsapp.retries > 1) {
           await whatsapp.update({ session: "", retries: 0 });
@@ -149,6 +168,7 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
         await whatsapp.update({
           status: "CONNECTED",
           qrcode: "",
+          pairingCode: null,
           retries: 0,
           number: wbot.info.wid._serialized.split("@")[0]
         });
@@ -178,6 +198,8 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
 
         resolve(wbot);
       });
+
+      await wbot.initialize();
     } catch (err: any) {
       logger.error(err);
     }

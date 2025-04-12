@@ -416,6 +416,26 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     margin="dense"
                     className={classes.textField}
                   />
+
+                  <Field
+                    as={TextField}
+                    label="Número (incluye el código de país)"
+                    name="number"
+                    fullWidth
+                    value={values.number || ""}
+                    onChange={(e) => {
+                      const numeric = e.target.value.replace(/\D/g, "");
+                      values.number = numeric;
+                      setWhatsApp(prev => ({ ...prev, number: numeric }));
+                    }}
+                    placeholder="Ej: 595981234567"
+                    variant="outlined"
+                    margin="dense"
+                    className={classes.textField}
+                  />
+                </div>
+
+                <div className={classes.multFieldLine}>
                   <FormControlLabel
                     control={
                       <Field
@@ -450,6 +470,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     label={i18n.t("whatsappModal.form.group")}
                   />
                 </div>
+
                 <div>
                   <Field
                     as={TextField}

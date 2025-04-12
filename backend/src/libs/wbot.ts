@@ -20,8 +20,6 @@ const syncUnreadMessages = async (wbot: Session) => {
     const chats = await wbot.getChats();
     console.log(`Total de chats carregados: ${chats.length}`);
 
-    /* eslint-disable no-restricted-syntax */
-    /* eslint-disable no-await-in-loop */
     for (const chat of chats) {
       if (chat.unreadCount > 0) {
         const unreadMessages = await chat.fetchMessages({
@@ -57,18 +55,17 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
         authStrategy: new LocalAuth({ clientId: `bd_${whatsapp.id}` }),
         puppeteer: {
           args: [
-            "--no-sandbox", // Desativa a sandbox de segurança
-            "--disable-setuid-sandbox", // Desativa setuid
-            "--disable-dev-shm-usage", // Usa disco em vez de /dev/shm
-            // "--single-process", // Força um único processo
-            "--log-level=3", // Reduz a verbosidade dos logs
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--log-level=3",
             "--no-default-browser-check",
             "--disable-site-isolation-trials",
             "--no-experiments",
             "--ignore-gpu-blacklist",
             "--ignore-certificate-errors",
             "--ignore-certificate-errors-spki-list",
-            "--disable-gpu", // Desativa a GPU (não necessária em headless)
+            "--disable-gpu",
             "--disable-extensions",
             "--disable-default-apps",
             "--enable-features=NetworkService",
@@ -86,9 +83,8 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
             "--disable-accelerated-mjpeg-decode",
             "--disable-app-list-dismiss-on-blur",
             "--disable-accelerated-video-decode",
-            "--disable-background-timer-throttling", // Reduz o uso de timers em segundo plano
-            "--disable-features=IsolateOrigins,site-per-process", // Otimiza o isolamento de sites
-            // "--renderer-process-limit=2", // Limita o número de processos de renderização
+            "--disable-background-timer-throttling",
+            "--disable-features=IsolateOrigins,site-per-process"
           ],
           executablePath: process.env.CHROME_BIN || undefined,
         },
@@ -98,42 +94,46 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
       let pairingCodeRequested = false;
 
       wbot.on("qr", async (qr) => {
-        logger.info("Session:", sessionName);
+        try {
+          logger.info("Session:", sessionName);
 
-        if (pairingCodeEnabled && !pairingCodeRequested && whatsapp.number) {
-          try {
+          if (pairingCodeEnabled && !pairingCodeRequested && whatsapp.number) {
             const code = await wbot.requestPairingCode(whatsapp.number);
             logger.info(`🔐 Código de emparejamiento generado: ${code}`);
             pairingCodeRequested = true;
 
             await whatsapp.update({ pairingCode: code, status: "PAIRING", qrcode: null });
 
+            const updatedWhatsapp = await Whatsapp.findByPk(whatsapp.id);
+
             io.emit("whatsappSession", {
               action: "update",
-              session: whatsapp,
+              session: updatedWhatsapp,
               number: ""
             });
 
             return;
-          } catch (error) {
-            logger.error("❌ Error al solicitar pairing code:", error);
           }
+
+          qrCode.generate(qr, { small: true });
+          await whatsapp.update({ qrcode: qr, status: "qrcode", retries: 0 });
+
+          const sessionIndex = sessions.findIndex(s => s.id === whatsapp.id);
+          if (sessionIndex === -1) {
+            wbot.id = whatsapp.id;
+            sessions.push(wbot);
+          }
+
+          const updatedWhatsapp = await Whatsapp.findByPk(whatsapp.id);
+
+          io.emit("whatsappSession", {
+            action: "update",
+            session: updatedWhatsapp,
+            number: ""
+          });
+        } catch (err) {
+          logger.error("Error generando código QR o pairing:", err);
         }
-
-        qrCode.generate(qr, { small: true });
-        await whatsapp.update({ qrcode: qr, status: "qrcode", retries: 0 });
-
-        const sessionIndex = sessions.findIndex(s => s.id === whatsapp.id);
-        if (sessionIndex === -1) {
-          wbot.id = whatsapp.id;
-          sessions.push(wbot);
-        }
-
-        io.emit("whatsappSession", {
-          action: "update",
-          session: whatsapp,
-          number: ""
-        });
       });
 
       wbot.on("authenticated", async () => {
@@ -141,67 +141,84 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
       });
 
       wbot.on("auth_failure", async msg => {
-        logger.error(`Session: ${sessionName} AUTHENTICATION FAILURE! Reason: ${msg}`);
+        try {
+          logger.error(`Session: ${sessionName} AUTHENTICATION FAILURE! Reason: ${msg}`);
 
-        if (whatsapp.retries > 1) {
-          await whatsapp.update({ session: "", retries: 0 });
+          if (whatsapp.retries > 1) {
+            await whatsapp.update({ session: "", retries: 0 });
+          }
+
+          const retry = whatsapp.retries;
+          await whatsapp.update({
+            status: "DISCONNECTED",
+            retries: retry + 1,
+            number: ""
+          });
+
+          const updatedWhatsapp = await Whatsapp.findByPk(whatsapp.id);
+
+          io.emit("whatsappSession", {
+            action: "update",
+            session: updatedWhatsapp
+          });
+
+          reject(new AppError("ERR_AUTH_FAILURE"));
+        } catch (err) {
+          logger.error("Error durante auth_failure:", err);
+          reject(err);
         }
-
-        const retry = whatsapp.retries;
-        await whatsapp.update({
-          status: "DISCONNECTED",
-          retries: retry + 1,
-          number: ""
-        });
-
-        io.emit("whatsappSession", {
-          action: "update",
-          session: whatsapp
-        });
-
-        reject(new Error("Error starting whatsapp session."));
       });
 
       wbot.on("ready", async () => {
-        logger.info(`Session: ${sessionName} READY`);
+        try {
+          logger.info(`Session: ${sessionName} READY`);
 
-        await whatsapp.update({
-          status: "CONNECTED",
-          qrcode: "",
-          pairingCode: null,
-          retries: 0,
-          number: wbot.info.wid._serialized.split("@")[0]
-        });
+          await whatsapp.update({
+            status: "CONNECTED",
+            qrcode: "",
+            pairingCode: null,
+            retries: 0,
+            number: wbot.info.wid._serialized.split("@")[0]
+          });
 
-        io.emit("whatsappSession", {
-          action: "update",
-          session: whatsapp
-        });
+          const updatedWhatsapp = await Whatsapp.findByPk(whatsapp.id);
 
-        const sessionIndex = sessions.findIndex(s => s.id === whatsapp.id);
-        if (sessionIndex === -1) {
-          wbot.id = whatsapp.id;
-          sessions.push(wbot);
-        }
+          io.emit("whatsappSession", {
+            action: "update",
+            session: updatedWhatsapp
+          });
 
-        wbot.sendPresenceAvailable();
-        await syncUnreadMessages(wbot);
-
-        // ✅ Escucha de mensajes entrantes en tiempo real
-        wbot.on("message", async (message) => {
-          try {
-            await handleMessage(message, wbot);
-          } catch (err) {
-            logger.error("Error procesando mensaje entrante:", err);
+          const sessionIndex = sessions.findIndex(s => s.id === whatsapp.id);
+          if (sessionIndex === -1) {
+            wbot.id = whatsapp.id;
+            sessions.push(wbot);
           }
-        });
 
-        resolve(wbot);
+          wbot.sendPresenceAvailable();
+          await syncUnreadMessages(wbot);
+
+          wbot.on("message", async (message) => {
+            try {
+              await handleMessage(message, wbot);
+            } catch (err) {
+              logger.error("Error procesando mensaje entrante:", err);
+            }
+          });
+
+          resolve(wbot);
+        } catch (err) {
+          logger.error("Error en evento ready:", err);
+          reject(err);
+        }
       });
 
-      await wbot.initialize();
+      await wbot.initialize().catch(err => {
+        logger.error("Error durante wbot.initialize:", err);
+        reject(err);
+      });
     } catch (err: any) {
-      logger.error(err);
+      logger.error("Error dentro de initWbot:", err);
+      reject(err);
     }
   });
 };

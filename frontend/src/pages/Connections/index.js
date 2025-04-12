@@ -398,18 +398,6 @@ const Connections = () => {
 												) : "-"}
 
 											</TableCell>
-											{whatsApp.status === "PAIRING" && whatsApp.pairingCode && (
-												<TableCell align="center" colSpan={8}>
-													<div style={{ padding: 16 }}>
-													<Typography variant="subtitle1" color="textSecondary">
-														Código de emparejamiento:
-													</Typography>
-													<Typography variant="h5" style={{ fontWeight: "bold", letterSpacing: 2 }}>
-														{whatsApp.pairingCode}
-													</Typography>
-													</div>
-												</TableCell>
-												)}
 											<TableCell align="center">
 												{renderActionButtons(whatsApp)}
 											</TableCell>

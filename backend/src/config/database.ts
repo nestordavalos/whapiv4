@@ -3,7 +3,7 @@ require("../bootstrap");
 module.exports = {
   define: {
     charset: "utf8mb4",
-    collate: "utf8mb4_general_ci"
+    collate: "utf8mb4_bin"
   },
   dialect: process.env.DB_DIALECT || "mysql",
   timezone: process.env.DB_TIMEZONE || "-03:00",

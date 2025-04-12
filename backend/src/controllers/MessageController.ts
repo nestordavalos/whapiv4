@@ -44,50 +44,17 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   const medias = req.files as Express.Multer.File[];
 
   const ticket = await ShowTicketService(ticketId);
+
   SetTicketMessagesAsRead(ticket);
 
-  const CreateMessageService = (await import("../services/MessageServices/CreateMessageService")).default;
-
-  if (medias && medias.length > 0) {
+  if (medias) {
     await Promise.all(
       medias.map(async (media: Express.Multer.File) => {
-        const sentMessage = await SendWhatsAppMedia({ media, ticket });
-
-        const messageData = {
-          id: sentMessage.id.id,
-          ticketId: ticket.id,
-          contactId: undefined,
-          body: sentMessage.body || "[archivo]",
-          fromMe: true,
-          read: true,
-          mediaType: sentMessage.type,
-          mediaUrl: sentMessage.hasOwnProperty('mediaUrl') ? (sentMessage as any).mediaUrl : null,
-          ack: sentMessage.ack
-        };
-
-        await CreateMessageService({ messageData });
+        await SendWhatsAppMedia({ media, ticket });
       })
     );
   } else {
-    const sentMessage = await SendWhatsAppMessage({ body, ticket, quotedMsg });
-
-    if (!sentMessage) {
-      return res.status(500).json({ error: "No se pudo enviar el mensaje." });
-    }
-
-    const messageData = {
-      id: sentMessage.id.id,
-      ticketId: ticket.id,
-      contactId: undefined,
-      body: sentMessage.body || body,
-      fromMe: true,
-      read: true,
-      mediaType: sentMessage.type,
-      quotedMsgId: quotedMsg?.id,
-      ack: sentMessage.ack
-    };
-
-    await CreateMessageService({ messageData });
+    await SendWhatsAppMessage({ body, ticket, quotedMsg });
   }
 
   return res.send();

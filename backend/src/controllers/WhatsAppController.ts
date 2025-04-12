@@ -22,8 +22,11 @@ interface WhatsappData {
   sendInactiveMessage?: boolean;
   inactiveMessage?: string;
   timeInactiveMessage?: string;
+
+  //Difinindo horario comercial
   defineWorkHours?: boolean;
   outOfWorkMessage?: string;
+  //Dias da semana.
   monday?: boolean;
   tuesday?: boolean;
   wednesday?: boolean;
@@ -31,30 +34,37 @@ interface WhatsappData {
   friday?: boolean;
   saturday?: boolean;
   sunday?: boolean;
+  // horario de cada dia da semana.
   StartDefineWorkHoursMonday?: string;
   EndDefineWorkHoursMonday?: string;
   StartDefineWorkHoursMondayLunch?: string;
   EndDefineWorkHoursMondayLunch?: string;
+
   StartDefineWorkHoursTuesday?: string;
   EndDefineWorkHoursTuesday?: string;
   StartDefineWorkHoursTuesdayLunch?: string;
   EndDefineWorkHoursTuesdayLunch?: string;
+
   StartDefineWorkHoursWednesday?: string;
   EndDefineWorkHoursWednesday?: string;
   StartDefineWorkHoursWednesdayLunch?: string;
   EndDefineWorkHoursWednesdayLunch?: string;
+
   StartDefineWorkHoursThursday?: string;
   EndDefineWorkHoursThursday?: string;
   StartDefineWorkHoursThursdayLunch?: string;
   EndDefineWorkHoursThursdayLunch?: string;
+
   StartDefineWorkHoursFriday?: string;
   EndDefineWorkHoursFriday?: string;
   StartDefineWorkHoursFridayLunch?: string;
   EndDefineWorkHoursFridayLunch?: string;
+
   StartDefineWorkHoursSaturday?: string;
   EndDefineWorkHoursSaturday?: string;
   StartDefineWorkHoursSaturdayLunch?: string;
   EndDefineWorkHoursSaturdayLunch?: string;
+
   StartDefineWorkHoursSunday?: string;
   EndDefineWorkHoursSunday?: string;
   StartDefineWorkHoursSundayLunch?: string;
@@ -63,90 +73,204 @@ interface WhatsappData {
 
 export const index = async (req: Request, res: Response): Promise<Response> => {
   const whatsapps = await ListWhatsAppsService();
+
   return res.status(200).json(whatsapps);
 };
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const WhatsApps = await ListWhatsAppsService();
 
-    if (WhatsApps.length >= Number(process.env.CONNECTIONS_LIMIT)) {
-      throw new AppError("ERR_CONNECTION_CREATION_COUNT", 403);
-    }
+  const WhatsApps = await ListWhatsAppsService();
 
-    const whatsappData: WhatsappData = req.body;
-
-    const { whatsapp, oldDefaultWhatsapp } = await CreateWhatsAppService(whatsappData);
-
-    try {
-      await StartWhatsAppSession(whatsapp);
-    } catch (sessionError: any) {
-      console.error("Error iniciando sesión de WhatsApp:", sessionError);
-      return res.status(sessionError.statusCode || 500).json({ error: sessionError.message });
-    }
-
-    const io = getIO();
-    io.emit("whatsapp", { action: "update", whatsapp });
-
-    if (oldDefaultWhatsapp) {
-      io.emit("whatsapp", { action: "update", whatsapp: oldDefaultWhatsapp });
-    }
-
-    return res.status(200).json(whatsapp);
-  } catch (error: any) {
-    console.error("Error en store:", error);
-    return res.status(error.statusCode || 500).json({ error: error.message });
+  if (WhatsApps.length >= Number(process.env.CONNECTIONS_LIMIT)) {
+    throw new AppError("ERR_CONNECTION_CREATION_COUNT", 403);
   }
+
+  const {
+    name,
+    status,
+    isDefault,
+    greetingMessage,
+    farewellMessage,
+    queueIds,
+    isGroup,
+    sendInactiveMessage,
+    inactiveMessage,
+    timeInactiveMessage,
+
+    defineWorkHours,
+    outOfWorkMessage,
+
+    monday,
+    tuesday,
+    wednesday,
+    thursday,
+    friday,
+    saturday,
+    sunday,
+
+    StartDefineWorkHoursMonday,
+    EndDefineWorkHoursMonday,
+    StartDefineWorkHoursMondayLunch,
+    EndDefineWorkHoursMondayLunch,
+
+    StartDefineWorkHoursTuesday,
+    EndDefineWorkHoursTuesday,
+    StartDefineWorkHoursTuesdayLunch,
+    EndDefineWorkHoursTuesdayLunch,
+
+    StartDefineWorkHoursWednesday,
+    EndDefineWorkHoursWednesday,
+    StartDefineWorkHoursWednesdayLunch,
+    EndDefineWorkHoursWednesdayLunch,
+
+    StartDefineWorkHoursThursday,
+    EndDefineWorkHoursThursday,
+    StartDefineWorkHoursThursdayLunch,
+    EndDefineWorkHoursThursdayLunch,
+
+    StartDefineWorkHoursFriday,
+    EndDefineWorkHoursFriday,
+    StartDefineWorkHoursFridayLunch,
+    EndDefineWorkHoursFridayLunch,
+
+    StartDefineWorkHoursSaturday,
+    EndDefineWorkHoursSaturday,
+    StartDefineWorkHoursSaturdayLunch,
+    EndDefineWorkHoursSaturdayLunch,
+
+    StartDefineWorkHoursSunday,
+    EndDefineWorkHoursSunday,
+    StartDefineWorkHoursSundayLunch,
+    EndDefineWorkHoursSundayLunch,
+  }: WhatsappData = req.body;
+
+  const { whatsapp, oldDefaultWhatsapp } = await CreateWhatsAppService({
+    name,
+    status,
+    isDefault,
+    greetingMessage,
+    farewellMessage,
+    queueIds,
+    isGroup,
+    sendInactiveMessage,
+    inactiveMessage,
+    timeInactiveMessage,
+
+    defineWorkHours,
+    outOfWorkMessage,
+
+    monday,
+    tuesday,
+    wednesday,
+    thursday,
+    friday,
+    saturday,
+    sunday,
+
+    StartDefineWorkHoursMonday,
+    EndDefineWorkHoursMonday,
+    StartDefineWorkHoursMondayLunch,
+    EndDefineWorkHoursMondayLunch,
+
+    StartDefineWorkHoursTuesday,
+    EndDefineWorkHoursTuesday,
+    StartDefineWorkHoursTuesdayLunch,
+    EndDefineWorkHoursTuesdayLunch,
+
+    StartDefineWorkHoursWednesday,
+    EndDefineWorkHoursWednesday,
+    StartDefineWorkHoursWednesdayLunch,
+    EndDefineWorkHoursWednesdayLunch,
+
+    StartDefineWorkHoursThursday,
+    EndDefineWorkHoursThursday,
+    StartDefineWorkHoursThursdayLunch,
+    EndDefineWorkHoursThursdayLunch,
+
+    StartDefineWorkHoursFriday,
+    EndDefineWorkHoursFriday,
+    StartDefineWorkHoursFridayLunch,
+    EndDefineWorkHoursFridayLunch,
+
+    StartDefineWorkHoursSaturday,
+    EndDefineWorkHoursSaturday,
+    StartDefineWorkHoursSaturdayLunch,
+    EndDefineWorkHoursSaturdayLunch,
+
+    StartDefineWorkHoursSunday,
+    EndDefineWorkHoursSunday,
+    StartDefineWorkHoursSundayLunch,
+    EndDefineWorkHoursSundayLunch,
+  });
+
+  StartWhatsAppSession(whatsapp);
+
+  const io = getIO();
+  io.emit("whatsapp", {
+    action: "update",
+    whatsapp
+  });
+
+  if (oldDefaultWhatsapp) {
+    io.emit("whatsapp", {
+      action: "update",
+      whatsapp: oldDefaultWhatsapp
+    });
+  }
+
+  return res.status(200).json(whatsapp);
 };
 
 export const show = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const { whatsappId } = req.params;
-    const whatsapp = await ShowWhatsAppService(whatsappId);
-    return res.status(200).json(whatsapp);
-  } catch (error: any) {
-    console.error("Error en show:", error);
-    return res.status(error.statusCode || 500).json({ error: error.message });
-  }
+  const { whatsappId } = req.params;
+
+  const whatsapp = await ShowWhatsAppService(whatsappId);
+
+  return res.status(200).json(whatsapp);
 };
 
-export const update = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const { whatsappId } = req.params;
-    const whatsappData = req.body;
+export const update = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { whatsappId } = req.params;
+  const whatsappData = req.body;
 
-    const { whatsapp, oldDefaultWhatsapp } = await UpdateWhatsAppService({ whatsappData, whatsappId });
+  const { whatsapp, oldDefaultWhatsapp } = await UpdateWhatsAppService({
+    whatsappData,
+    whatsappId
+  });
 
-    const io = getIO();
-    io.emit("whatsapp", { action: "update", whatsapp });
+  const io = getIO();
+  io.emit("whatsapp", {
+    action: "update",
+    whatsapp
+  });
 
-    if (oldDefaultWhatsapp) {
-      io.emit("whatsapp", { action: "update", whatsapp: oldDefaultWhatsapp });
-    }
-
-    return res.status(200).json(whatsapp);
-  } catch (error: any) {
-    console.error("Error en update:", error);
-    return res.status(error.statusCode || 500).json({ error: error.message });
-  }
-};
-
-export const remove = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    const { whatsappId } = req.params;
-
-    await DeleteWhatsAppService(whatsappId);
-    removeWbot(+whatsappId);
-
-    const io = getIO();
+  if (oldDefaultWhatsapp) {
     io.emit("whatsapp", {
-      action: "delete",
-      whatsappId: +whatsappId
+      action: "update",
+      whatsapp: oldDefaultWhatsapp
     });
-
-    return res.status(200).json({ message: "Whatsapp deleted." });
-  } catch (error: any) {
-    console.error("Error en remove:", error);
-    return res.status(error.statusCode || 500).json({ error: error.message });
   }
+
+  return res.status(200).json(whatsapp);
+};
+
+export const remove = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { whatsappId } = req.params;
+
+  await DeleteWhatsAppService(whatsappId);
+  removeWbot(+whatsappId);
+
+  const io = getIO();
+  io.emit("whatsapp", {
+    action: "delete",
+    whatsappId: +whatsappId
+  });
+
+  return res.status(200).json({ message: "Whatsapp deleted." });
 };

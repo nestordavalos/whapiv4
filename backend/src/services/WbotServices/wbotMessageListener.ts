@@ -220,20 +220,11 @@ const verifyMediaMessage = async (
 
   }
 
-  const rawBody = msg.body ?? "";
-  const cleanedBody =
-    typeof rawBody === "string" && rawBody.trim().length > 0
-      ? rawBody
-      : "[mensaje vacío]";
-
-  console.log("ISBODY", cleanedBody.trim().length > 0);
-  console.log("🔄 Preparando mensaje con cuerpo:", cleanedBody);
-
   const messageData = {
     id: msg.id.id,
     ticketId: ticket.id,
     contactId: msg.fromMe ? undefined : contact.id,
-    body: cleanedBody,
+    body: $strBody,
     fromMe: msg.fromMe,
     read: msg.fromMe,
     mediaUrl: media.filename,
@@ -271,20 +262,11 @@ export const verifyMessage = async (
   if (msg.type === "location") msg = prepareLocation(msg);
 
   const quotedMsg = await verifyQuotedMessage(msg);
-  const rawBody = msg.body ?? "";
-  const cleanedBody =
-    typeof rawBody === "string" && rawBody.trim().length > 0
-      ? rawBody
-      : "[mensaje vacío]";
-
-  console.log("ISBODY", cleanedBody.trim().length > 0);
-  console.log("🔄 Preparando mensaje con cuerpo:", cleanedBody);
-
   const messageData = {
     id: msg.id.id,
     ticketId: ticket.id,
     contactId: msg.fromMe ? undefined : contact.id,
-    body: cleanedBody,
+    body: msg.body,
     fromMe: msg.fromMe,
     mediaType: msg.type,
     read: msg.fromMe,

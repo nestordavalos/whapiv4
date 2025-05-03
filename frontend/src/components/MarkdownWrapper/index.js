@@ -1,6 +1,5 @@
 import React from "react";
 import Markdown from "markdown-to-jsx";
-import linkifyHtml from "linkify-html";
 
 const elements = [
   "a", "abbr", "address", "area", "article", "aside", "audio", "b", "base", "bdi", "bdo", "big",
@@ -13,6 +12,7 @@ const elements = [
   "progress", "q", "rp", "rt", "ruby", "s", "samp", "script", "section", "select", "small", "source",
   "span", "strong", "style", "sub", "summary", "sup", "table", "tbody", "td", "textarea", "tfoot",
   "th", "thead", "time", "title", "tr", "track", "u", "ul", "var", "video", "wbr",
+  // SVG
   "circle", "clipPath", "defs", "ellipse", "foreignObject", "g", "image", "line", "linearGradient",
   "marker", "mask", "path", "pattern", "polygon", "polyline", "radialGradient", "rect", "stop",
   "svg", "text", "tspan"
@@ -29,42 +29,30 @@ const CustomLink = ({ children, ...props }) => (
 const MarkdownWrapper = ({ children }) => {
   const boldRegex = /\*(.*?)\*/g;
   const tildaRegex = /~(.*?)~/g;
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
 
-  const options = React.useMemo(() => {
-    const markdownOptions = {
-      disableParsingRawHTML: false,
-      forceInline: true,
-      overrides: {
-        a: { component: CustomLink },
-      },
-    };
+  if (!children || typeof children !== "string") return null;
 
-    elements.forEach((el) => {
-      if (!allowedElements.includes(el)) {
-        markdownOptions.overrides[el] = () => null;
-      }
-    });
-
-    return markdownOptions;
-  }, []);
-
-  if (!children) return null;
-
+  // Validaciones de contenido, pero sin cortar el renderizado por completo
   if (children.includes("BEGIN:VCARD") || children.includes("data:image/")) {
-    return null;
+    return <span style={{ fontStyle: "italic", color: "#999" }}>[Contenido omitido]</span>;
   }
 
-  let processed = children;
-  processed = processed.replace(boldRegex, "**$1**");
-  processed = processed.replace(tildaRegex, "~~$1~~");
+  // Procesar markdown personalizado
+  let content = children;
+  content = content.replace(boldRegex, "**$1**");
+  content = content.replace(tildaRegex, "~~$1~~");
+  content = content.replace(urlRegex, (url) => `[${url}](${url})`);
 
-  const linkified = linkifyHtml(processed, {
-    defaultProtocol: "https",
-    target: "_blank",
-    rel: "noopener noreferrer",
-  });
+  const markdownOptions = {
+    disableParsingRawHTML: true,
+    forceInline: true,
+    overrides: {
+      a: { component: CustomLink },
+    },
+  };
 
-  return <Markdown options={options}>{linkified}</Markdown>;
+  return <Markdown options={markdownOptions}>{content}</Markdown>;
 };
 
 export default MarkdownWrapper;

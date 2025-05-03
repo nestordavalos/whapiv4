@@ -23,6 +23,8 @@
     "i18next": "^19.8.2",
     "i18next-browser-languagedetector": "^6.0.1",
     "izitoast-react": "^1.0.19",
+    "linkify-html": "^4.2.0",
+    "linkify-react": "^4.2.0",
     "markdown-to-jsx": "^7.1.0",
     "material-ui-color": "^1.2.0",
     "mic-recorder-to-mp3": "^2.2.2",

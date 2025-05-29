@@ -28,7 +28,7 @@ const syncUnreadMessages = async (wbot: Session) => {
 
       try {
         const isSendSeenAvailable = await wbot.pupPage.evaluate(() => {
-          return typeof window.WWebJS?.sendSeen === 'function';
+          return typeof (window as any).WWebJS?.sendSeen === 'function';
         });
 
         if (!isSendSeenAvailable) {

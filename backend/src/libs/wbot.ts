@@ -26,7 +26,21 @@ const syncUnreadMessages = async (wbot: Session) => {
         await handleMessage(msg, wbot);
       }
 
-      await chat.sendSeen();
+      try {
+        const isSendSeenAvailable = await wbot.pupPage.evaluate(() => {
+          return typeof window.WWebJS?.sendSeen === 'function';
+        });
+
+        if (!isSendSeenAvailable) {
+          console.warn('[wbot] sendSeen no está disponible. Reinyectando Utils...');
+          const utils = require('whatsapp-web.js/src/util/Injected/Utils');
+          await wbot.pupPage.evaluate(utils.LoadUtils);
+        }
+
+        await chat.sendSeen();
+      } catch (err) {
+        console.warn(`[wbot] No se pudo marcar como visto: ${err.message}`);
+      }
     }
     /*const messages = await chat.fetchMessages({limit: 10});
 

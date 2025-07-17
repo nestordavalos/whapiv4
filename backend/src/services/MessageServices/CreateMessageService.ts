@@ -66,15 +66,16 @@ const CreateMessageService = async ({ messageData }: Request): Promise<Message> 
   const io = getIO();
 
   if (!exists) {
-    io.to(message.ticketId.toString())
-      .to(message.ticket.status)
-      .to("notification")
-      .emit("appMessage", {
-        action: "create",
-        message,
-        ticket: message.ticket,
-        contact: message.ticket.contact
-      });
+    const payload = {
+      action: "create",
+      message,
+      ticket: message.ticket,
+      contact: message.ticket.contact
+    };
+
+    io.to(message.ticketId.toString()).emit("appMessage", payload);
+    io.to(message.ticket.status).emit("appMessage", payload);
+    io.to("notification").emit("appMessage", payload);
   }
 
   return message;

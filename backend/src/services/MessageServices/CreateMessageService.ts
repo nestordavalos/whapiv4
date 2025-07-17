@@ -13,6 +13,7 @@ export interface CreateMessageData {
   mediaType?: string;
   mediaUrl?: string;
   quotedMsgId?: string;
+  ack?: number;
   createdAt?: Date;
 }
 

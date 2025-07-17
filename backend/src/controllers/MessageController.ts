@@ -9,7 +9,9 @@ import ShowTicketService from "../services/TicketServices/ShowTicketService";
 import DeleteWhatsAppMessage from "../services/WbotServices/DeleteWhatsAppMessage";
 import SendWhatsAppMedia from "../services/WbotServices/SendWhatsAppMedia";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
-import CreateMessageService from "../services/MessageServices/CreateMessageService";
+import CreateMessageService, {
+  CreateMessageData
+} from "../services/MessageServices/CreateMessageService";
 
 type IndexQuery = {
   pageNumber: string;
@@ -47,45 +49,40 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 
   SetTicketMessagesAsRead(ticket);
 
-  let sentMessage;
-  if (medias) {
-    const messages = [] as Message[];
-    for (const media of medias) {
-      sentMessage = await SendWhatsAppMedia({ media, ticket });
-      const messageData = {
-        id: sentMessage.id.id,
-        ticketId: ticket.id,
-        body: sentMessage.body || body,
-        contactId: undefined,
-        fromMe: true,
-        read: true,
-        mediaType: sentMessage.type,
-        mediaUrl: media.filename,
-        quotedMsgId: quotedMsg?.id,
-        ack: sentMessage.ack,
-        createdAt: new Date(Number(sentMessage.timestamp) * 1000)
-      } as any;
-      const message = await CreateMessageService({ messageData });
-      messages.push(message);
-    }
-    return res.json(messages);
-  } else {
-    sentMessage = await SendWhatsAppMessage({ body, ticket, quotedMsg });
-    const messageData = {
-      id: sentMessage.id.id,
+  const buildAndSave = async (
+    sent: any,
+    media?: Express.Multer.File
+  ): Promise<Message> => {
+    const messageData: CreateMessageData = {
+      id: sent.id.id,
       ticketId: ticket.id,
-      body: sentMessage.body,
+      body: sent.body || body,
       contactId: undefined,
       fromMe: true,
       read: true,
-      mediaType: sentMessage.type,
+      mediaType: sent.type,
+      mediaUrl: media?.filename,
       quotedMsgId: quotedMsg?.id,
-      ack: sentMessage.ack,
-      createdAt: new Date(Number(sentMessage.timestamp) * 1000)
-    } as any;
-    const message = await CreateMessageService({ messageData });
-    return res.json(message);
+      ack: sent.ack,
+      createdAt: new Date(Number(sent.timestamp) * 1000)
+    };
+
+    return CreateMessageService({ messageData });
+  };
+
+  if (medias && medias.length > 0) {
+    const messages = await Promise.all(
+      medias.map(async media => {
+        const sent = await SendWhatsAppMedia({ media, ticket });
+        return buildAndSave(sent, media);
+      })
+    );
+    return res.json(messages);
   }
+
+  const sent = await SendWhatsAppMessage({ body, ticket, quotedMsg });
+  const message = await buildAndSave(sent);
+  return res.json([message]);
 };
 
 export const remove = async (

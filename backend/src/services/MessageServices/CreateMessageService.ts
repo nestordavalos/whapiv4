@@ -3,7 +3,7 @@ import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
 import Whatsapp from "../../models/Whatsapp";
 
-interface MessageData {
+export interface CreateMessageData {
   id: string;
   ticketId: number;
   body: string;
@@ -16,7 +16,7 @@ interface MessageData {
 }
 
 interface Request {
-  messageData: MessageData;
+  messageData: CreateMessageData;
 }
 
 const CreateMessageService = async ({ messageData }: Request): Promise<Message> => {

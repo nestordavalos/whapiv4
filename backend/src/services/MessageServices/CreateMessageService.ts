@@ -12,6 +12,7 @@ interface MessageData {
   read?: boolean;
   mediaType?: string;
   mediaUrl?: string;
+  createdAt?: Date;
 }
 
 interface Request {
@@ -27,6 +28,10 @@ const CreateMessageService = async ({ messageData }: Request): Promise<Message> 
 
   // Verificar si el mensaje ya existe para evitar reenviarlo a los clientes
   const exists = await Message.findByPk(messageData.id);
+
+  if (exists && Object.prototype.hasOwnProperty.call(messageData, "createdAt")) {
+    delete messageData.createdAt;
+  }
 
   // Guardar o actualizar mensaje
   await Message.upsert(messageData);

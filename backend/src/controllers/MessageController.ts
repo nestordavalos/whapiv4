@@ -63,7 +63,8 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
         mediaType: sentMessage.type,
         mediaUrl: media.filename,
         quotedMsgId: quotedMsg?.id,
-        ack: sentMessage.ack
+        ack: sentMessage.ack,
+        createdAt: new Date(Number(sentMessage.timestamp) * 1000)
       } as any;
       const message = await CreateMessageService({ messageData });
       messages.push(message);
@@ -80,7 +81,8 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
       read: true,
       mediaType: sentMessage.type,
       quotedMsgId: quotedMsg?.id,
-      ack: sentMessage.ack
+      ack: sentMessage.ack,
+      createdAt: new Date(Number(sentMessage.timestamp) * 1000)
     } as any;
     const message = await CreateMessageService({ messageData });
     return res.json(message);

@@ -12,6 +12,7 @@ export interface CreateMessageData {
   read?: boolean;
   mediaType?: string;
   mediaUrl?: string;
+  quotedMsgId?: string;
   createdAt?: Date;
 }
 

@@ -9,6 +9,7 @@ import ShowTicketService from "../services/TicketServices/ShowTicketService";
 import DeleteWhatsAppMessage from "../services/WbotServices/DeleteWhatsAppMessage";
 import SendWhatsAppMedia from "../services/WbotServices/SendWhatsAppMedia";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
+import CreateMessageService from "../services/MessageServices/CreateMessageService";
 
 type IndexQuery = {
   pageNumber: string;
@@ -47,17 +48,43 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 
   SetTicketMessagesAsRead(ticket);
 
+  let sentMessage;
   if (medias) {
-    await Promise.all(
-      medias.map(async (media: Express.Multer.File) => {
-        await SendWhatsAppMedia({ media, ticket });
-      })
-    );
+    const messages = [] as Message[];
+    for (const media of medias) {
+      sentMessage = await SendWhatsAppMedia({ media, ticket });
+      const messageData = {
+        id: sentMessage.id.id,
+        ticketId: ticket.id,
+        body: sentMessage.body || body,
+        contactId: undefined,
+        fromMe: true,
+        read: true,
+        mediaType: sentMessage.type,
+        mediaUrl: media.filename,
+        quotedMsgId: quotedMsg?.id,
+        ack: sentMessage.ack
+      } as any;
+      const message = await CreateMessageService({ messageData });
+      messages.push(message);
+    }
+    return res.json(messages);
   } else {
-    await SendWhatsAppMessage({ body, ticket, quotedMsg });
+    sentMessage = await SendWhatsAppMessage({ body, ticket, quotedMsg });
+    const messageData = {
+      id: sentMessage.id.id,
+      ticketId: ticket.id,
+      body: sentMessage.body,
+      contactId: undefined,
+      fromMe: true,
+      read: true,
+      mediaType: sentMessage.type,
+      quotedMsgId: quotedMsg?.id,
+      ack: sentMessage.ack
+    } as any;
+    const message = await CreateMessageService({ messageData });
+    return res.json(message);
   }
-
-  return res.send();
 };
 
 export const remove = async (

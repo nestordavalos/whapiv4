@@ -22,11 +22,6 @@ interface Request {
 }
 
 const CreateMessageService = async ({ messageData }: Request): Promise<Message> => {
-  // 🔍 Log inicial del contenido que se intenta guardar
-  console.log(
-    "🔄 CreateMessageService - messageData:",
-    JSON.stringify(messageData, null, 2)
-  );
 
   // Verificar si el mensaje ya existe para evitar reenviarlo a los clientes
   const exists = await Message.findByPk(messageData.id);

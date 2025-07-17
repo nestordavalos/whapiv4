@@ -230,7 +230,8 @@ const verifyMediaMessage = async (
     mediaUrl: media.filename,
     mediaType: media.mimetype.split("/")[0],
     quotedMsgId: quotedMsg?.id,
-    ack: msg.ack
+    ack: msg.ack,
+    createdAt: new Date(Number(msg.timestamp) * 1000)
   };
 
   if (msg.fromMe == true) {
@@ -271,7 +272,8 @@ export const verifyMessage = async (
     mediaType: msg.type,
     read: msg.fromMe,
     quotedMsgId: quotedMsg?.id,
-    ack: msg.ack
+    ack: msg.ack,
+    createdAt: new Date(Number(msg.timestamp) * 1000)
   };
 
   if (msg.fromMe == true) {

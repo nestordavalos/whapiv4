@@ -39,7 +39,7 @@ const SendWhatsAppMedia = async ({
 
     return sentMessage;
   } catch (err) {
-    console.log(err);
+    console.error("[wbot] failed to send media message:", err);
     throw new AppError("ERR_SENDING_WAPP_MSG");
   }
 };

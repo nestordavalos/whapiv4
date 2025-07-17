@@ -3,7 +3,7 @@ import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
 import Whatsapp from "../../models/Whatsapp";
 
-interface MessageData {
+export interface CreateMessageData {
   id: string;
   ticketId: number;
   body: string;
@@ -12,17 +12,23 @@ interface MessageData {
   read?: boolean;
   mediaType?: string;
   mediaUrl?: string;
+  quotedMsgId?: string;
+  ack?: number;
+  createdAt?: Date;
 }
 
 interface Request {
-  messageData: MessageData;
+  messageData: CreateMessageData;
 }
 
-const CreateMessageService = async ({
-  messageData
-}: Request): Promise<Message> => {
-  // 🔍 Log inicial del contenido que se intenta guardar
-  console.log("🔄 CreateMessageService - messageData:", JSON.stringify(messageData, null, 2));
+const CreateMessageService = async ({ messageData }: Request): Promise<Message> => {
+
+  // Verificar si el mensaje ya existe para evitar reenviarlo a los clientes
+  const exists = await Message.findByPk(messageData.id);
+
+  if (exists && Object.prototype.hasOwnProperty.call(messageData, "createdAt")) {
+    delete messageData.createdAt;
+  }
 
   // Guardar o actualizar mensaje
   await Message.upsert(messageData);
@@ -58,15 +64,19 @@ const CreateMessageService = async ({
   }
 
   const io = getIO();
-  io.to(message.ticketId.toString())
-    .to(message.ticket.status)
-    .to("notification")
-    .emit("appMessage", {
+
+  if (!exists) {
+    const payload = {
       action: "create",
       message,
       ticket: message.ticket,
       contact: message.ticket.contact
-    });
+    };
+
+    io.to(message.ticketId.toString()).emit("appMessage", payload);
+    io.to(message.ticket.status).emit("appMessage", payload);
+    io.to("notification").emit("appMessage", payload);
+  }
 
   return message;
 };

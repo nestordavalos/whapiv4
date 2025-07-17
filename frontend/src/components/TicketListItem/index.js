@@ -134,9 +134,9 @@ const useStyles = makeStyles(theme => ({
 			padding: 3,
 			whiteSpace: "nowrap",
 		},
-		"& .MuiBadge-anchorOriginTopRightRectangle": {
-			transform: "scale(1) translate(0%, -40%)",
-		},
+                "& .MuiBadge-anchorOriginTopRightRectangular": {
+                        transform: "scale(1) translate(0%, -40%)",
+                },
 
 	}
 }));

@@ -9,6 +9,9 @@ import ShowTicketService from "../services/TicketServices/ShowTicketService";
 import DeleteWhatsAppMessage from "../services/WbotServices/DeleteWhatsAppMessage";
 import SendWhatsAppMedia from "../services/WbotServices/SendWhatsAppMedia";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
+import CreateMessageService, {
+  CreateMessageData
+} from "../services/MessageServices/CreateMessageService";
 
 type IndexQuery = {
   pageNumber: string;
@@ -33,7 +36,6 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
 
   SetTicketMessagesAsRead(ticket);
 
-  // console.log(req.header)
 
   return res.json({ count, messages, ticket, hasMore });
 };
@@ -47,17 +49,40 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 
   SetTicketMessagesAsRead(ticket);
 
-  if (medias) {
-    await Promise.all(
-      medias.map(async (media: Express.Multer.File) => {
-        await SendWhatsAppMedia({ media, ticket });
+  const buildAndSave = async (
+    sent: any,
+    media?: Express.Multer.File
+  ): Promise<Message> => {
+    const messageData: CreateMessageData = {
+      id: sent.id.id,
+      ticketId: ticket.id,
+      body: sent.body || body,
+      contactId: undefined,
+      fromMe: true,
+      read: true,
+      mediaType: sent.type,
+      mediaUrl: media?.filename,
+      quotedMsgId: quotedMsg?.id,
+      ack: sent.ack,
+      createdAt: new Date(Number(sent.timestamp) * 1000)
+    };
+
+    return CreateMessageService({ messageData });
+  };
+
+  if (medias && medias.length > 0) {
+    const messages = await Promise.all(
+      medias.map(async media => {
+        const sent = await SendWhatsAppMedia({ media, ticket });
+        return buildAndSave(sent, media);
       })
     );
-  } else {
-    await SendWhatsAppMessage({ body, ticket, quotedMsg });
+    return res.json(messages);
   }
 
-  return res.send();
+  const sent = await SendWhatsAppMessage({ body, ticket, quotedMsg });
+  const message = await buildAndSave(sent);
+  return res.json([message]);
 };
 
 export const remove = async (

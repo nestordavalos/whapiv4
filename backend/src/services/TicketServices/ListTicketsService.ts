@@ -80,7 +80,7 @@ const ListTicketsService = async ({
       {
         model: Message,
         as: "messages",
-        attributes: ["id", "body"],
+        attributes: [],
         where: {
           body: where(
             fn("LOWER", col("body")),
@@ -151,6 +151,7 @@ const ListTicketsService = async ({
     where: whereCondition,
     include: includeCondition,
     distinct: true,
+    subQuery: false,
     limit,
     offset,
     order: [[settingCreated, settingASC]]

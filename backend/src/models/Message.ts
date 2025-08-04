@@ -8,7 +8,8 @@ import {
   PrimaryKey,
   Default,
   BelongsTo,
-  ForeignKey
+  ForeignKey,
+  Index
 } from "sequelize-typescript";
 import Contact from "./Contact";
 import Ticket from "./Ticket";
@@ -57,6 +58,7 @@ class Message extends Model<Message> {
   @Column
   isDeleted: boolean;
 
+  @Index
   @CreatedAt
   @Column(DataType.DATE(6))
   createdAt: Date;
@@ -72,6 +74,7 @@ class Message extends Model<Message> {
   @BelongsTo(() => Message, "quotedMsgId")
   quotedMsg: Message;
 
+  @Index
   @ForeignKey(() => Ticket)
   @Column
   ticketId: number;
@@ -79,6 +82,7 @@ class Message extends Model<Message> {
   @BelongsTo(() => Ticket)
   ticket: Ticket;
 
+  @Index
   @ForeignKey(() => Contact)
   @Column
   contactId: number;

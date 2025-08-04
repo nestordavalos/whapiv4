@@ -9,7 +9,8 @@ import {
   BelongsTo,
   HasMany,
   AutoIncrement,
-  Default
+  Default,
+  Index
 } from "sequelize-typescript";
 
 import Contact from "./Contact";
@@ -25,6 +26,7 @@ class Ticket extends Model<Ticket> {
   @Column
   id: number;
 
+  @Index
   @Column({ defaultValue: "pending" })
   status: string;
 
@@ -41,12 +43,14 @@ class Ticket extends Model<Ticket> {
   @Default(false)
   @Column
   isBot: boolean;
+  @Index
   @CreatedAt
   createdAt: Date;
 
   @UpdatedAt
   updatedAt: Date;
 
+  @Index
   @ForeignKey(() => User)
   @Column
   userId: number;
@@ -54,6 +58,7 @@ class Ticket extends Model<Ticket> {
   @BelongsTo(() => User)
   user: User;
 
+  @Index
   @ForeignKey(() => Contact)
   @Column
   contactId: number;
@@ -61,6 +66,7 @@ class Ticket extends Model<Ticket> {
   @BelongsTo(() => Contact)
   contact: Contact;
 
+  @Index
   @ForeignKey(() => Whatsapp)
   @Column
   whatsappId: number;
@@ -68,6 +74,7 @@ class Ticket extends Model<Ticket> {
   @BelongsTo(() => Whatsapp)
   whatsapp: Whatsapp;
 
+  @Index
   @ForeignKey(() => Queue)
   @Column
   queueId: number;

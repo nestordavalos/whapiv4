@@ -10,7 +10,6 @@ interface Request {
   greetingMessage?: string;
   farewellMessage?: string;
 
-
   //Difinindo horario comercial
   defineWorkHours?: boolean;
   outOfWorkMessage?: string;
@@ -66,7 +65,6 @@ interface Request {
   sendInactiveMessage?: boolean;
   inactiveMessage?: string;
   timeInactiveMessage?: string;
-
 }
 
 interface Response {
@@ -80,7 +78,6 @@ const CreateWhatsAppService = async ({
   queueIds = [],
   greetingMessage,
   farewellMessage,
-
 
   defineWorkHours,
   outOfWorkMessage,
@@ -135,7 +132,6 @@ const CreateWhatsAppService = async ({
   sendInactiveMessage = false,
   inactiveMessage = "",
   timeInactiveMessage = "0"
-
 }: Request): Promise<Response> => {
   const schema = Yup.object().shape({
     name: Yup.string()
@@ -163,9 +159,10 @@ const CreateWhatsAppService = async ({
 
   const whatsappFound = await Whatsapp.findOne();
 
-  isDefault = !whatsappFound;
-
-  isGroup = !whatsappFound;
+  if (!whatsappFound) {
+    isDefault = true;
+    isGroup = true;
+  }
 
   let oldDefaultWhatsapp: Whatsapp | null = null;
 

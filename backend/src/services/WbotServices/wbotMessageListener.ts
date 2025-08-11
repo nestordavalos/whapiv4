@@ -210,7 +210,7 @@ const verifyMediaMessage = async (
 
   let $strBody: string;
 
-  if (msg.fromMe === true) {
+  if (msg.fromMe) {
 
     $strBody = msg.body;
 
@@ -357,7 +357,7 @@ const verifyQueue = async (
   );
 
   //Verificando se está habilitado dias de expediente
-  if (defineWorkHours === true) {
+  if (defineWorkHours) {
     const now = new Date();
     const diaSemana = now.getDay();
     let diaSemanaStr;
@@ -367,7 +367,7 @@ const verifyQueue = async (
     if (diaSemana === 0) {
       diaSemanaStr = "sunday"
       //if que identifica o dia da semana
-      if (sunday === true) {
+      if (sunday) {
         //if que identifica se o dia da semana está ativo
         const hh: number = now.getHours() * 60 * 60;
         const mm: number = now.getMinutes() * 60;
@@ -605,7 +605,7 @@ const verifyQueue = async (
     if (diaSemana === 1) {
       diaSemanaStr = "monday"
       //Verifica dia ativo ou não
-      if (monday === true) {
+      if (monday) {
         //if que identifica se o dia da semana está ativo
         const hh: number = now.getHours() * 60 * 60;
         const mm: number = now.getMinutes() * 60;
@@ -839,7 +839,7 @@ const verifyQueue = async (
     if (diaSemana === 2) {
       diaSemanaStr = "tuesday"
       //if que identifica o dia da semana
-      if (tuesday === true) {
+      if (tuesday) {
         //if que identifica se o dia da semana está ativo
         const hh: number = now.getHours() * 60 * 60;
         const mm: number = now.getMinutes() * 60;
@@ -1073,7 +1073,7 @@ const verifyQueue = async (
     if (diaSemana === 3) {
       diaSemanaStr = "wednesday"
       //if que identifica o dia da semana
-      if (wednesday === true) {
+      if (wednesday) {
         //if que identifica se o dia da semana está ativo
         const hh: number = now.getHours() * 60 * 60;
         const mm: number = now.getMinutes() * 60;
@@ -1309,7 +1309,7 @@ const verifyQueue = async (
 
       // console.log(thursday)
       //if que identifica o dia da semana
-      if (thursday === true) {
+      if (thursday) {
         //if que identifica se o dia da semana está ativo
         const hh: number = now.getHours() * 60 * 60;
         const mm: number = now.getMinutes() * 60;
@@ -1546,7 +1546,7 @@ const verifyQueue = async (
     if (diaSemana === 5) {
       diaSemanaStr = "friday"
       //if que identifica o dia da semana
-      if (friday === true) {
+      if (friday) {
         //if que identifica se o dia da semana está ativo
         const hh: number = now.getHours() * 60 * 60;
         const mm: number = now.getMinutes() * 60;
@@ -1780,7 +1780,7 @@ const verifyQueue = async (
     if (diaSemana === 6) {
       diaSemanaStr = "saturday"
       //if que identifica o dia da semana
-      if (saturday === true) {
+      if (saturday) {
         //if que identifica se o dia da semana está ativo
         const hh: number = now.getHours() * 60 * 60;
         const mm: number = now.getMinutes() * 60;

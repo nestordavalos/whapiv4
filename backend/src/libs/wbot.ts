@@ -8,6 +8,7 @@ import { handleMsgAck, handleMessage } from "../services/WbotServices/wbotMessag
 
 interface Session extends Client {
   id?: number;
+  pingInterval?: NodeJS.Timeout;
 }
 
 const sessions: Session[] = [];
@@ -162,7 +163,7 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
         await syncUnreadMessages(wbot);
 
         // 🔁 Verificar conexión cada 60s
-        setInterval(async () => {
+        wbot.pingInterval = setInterval(async () => {
           try {
             const state = await wbot.getState();
             if (state !== "CONNECTED") {
@@ -198,7 +199,11 @@ export const getWbot = (whatsappId: number): Session => {
 export const removeWbot = (whatsappId: number): void => {
   const index = sessions.findIndex(s => s.id === whatsappId);
   if (index !== -1) {
-    sessions[index].destroy();
+    const session = sessions[index];
+    if (session.pingInterval) {
+      clearInterval(session.pingInterval);
+    }
+    session.destroy();
     sessions.splice(index, 1);
   }
 };

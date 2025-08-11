@@ -164,7 +164,7 @@ export default async function DashboardDataService(
   )   
   select (select JSON_OBJECT('leads', leads, 'npsScore', npsScore, 'avgWaitTime',avgWaitTime, 'avgSupportTime', avgSupportTime, 'npsPassivePerc', npsPassivePerc, 'supportPending', supportPending, 'npsPassiveCount', npsPassiveCount, 'supportFinished', supportFinished, 'npsPromotersPerc', npsPromotersPerc, 'supportHappening', supportHappening, 'npsDetractorsPerc', npsDetractorsPerc, 'npsPromotersCount', npsPromotersCount, 'npsDetractorsCount', npsDetractorsCount)  counters from counters  ) counters    
     ,
-   (select CONCAT('[', GROUP_CONCAT(JSON_OBJECT('id', id,'name', name, 'online', online, 'avgSupportTime', avgSupportTime, 'tickets', tickets, 'rating', rating, 'countRating', countRating) SEPARATOR ','), ']') attendants  from attedants a) attendants ;
+   (select IFNULL(CONCAT('[', GROUP_CONCAT(JSON_OBJECT('id', id,'name', name, 'online', online, 'avgSupportTime', avgSupportTime, 'tickets', tickets, 'rating', rating, 'countRating', countRating) SEPARATOR ','), ']'), '[]') attendants from attedants a) attendants ;
 `;
   
   let where = 'where tt.id is not null';

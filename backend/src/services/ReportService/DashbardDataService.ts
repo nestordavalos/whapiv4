@@ -20,6 +20,7 @@ export interface Params {
 export default async function DashboardDataService(
   params: Params
 ): Promise<DashboardData> {
+  await sequelize.query("SET SESSION group_concat_max_len = 1000000");
   const query = `with
   traking as (   
     select
@@ -163,7 +164,7 @@ export default async function DashboardDataService(
   )   
   select (select JSON_OBJECT('leads', leads, 'npsScore', npsScore, 'avgWaitTime',avgWaitTime, 'avgSupportTime', avgSupportTime, 'npsPassivePerc', npsPassivePerc, 'supportPending', supportPending, 'npsPassiveCount', npsPassiveCount, 'supportFinished', supportFinished, 'npsPromotersPerc', npsPromotersPerc, 'supportHappening', supportHappening, 'npsDetractorsPerc', npsDetractorsPerc, 'npsPromotersCount', npsPromotersCount, 'npsDetractorsCount', npsDetractorsCount)  counters from counters  ) counters    
     ,
-   (select JSON_ARRAYAGG( JSON_OBJECT('id', id,'name', name, 'online', online, 'avgSupportTime', avgSupportTime, 'tickets', tickets, 'rating', rating, 'countRating', countRating))  attendants  from attedants a) attendants ;
+   (select CONCAT('[', GROUP_CONCAT(JSON_OBJECT('id', id,'name', name, 'online', online, 'avgSupportTime', avgSupportTime, 'tickets', tickets, 'rating', rating, 'countRating', countRating) SEPARATOR ','), ']') attendants  from attedants a) attendants ;
 `;
   
   let where = 'where tt.id is not null';

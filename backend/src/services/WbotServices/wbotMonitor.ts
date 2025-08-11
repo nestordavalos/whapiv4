@@ -56,7 +56,9 @@ const wbotMonitor = async (
         session: whatsapp
       });
 
-      setTimeout(() => StartWhatsAppSession(whatsapp), 2000);
+      setTimeout(() => {
+        StartWhatsAppSession(whatsapp).catch(err => logger.error(err));
+      }, 2000);
     });
   } catch (err) {
     Sentry.captureException(err);

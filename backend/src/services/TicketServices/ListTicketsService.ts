@@ -157,10 +157,11 @@ const ListTicketsService = async ({
     where: whereCondition,
     include: includeCondition,
     subQuery: false,
+    distinct: true,
     limit,
     offset,
     order: [[settingCreated, settingASC]]
-  });
+  } as any);
 
   const hasMore = count > offset + tickets.length;
 

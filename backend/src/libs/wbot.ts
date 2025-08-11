@@ -6,6 +6,7 @@ import AppError from "../errors/AppError";
 import { logger } from "../utils/logger";
 import { handleMsgAck, handleMessage } from "../services/WbotServices/wbotMessageListener";
 import * as Sentry from "@sentry/node";
+import Message from "../models/Message";
 
 interface Session extends Client {
   id?: number;
@@ -21,6 +22,10 @@ const syncUnreadMessages = async (wbot: Session) => {
       const unreadMessages = await chat.fetchMessages({ limit: chat.unreadCount });
       for (const msg of unreadMessages) {
         try {
+          const existing = await Message.findByPk(msg.id.id);
+          if (existing) {
+            continue;
+          }
           await handleMessage(msg, wbot);
         } catch (err) {
           Sentry.captureException(err);

@@ -2,6 +2,7 @@ import AppError from "../../errors/AppError";
 import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
 import ShowTicketService from "../TicketServices/ShowTicketService";
+import { Op } from "sequelize";
 
 interface Request {
   ticketId: string;
@@ -28,11 +29,21 @@ const ListMessagesService = async ({
   const limit = 20;
   const offset = limit * (+pageNumber - 1);
 
+  const tickets = await Ticket.findAll({
+    where: {
+      contactId: ticket.contactId,
+      whatsappId: ticket.whatsappId
+    },
+    attributes: ["id"]
+  });
+  const ticketIds = tickets.map(t => t.id);
+
   const { count, rows: messages } = await Message.findAndCountAll({
-    where: { ticketId: ticket.id },
+    where: { ticketId: { [Op.in]: ticketIds } },
     limit,
     include: [
       "contact",
+      "ticket",
       {
         model: Message,
         as: "quotedMsg",

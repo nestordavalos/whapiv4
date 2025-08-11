@@ -76,10 +76,6 @@ const ListTicketsService = async ({
     const sanitizedSearchParam = searchParam.toLocaleLowerCase().trim();
     const isNumeric = /^\d+$/.test(sanitizedSearchParam);
 
-    const orConditions: any[] = [
-      { "$contact.number$": { [Op.like]: `${sanitizedSearchParam}%` } }
-    ];
-
     if (!isNumeric) {
       includeCondition = [
         ...includeCondition,
@@ -88,22 +84,28 @@ const ListTicketsService = async ({
           as: "messages",
           attributes: [],
           where: {
-            bodySearch: { [Op.like]: `${sanitizedSearchParam}%` }
+            bodySearch: { [Op.like]: `%${sanitizedSearchParam}%` }
           },
           required: false,
           duplicating: false
         }
       ];
+    }
 
+    const orConditions: any[] = [
+      { "$contact.number$": { [Op.like]: `${sanitizedSearchParam}%` } }
+    ];
+
+    if (!isNumeric) {
       orConditions.push(
         {
           "$contact.name$": where(
             fn("LOWER", col("contact.name")),
             "LIKE",
-            `${sanitizedSearchParam}%`
+            `%${sanitizedSearchParam}%`
           )
         },
-        { "$messages.bodySearch$": { [Op.like]: `${sanitizedSearchParam}%` } }
+        { "$messages.bodySearch$": { [Op.like]: `%${sanitizedSearchParam}%` } }
       );
     }
 

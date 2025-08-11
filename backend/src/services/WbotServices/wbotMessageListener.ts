@@ -2235,10 +2235,6 @@ const handleMessage = async (
   if (!isValidMsg(msg)) {
     return;
   }
-  const msgExists = await Message.findByPk(msg.id.id);
-  if (msgExists) {
-    return;
-  }
   const showMessageGroupConnection = await ShowWhatsAppService(wbot.id!);
 
   // IGNORAR MENSAGENS DE GRUPO

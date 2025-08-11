@@ -26,11 +26,14 @@ const CreateMessageService = async ({
   // 🔍 Log inicial del contenido que se intenta guardar
   console.log("🔄 CreateMessageService - messageData:", JSON.stringify(messageData, null, 2));
 
-  // Guardar o actualizar mensaje
-  await Message.upsert(messageData);
+  // Buscar o crear mensaje de forma atómica para evitar duplicados
+  const [message] = await Message.findOrCreate({
+    where: { id: messageData.id },
+    defaults: messageData
+  });
 
-  // Intentar recuperar el mensaje completo con relaciones
-  const message = await Message.findByPk(messageData.id, {
+  // Recargar las asociaciones necesarias
+  await message.reload({
     include: [
       "contact",
       {
@@ -53,11 +56,6 @@ const CreateMessageService = async ({
       }
     ]
   });
-
-  if (!message) {
-    console.error("❌ No se encontró el mensaje luego de upsert. ID:", messageData.id);
-    throw new Error("ERR_CREATING_MESSAGE");
-  }
 
   const io = getIO();
   io.to(message.ticketId.toString())

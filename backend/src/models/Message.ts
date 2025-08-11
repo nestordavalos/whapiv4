@@ -14,7 +14,7 @@ import {
 import Contact from "./Contact";
 import Ticket from "./Ticket";
 
-@Table
+@Table({ timestamps: true })
 class Message extends Model<Message> {
   @PrimaryKey
   @Column

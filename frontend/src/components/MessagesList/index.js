@@ -189,6 +189,18 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: "#35cd96",
   },
 
+  messageHighlight: {
+    animationName: "$highlightFade",
+    animationDuration: "1s",
+    animationIterationCount: 2,
+  },
+
+  "@keyframes highlightFade": {
+    "0%": { backgroundColor: "#fff59d" },
+    "50%": { backgroundColor: "inherit" },
+    "100%": { backgroundColor: "#fff59d" },
+  },
+
   messageActionsButton: {
     display: "none",
     position: "relative",
@@ -711,6 +723,10 @@ const MessagesList = ({ ticketId, isGroup }) => {
       );
       if (element) {
         element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.classList.add(classes.messageHighlight);
+        setTimeout(() => {
+          element.classList.remove(classes.messageHighlight);
+        }, 2000);
       }
     };
 

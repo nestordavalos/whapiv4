@@ -126,7 +126,7 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   if (medias) {
     await Promise.all(
       medias.map(async (media: Express.Multer.File) => {
-        resp = await SendWhatsAppMedia({ body, media, ticket: contactAndTicket });
+        resp = await SendWhatsAppMedia({ body, media, ticket: contactAndTicket, quotedMsg });
       })
     );
   } else {

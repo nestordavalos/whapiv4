@@ -2,6 +2,9 @@ import fs from "fs";
 import { MessageMedia, Message as WbotMessage } from "whatsapp-web.js";
 import AppError from "../../errors/AppError";
 import GetTicketWbot from "../../helpers/GetTicketWbot";
+import GetWbotMessage from "../../helpers/GetWbotMessage";
+import SerializeWbotMsgId from "../../helpers/SerializeWbotMsgId";
+import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
 
 import formatBody from "../../helpers/Mustache";
@@ -11,13 +14,21 @@ interface Request {
   media: Express.Multer.File;
   ticket: Ticket;
   body?: string;
+  quotedMsg?: Message;
 }
 
 const SendWhatsAppMedia = async ({
   media,
   ticket,
-  body
+  body,
+  quotedMsg
 }: Request): Promise<WbotMessage> => {
+  let quotedMsgSerializedId: string | undefined;
+  if (quotedMsg) {
+    await GetWbotMessage(ticket, quotedMsg.id);
+    quotedMsgSerializedId = SerializeWbotMsgId(ticket, quotedMsg);
+  }
+
   const wbot = await GetTicketWbot(ticket);
   const hasBody = body ? formatBody(body as string, ticket) : undefined;
 
@@ -28,7 +39,8 @@ const SendWhatsAppMedia = async ({
       newMedia,
       {
         caption: hasBody,
-        sendAudioAsVoice: true
+        sendAudioAsVoice: true,
+        quotedMessageId: quotedMsgSerializedId
       }
     );
 

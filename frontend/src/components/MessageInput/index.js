@@ -12,6 +12,7 @@ import {
   ClickAwayListener,
   IconButton,
   InputBase,
+  TextField,
   makeStyles,
   Paper,
   FormControlLabel,
@@ -21,10 +22,6 @@ import {
   Switch,
   Grid,
   Typography,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
   Avatar
 } from "@material-ui/core";
 import { green } from "@material-ui/core/colors";
@@ -85,6 +82,18 @@ const useStyles = makeStyles((theme) => ({
   gridFiles: {
     maxHeight: "100%",
     overflow: "scroll",
+  },
+  mediaPreviewGrid: {
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  mediaThumb: {
+    maxWidth: 200,
+    maxHeight: 200,
+    borderRadius: 4,
+  },
+  captionField: {
+    marginTop: 6,
   },
   newMessageBox: {
     background: theme.palette.background.default,
@@ -482,52 +491,44 @@ const MessageInput = ({ ticketStatus }) => {
             <CircularProgress className={classes.circleLoading} />
           </div>
         ) : (
-          <Grid item className={classes.gridFiles}>
+          <div className={classes.gridFiles}>
             {replyingMessage && renderReplyingMessage(replyingMessage)}
             <Typography variant="h6" component="div">
               {i18n.t("uploads.titles.titleFileList")} ({medias.length})
             </Typography>
-            <List>
-              {medias.map((value, index) => {
-                return (
-                  <ListItem key={index}>
-                    <ListItemAvatar>
-                      <Avatar className={classes.avatar} alt={value.name} src={URL.createObjectURL(value)} />
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={`${value.name}`}
-                      secondary={`${parseInt(value.size / 1024)} kB`}
+            <Grid container spacing={2} className={classes.mediaPreviewGrid}>
+              {medias.map((value, index) => (
+                <Grid item key={index}>
+                  {value.type.indexOf("image") > -1 ? (
+                    <img
+                      alt={value.name}
+                      src={URL.createObjectURL(value)}
+                      className={classes.mediaThumb}
                     />
-                  </ListItem>
-                );
-              })}
-            </List>
-            <div className={classes.messageInputWrapper}>
-              <InputBase
-                inputRef={(input) => {
-                  input && input.focus();
-                  input && (inputRef.current = input);
-                }}
-                className={classes.messageInput}
-                placeholder={
-                  ticketStatus === "open"
-                    ? i18n.t("messagesInput.placeholderOpen")
-                    : i18n.t("messagesInput.placeholderClosed")
+                  ) : (
+                    <Avatar className={classes.avatar} alt={value.name} />
+                  )}
+                </Grid>
+              ))}
+            </Grid>
+            <TextField
+              className={classes.captionField}
+              variant="outlined"
+              placeholder={i18n.t("messagesInput.captionPlaceholder")}
+              fullWidth
+              multiline
+              rowsMax={5}
+              value={mediaCaption}
+              onChange={(e) => setMediaCaption(e.target.value)}
+              disabled={loading || ticketStatus !== "open"}
+              onKeyPress={(e) => {
+                if (loading || e.shiftKey) return;
+                else if (e.key === "Enter") {
+                  handleUploadMedia();
                 }
-                multiline
-                maxRows={5}
-                value={mediaCaption}
-                onChange={(e) => setMediaCaption(e.target.value)}
-                disabled={loading || ticketStatus !== "open"}
-                onKeyPress={(e) => {
-                  if (loading || e.shiftKey) return;
-                  else if (e.key === "Enter") {
-                    handleUploadMedia();
-                  }
-                }}
-              />
-            </div>
-          </Grid>
+              }}
+            />
+          </div>
         )}
         <IconButton
           aria-label="send-upload"

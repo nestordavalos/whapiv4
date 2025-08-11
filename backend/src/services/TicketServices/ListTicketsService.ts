@@ -147,15 +147,21 @@ const ListTicketsService = async ({
 
   settingCreated = settingCreated === "enabled" ? "createdAt" : "updatedAt";
 
-  const { count, rows: tickets } = await Ticket.findAndCountAll({
+  const count = await Ticket.count({
     where: whereCondition,
     include: includeCondition,
-    distinct: true,
+    distinct: true
+  });
+
+  const tickets = await Ticket.findAll({
+    where: whereCondition,
+    include: includeCondition,
     subQuery: false,
+    distinct: true,
     limit,
     offset,
     order: [[settingCreated, settingASC]]
-  });
+  } as any);
 
   const hasMore = count > offset + tickets.length;
 

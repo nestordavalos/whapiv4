@@ -53,83 +53,96 @@ export const ClosedAllOpenTickets = async (): Promise<void> => {
       order: [["updatedAt", "DESC"]]
     });
    
-    tickets.forEach(async ticket => {
+    for (const ticket of tickets) {
+      try {
+        const whatsapp = await ShowWhatsAppService(ticket?.whatsappId);
+        const ticketBody = await ShowTicketService(ticket?.id);
+        let horasFecharAutomaticamente = whatsapp?.timeInactiveMessage;
+        let useNPS = whatsapp?.useNPS;
+        let sendIsInactive = whatsapp?.sendInactiveMessage;
+        let messageInactive = whatsapp?.inactiveMessage;
+        let fromMe = ticket.fromMe;
+        let isMsgGroup = ticket.isMsgGroup;
+        const ticketTraking = await FindOrCreateATicketTrakingService({
+          ticketId: ticket.id,
+          whatsappId: whatsapp.id,
+          userId: ticket.userId
+        });
 
-      const whatsapp = await ShowWhatsAppService(ticket?.whatsappId)
-      const ticketBody = await ShowTicketService(ticket?.id);
-      let horasFecharAutomaticamente = whatsapp?.timeInactiveMessage;
-      let useNPS = whatsapp?.useNPS;
-      let sendIsInactive = whatsapp?.sendInactiveMessage;
-      let messageInactive = whatsapp?.inactiveMessage;
-      let fromMe = ticket.fromMe;
-      let isMsgGroup = ticket.isMsgGroup;
-      const ticketTraking = await FindOrCreateATicketTrakingService({ticketId: ticket.id, 
-                whatsappId: whatsapp.id, 
-                userId: ticket.userId});
+        // Define horario para fechar automaticamente ticket aguardando avaliação. Tempo default: 10 minutos
+        if (ticketTraking) {
+          let dataLimiteNPS = new Date();
+          dataLimiteNPS.setMinutes(dataLimiteNPS.getMinutes() - 10);
+          if (
+            ticketTraking.finishedAt === null &&
+            ticketTraking.ratingAt === null &&
+            ticketTraking.closedAt !== null &&
+            ticketTraking.closedAt < dataLimiteNPS
+          ) {
+            closeTicket(ticket, useNPS, ticket.status);
 
-      // Define horario para fechar automaticamente ticket aguardando avaliação. Tempo default: 10 minutos
-        
-      if (ticketTraking){
-        let dataLimiteNPS = new Date()
+            await ticketTraking.update({
+              closedAt: moment().toDate(),
+              finishedAt: moment().toDate()
+            });
 
-        dataLimiteNPS.setMinutes(dataLimiteNPS.getMinutes() - 10)
-        if (ticketTraking.finishedAt === null && ticketTraking.ratingAt === null && ticketTraking.closedAt !== null && ticketTraking.closedAt < dataLimiteNPS) {
-          closeTicket(ticket, useNPS, ticket.status);
+            io.to("open").emit(`ticket`, {
+              action: "delete",
+              ticket,
+              ticketId: ticket.id
+            });
+          }
+        }
 
-          await ticketTraking.update({
-            closedAt: moment().toDate(),
-            finishedAt: moment().toDate()
-          });
+        // @ts-ignore: Unreachable code error
+        if (
+          horasFecharAutomaticamente &&
+          horasFecharAutomaticamente !== "" &&
+          // @ts-ignore: Unreachable code error
+          horasFecharAutomaticamente !== "0" &&
+          Number(horasFecharAutomaticamente) > 0
+        ) {
+          let dataLimite = new Date();
+
+          if (Number(horasFecharAutomaticamente) < 1) {
+            dataLimite.setMinutes(
+              dataLimite.getMinutes() - Number(horasFecharAutomaticamente) * 60
+            );
+          } else {
+            dataLimite.setHours(
+              dataLimite.getHours() - Number(horasFecharAutomaticamente)
+            );
+          }
+
+          // console.log(dataLimite + " TEMPO FECHAMENTO " + horasFecharAutomaticamente)
+
+          if (ticket.status === "open" && fromMe && !isMsgGroup) {
+            let dataUltimaInteracaoChamado = new Date(ticket.updatedAt);
+
+            if (dataUltimaInteracaoChamado < dataLimite) {
+              if (sendIsInactive && ticket.status === "open" && messageInactive) {
+                const body = formatBody(`\u200e${messageInactive}`, ticketBody);
+                await SendWhatsAppMessage({ body: body, ticket: ticketBody });
+              }
+
+              closeTicket(ticket, useNPS, ticket.status);
 
               io.to("open").emit(`ticket`, {
                 action: "delete",
                 ticket,
                 ticketId: ticket.id
               });
-        };
-      }
-      // @ts-ignore: Unreachable code error
-      if (horasFecharAutomaticamente && horasFecharAutomaticamente !== "" &&
-        // @ts-ignore: Unreachable code error
-        horasFecharAutomaticamente !== "0" && Number(horasFecharAutomaticamente) > 0) {
-
-        let dataLimite = new Date()
-
-        if (Number(horasFecharAutomaticamente) < 1) {
-          dataLimite.setMinutes(dataLimite.getMinutes() - (Number(horasFecharAutomaticamente)*60));
-        } else {
-          dataLimite.setHours(dataLimite.getHours() - Number(horasFecharAutomaticamente));
-        }
-
-       // console.log(dataLimite + " TEMPO FECHAMENTO " + horasFecharAutomaticamente)
-
-        if (ticket.status === "open" && fromMe && !isMsgGroup) {
-
-          let dataUltimaInteracaoChamado = new Date(ticket.updatedAt)
-
-          if (dataUltimaInteracaoChamado < dataLimite) {
-             
-            if (sendIsInactive && ticket.status === "open" && messageInactive ) {
-              const body = formatBody(`\u200e${messageInactive}`,ticketBody);
-              await SendWhatsAppMessage({ body: body, ticket: ticketBody});
-     
-             }
-
-             closeTicket(ticket, useNPS, ticket.status);
-                      
-            io.to("open").emit(`ticket`, {
-              action: "delete",
-              ticket,
-              ticketId: ticket.id
-            });
             }
+          }
         }
+      } catch (err) {
+        Sentry.captureException(err);
+        logger.error(err);
       }
-
-    });
+    }
 
   } catch (e: any) {
-    console.log('e', e)
+    logger.error(e);
   }
 
 }

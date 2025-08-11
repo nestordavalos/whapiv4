@@ -87,6 +87,9 @@ const ListTicketsService = async ({
         as: "messages",
         attributes: [],
         where: messageWhere,
+        where: {
+          bodySearch: { [Op.like]: `%${sanitizedSearchParam}%` }
+        },
         required: false,
         duplicating: false
       }
@@ -109,6 +112,17 @@ const ListTicketsService = async ({
     whereCondition = {
       ...whereCondition,
       [Op.or]: orConditions
+      [Op.or]: [
+        {
+          "$contact.name$": where(
+            fn("LOWER", col("contact.name")),
+            "LIKE",
+            `%${sanitizedSearchParam}%`
+          )
+        },
+        { "$contact.number$": { [Op.like]: `%${sanitizedSearchParam}%` } },
+        { "$messages.bodySearch$": { [Op.like]: `%${sanitizedSearchParam}%` } }
+      ]
     };
   }
 

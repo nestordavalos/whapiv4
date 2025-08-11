@@ -74,6 +74,11 @@ const ListTicketsService = async ({
 
   if (searchParam) {
     const sanitizedSearchParam = searchParam.toLocaleLowerCase().trim();
+    const isNumeric = /^\d+$/.test(sanitizedSearchParam);
+
+    const messageWhere = isNumeric
+      ? {}
+      : { bodySearch: { [Op.like]: `%${sanitizedSearchParam}%` } };
 
     includeCondition = [
       ...includeCondition,
@@ -81,27 +86,29 @@ const ListTicketsService = async ({
         model: Message,
         as: "messages",
         attributes: [],
-        where: {
-          bodySearch: { [Op.like]: `%${sanitizedSearchParam}%` }
-        },
+        where: messageWhere,
         required: false,
         duplicating: false
       }
     ];
 
+    const orConditions: any[] = [
+      { "$contact.number$": { [Op.like]: `${sanitizedSearchParam}%` } },
+      !isNumeric && {
+        "$contact.name$": where(
+          fn("LOWER", col("contact.name")),
+          "LIKE",
+          `%${sanitizedSearchParam}%`
+        )
+      },
+      !isNumeric && {
+        "$messages.bodySearch$": { [Op.like]: `%${sanitizedSearchParam}%` }
+      }
+    ].filter(Boolean);
+
     whereCondition = {
       ...whereCondition,
-      [Op.or]: [
-        {
-          "$contact.name$": where(
-            fn("LOWER", col("contact.name")),
-            "LIKE",
-            `%${sanitizedSearchParam}%`
-          )
-        },
-        { "$contact.number$": { [Op.like]: `%${sanitizedSearchParam}%` } },
-        { "$messages.bodySearch$": { [Op.like]: `%${sanitizedSearchParam}%` } }
-      ]
+      [Op.or]: orConditions
     };
   }
 

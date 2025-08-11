@@ -29,10 +29,15 @@ const syncUnreadMessages = async (wbot: Session) => {
         raw: true
       });
       const existingIds = new Set(existing.map(m => m.id));
-      const newMessages = unreadMessages.filter(msg => !existingIds.has(msg.id.id));
+      const newMessages = unreadMessages
+        .filter(msg => !existingIds.has(msg.id.id))
+        .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
       for (const msg of newMessages) {
         try {
+          if (!msg.body) {
+            msg.body = "";
+          }
           await handleMessage(msg, wbot);
         } catch (err: any) {
           if (err.name === "SequelizeUniqueConstraintError") {

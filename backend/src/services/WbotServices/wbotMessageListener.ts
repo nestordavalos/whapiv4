@@ -246,13 +246,16 @@ const verifyMediaMessage = async (
   return newMessage;
 };
 
+const getLocationDescription = (msg: WbotMessage): string | undefined => {
+  const loc: any = msg.location;
+  return loc?.options?.address || loc?.options || loc?.description;
+};
+
 const prepareLocation = (msg: WbotMessage): WbotMessage => {
   const gmapsUrl = `https://maps.google.com/maps?q=${msg.location.latitude}%2C${msg.location.longitude}&z=17`;
   msg.body = `data:image/png;base64,${msg.body}|${gmapsUrl}`;
-  msg.body += `|${msg.location.options
-    ? msg.location.options
-    : `${msg.location.latitude}, ${msg.location.longitude}`
-    }`;
+  const description = getLocationDescription(msg);
+  msg.body += `|${description ? description : `${msg.location.latitude}, ${msg.location.longitude}`}`;
   return msg;
 };
 
@@ -279,26 +282,22 @@ export const verifyMessage = async (
   };
 
   if (msg.fromMe == true) {
-    // temporaryly disable ts checks because of type definition bug for Location object
-    // @ts-ignore
     await ticket.update({
       //texto que sai do chat tb,
       fromMe: msg.fromMe,
       lastMessage:
         msg.type === "location"
-          ? msg.location.options
-            ? "🢅" + "⠀" + `Localization - ${String(msg.location.options).split("\\n")[0]}`
+          ? getLocationDescription(msg)
+            ? "🢅" + "⠀" + `Localization - ${String(getLocationDescription(msg)).split("\\n")[0]}`
             : "🢅" + "⠀" + "🗺️:" + "Localization"
           : "🢅" + "⠀" + msg.body
     });
   } else {
-// temporaryly disable ts checks because of type definition bug for Location object
-  // @ts-ignore
     await ticket.update({//aqui mapei texto que chega do chat
       lastMessage:
         msg.type === "location"
-          ? msg.location.options
-            ? "🢇" + "⠀" + "🗺️:" + `Localization - ${String(msg.location.options).split("\\n")[0]}`
+          ? getLocationDescription(msg)
+            ? "🢇" + "⠀" + "🗺️:" + `Localization - ${String(getLocationDescription(msg)).split("\\n")[0]}`
             : "🢇" + "⠀" + "🗺️:" + "Localization"
           : "🢇" + "⠀" + msg.body
     });

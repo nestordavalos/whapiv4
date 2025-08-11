@@ -82,7 +82,7 @@ const ListTicketsService = async ({
         as: "messages",
         attributes: [],
         where: {
-          bodySearch: { [Op.like]: `${sanitizedSearchParam}%` }
+          bodySearch: { [Op.like]: `%${sanitizedSearchParam}%` }
         },
         required: false,
         duplicating: false
@@ -100,7 +100,7 @@ const ListTicketsService = async ({
           )
         },
         { "$contact.number$": { [Op.like]: `%${sanitizedSearchParam}%` } },
-        { "$messages.bodySearch$": { [Op.like]: `${sanitizedSearchParam}%` } }
+        { "$messages.bodySearch$": { [Op.like]: `%${sanitizedSearchParam}%` } }
       ]
     };
   }

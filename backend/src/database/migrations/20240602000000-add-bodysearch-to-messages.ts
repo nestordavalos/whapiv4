@@ -3,7 +3,7 @@ import { QueryInterface, DataTypes } from "sequelize";
 module.exports = {
   up: async (queryInterface: QueryInterface) => {
     await queryInterface.addColumn("Messages", "bodySearch", {
-      type: DataTypes.STRING("long"),
+      type: DataTypes.STRING,
       allowNull: true
     });
 
@@ -15,9 +15,13 @@ module.exports = {
     const table = dialect === "postgres" ? '"Messages"' : "`Messages`";
     const bodySearch = dialect === "postgres" ? '"bodySearch"' : "`bodySearch`";
     const body = dialect === "postgres" ? '"body"' : "`body`";
+    const substring =
+      dialect === "postgres"
+        ? `LOWER(SUBSTRING(${body} FROM 1 FOR 255))`
+        : `LOWER(SUBSTRING(${body}, 1, 255))`;
 
     await queryInterface.sequelize.query(
-      `UPDATE ${table} SET ${bodySearch} = LOWER(${body})`
+      `UPDATE ${table} SET ${bodySearch} = ${substring}`
     );
   },
 

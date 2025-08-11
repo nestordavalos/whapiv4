@@ -38,7 +38,7 @@ class Message extends Model<Message> {
   body: string;
 
   @Index
-  @Column(DataType.STRING("long"))
+  @Column(DataType.STRING)
   bodySearch: string;
 
   @Column(DataType.STRING("long"))
@@ -100,7 +100,7 @@ class Message extends Model<Message> {
   @BeforeUpdate
   static normalizeBody(instance: Message): void {
     if (instance.body) {
-      instance.bodySearch = instance.body.toLowerCase();
+      instance.bodySearch = instance.body.toLowerCase().slice(0, 255);
     }
   }
 }

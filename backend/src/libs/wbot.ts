@@ -118,8 +118,6 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
         }
       });
 
-      wbot.initialize();
-
       wbot.on("qr", async qr => {
         try {
           logger.info("Session:", sessionName);
@@ -215,6 +213,14 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
           logger.error(`Error handling disconnected: ${err}`);
         }
       });
+
+      try {
+        await wbot.initialize();
+      } catch (err) {
+        Sentry.captureException(err);
+        logger.error(`Error initializing wbot: ${err}`);
+        reject(err);
+      }
 
     } catch (err: any) {
       logger.error(err);

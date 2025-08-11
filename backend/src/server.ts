@@ -32,5 +32,5 @@ cron.schedule("*/1 * * * *", async () => {
 });
 
 initIO(server);
-StartAllWhatsAppsSessions();
+StartAllWhatsAppsSessions().catch(err => logger.error(err));
 gracefulShutdown(server);

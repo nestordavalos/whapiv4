@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { getIO } from "../libs/socket";
 import { removeWbot } from "../libs/wbot";
 import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
+import { logger } from "../utils/logger";
 import AppError from "../errors/AppError";
 
 import CreateWhatsAppService from "../services/WhatsappService/CreateWhatsAppService";
@@ -203,7 +204,11 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     EndDefineWorkHoursSundayLunch,
   });
 
-  StartWhatsAppSession(whatsapp);
+  try {
+    await StartWhatsAppSession(whatsapp);
+  } catch (err) {
+    logger.error(err);
+  }
 
   const io = getIO();
   io.emit("whatsapp", {

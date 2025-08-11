@@ -3,12 +3,17 @@ import { getWbot, removeWbot } from "../libs/wbot";
 import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
 import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
 import UpdateWhatsAppService from "../services/WhatsappService/UpdateWhatsAppService";
+import { logger } from "../utils/logger";
 
 const store = async (req: Request, res: Response): Promise<Response> => {
   const { whatsappId } = req.params;
   const whatsapp = await ShowWhatsAppService(whatsappId);
 
-  StartWhatsAppSession(whatsapp);
+  try {
+    await StartWhatsAppSession(whatsapp);
+  } catch (err) {
+    logger.error(err);
+  }
 
   return res.status(200).json({ message: "Starting session." });
 };
@@ -21,7 +26,11 @@ const update = async (req: Request, res: Response): Promise<Response> => {
     whatsappData: { session: "" }
   });
 
-  StartWhatsAppSession(whatsapp);
+  try {
+    await StartWhatsAppSession(whatsapp);
+  } catch (err) {
+    logger.error(err);
+  }
 
   return res.status(200).json({ message: "Starting session." });
 };

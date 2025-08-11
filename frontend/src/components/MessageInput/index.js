@@ -20,7 +20,6 @@ import {
   Menu,
   MenuItem,
   Switch,
-  Grid,
   Typography,
   Avatar
 } from "@material-ui/core";
@@ -62,8 +61,8 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   avatar: {
-    width: "50px",
-    height: "50px",
+    width: 64,
+    height: 64,
     borderRadius: "25%"
   },
   dropInfo: {
@@ -87,10 +86,21 @@ const useStyles = makeStyles((theme) => ({
     marginTop: 8,
     marginBottom: 8,
   },
+  mediaPreviewItem: {
+    display: "flex",
+    alignItems: "center",
+    marginTop: 4,
+  },
   mediaThumb: {
-    maxWidth: 200,
-    maxHeight: 200,
+    width: 64,
+    height: 64,
     borderRadius: 4,
+    objectFit: "cover",
+  },
+  mediaFileName: {
+    marginLeft: 8,
+    maxWidth: 200,
+    wordBreak: "break-all",
   },
   captionField: {
     marginTop: 6,
@@ -496,9 +506,9 @@ const MessageInput = ({ ticketStatus }) => {
             <Typography variant="h6" component="div">
               {i18n.t("uploads.titles.titleFileList")} ({medias.length})
             </Typography>
-            <Grid container spacing={2} className={classes.mediaPreviewGrid}>
+            <div className={classes.mediaPreviewGrid}>
               {medias.map((value, index) => (
-                <Grid item key={index}>
+                <div className={classes.mediaPreviewItem} key={index}>
                   {value.type.indexOf("image") > -1 ? (
                     <img
                       alt={value.name}
@@ -508,9 +518,12 @@ const MessageInput = ({ ticketStatus }) => {
                   ) : (
                     <Avatar className={classes.avatar} alt={value.name} />
                   )}
-                </Grid>
+                  <Typography variant="body2" className={classes.mediaFileName}>
+                    {value.name}
+                  </Typography>
+                </div>
               ))}
-            </Grid>
+            </div>
             <TextField
               className={classes.captionField}
               variant="outlined"

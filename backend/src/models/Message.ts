@@ -6,6 +6,7 @@ import {
   Model,
   DataType,
   PrimaryKey,
+  Unique,
   Default,
   BelongsTo,
   ForeignKey,
@@ -19,6 +20,7 @@ import Ticket from "./Ticket";
 @Table({ timestamps: true })
 class Message extends Model<Message> {
   @PrimaryKey
+  @Unique
   @Column
   id: string;
 

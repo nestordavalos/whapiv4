@@ -1,5 +1,6 @@
 import qrCode from "qrcode-terminal";
 import { Client, LocalAuth } from "whatsapp-web.js";
+import { Op } from "sequelize";
 import { getIO } from "./socket";
 import Whatsapp from "../models/Whatsapp";
 import AppError from "../errors/AppError";
@@ -20,14 +21,24 @@ const syncUnreadMessages = async (wbot: Session) => {
   for (const chat of chats) {
     if (chat.unreadCount > 0) {
       const unreadMessages = await chat.fetchMessages({ limit: chat.unreadCount });
-      for (const msg of unreadMessages) {
+
+      const ids = unreadMessages.map(msg => msg.id.id);
+      const existing = await Message.findAll({
+        where: { id: { [Op.in]: ids } },
+        attributes: ["id"],
+        raw: true
+      });
+      const existingIds = new Set(existing.map(m => m.id));
+      const newMessages = unreadMessages.filter(msg => !existingIds.has(msg.id.id));
+
+      for (const msg of newMessages) {
         try {
-          const existing = await Message.findByPk(msg.id.id);
-          if (existing) {
+          await handleMessage(msg, wbot);
+        } catch (err: any) {
+          if (err.name === "SequelizeUniqueConstraintError") {
+            logger.warn(`[wbot] Duplicate message ignored: ${msg.id.id}`);
             continue;
           }
-          await handleMessage(msg, wbot);
-        } catch (err) {
           Sentry.captureException(err);
           logger.error(`[wbot] Error handling unread message: ${err}`);
         }

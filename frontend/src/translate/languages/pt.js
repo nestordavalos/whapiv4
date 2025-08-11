@@ -681,6 +681,7 @@ const messages = {
         placeholderOpen: "Digite uma mensagem",
         placeholderClosed: "Reabra ou aceite esse chamado para enviar uma mensagem.",
         signMessage: "Assinar",
+        captionPlaceholder: "Adicione uma legenda...",
       },
       contactDrawer: {
         header: "Dados do contato",

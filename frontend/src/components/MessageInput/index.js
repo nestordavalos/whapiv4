@@ -12,6 +12,7 @@ import {
   ClickAwayListener,
   IconButton,
   InputBase,
+  TextField,
   makeStyles,
   Paper,
   FormControlLabel,
@@ -19,18 +20,11 @@ import {
   Menu,
   MenuItem,
   Switch,
-  Grid,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
   Avatar
 } from "@material-ui/core";
 import { green } from "@material-ui/core/colors";
 import {
   AttachFile,
-  Cancel,
   CheckCircleOutline,
   Clear,
   HighlightOff,
@@ -65,8 +59,8 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   avatar: {
-    width: "50px",
-    height: "50px",
+    width: 64,
+    height: 64,
     borderRadius: "25%"
   },
   dropInfo: {
@@ -82,9 +76,27 @@ const useStyles = makeStyles((theme) => ({
   dropInfoOut: {
     display: "none",
   },
-  gridFiles: {
-    maxHeight: "100%",
-    overflow: "scroll",
+  mediaThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 4,
+    objectFit: "cover",
+  },
+  mediaThumbWrapper: {
+    position: "relative",
+    display: "inline-block",
+    margin: 2,
+  },
+  removeMediaButton: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    background: "rgba(0,0,0,0.6)",
+    color: "#fff",
+    padding: 2,
+    '&:hover': {
+      background: "rgba(0,0,0,0.8)",
+    },
   },
   newMessageBox: {
     background: theme.palette.background.default,
@@ -112,16 +124,6 @@ const useStyles = makeStyles((theme) => ({
   },
   uploadInput: {
     display: "none",
-  },
-  viewMediaInputWrapper: {
-    maxHeight: "80%",
-    display: "flex",
-    padding: "10px 13px",
-    position: "relative",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#eee",
-    borderTop: "1px solid rgba(0, 0, 0, 0.12)",
   },
   emojiBox: {
     position: "absolute",
@@ -222,6 +224,7 @@ const MessageInput = ({ ticketStatus }) => {
   const classes = useStyles();
   const { ticketId } = useParams();
   const [medias, setMedias] = useState([]);
+  const [mediaCaption, setMediaCaption] = useState("");
   const [inputMessage, setInputMessage] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -245,6 +248,7 @@ const MessageInput = ({ ticketStatus }) => {
       setInputMessage("");
       setShowEmoji(false);
       setMedias([]);
+      setMediaCaption("");
       setReplyingMessage(null);
     };
   }, [ticketId, setReplyingMessage]);
@@ -298,6 +302,16 @@ const MessageInput = ({ ticketStatus }) => {
     }
   };
 
+  const handleRemoveMedia = (index) => {
+    setMedias((prev) => {
+      const newFiles = prev.filter((_, i) => i !== index);
+      if (newFiles.length === 0) {
+        setMediaCaption("");
+      }
+      return newFiles;
+    });
+  };
+
   const handleUploadMedia = async (e) => {
     setLoading(true);
     if (e) {
@@ -307,8 +321,13 @@ const MessageInput = ({ ticketStatus }) => {
     formData.append("fromMe", true);
     medias.forEach((media) => {
       formData.append("medias", media);
-      formData.append("body", media.name);
     });
+    if (mediaCaption.trim()) {
+      formData.append("body", mediaCaption.trim());
+    }
+    if (replyingMessage) {
+      formData.append("quotedMsg", JSON.stringify(replyingMessage));
+    }
     try {
       await api.post(`/messages/${ticketId}`, formData);
     } catch (err) {
@@ -317,6 +336,8 @@ const MessageInput = ({ ticketStatus }) => {
 
     setLoading(false);
     setMedias([]);
+    setMediaCaption("");
+    setReplyingMessage(null);
   };
 
   const handleSendMessage = async () => {
@@ -447,71 +468,221 @@ const MessageInput = ({ ticketStatus }) => {
     );
   };
 
+  const renderMediaPreview = (files) => {
+    return (
+      <div className={classes.replyginMsgWrapper}>
+        <div className={classes.replyginMsgContainer}>
+          <span
+            className={clsx(
+              classes.replyginContactMsgSideColor,
+              classes.replyginSelfMsgSideColor
+            )}
+          ></span>
+          <div className={classes.replyginMsgBody}>
+            {files.map((value, index) => (
+              <div key={index} className={classes.mediaThumbWrapper}>
+                {value.type.indexOf("image") > -1 ? (
+                  <img
+                    alt={value.name}
+                    src={URL.createObjectURL(value)}
+                    className={classes.mediaThumb}
+                  />
+                ) : (
+                  <Avatar className={classes.avatar} alt={value.name} />
+                )}
+                <IconButton
+                  size="small"
+                  className={classes.removeMediaButton}
+                  onClick={() => handleRemoveMedia(index)}
+                >
+                  <HighlightOff fontSize="small" />
+                </IconButton>
+              </div>
+            ))}
+          </div>
+        </div>
+        <IconButton
+          aria-label="clear-media"
+          component="span"
+          disabled={loading || ticketStatus !== "open"}
+          onClick={() => {
+            setMedias([]);
+            setMediaCaption("");
+          }}
+        >
+          <Clear className={classes.sendMessageIcons} />
+        </IconButton>
+      </div>
+    );
+  };
+
   if (medias.length > 0)
     return (
       <Paper
-        elevation={0}
         square
-        className={classes.viewMediaInputWrapper}
+        elevation={0}
+        className={classes.mainWrapper}
         onDragEnter={() => setOnDragEnter(true)}
         onDrop={(e) => handleInputDrop(e)}
       >
-        <IconButton
-          aria-label="cancel-upload"
-          component="span"
-          onClick={(e) => setMedias([])}
-        >
-          <Cancel className={classes.sendMessageIcons} />
-        </IconButton>
-
-        {loading ? (
-          <div>
-            <CircularProgress className={classes.circleLoading} />
-          </div>
-        ) : (
-          <Grid item className={classes.gridFiles}>
-            <Typography variant="h6" component="div">
-              {i18n.t("uploads.titles.titleFileList")} ({medias.length})
-            </Typography>
-            <List>
-              {medias.map((value, index) => {
-                return (
-                  <ListItem key={index}>
-                    <ListItemAvatar>
-                      <Avatar className={classes.avatar} alt={value.name} src={URL.createObjectURL(value)} />
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={`${value.name}`}
-                      secondary={`${parseInt(value.size / 1024)} kB`}
+        <div className={onDragEnter ? classes.dropInfo : classes.dropInfoOut}>
+          {i18n.t("uploads.titles.titleUploadMsgDragDrop")}
+        </div>
+        {replyingMessage && renderReplyingMessage(replyingMessage)}
+        {renderMediaPreview(medias)}
+        <div className={classes.newMessageBox}>
+          <Hidden only={["sm", "xs"]}>
+            <IconButton
+              aria-label="emojiPicker"
+              component="span"
+              disabled={loading || recording || ticketStatus !== "open"}
+              onClick={(e) => setShowEmoji((prevState) => !prevState)}
+            >
+              <Mood className={classes.sendMessageIcons} />
+            </IconButton>
+            {showEmoji ? (
+              <div className={classes.emojiBox}>
+                <ClickAwayListener onClickAway={(e) => setShowEmoji(true)}>
+                  <Picker
+                    perLine={16}
+                    theme={"dark"}
+                    i18n={i18n}
+                    showPreview={true}
+                    showSkinTones={false}
+                    onSelect={handleAddEmoji}
+                  />
+                </ClickAwayListener>
+              </div>
+            ) : null}
+            <input
+              multiple
+              type="file"
+              id="upload-button"
+              disabled={loading || recording || ticketStatus !== "open"}
+              className={classes.uploadInput}
+              onChange={handleChangeMedias}
+            />
+            <label htmlFor="upload-button">
+              <IconButton
+                aria-label="upload"
+                component="span"
+                disabled={loading || recording || ticketStatus !== "open"}
+                onMouseOver={() => setOnDragEnter(true)}
+              >
+                <AttachFile className={classes.sendMessageIcons} />
+              </IconButton>
+            </label>
+            <FormControlLabel
+              style={{ marginRight: 7, color: "primary" }}
+              label={i18n.t("messagesInput.signMessage")}
+              labelPlacement="start"
+              control={
+                <Switch
+                  size="small"
+                  checked={signMessage}
+                  onChange={(e) => {
+                    setSignMessage(e.target.checked);
+                  }}
+                  name="showAllTickets"
+                  color="secondary"
+                />
+              }
+            />
+          </Hidden>
+          <Hidden only={["md", "lg", "xl"]}>
+            <IconButton
+              aria-controls="simple-menu"
+              aria-haspopup="true"
+              onClick={handleOpenMenuClick}
+            >
+              <MoreVert></MoreVert>
+            </IconButton>
+            <Menu
+              id="simple-menu"
+              keepMounted
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuItemClick}
+            >
+              <MenuItem onClick={handleMenuItemClick}>
+                <IconButton
+                  aria-label="emojiPicker"
+                  component="span"
+                  disabled={loading || recording || ticketStatus !== "open"}
+                  onClick={(e) => setShowEmoji((prevState) => !prevState)}
+                >
+                  <Mood className={classes.sendMessageIcons} />
+                </IconButton>
+              </MenuItem>
+              <MenuItem onClick={handleMenuItemClick}>
+                <input
+                  multiple
+                  type="file"
+                  id="upload-button"
+                  disabled={loading || recording || ticketStatus !== "open"}
+                  className={classes.uploadInput}
+                  onChange={handleChangeMedias}
+                />
+                <label htmlFor="upload-button">
+                  <IconButton
+                    aria-label="upload"
+                    component="span"
+                    disabled={loading || recording || ticketStatus !== "open"}
+                  >
+                    <AttachFile className={classes.sendMessageIcons} />
+                  </IconButton>
+                </label>
+              </MenuItem>
+              <MenuItem onClick={handleMenuItemClick}>
+                <FormControlLabel
+                  style={{ marginRight: 7, color: "gray" }}
+                  label={i18n.t("messagesInput.signMessage")}
+                  labelPlacement="start"
+                  control={
+                    <Switch
+                      size="small"
+                      checked={signMessage}
+                      onChange={(e) => {
+                        setSignMessage(e.target.checked);
+                      }}
+                      name="showAllTickets"
+                      color="primary"
                     />
-                  </ListItem>
-                );
-              })}
-            </List>
+                  }
+                />
+              </MenuItem>
+            </Menu>
+          </Hidden>
+          <div className={classes.messageInputWrapper}>
             <InputBase
-              style={{ width: "0", height: "0" }}
-              inputRef={function (input) {
-                if (input != null) {
-                  input.focus();
-                }
+              inputRef={(input) => {
+                input && input.focus();
+                input && (inputRef.current = input);
               }}
+              className={classes.messageInput}
+              placeholder={i18n.t("messagesInput.captionPlaceholder")}
+              multiline
+              maxRows={5}
+              value={capitalizeFirstLetter(mediaCaption)}
+              onChange={(e) => setMediaCaption(e.target.value)}
+              disabled={loading || ticketStatus !== "open"}
               onKeyPress={(e) => {
-                if (e.key === "Enter") {
+                if (loading || e.shiftKey) return;
+                else if (e.key === "Enter") {
                   handleUploadMedia();
                 }
               }}
-              defaultValue={medias[0].name}
             />
-          </Grid>
-        )}
-        <IconButton
-          aria-label="send-upload"
-          component="span"
-          onClick={handleUploadMedia}
-          disabled={loading}
-        >
-          <Send className={classes.sendMessageIcons} />
-        </IconButton>
+          </div>
+          <IconButton
+            aria-label="send-upload"
+            component="span"
+            onClick={handleUploadMedia}
+            disabled={loading || ticketStatus !== "open"}
+          >
+            <Send className={classes.sendMessageIcons} />
+          </IconButton>
+        </div>
       </Paper>
     );
   else {

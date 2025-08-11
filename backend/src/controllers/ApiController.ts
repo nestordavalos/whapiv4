@@ -102,8 +102,13 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   const { queueId }: QueueData = req.body;
   const { tagsId }: TagData = req.body;
   const { userId }: UserData = req.body;
-  const { body, quotedMsg }: MessageData = req.body;
-  const medias = req.files as Express.Multer.File[];
+  const { body } = req.body;
+  const quotedMsg = req.body.quotedMsg
+    ? typeof req.body.quotedMsg === "string"
+      ? JSON.parse(req.body.quotedMsg)
+      : req.body.quotedMsg
+    : undefined;
+  const medias = req.files as Express.Multer.File[] | undefined;
 
   newContact.number = newContact.number.replace("-", "").replace(" ", "");
 
@@ -118,15 +123,21 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   } catch (err: any) {
     throw new AppError(err.message);
   }
-  console.log("entrou api controler: " + body)
-  const contactAndTicket = await createContact(userId, tagsId, queueId, whatsappId, newContact.number);
+
+  const contactAndTicket = await createContact(
+    userId,
+    tagsId,
+    queueId,
+    whatsappId,
+    newContact.number
+  );
 
   let resp: any;
 
-  if (medias) {
+  if (medias && medias.length > 0) {
     await Promise.all(
       medias.map(async (media: Express.Multer.File) => {
-        resp = await SendWhatsAppMedia({ body, media, ticket: contactAndTicket });
+        resp = await SendWhatsAppMedia({ body, media, ticket: contactAndTicket, quotedMsg });
       })
     );
   } else {

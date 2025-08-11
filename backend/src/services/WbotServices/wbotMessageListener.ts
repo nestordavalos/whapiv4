@@ -2593,22 +2593,41 @@ const handleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
 
 const wbotMessageListener = async (wbot: Session): Promise<void> => {
   wbot.on("message_create", async msg => {
-    handleMessage(msg, wbot);
+    try {
+      await handleMessage(msg, wbot);
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error(`Error handling message_create: ${err}`);
+    }
   });
 
   wbot.on("media_uploaded", async msg => {
-    handleMessage(msg, wbot);
+    try {
+      await handleMessage(msg, wbot);
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error(`Error handling media_uploaded: ${err}`);
+    }
   });
 
   wbot.on("message_ack", async (msg, ack) => {
-    handleMsgAck(msg, ack);
+    try {
+      await handleMsgAck(msg, ack);
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error(`Error handling message_ack: ${err}`);
+    }
   });
 
   wbot.on("message_revoke_everyone", async (after, before) => {
-
-    const msgBody: string | undefined = before?.body;
-    if (msgBody !== undefined) {
-      verifyRevoked(msgBody || "");
+    try {
+      const msgBody: string | undefined = before?.body;
+      if (msgBody !== undefined) {
+        await verifyRevoked(msgBody || "");
+      }
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error(`Error handling message_revoke_everyone: ${err}`);
     }
   });
 };

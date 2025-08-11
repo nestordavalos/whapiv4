@@ -74,44 +74,42 @@ const ListTicketsService = async ({
 
   if (searchParam) {
     const sanitizedSearchParam = searchParam.toLocaleLowerCase().trim();
+    const isNumeric = /^\d+$/.test(sanitizedSearchParam);
 
-    includeCondition = [
-      ...includeCondition,
-      {
-        model: Message,
-        as: "messages",
-        attributes: [],
-        where: {
-          body: where(
-            fn("LOWER", col("body")),
-            "LIKE",
-            `%${sanitizedSearchParam}%`
-          )
-        },
-        required: false,
-        duplicating: false
-      }
+    const orConditions: any[] = [
+      { "$contact.number$": { [Op.like]: `${sanitizedSearchParam}%` } }
     ];
 
-    whereCondition = {
-      ...whereCondition,
-      [Op.or]: [
+    if (!isNumeric) {
+      includeCondition = [
+        ...includeCondition,
+        {
+          model: Message,
+          as: "messages",
+          attributes: [],
+          where: {
+            bodySearch: { [Op.like]: `${sanitizedSearchParam}%` }
+          },
+          required: false,
+          duplicating: false
+        }
+      ];
+
+      orConditions.push(
         {
           "$contact.name$": where(
             fn("LOWER", col("contact.name")),
             "LIKE",
-            `%${sanitizedSearchParam}%`
+            `${sanitizedSearchParam}%`
           )
         },
-        { "$contact.number$": { [Op.like]: `%${sanitizedSearchParam}%` } },
-        {
-          "$message.body$": where(
-            fn("LOWER", col("body")),
-            "LIKE",
-            `%${sanitizedSearchParam}%`
-          )
-        }
-      ]
+        { "$messages.bodySearch$": { [Op.like]: `${sanitizedSearchParam}%` } }
+      );
+    }
+
+    whereCondition = {
+      ...whereCondition,
+      [Op.or]: orConditions
     };
   }
 

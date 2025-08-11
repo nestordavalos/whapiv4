@@ -9,7 +9,9 @@ import {
   Default,
   BelongsTo,
   ForeignKey,
-  Index
+  Index,
+  BeforeCreate,
+  BeforeUpdate
 } from "sequelize-typescript";
 import Contact from "./Contact";
 import Ticket from "./Ticket";
@@ -34,6 +36,10 @@ class Message extends Model<Message> {
 
   @Column(DataType.STRING("long"))
   body: string;
+
+  @Index
+  @Column(DataType.STRING)
+  bodySearch: string;
 
   @Column(DataType.STRING("long"))
   dataJson: string;
@@ -89,6 +95,14 @@ class Message extends Model<Message> {
 
   @BelongsTo(() => Contact, "contactId")
   contact: Contact;
+
+  @BeforeCreate
+  @BeforeUpdate
+  static normalizeBody(instance: Message): void {
+    if (instance.body) {
+      instance.bodySearch = instance.body.toLowerCase().slice(0, 255);
+    }
+  }
 }
 
 export default Message;

@@ -222,6 +222,7 @@ const MessageInput = ({ ticketStatus }) => {
   const classes = useStyles();
   const { ticketId } = useParams();
   const [medias, setMedias] = useState([]);
+  const [mediaCaption, setMediaCaption] = useState("");
   const [inputMessage, setInputMessage] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -245,6 +246,7 @@ const MessageInput = ({ ticketStatus }) => {
       setInputMessage("");
       setShowEmoji(false);
       setMedias([]);
+      setMediaCaption("");
       setReplyingMessage(null);
     };
   }, [ticketId, setReplyingMessage]);
@@ -307,8 +309,13 @@ const MessageInput = ({ ticketStatus }) => {
     formData.append("fromMe", true);
     medias.forEach((media) => {
       formData.append("medias", media);
-      formData.append("body", media.name);
     });
+    if (mediaCaption.trim()) {
+      formData.append("body", mediaCaption.trim());
+    }
+    if (replyingMessage) {
+      formData.append("quotedMsg", JSON.stringify(replyingMessage));
+    }
     try {
       await api.post(`/messages/${ticketId}`, formData);
     } catch (err) {
@@ -317,6 +324,8 @@ const MessageInput = ({ ticketStatus }) => {
 
     setLoading(false);
     setMedias([]);
+    setMediaCaption("");
+    setReplyingMessage(null);
   };
 
   const handleSendMessage = async () => {
@@ -459,7 +468,11 @@ const MessageInput = ({ ticketStatus }) => {
         <IconButton
           aria-label="cancel-upload"
           component="span"
-          onClick={(e) => setMedias([])}
+          onClick={() => {
+            setMedias([]);
+            setMediaCaption("");
+            setReplyingMessage(null);
+          }}
         >
           <Cancel className={classes.sendMessageIcons} />
         </IconButton>
@@ -470,6 +483,7 @@ const MessageInput = ({ ticketStatus }) => {
           </div>
         ) : (
           <Grid item className={classes.gridFiles}>
+            {replyingMessage && renderReplyingMessage(replyingMessage)}
             <Typography variant="h6" component="div">
               {i18n.t("uploads.titles.titleFileList")} ({medias.length})
             </Typography>
@@ -488,27 +502,38 @@ const MessageInput = ({ ticketStatus }) => {
                 );
               })}
             </List>
-            <InputBase
-              style={{ width: "0", height: "0" }}
-              inputRef={function (input) {
-                if (input != null) {
-                  input.focus();
+            <div className={classes.messageInputWrapper}>
+              <InputBase
+                inputRef={(input) => {
+                  input && input.focus();
+                  input && (inputRef.current = input);
+                }}
+                className={classes.messageInput}
+                placeholder={
+                  ticketStatus === "open"
+                    ? i18n.t("messagesInput.placeholderOpen")
+                    : i18n.t("messagesInput.placeholderClosed")
                 }
-              }}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  handleUploadMedia();
-                }
-              }}
-              defaultValue={medias[0].name}
-            />
+                multiline
+                maxRows={5}
+                value={mediaCaption}
+                onChange={(e) => setMediaCaption(e.target.value)}
+                disabled={loading || ticketStatus !== "open"}
+                onKeyPress={(e) => {
+                  if (loading || e.shiftKey) return;
+                  else if (e.key === "Enter") {
+                    handleUploadMedia();
+                  }
+                }}
+              />
+            </div>
           </Grid>
         )}
         <IconButton
           aria-label="send-upload"
           component="span"
           onClick={handleUploadMedia}
-          disabled={loading}
+          disabled={loading || ticketStatus !== "open"}
         >
           <Send className={classes.sendMessageIcons} />
         </IconButton>

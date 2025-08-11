@@ -38,14 +38,19 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const { ticketId } = req.params;
-  const { body, quotedMsg }: MessageData = req.body;
-  const medias = req.files as Express.Multer.File[];
+  const { body } = req.body;
+  const quotedMsg = req.body.quotedMsg
+    ? typeof req.body.quotedMsg === "string"
+      ? JSON.parse(req.body.quotedMsg)
+      : req.body.quotedMsg
+    : undefined;
+  const medias = req.files as Express.Multer.File[] | undefined;
 
   const ticket = await ShowTicketService(ticketId);
 
   SetTicketMessagesAsRead(ticket);
 
-  if (medias) {
+  if (medias && medias.length > 0) {
     await Promise.all(
       medias.map(async (media: Express.Multer.File) => {
         await SendWhatsAppMedia({ media, ticket, body, quotedMsg });

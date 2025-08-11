@@ -664,6 +664,7 @@ const messages = {
         placeholderOpen: "Enter a message",
         placeholderClosed: "Reopen or accept this ticket to send a message.",
         signMessage: "Subscribe",
+        captionPlaceholder: "Add a caption...",
       },
       contactDrawer: {
         header: "Contact Data",

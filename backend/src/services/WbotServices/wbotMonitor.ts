@@ -36,6 +36,15 @@ const wbotMonitor = async (
     wbot.on("disconnected", async reason => {
       logger.info(`Disconnected session: ${sessionName}, reason: ${reason}`);
       try {
+        if (reason === "LOGOUT") {
+          await whatsapp.update({ status: "DISCONNECTED", session: "", number: "" });
+          io.emit("whatsappSession", {
+            action: "update",
+            session: whatsapp
+          });
+          return;
+        }
+
         await whatsapp.update({ status: "OPENING", session: "", number: "" });
       } catch (err) {
         Sentry.captureException(err);
@@ -47,7 +56,9 @@ const wbotMonitor = async (
         session: whatsapp
       });
 
-      setTimeout(() => StartWhatsAppSession(whatsapp), 2000);
+      setTimeout(() => {
+        StartWhatsAppSession(whatsapp).catch(err => logger.error(err));
+      }, 2000);
     });
   } catch (err) {
     Sentry.captureException(err);

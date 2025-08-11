@@ -674,6 +674,7 @@ const messages = {
         placeholderOpen: "Ingrese un mensaje",
         placeholderClosed: "Reabrir o aceptar este ticket para enviar un mensaje.",
         signMessage: "Suscribirse",
+        captionPlaceholder: "Agrega un subtítulo...",
       },
       contactDrawer: {
         header: "Datos de contacto",

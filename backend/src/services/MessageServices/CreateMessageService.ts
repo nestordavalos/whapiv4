@@ -12,6 +12,8 @@ interface MessageData {
   read?: boolean;
   mediaType?: string;
   mediaUrl?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 interface Request {
@@ -21,14 +23,14 @@ interface Request {
 const CreateMessageService = async ({
   messageData
 }: Request): Promise<Message> => {
-  // 🔍 Log inicial del contenido que se intenta guardar
-  console.log("🔄 CreateMessageService - messageData:", JSON.stringify(messageData, null, 2));
+  // Buscar o crear mensaje de forma atómica para evitar duplicados
+  const [message, created] = await Message.findOrCreate({
+    where: { id: messageData.id },
+    defaults: messageData
+  });
 
-  // Guardar o actualizar mensaje
-  await Message.upsert(messageData);
-
-  // Intentar recuperar el mensaje completo con relaciones
-  const message = await Message.findByPk(messageData.id, {
+  // Recargar las asociaciones necesarias
+  await message.reload({
     include: [
       "contact",
       {
@@ -52,21 +54,18 @@ const CreateMessageService = async ({
     ]
   });
 
-  if (!message) {
-    console.error("❌ No se encontró el mensaje luego de upsert. ID:", messageData.id);
-    throw new Error("ERR_CREATING_MESSAGE");
+  if (created) {
+    const io = getIO();
+    io.to(message.ticketId.toString())
+      .to(message.ticket.status)
+      .to("notification")
+      .emit("appMessage", {
+        action: "create",
+        message,
+        ticket: message.ticket,
+        contact: message.ticket.contact
+      });
   }
-
-  const io = getIO();
-  io.to(message.ticketId.toString())
-    .to(message.ticket.status)
-    .to("notification")
-    .emit("appMessage", {
-      action: "create",
-      message,
-      ticket: message.ticket,
-      contact: message.ticket.contact
-    });
 
   return message;
 };

@@ -1,14 +1,19 @@
 import { Request, Response } from "express";
-import { getWbot } from "../libs/wbot";
+import { getWbot, removeWbot } from "../libs/wbot";
 import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
 import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
 import UpdateWhatsAppService from "../services/WhatsappService/UpdateWhatsAppService";
+import { logger } from "../utils/logger";
 
 const store = async (req: Request, res: Response): Promise<Response> => {
   const { whatsappId } = req.params;
   const whatsapp = await ShowWhatsAppService(whatsappId);
 
-  StartWhatsAppSession(whatsapp);
+  try {
+    await StartWhatsAppSession(whatsapp);
+  } catch (err) {
+    logger.error(err);
+  }
 
   return res.status(200).json({ message: "Starting session." });
 };
@@ -21,31 +26,40 @@ const update = async (req: Request, res: Response): Promise<Response> => {
     whatsappData: { session: "" }
   });
 
-  StartWhatsAppSession(whatsapp);
+  try {
+    await StartWhatsAppSession(whatsapp);
+  } catch (err) {
+    logger.error(err);
+  }
 
   return res.status(200).json({ message: "Starting session." });
 };
 
 const remove = async (req: Request, res: Response): Promise<Response> => {
-  try {
-    console.log("Recebendo solicitud de desconexion...");
-    const { whatsappId } = req.params;
-    const whatsapp = await ShowWhatsAppService(whatsappId);
+  console.log("Recebendo solicitud de desconexion...");
+  const { whatsappId } = req.params;
+  const whatsapp = await ShowWhatsAppService(whatsappId);
 
+  try {
     console.log("Obtendo instancia do WhatsApp...");
     const wbot = getWbot(whatsapp.id);
 
     console.log("Executando logout...");
     if (wbot && typeof wbot.logout === "function") {
-      await wbot.logout();
+      try {
+        await wbot.logout();
+      } catch (error) {
+        console.error("Erro ao desconectar:", error);
+      }
     }
-
-    console.log("Logout concluido. Respondendo ao cliente...");
-    return res.status(200).json({ message: "Session disconnected." });
   } catch (error) {
-    console.error("Erro ao desconectar:", error);
-    return res.status(500).json({ error: "Failed to disconnect session." });
+    console.error("Instancia de WhatsApp não encontrada:", error);
+  } finally {
+    removeWbot(whatsapp.id);
   }
+
+  console.log("Logout concluido. Respondendo ao cliente...");
+  return res.status(200).json({ message: "Session disconnected." });
 };
 
 export default { store, remove, update };

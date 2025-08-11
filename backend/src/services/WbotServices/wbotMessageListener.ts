@@ -230,7 +230,9 @@ const verifyMediaMessage = async (
     mediaUrl: media.filename,
     mediaType: media.mimetype.split("/")[0],
     quotedMsgId: quotedMsg?.id,
-    ack: msg.ack
+    ack: msg.ack,
+    createdAt: new Date(msg.timestamp * 1000),
+    updatedAt: new Date(msg.timestamp * 1000)
   };
 
   if (msg.fromMe == true) {
@@ -244,13 +246,16 @@ const verifyMediaMessage = async (
   return newMessage;
 };
 
+const getLocationDescription = (msg: WbotMessage): string | undefined => {
+  const loc: any = msg.location;
+  return loc?.options?.address || loc?.options || loc?.description;
+};
+
 const prepareLocation = (msg: WbotMessage): WbotMessage => {
   const gmapsUrl = `https://maps.google.com/maps?q=${msg.location.latitude}%2C${msg.location.longitude}&z=17`;
   msg.body = `data:image/png;base64,${msg.body}|${gmapsUrl}`;
-  msg.body += `|${msg.location.options
-    ? msg.location.options
-    : `${msg.location.latitude}, ${msg.location.longitude}`
-    }`;
+  const description = getLocationDescription(msg);
+  msg.body += `|${description ? description : `${msg.location.latitude}, ${msg.location.longitude}`}`;
   return msg;
 };
 
@@ -271,30 +276,28 @@ export const verifyMessage = async (
     mediaType: msg.type,
     read: msg.fromMe,
     quotedMsgId: quotedMsg?.id,
-    ack: msg.ack
+    ack: msg.ack,
+    createdAt: new Date(msg.timestamp * 1000),
+    updatedAt: new Date(msg.timestamp * 1000)
   };
 
   if (msg.fromMe == true) {
-    // temporaryly disable ts checks because of type definition bug for Location object
-    // @ts-ignore
     await ticket.update({
       //texto que sai do chat tb,
       fromMe: msg.fromMe,
       lastMessage:
         msg.type === "location"
-          ? msg.location.options
-            ? "🢅" + "⠀" + `Localization - ${String(msg.location.options).split("\\n")[0]}`
+          ? getLocationDescription(msg)
+            ? "🢅" + "⠀" + `Localization - ${String(getLocationDescription(msg)).split("\\n")[0]}`
             : "🢅" + "⠀" + "🗺️:" + "Localization"
           : "🢅" + "⠀" + msg.body
     });
   } else {
-// temporaryly disable ts checks because of type definition bug for Location object
-  // @ts-ignore
     await ticket.update({//aqui mapei texto que chega do chat
       lastMessage:
         msg.type === "location"
-          ? msg.location.options
-            ? "🢇" + "⠀" + "🗺️:" + `Localization - ${String(msg.location.options).split("\\n")[0]}`
+          ? getLocationDescription(msg)
+            ? "🢇" + "⠀" + "🗺️:" + `Localization - ${String(getLocationDescription(msg)).split("\\n")[0]}`
             : "🢇" + "⠀" + "🗺️:" + "Localization"
           : "🢇" + "⠀" + msg.body
     });
@@ -2233,6 +2236,11 @@ const handleMessage = async (
   }
   const showMessageGroupConnection = await ShowWhatsAppService(wbot.id!);
 
+  const selfJid = `${showMessageGroupConnection.number}@c.us`;
+  if (msg.from === selfJid && msg.to === selfJid) {
+    return;
+  }
+
   // IGNORAR MENSAGENS DE GRUPO
   const Settingdb = await Settings.findOne({
     where: { key: "CheckMsgIsGroup" }
@@ -2585,22 +2593,41 @@ const handleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
 
 const wbotMessageListener = async (wbot: Session): Promise<void> => {
   wbot.on("message_create", async msg => {
-    handleMessage(msg, wbot);
+    try {
+      await handleMessage(msg, wbot);
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error(`Error handling message_create: ${err}`);
+    }
   });
 
   wbot.on("media_uploaded", async msg => {
-    handleMessage(msg, wbot);
+    try {
+      await handleMessage(msg, wbot);
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error(`Error handling media_uploaded: ${err}`);
+    }
   });
 
   wbot.on("message_ack", async (msg, ack) => {
-    handleMsgAck(msg, ack);
+    try {
+      await handleMsgAck(msg, ack);
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error(`Error handling message_ack: ${err}`);
+    }
   });
 
   wbot.on("message_revoke_everyone", async (after, before) => {
-
-    const msgBody: string | undefined = before?.body;
-    if (msgBody !== undefined) {
-      verifyRevoked(msgBody || "");
+    try {
+      const msgBody: string | undefined = before?.body;
+      if (msgBody !== undefined) {
+        await verifyRevoked(msgBody || "");
+      }
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error(`Error handling message_revoke_everyone: ${err}`);
     }
   });
 };

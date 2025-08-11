@@ -5,9 +5,11 @@ import Whatsapp from "../models/Whatsapp";
 import AppError from "../errors/AppError";
 import { logger } from "../utils/logger";
 import { handleMsgAck, handleMessage } from "../services/WbotServices/wbotMessageListener";
+import * as Sentry from "@sentry/node";
 
 interface Session extends Client {
   id?: number;
+  pingInterval?: NodeJS.Timeout;
 }
 
 const sessions: Session[] = [];
@@ -18,7 +20,12 @@ const syncUnreadMessages = async (wbot: Session) => {
     if (chat.unreadCount > 0) {
       const unreadMessages = await chat.fetchMessages({ limit: chat.unreadCount });
       for (const msg of unreadMessages) {
-        await handleMessage(msg, wbot);
+        try {
+          await handleMessage(msg, wbot);
+        } catch (err) {
+          Sentry.captureException(err);
+          logger.error(`[wbot] Error handling unread message: ${err}`);
+        }
       }
 
       try {
@@ -111,76 +118,109 @@ export const initWbot = async (whatsapp: Whatsapp): Promise<Session> => {
         }
       });
 
-      wbot.initialize();
-
       wbot.on("qr", async qr => {
-        logger.info("Session:", sessionName);
-        qrCode.generate(qr, { small: true });
-        await whatsapp.update({ qrcode: qr, status: "qrcode", retries: 0 });
+        try {
+          logger.info("Session:", sessionName);
+          qrCode.generate(qr, { small: true });
+          await whatsapp.update({ qrcode: qr, status: "qrcode", retries: 0 });
 
-        if (!sessions.some(s => s.id === whatsapp.id)) {
-          wbot.id = whatsapp.id;
-          sessions.push(wbot);
+          if (!sessions.some(s => s.id === whatsapp.id)) {
+            wbot.id = whatsapp.id;
+            sessions.push(wbot);
+          }
+
+          io.emit("whatsappSession", { action: "update", session: whatsapp });
+        } catch (err) {
+          Sentry.captureException(err);
+          logger.error(`Error handling qr: ${err}`);
         }
-
-        io.emit("whatsappSession", { action: "update", session: whatsapp });
       });
 
       wbot.on("authenticated", async session => {
-        logger.info(`Session: ${sessionName} AUTHENTICATED`);
+        try {
+          logger.info(`Session: ${sessionName} AUTHENTICATED`);
+        } catch (err) {
+          Sentry.captureException(err);
+          logger.error(`Error handling authenticated: ${err}`);
+        }
       });
 
       wbot.on("auth_failure", async msg => {
-        logger.error(`Session: ${sessionName} AUTH FAILURE - ${msg}`);
+        try {
+          logger.error(`Session: ${sessionName} AUTH FAILURE - ${msg}`);
 
-        if (whatsapp.retries > 1) {
-          await whatsapp.update({ session: "", retries: 0 });
+          if (whatsapp.retries > 1) {
+            await whatsapp.update({ session: "", retries: 0 });
+          }
+
+          await whatsapp.update({ status: "DISCONNECTED", retries: whatsapp.retries + 1 });
+          io.emit("whatsappSession", { action: "update", session: whatsapp });
+          reject(new Error("Error starting whatsapp session."));
+        } catch (err) {
+          Sentry.captureException(err);
+          logger.error(`Error handling auth_failure: ${err}`);
+          reject(err);
         }
-
-        await whatsapp.update({ status: "DISCONNECTED", retries: whatsapp.retries + 1 });
-        io.emit("whatsappSession", { action: "update", session: whatsapp });
-        reject(new Error("Error starting whatsapp session."));
       });
 
       wbot.on("ready", async () => {
-        logger.info(`Session: ${sessionName} READY`);
+        try {
+          logger.info(`Session: ${sessionName} READY`);
 
-        await whatsapp.update({
-          status: "CONNECTED",
-          qrcode: "",
-          retries: 0,
-          number: wbot.info.wid._serialized.split("@")[0]
-        });
+          await whatsapp.update({
+            status: "CONNECTED",
+            qrcode: "",
+            retries: 0,
+            number: wbot.info.wid._serialized.split("@")[0]
+          });
 
-        io.emit("whatsappSession", { action: "update", session: whatsapp });
-        if (!sessions.some(s => s.id === whatsapp.id)) {
-          wbot.id = whatsapp.id;
-          sessions.push(wbot);
-        }
-
-        wbot.sendPresenceAvailable();
-        await syncUnreadMessages(wbot);
-
-        // 🔁 Verificar conexión cada 60s
-        setInterval(async () => {
-          try {
-            const state = await wbot.getState();
-            if (state !== "CONNECTED") {
-              logger.warn(`[wbot] Estado inusual: ${state}`);
-            }
-          } catch (pingErr) {
-            logger.error(`[wbot] Error al hacer ping: ${pingErr.message}`);
+          io.emit("whatsappSession", { action: "update", session: whatsapp });
+          if (!sessions.some(s => s.id === whatsapp.id)) {
+            wbot.id = whatsapp.id;
+            sessions.push(wbot);
           }
-        }, 60000);
 
-        resolve(wbot);
+          wbot.sendPresenceAvailable();
+          await syncUnreadMessages(wbot);
+
+          // 🔁 Verificar conexión cada 60s
+          wbot.pingInterval = setInterval(async () => {
+            try {
+              const state = await wbot.getState();
+              if (state !== "CONNECTED") {
+                logger.warn(`[wbot] Estado inusual: ${state}`);
+              }
+            } catch (pingErr) {
+              logger.error(`[wbot] Error al hacer ping: ${pingErr.message}`);
+            }
+          }, 60000);
+
+          resolve(wbot);
+        } catch (err) {
+          Sentry.captureException(err);
+          logger.error(`Error handling ready: ${err}`);
+          reject(err);
+        }
       });
 
       wbot.on("disconnected", async (reason) => {
-        logger.warn(`Session: ${sessionName} DISCONNECTED - ${reason}`);
-        await whatsapp.update({ status: "DISCONNECTED" });
-        io.emit("whatsappSession", { action: "update", session: whatsapp });
+        try {
+          logger.warn(`Session: ${sessionName} DISCONNECTED - ${reason}`);
+          await whatsapp.update({ status: "DISCONNECTED" });
+          io.emit("whatsappSession", { action: "update", session: whatsapp });
+        } catch (err) {
+          Sentry.captureException(err);
+          logger.error(`Error handling disconnected: ${err}`);
+        }
       });
+
+      try {
+        await wbot.initialize();
+      } catch (err) {
+        Sentry.captureException(err);
+        logger.error(`Error initializing wbot: ${err}`);
+        reject(err);
+      }
 
     } catch (err: any) {
       logger.error(err);
@@ -198,7 +238,11 @@ export const getWbot = (whatsappId: number): Session => {
 export const removeWbot = (whatsappId: number): void => {
   const index = sessions.findIndex(s => s.id === whatsappId);
   if (index !== -1) {
-    sessions[index].destroy();
+    const session = sessions[index];
+    if (session.pingInterval) {
+      clearInterval(session.pingInterval);
+    }
+    session.destroy();
     sessions.splice(index, 1);
   }
 };

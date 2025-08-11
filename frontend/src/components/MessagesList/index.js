@@ -118,6 +118,7 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: "7.5px",
     display: "flex",
     position: "relative",
+    cursor: "pointer",
   },
 
   quotedMsg: {
@@ -172,6 +173,7 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: "7.5px",
     display: "flex",
     position: "relative",
+    cursor: "pointer",
   },
 
   quotedMsgRight: {
@@ -185,6 +187,18 @@ const useStyles = makeStyles((theme) => ({
     flex: "none",
     width: "4px",
     backgroundColor: "#35cd96",
+  },
+
+  messageHighlight: {
+    animationName: "$highlightFade",
+    animationDuration: "1s",
+    animationIterationCount: 2,
+  },
+
+  "@keyframes highlightFade": {
+    "0%": { backgroundColor: "#fff59d" },
+    "50%": { backgroundColor: "inherit" },
+    "100%": { backgroundColor: "#fff59d" },
   },
 
   messageActionsButton: {
@@ -703,11 +717,25 @@ const MessagesList = ({ ticketId, isGroup }) => {
   };
 
   const renderQuotedMessage = (message) => {
+    const handleQuotedMessageClick = () => {
+      const element = document.getElementById(
+        `message-${message.quotedMsg?.id}`
+      );
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+        element.classList.add(classes.messageHighlight);
+        setTimeout(() => {
+          element.classList.remove(classes.messageHighlight);
+        }, 2000);
+      }
+    };
+
     return (
       <div
         className={clsx(classes.quotedContainerLeft, {
           [classes.quotedContainerRight]: message.fromMe,
         })}
+        onClick={handleQuotedMessageClick}
       >
         <span
           className={clsx(classes.quotedSideColorLeft, {
@@ -772,6 +800,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
               {/* {renderNumberTicket(message, index)} */}
               {renderTicketsSeparator(message, index)}
               <div
+                id={`message-${message.id}`}
                 className={classes.messageCenter}
                 onDoubleClick={(e) => hanldeReplyMessage(e, message)}
               >
@@ -819,6 +848,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
               {/* {renderNumberTicket(message, index)} */}
               {renderTicketsSeparator(message, index)}
               <div
+                id={`message-${message.id}`}
                 className={classes.messageLeft}
                 onDoubleClick={(e) => hanldeReplyMessage(e, message)}
               >
@@ -872,6 +902,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
               {renderTicketsSeparator(message, index)}
               {/* {renderNumberTicket(message, index)} */}
               <div
+                id={`message-${message.id}`}
                 className={classes.messageRight}
                 onDoubleClick={(e) => hanldeReplyMessage(e, message)}
               >

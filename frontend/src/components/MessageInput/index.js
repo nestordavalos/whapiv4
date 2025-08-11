@@ -82,6 +82,22 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: 4,
     objectFit: "cover",
   },
+  mediaThumbWrapper: {
+    position: "relative",
+    display: "inline-block",
+    margin: 2,
+  },
+  removeMediaButton: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    background: "rgba(0,0,0,0.6)",
+    color: "#fff",
+    padding: 2,
+    '&:hover': {
+      background: "rgba(0,0,0,0.8)",
+    },
+  },
   newMessageBox: {
     background: theme.palette.background.default,
     width: "100%",
@@ -286,6 +302,16 @@ const MessageInput = ({ ticketStatus }) => {
     }
   };
 
+  const handleRemoveMedia = (index) => {
+    setMedias((prev) => {
+      const newFiles = prev.filter((_, i) => i !== index);
+      if (newFiles.length === 0) {
+        setMediaCaption("");
+      }
+      return newFiles;
+    });
+  };
+
   const handleUploadMedia = async (e) => {
     setLoading(true);
     if (e) {
@@ -453,18 +479,26 @@ const MessageInput = ({ ticketStatus }) => {
             )}
           ></span>
           <div className={classes.replyginMsgBody}>
-            {files.map((value, index) =>
-              value.type.indexOf("image") > -1 ? (
-                <img
-                  key={index}
-                  alt={value.name}
-                  src={URL.createObjectURL(value)}
-                  className={classes.mediaThumb}
-                />
-              ) : (
-                <Avatar key={index} className={classes.avatar} alt={value.name} />
-              )
-            )}
+            {files.map((value, index) => (
+              <div key={index} className={classes.mediaThumbWrapper}>
+                {value.type.indexOf("image") > -1 ? (
+                  <img
+                    alt={value.name}
+                    src={URL.createObjectURL(value)}
+                    className={classes.mediaThumb}
+                  />
+                ) : (
+                  <Avatar className={classes.avatar} alt={value.name} />
+                )}
+                <IconButton
+                  size="small"
+                  className={classes.removeMediaButton}
+                  onClick={() => handleRemoveMedia(index)}
+                >
+                  <HighlightOff fontSize="small" />
+                </IconButton>
+              </div>
+            ))}
           </div>
         </div>
         <IconButton

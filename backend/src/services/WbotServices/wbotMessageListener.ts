@@ -2237,6 +2237,11 @@ const handleMessage = async (
   }
   const showMessageGroupConnection = await ShowWhatsAppService(wbot.id!);
 
+  const selfJid = `${showMessageGroupConnection.number}@c.us`;
+  if (msg.from === selfJid && msg.to === selfJid) {
+    return;
+  }
+
   // IGNORAR MENSAGENS DE GRUPO
   const Settingdb = await Settings.findOne({
     where: { key: "CheckMsgIsGroup" }

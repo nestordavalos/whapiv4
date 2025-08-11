@@ -230,7 +230,9 @@ const verifyMediaMessage = async (
     mediaUrl: media.filename,
     mediaType: media.mimetype.split("/")[0],
     quotedMsgId: quotedMsg?.id,
-    ack: msg.ack
+    ack: msg.ack,
+    createdAt: new Date(msg.timestamp * 1000),
+    updatedAt: new Date(msg.timestamp * 1000)
   };
 
   if (msg.fromMe == true) {
@@ -271,7 +273,9 @@ export const verifyMessage = async (
     mediaType: msg.type,
     read: msg.fromMe,
     quotedMsgId: quotedMsg?.id,
-    ack: msg.ack
+    ack: msg.ack,
+    createdAt: new Date(msg.timestamp * 1000),
+    updatedAt: new Date(msg.timestamp * 1000)
   };
 
   if (msg.fromMe == true) {
@@ -2229,6 +2233,10 @@ const handleMessage = async (
   wbot: Session
 ): Promise<void> => {
   if (!isValidMsg(msg)) {
+    return;
+  }
+  const msgExists = await Message.findByPk(msg.id.id);
+  if (msgExists) {
     return;
   }
   const showMessageGroupConnection = await ShowWhatsAppService(wbot.id!);

@@ -12,6 +12,8 @@ interface MessageData {
   read?: boolean;
   mediaType?: string;
   mediaUrl?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 interface Request {

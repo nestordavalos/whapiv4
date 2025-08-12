@@ -6,9 +6,14 @@ function connectToSocket() {
   const stored = localStorage.getItem("token");
   if (!stored) return null;
 
-  let token;
+  let token = stored;
   try {
     token = JSON.parse(stored);
+  } catch (err) {
+    // token may already be a plain string; keep as-is
+  }
+
+  try {
     const { exp } = jwtDecode(token);
     if (Date.now() >= exp * 1000) {
       localStorage.removeItem("token");
@@ -21,7 +26,7 @@ function connectToSocket() {
   }
 
   const socket = openSocket(getBackendUrl(), {
-    transports: ["websocket", "polling", "flashsocket"],
+    transports: ["websocket", "polling"],
     query: { token },
     reconnectionAttempts: 5,
     reconnectionDelay: 1000

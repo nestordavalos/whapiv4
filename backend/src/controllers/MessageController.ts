@@ -52,8 +52,9 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 
   SetTicketMessagesAsRead(ticket);
 
+  let createdMessages: Message | Message[];
   if (medias && medias.length > 0) {
-    await Promise.all(
+    createdMessages = await Promise.all(
       medias.map(async (media: Express.Multer.File) => {
         const sentMsg: WbotMessage = await SendWhatsAppMedia({
           media,
@@ -66,7 +67,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
           ? new Date(sentMsg.timestamp * 1000)
           : new Date();
 
-        await CreateMessageService({
+        const message = await CreateMessageService({
           messageData: {
             id: sentMsg.id.id,
             ticketId: ticket.id,
@@ -80,6 +81,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
             updatedAt: timestamp
           }
         });
+        return message;
       })
     );
   } else {
@@ -93,7 +95,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
       ? new Date(sentMsg.timestamp * 1000)
       : new Date();
 
-    await CreateMessageService({
+    createdMessages = await CreateMessageService({
       messageData: {
         id: sentMsg.id.id,
         ticketId: ticket.id,
@@ -107,7 +109,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     });
   }
 
-  return res.send();
+  return res.json(createdMessages);
 };
 
 export const remove = async (

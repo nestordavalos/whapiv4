@@ -37,9 +37,16 @@ const isAuth = async (
     const decoded = verify(token, authConfig.secret);
     const { id, profile, iat } = decoded as TokenPayload;
     const userId = Number(id);
+    let lastActivity = getLastActivity(userId);
     const iatMs = iat * 1000;
-    const last = getLastActivity(userId);
-    const lastActivity = last && last > iatMs ? last : iatMs;
+
+    if (!lastActivity) {
+      lastActivity = Date.now();
+      updateActivity(userId, lastActivity);
+    } else if (iatMs > lastActivity) {
+      lastActivity = iatMs;
+      updateActivity(userId, lastActivity);
+    }
 
     if (isExpired(lastActivity)) {
       const user = await User.findByPk(id);

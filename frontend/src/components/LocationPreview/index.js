@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import toastError from "../../errors/toastError";
 
-import Typography from "@material-ui/core/Typography";
+import Typography from "@mui/material/Typography";
 
-import { Button, Divider, } from "@material-ui/core";
+import { Button, Divider, } from "@mui/material";
 
 const LocationPreview = ({ image, link, description }) => {
     useEffect(() => {}, [image, link, description]);

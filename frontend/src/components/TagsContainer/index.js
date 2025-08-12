@@ -1,5 +1,5 @@
-import { Chip, Paper, TextField } from "@material-ui/core";
-import Autocomplete from "@material-ui/lab/Autocomplete";
+import { Chip, Paper, TextField } from "@mui/material";
+import Autocomplete from '@mui/material/Autocomplete';
 import React, { useContext, useEffect, useState } from "react";
 import { isArray, isString } from "lodash";
 import toastError from "../../errors/toastError";
@@ -76,7 +76,6 @@ export function TagsContainer({ contact }) {
     const isRemoveTags = user.isRemoveTags === 'enabled';
     return (
         <Paper style={{ padding: 12 }}>
-
             <Autocomplete
                 //clearOnBlur={false}
                 disableClearable={true}
@@ -100,7 +99,7 @@ export function TagsContainer({ contact }) {
                     ))
                 }
                 renderInput={(params) => (
-                    <TextField {...params} variant="outlined" placeholder="Tags" />//clearOnBlur={false} />
+                    (<TextField {...params} variant="outlined" placeholder="Tags" />)//clearOnBlur={false} />
                 )}
                 PaperComponent={({ children }) => (
                     <Paper style={{ width: 400, marginLeft: 12 }}>
@@ -109,5 +108,5 @@ export function TagsContainer({ contact }) {
                 )}
             />
         </Paper>
-    )
+    );
 }

@@ -12,10 +12,10 @@ import {
   InputAdornment,
   IconButton,
   Link
-} from '@material-ui/core';
+} from '@mui/material';
 
-import { Visibility, VisibilityOff } from '@material-ui/icons';
-import { makeStyles } from "@material-ui/core/styles";
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import makeStyles from '@mui/styles/makeStyles';
 import { i18n } from "../../translate/i18n";
 
 import { AuthContext } from "../../context/Auth/AuthContext";
@@ -126,7 +126,7 @@ const Login = () => {
                   <IconButton
                     aria-label="toggle password visibility"
                     onClick={() => setShowPassword((e) => !e)}
-                  >
+                    size="large">
                     {showPassword ? <VisibilityOff color="secondary" /> : <Visibility color="secondary" />}
                   </IconButton>
                 </InputAdornment>

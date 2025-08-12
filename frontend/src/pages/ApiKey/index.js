@@ -1,13 +1,9 @@
 import React, { useState, useEffect } from "react";
 import openSocket from "../../services/socket-io";
 
-import { 
-    Container,
-    makeStyles,
-    Paper,
-    TextField,
-    Typography
-} from "@material-ui/core";
+import { Container, Paper, TextField, Typography } from "@mui/material";
+
+import makeStyles from '@mui/styles/makeStyles';
 
 import CopyToClipboard from "../../components/CopyToClipboard";
 

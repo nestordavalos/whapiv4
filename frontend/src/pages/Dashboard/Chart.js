@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useTheme } from "@material-ui/core/styles";
+import { useTheme } from "@mui/material/styles";
 import {
 	// BarChart,
 	CartesianGrid,
@@ -14,14 +14,14 @@ import {
 	// Label,
 	ResponsiveContainer,
 } from "recharts";
-import CheckBoxIcon from "@material-ui/icons/CheckBox";
+import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import { startOfHour, parseISO, format } from "date-fns";
 
 import { i18n } from "../../translate/i18n";
 import Title from "./Title";
 import useTickets from "../../hooks/useTickets";
-import { Divider } from "@material-ui/core";
-// import { blue } from "@material-ui/core/colors";
+import { Divider } from "@mui/material";
+// import { blue } from "@mui/material/colors";
 
 
 

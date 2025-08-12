@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import openSocket from "socket.io-client";
-import { makeStyles } from "@material-ui/core/styles";
+import makeStyles from '@mui/styles/makeStyles';
 
 const useStyles = makeStyles(theme => ({
 	root: {

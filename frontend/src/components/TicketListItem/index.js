@@ -4,24 +4,24 @@ import { useHistory, useParams } from "react-router-dom";
 import { parseISO, format, isSameDay } from "date-fns";
 import clsx from "clsx";
 
-import { makeStyles } from "@material-ui/core/styles";
-import { green } from "@material-ui/core/colors";
-import ListItem from "@material-ui/core/ListItem";
-import ListItemText from "@material-ui/core/ListItemText";
-import ListItemAvatar from "@material-ui/core/ListItemAvatar";
-import Typography from "@material-ui/core/Typography";
-import Avatar from "@material-ui/core/Avatar";
-import Divider from "@material-ui/core/Divider";
-import Badge from "@material-ui/core/Badge";
-import UndoRoundedIcon from '@material-ui/icons/UndoRounded';
+import makeStyles from '@mui/styles/makeStyles';
+import { green } from "@mui/material/colors";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
+import ListItemAvatar from "@mui/material/ListItemAvatar";
+import Typography from "@mui/material/Typography";
+import Avatar from "@mui/material/Avatar";
+import Divider from "@mui/material/Divider";
+import Badge from "@mui/material/Badge";
+import UndoRoundedIcon from '@mui/icons-material/UndoRounded';
 import { i18n } from "../../translate/i18n";
-import DoneIcon from '@material-ui/icons/Done';
-import ReplayIcon from '@material-ui/icons/Replay';
-import { IconButton } from "@material-ui/core";
+import DoneIcon from '@mui/icons-material/Done';
+import ReplayIcon from '@mui/icons-material/Replay';
+import { IconButton } from "@mui/material";
 import api from "../../services/api";
-import CancelIcon from '@material-ui/icons/Cancel';
+import CancelIcon from '@mui/icons-material/Cancel';
 import MarkdownWrapper from "../MarkdownWrapper";
-import { Tooltip } from "@material-ui/core";
+import { Tooltip } from "@mui/material";
 import { AuthContext } from "../../context/Auth/AuthContext";
 import toastError from "../../errors/toastError";
 import AcceptTicketWithouSelectQueue from "../AcceptTicketWithoutQueueModal";
@@ -134,7 +134,7 @@ const useStyles = makeStyles(theme => ({
 			padding: 3,
 			whiteSpace: "nowrap",
 		},
-		"& .MuiBadge-anchorOriginTopRightRectangle": {
+		"& .MuiBadge-anchorOriginTopRightRectangular": {
 			transform: "scale(1) translate(0%, -40%)",
 		},
 
@@ -312,13 +312,13 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 	const viewTags = user.viewTags === 'enabled';
 
 	return (
-		<React.Fragment key={ticket.id}>
-			<AcceptTicketWithouSelectQueue
+        <React.Fragment key={ticket.id}>
+            <AcceptTicketWithouSelectQueue
 				modalOpen={acceptTicketWithouSelectQueueOpen}
 				onClose={(e) => setAcceptTicketWithouSelectQueueOpen(false)}
 				ticketId={ticket.id}
 			/>
-			<ListItem
+            <ListItem
 				dense
 				button
 				onClick={e => {
@@ -409,7 +409,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 										.replace("🢇", "")
 										.replace("🢅", "")}</MarkdownWrapper>
 								) : (
-									<p></p>	// <MarkdownWrapper>{ticket.lastMessage.slice(0, 20) + (ticket.lastMessage.length > 20 ? " ..." : "")}</MarkdownWrapper>
+									(<p></p>)	// <MarkdownWrapper>{ticket.lastMessage.slice(0, 20) + (ticket.lastMessage.length > 20 ? " ..." : "")}</MarkdownWrapper>
 								)}
 							</Typography>
 
@@ -531,10 +531,11 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 				{(ticket.status === "pending" && (ticket.queue === null || ticket.queue === undefined)) && (
 					<Tooltip title={i18n.t("ticketsList.items.accept")}>
 						<IconButton
-							className={classes.bottomButton}
-							color="primary"
-							onClick={e => handleOpenAcceptTicketWithouSelectQueue()}
-							loading={loading}>
+                            className={classes.bottomButton}
+                            color="primary"
+                            onClick={e => handleOpenAcceptTicketWithouSelectQueue()}
+                            loading={loading}
+                            size="large">
 							<DoneIcon />
 						</IconButton>
 					</Tooltip>
@@ -542,9 +543,10 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 				{ticket.status === "pending" && ticket.queue !== null && (
 					<Tooltip title={i18n.t("ticketsList.items.accept")}>
 						<IconButton
-							className={classes.bottomButton}
-							color="primary"
-							onClick={e => handleAcepptTicket(ticket.id)} >
+                            className={classes.bottomButton}
+                            color="primary"
+                            onClick={e => handleAcepptTicket(ticket.id)}
+                            size="large">
 							<DoneIcon />
 						</IconButton>
 					</Tooltip>
@@ -572,9 +574,10 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 				{ticket.status === "open" && (
 					<Tooltip title={i18n.t("ticketsList.items.return")}>
 						<IconButton
-							className={classes.bottomButton}
-							color="primary"
-							onClick={e => handleViewTicket(ticket.id, handleChangeTab)} >
+                            className={classes.bottomButton}
+                            color="primary"
+                            onClick={e => handleViewTicket(ticket.id, handleChangeTab)}
+                            size="large">
 							<UndoRoundedIcon />
 						</IconButton>
 					</Tooltip>
@@ -582,25 +585,27 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 				{ticket.status === "open" && (
 					<Tooltip title={i18n.t("ticketsList.items.close")}>
 						<IconButton
-							className={classes.bottomButton}
-							color="primary"
-							onClick={e => handleClosedTicket(ticket.id)} >
+                            className={classes.bottomButton}
+                            color="primary"
+                            onClick={e => handleClosedTicket(ticket.id)}
+                            size="large">
 							<CancelIcon />
 						</IconButton>
 					</Tooltip>
 				)}
 				{ticket.status === "closed" && (
 					<IconButton
-						className={classes.bottomButton}
-						color="primary"
-						onClick={e => handleReopenTicket(ticket.id)} >
+                        className={classes.bottomButton}
+                        color="primary"
+                        onClick={e => handleReopenTicket(ticket.id)}
+                        size="large">
 						<UndoRoundedIcon />
 					</IconButton>
 				)}
 			</ListItem>
-			<Divider variant="middle" component="li" />
-		</React.Fragment>
-	);
+            <Divider variant="middle" component="li" />
+        </React.Fragment>
+    );
 };
 
 export default TicketListItem;

@@ -9,28 +9,29 @@ import {
 import { toast } from "react-toastify";
 
 import {
-	Button,
-	Dialog,
-	DialogActions,
-	DialogContent,
-	DialogTitle,
-	CircularProgress,
-	Select,
-	InputLabel,
-	makeStyles,
-	MenuItem,
-	FormControl,
-	TextField,
-	InputAdornment,
-	IconButton
-} from '@material-ui/core';
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    CircularProgress,
+    Select,
+    InputLabel,
+    MenuItem,
+    FormControl,
+    TextField,
+    InputAdornment,
+    IconButton,
+} from '@mui/material';
+
+import makeStyles from '@mui/styles/makeStyles';
 
 import {
 	Visibility,
 	VisibilityOff
-} from '@material-ui/icons';
+} from '@mui/icons-material';
 
-import { green } from "@material-ui/core/colors";
+import { green } from "@mui/material/colors";
 
 import { i18n } from "../../translate/i18n";
 
@@ -193,8 +194,8 @@ const UserModal = ({ open, onClose, userId }) => {
 	};
 
 	return (
-		<div className={classes.root}>
-			<Dialog
+        <div className={classes.root}>
+            <Dialog
 				open={open}
 				onClose={handleClose}
 				maxWidth="xs"
@@ -245,9 +246,9 @@ const UserModal = ({ open, onClose, userId }) => {
 											endAdornment: (
 												<InputAdornment position="end">
 													<IconButton
-														aria-label="toggle password visibility"
-														onClick={() => setShowPassword((e) => !e)}
-													>
+                                                        aria-label="toggle password visibility"
+                                                        onClick={() => setShowPassword((e) => !e)}
+                                                        size="large">
 														{showPassword ? <VisibilityOff color="secondary" /> : <Visibility color="secondary" />}
 													</IconButton>
 												</InputAdornment>
@@ -638,8 +639,8 @@ const UserModal = ({ open, onClose, userId }) => {
 					)}
 				</Formik>
 			</Dialog>
-		</div>
-	);
+        </div>
+    );
 };
 
 export default UserModal;

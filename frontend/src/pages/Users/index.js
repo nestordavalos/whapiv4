@@ -2,7 +2,7 @@ import React, { useState, useEffect, useReducer } from "react";
 import { toast } from "react-toastify";
 import openSocket from "../../services/socket-io";
 
-import { makeStyles } from "@material-ui/core/styles";
+import makeStyles from '@mui/styles/makeStyles';
 
 import {
   Button,
@@ -16,14 +16,14 @@ import {
   TableRow,
   TextField,
   Tooltip
-} from "@material-ui/core";
+} from "@mui/material";
 
 import {
   AddCircleOutline,
   DeleteOutline,
   Edit,
   Search
-} from "@material-ui/icons";
+} from "@mui/icons-material";
 
 import MainContainer from "../../components/MainContainer";
 import MainHeader from "../../components/MainHeader";

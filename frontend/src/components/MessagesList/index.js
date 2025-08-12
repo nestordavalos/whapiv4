@@ -10,15 +10,10 @@ import { isSameDay, parseISO, format } from "date-fns";
 import openSocket from "../../services/socket-io";
 import clsx from "clsx";
 
-import { blue, red } from "@material-ui/core/colors";
+import { blue, red } from "@mui/material/colors";
 // import { AuthContext } from "../../context/Auth/AuthContext";
-import {
-  Button,
-  CircularProgress,
-  Divider,
-  IconButton,
-  makeStyles,
-} from "@material-ui/core";
+import { Button, CircularProgress, Divider, IconButton } from "@mui/material";
+import makeStyles from '@mui/styles/makeStyles';
 import {
   AccessTime,
   Block,
@@ -26,7 +21,7 @@ import {
   DoneAll,
   ExpandMore,
   GetApp,
-} from "@material-ui/icons";
+} from "@mui/icons-material";
 
 import MarkdownWrapper from "../MarkdownWrapper";
 import VcardPreview from "../VcardPreview";
@@ -66,7 +61,7 @@ const useStyles = makeStyles((theme) => ({
     flexGrow: 1,
     padding: "20px 20px 20px 20px",
     overflowY: "scroll",
-    [theme.breakpoints.down("sm")]: {
+    [theme.breakpoints.down('md')]: {
       paddingBottom: "90px",
     },
     ...theme.scrollbarStyles,

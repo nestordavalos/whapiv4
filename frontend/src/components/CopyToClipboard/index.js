@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { 
   IconButton, 
   Tooltip 
-} from "@material-ui/core";
-import { FileCopyOutlined } from "@material-ui/icons";
+} from "@mui/material";
+import { FileCopyOutlined } from "@mui/icons-material";
 import { i18n } from "../../translate/i18n";
 
 const CopyToClipboard = ({ content, color }) => {

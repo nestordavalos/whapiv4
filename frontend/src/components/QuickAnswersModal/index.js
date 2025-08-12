@@ -8,14 +8,8 @@ import MessageVariablesPicker from "../MessageVariablesPicker";
 import ButtonWithSpinner from "../ButtonWithSpinner";
 import FormikTextField from "../FormikTextField";
 
-import {
-  makeStyles,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle
-} from "@material-ui/core";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import makeStyles from '@mui/styles/makeStyles';
 import { i18n } from "../../translate/i18n";
 
 import api from "../../services/api";

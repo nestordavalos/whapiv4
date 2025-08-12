@@ -1,15 +1,9 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { systemVersion } from "../../package.json";
-import {
-  Badge,
-  Divider,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  ListSubheader,
-  makeStyles
-} from "@material-ui/core";
+import { Badge, Divider, ListItem, ListItemIcon, ListItemText, ListSubheader } from "@mui/material";
+
+import makeStyles from '@mui/styles/makeStyles';
 
 import {
   Link,
@@ -25,7 +19,7 @@ import {
   SyncAlt,
   VpnKeyRounded,
   WhatsApp
-} from "@material-ui/icons";
+} from "@mui/icons-material";
 
 import { i18n } from "../translate/i18n";
 import { WhatsAppsContext } from "../context/WhatsApp/WhatsAppsContext";

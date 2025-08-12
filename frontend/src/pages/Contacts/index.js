@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import { useHistory } from "react-router-dom";
 import { CSVLink } from "react-csv";
 
-import { makeStyles } from "@material-ui/core/styles";
+import makeStyles from '@mui/styles/makeStyles';
 
 import {
   Avatar,
@@ -19,7 +19,7 @@ import {
   TableRow,
   TextField,
   Tooltip
-} from "@material-ui/core";
+} from "@mui/material";
 
 import {
   AddCircleOutline,
@@ -30,7 +30,7 @@ import {
   Edit,
   Search,
   WhatsApp
-} from "@material-ui/icons";
+} from "@mui/icons-material";
 
 import api from "../../services/api";
 import { i18n } from "../../translate/i18n";

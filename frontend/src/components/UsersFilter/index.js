@@ -1,5 +1,5 @@
-import { Box, Chip, TextField } from "@material-ui/core";
-import Autocomplete from "@material-ui/lab/Autocomplete";
+import { Box, Chip, TextField } from "@mui/material";
+import Autocomplete from '@mui/material/Autocomplete';
 import React, { useEffect, useState } from "react";
 import toastError from "../../errors/toastError";
 import api from "../../services/api";
@@ -52,7 +52,7 @@ export function UsersFilter({ onFiltered, initialUsers }) {
         value={selecteds}
         onChange={(e, v, r) => onChange(v)}
         getOptionLabel={(option) => option.name}
-        getOptionSelected={(option, value) => {
+        isOptionEqualToValue={(option, value) => {
           return (
             option?.id === value?.id ||
             option?.name.toLowerCase() === value?.name.toLowerCase()

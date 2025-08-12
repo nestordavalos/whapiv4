@@ -1,22 +1,22 @@
 import React from "react";
 
-import Paper from "@material-ui/core/Paper";
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import Skeleton from "@material-ui/lab/Skeleton";
+import Paper from "@mui/material/Paper";
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Skeleton from '@mui/material/Skeleton';
 
-import { makeStyles } from "@material-ui/core/styles";
-import { green, red } from '@material-ui/core/colors';
+import makeStyles from '@mui/styles/makeStyles';
+import { green, red } from '@mui/material/colors';
 
-import CheckCircleIcon from '@material-ui/icons/CheckCircle';
-import ErrorIcon from '@material-ui/icons/Error';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 import moment from 'moment';
 
-import Rating from '@material-ui/lab/Rating';
+import Rating from '@mui/material/Rating';
 
 const useStyles = makeStyles(theme => ({
 	on: {
@@ -69,43 +69,40 @@ export default function TableAttendantsStatus(props) {
 		return moment().startOf('day').add(minutes, 'minutes').format('HH[h] mm[m]');
 	}
 
-    return ( !loading ?
-        <TableContainer 
-            component={Paper}
-            width="100%"
-            >
-            <Table>
-                <TableHead>
-                    <TableRow>
-                        <TableCell>Nombre</TableCell>
-                        <TableCell align="center">Evaluaciones</TableCell>
-                        <TableCell align="center">Total de Evaluaciones</TableCell>
-                        <TableCell align="center">T.M. de Atendimento</TableCell>
-                        <TableCell align="center">Nº de Atendimentos</TableCell>
-                        <TableCell align="center">Estado (Atual)</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    { renderList() }
-                    {/* <TableRow>
-                        <TableCell>Nome 4</TableCell>
-                        <TableCell align="center">10</TableCell>
-                        <TableCell align="center">10 minutos</TableCell>
-                        <TableCell align="center">
-                            <CheckCircleIcon className={classes.off} />
-                        </TableCell>
-                    </TableRow>
-                    <TableRow>
-                        <TableCell>Nome 5</TableCell>
-                        <TableCell align="center">10</TableCell>
-                        <TableCell align="center">10 minutos</TableCell>
-                        <TableCell align="center">
-                            <CheckCircleIcon className={classes.on} />
-                        </TableCell>
-                    </TableRow> */}
-                </TableBody>
-            </Table>
-        </TableContainer>
-        : <Skeleton variant="rect" height={150} />
-    )
+    return (!loading ? <TableContainer 
+        component={Paper}
+        width="100%"
+        >
+        <Table>
+            <TableHead>
+                <TableRow>
+                    <TableCell>Nombre</TableCell>
+                    <TableCell align="center">Evaluaciones</TableCell>
+                    <TableCell align="center">Total de Evaluaciones</TableCell>
+                    <TableCell align="center">T.M. de Atendimento</TableCell>
+                    <TableCell align="center">Nº de Atendimentos</TableCell>
+                    <TableCell align="center">Estado (Atual)</TableCell>
+                </TableRow>
+            </TableHead>
+            <TableBody>
+                { renderList() }
+                {/* <TableRow>
+                    <TableCell>Nome 4</TableCell>
+                    <TableCell align="center">10</TableCell>
+                    <TableCell align="center">10 minutos</TableCell>
+                    <TableCell align="center">
+                        <CheckCircleIcon className={classes.off} />
+                    </TableCell>
+                </TableRow>
+                <TableRow>
+                    <TableCell>Nome 5</TableCell>
+                    <TableCell align="center">10</TableCell>
+                    <TableCell align="center">10 minutos</TableCell>
+                    <TableCell align="center">
+                        <CheckCircleIcon className={classes.on} />
+                    </TableCell>
+                </TableRow> */}
+            </TableBody>
+        </Table>
+    </TableContainer> : <Skeleton variant="rectangular" height={150} />);
 }

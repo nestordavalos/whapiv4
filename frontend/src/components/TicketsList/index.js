@@ -313,6 +313,7 @@ const TicketsList = (props) => {
 
         if (status) {
                 handleAppMessage = (data) => {
+                        console.debug("TicketsList received appMessage", data);
                         if (data.action === "create" && shouldUpdateTicket(data.ticket)) {
                                 dispatch({
                                         type: "UPDATE_TICKET_UNREAD_MESSAGES",

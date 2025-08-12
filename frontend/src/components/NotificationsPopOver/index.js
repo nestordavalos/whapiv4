@@ -119,6 +119,7 @@ const NotificationsPopOver = () => {
                 socket.on("ticket", handleTicketEvent);
 
                 const handleAppMessageEvent = data => {
+                        console.debug("appMessage event received", data);
                         if (
                                 data.action === "create" &&
                                 !data.message.read &&
@@ -129,6 +130,10 @@ const NotificationsPopOver = () => {
                                         data.ticket.queue &&
                                         queueIds.indexOf(data.ticket.queue.id) === -1
                                 ) {
+                                        console.debug(
+                                                "Skipping notification due to queue restriction",
+                                                data.ticket.queue?.id
+                                        );
                                         return;
                                 }
 
@@ -147,7 +152,16 @@ const NotificationsPopOver = () => {
                                         data.ticket.chatbot;
 
                                 if (!shouldNotNotificate) {
+                                        console.debug(
+                                                "Triggering notification for ticket",
+                                                data.ticket.id
+                                        );
                                         handleNotifications(data);
+                                } else {
+                                        console.debug(
+                                                "Skipping notification due to configuration",
+                                                { shouldNotNotificate, ticketId: data.ticket.id }
+                                        );
                                 }
                         }
                 };
@@ -162,6 +176,7 @@ const NotificationsPopOver = () => {
 
         const handleNotifications = data => {
                 const { message, contact, ticket } = data;
+                console.debug("Preparing desktop and audio notification for ticket", ticket.id);
 
                 const options = {
                         body: `${message.body} - ${format(new Date(), "HH:mm")}`,
@@ -201,7 +216,11 @@ const NotificationsPopOver = () => {
                 try {
                         const audio = audioRef.current;
                         audio.currentTime = 0;
-                        audio.play().catch(err => console.error("Failed to play sound", err));
+                        console.debug("Attempting to play notification sound");
+                        audio
+                                .play()
+                                .then(() => console.debug("Notification sound played"))
+                                .catch(err => console.error("Failed to play sound", err));
                 } catch (err) {
                         console.error("Failed to play sound", err);
                 }

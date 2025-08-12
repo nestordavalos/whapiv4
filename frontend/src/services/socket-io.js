@@ -29,7 +29,8 @@ function connectToSocket() {
     transports: ["websocket", "polling"],
     query: { token },
     reconnectionAttempts: 5,
-    reconnectionDelay: 1000
+    reconnectionDelay: 1000,
+    forceNew: true
   });
 
   socket.on("connect_error", err => {

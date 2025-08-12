@@ -98,16 +98,18 @@ const useAuth = () => {
         useEffect(() => {
                 const socket = openSocket();
 
-		socket.on("user", data => {
-			if (data.action === "update" && data.user.id === user.id) {
-				setUser(data.user);
-			}
-		});
+                if (!socket) return undefined;
 
-		return () => {
-			socket.disconnect();
-		};
-	}, [user]);
+                socket.on("user", data => {
+                        if (data.action === "update" && data.user.id === user.id) {
+                                setUser(data.user);
+                        }
+                });
+
+                return () => {
+                        socket.disconnect();
+                };
+        }, [user]);
 
 	const handleLogin = async userData => {
 		setLoading(true);

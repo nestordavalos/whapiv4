@@ -89,6 +89,8 @@ const useWhatsApps = () => {
                 let isMounted = true;
                 const socket = openSocket();
 
+                if (!socket) return undefined;
+
                 socket.on("whatsapp", data => {
                         if (isMounted && data.action === "update") {
                                 dispatch({

@@ -250,31 +250,38 @@ const TicketsList = (props) => {
 
 	}, [tickets, status, searchParam, queues, profile]);
 
-	useEffect(() => {
-		const socket = openSocket();
+        useEffect(() => {
+                const socket = openSocket();
+                if (!socket) return;
 
-		const shouldUpdateTicket = (ticket) =>
-			(!ticket.userId || ticket.userId === user?.id || showAll) &&
-			(!ticket.queueId || selectedQueueIds.indexOf(ticket.queueId) > -1);
+                const join = () => {
+                        if (status) {
+                                socket.emit("joinTickets", status);
+                        } else {
+                                socket.emit("joinNotification");
+                        }
+                };
 
-		const notBelongsToUserQueues = (ticket) =>
-			ticket.queueId && selectedQueueIds.indexOf(ticket.queueId) === -1;
+                if (socket.connected) {
+                        join();
+                } else {
+                        socket.on("connect", join);
+                }
 
-		socket.on("connect", () => {
-			if (status) {
-				socket.emit("joinTickets", status);
-			} else {
-				socket.emit("joinNotification");
-			}
-		});
+                const shouldUpdateTicket = (ticket) =>
+                        (!ticket.userId || ticket.userId === user?.id || showAll) &&
+                        (!ticket.queueId || selectedQueueIds.indexOf(ticket.queueId) > -1);
 
-		socket.on("ticket", (data) => {
-			if (data.action === "updateUnread") {
-				dispatch({
-					type: "RESET_UNREAD",
-					payload: data.ticketId,
-				});
-			}
+                const notBelongsToUserQueues = (ticket) =>
+                        ticket.queueId && selectedQueueIds.indexOf(ticket.queueId) === -1;
+
+                socket.on("ticket", (data) => {
+                        if (data.action === "updateUnread") {
+                                dispatch({
+                                        type: "RESET_UNREAD",
+                                        payload: data.ticketId,
+                                });
+                        }
 
 			if (data.action === "update" && shouldUpdateTicket(data.ticket)) {
 				dispatch({
@@ -313,6 +320,7 @@ const TicketsList = (props) => {
 	}
 
                 return () => {
+                        socket.off("connect", join);
                         socket.off("ticket");
                         socket.off("appMessage");
                         socket.off("contact");

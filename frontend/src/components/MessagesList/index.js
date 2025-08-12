@@ -467,10 +467,16 @@ const MessagesList = ({ ticketId, isGroup }) => {
       }
     };
 
-    socket.on("connect", () => socket.emit("joinChatBox", ticketId));
+    const join = () => socket.emit("joinChatBox", ticketId);
+    if (socket.connected) {
+      join();
+    } else {
+      socket.on("connect", join);
+    }
     socket.on("appMessage", handleMessage);
 
     return () => {
+      socket.off("connect", join);
       socket.off("appMessage", handleMessage);
     };
   }, [ticketId]);

@@ -81,7 +81,12 @@ const NotificationsPopOver = () => {
                 if (!socket) return;
                 const queueIds = queues.map((q) => q.id);
 
-                socket.on("connect", () => socket.emit("joinNotification"));
+                const join = () => socket.emit("joinNotification");
+                if (socket.connected) {
+                        join();
+                } else {
+                        socket.on("connect", join);
+                }
 
 		socket.on("ticket", data => {
 			if (data.action === "updateUnread" || data.action === "delete") {
@@ -139,6 +144,7 @@ const NotificationsPopOver = () => {
                 });
 
                 return () => {
+                        socket.off("connect", join);
                         socket.off("ticket");
                         socket.off("appMessage");
                 };

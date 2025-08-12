@@ -2319,6 +2319,36 @@ const handleMessage = async (
 
     const contact = await verifyContact(msgContact);
 
+    if (!msg.fromMe) {
+      const closedTicket = await Ticket.findOne({
+        where: {
+          contactId: groupContact ? groupContact.id : contact.id,
+          whatsappId: wbot.id!,
+          status: "closed"
+        },
+        order: [["updatedAt", "DESC"]]
+      });
+
+      if (closedTicket) {
+        const ticket = await ShowTicketService(closedTicket.id);
+        const ticketTraking = await TicketTraking.findOne({
+          where: { ticketId: ticket.id, finishedAt: null }
+        });
+
+        if (ticketTraking && verifyRating(ticketTraking) && whatsapp.ratingMessage) {
+          const rate = +msg.body;
+          if (!Number.isNaN(rate) && Number.isInteger(rate) && !isNull(rate)) {
+            await handleRating(msg, ticket, ticketTraking);
+          } else {
+            const bodyRatingMessage = `\u200e${whatsapp.ratingMessage}\n`;
+            const sentMessage = await SendWhatsAppMessage({ body: bodyRatingMessage, ticket });
+            await verifyMessage(sentMessage, ticket, ticket.contact);
+          }
+          return;
+        }
+      }
+    }
+
     // console.log("OUTRO TESTE " + unreadMessages)
     let ticket = await FindOrCreateTicketService(
       contact,
@@ -2360,36 +2390,11 @@ const handleMessage = async (
     //   return;
     // }
 
-    const ticketTraking = await FindOrCreateATicketTrakingService({
+    await FindOrCreateATicketTrakingService({
       ticketId: ticket.id,
       whatsappId: whatsapp?.id,
       userId: ticket.userId
     });
-
-    try {
-      if (!msg.fromMe) {
-        if (ticketTraking !== null && verifyRating(ticketTraking) && whatsapp.ratingMessage) {
-          let rate = +msg.body;
-          //testa se o usuário digitou uma avaliação numérica, se não enviou, envia novametne a mensagem de avaliação
-          if (!Number.isNaN(rate) && Number.isInteger(rate) && !isNull(rate)) {
-            handleRating(msg, ticket, ticketTraking);
-            return;
-          }
-          else {
-            let bodyRatingMessage = `\u200e${whatsapp.ratingMessage}\n`;
-
-            const msg = await SendWhatsAppMessage({ body: bodyRatingMessage, ticket });
-
-            await verifyMessage(msg, ticket, ticket.contact);
-
-            return;
-          }
-        }
-      }
-    } catch (e) {
-      Sentry.captureException(e);
-      console.log(e);
-    }
 
     if (msg.hasMedia) {
       await verifyMediaMessage(msg, ticket, contact);

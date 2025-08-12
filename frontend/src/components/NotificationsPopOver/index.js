@@ -144,37 +144,43 @@ const NotificationsPopOver = () => {
                 };
         }, [user, profile, queues]);
 
-	const handleNotifications = data => {
-		const { message, contact, ticket } = data;
+        const handleNotifications = data => {
+                const { message, contact, ticket } = data;
 
-		const options = {
-			body: `${message.body} - ${format(new Date(), "HH:mm")}`,
-			icon: contact.profilePicUrl,
-			tag: ticket.id,
-			renotify: true,
-		};
+                const options = {
+                        body: `${message.body} - ${format(new Date(), "HH:mm")}`,
+                        icon: contact.profilePicUrl,
+                        tag: ticket.id,
+                        renotify: true,
+                };
 
-		const notification = new Notification(
-			`${i18n.t("tickets.notification.message")} ${contact.name}`,
-			options
-		);
+                try {
+                        if (Notification.permission === "granted") {
+                                const notification = new Notification(
+                                        `${i18n.t("tickets.notification.message")} ${contact.name}`,
+                                        options
+                                );
 
-		notification.onclick = e => {
-			e.preventDefault();
-			window.focus();
-			historyRef.current.push(`/tickets/${ticket.id}`);
-		};
+                                notification.onclick = e => {
+                                        e.preventDefault();
+                                        window.focus();
+                                        historyRef.current.push(`/tickets/${ticket.id}`);
+                                };
 
-		setDesktopNotifications(prevState => {
-			const notfiticationIndex = prevState.findIndex(
-				n => n.tag === notification.tag
-			);
-			if (notfiticationIndex !== -1) {
-				prevState[notfiticationIndex] = notification;
-				return [...prevState];
-			}
-			return [notification, ...prevState];
-		});
+                                setDesktopNotifications(prevState => {
+                                        const notfiticationIndex = prevState.findIndex(
+                                                n => n.tag === notification.tag
+                                        );
+                                        if (notfiticationIndex !== -1) {
+                                                prevState[notfiticationIndex] = notification;
+                                                return [...prevState];
+                                        }
+                                        return [notification, ...prevState];
+                                });
+                        }
+                } catch (err) {
+                        console.error("Failed to show notification", err);
+                }
 
                 play();
         };

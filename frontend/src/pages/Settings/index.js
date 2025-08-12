@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import openSocket from "socket.io-client";
+import openSocket from "../../services/socket-io";
 import { useHistory } from "react-router-dom";
 
 import { makeStyles, withStyles } from "@material-ui/core/styles";
@@ -114,24 +114,24 @@ const Settings = () => {
 		fetchSession();
 	}, []);
 
-	useEffect(() => {
-		const socket = openSocket(process.env.REACT_APP_BACKEND_URL);
+        useEffect(() => {
+                const socket = openSocket();
 
-		socket.on("settings", data => {
-			if (data.action === "update") {
-				setSettings(prevState => {
-					const aux = [...prevState];
-					const settingIndex = aux.findIndex(s => s.key === data.setting.key);
-					aux[settingIndex].value = data.setting.value;
-					return aux;
-				});
-			}
-		});
+                socket?.on("settings", data => {
+                        if (data.action === "update") {
+                                setSettings(prevState => {
+                                        const aux = [...prevState];
+                                        const settingIndex = aux.findIndex(s => s.key === data.setting.key);
+                                        aux[settingIndex].value = data.setting.value;
+                                        return aux;
+                                });
+                        }
+                });
 
-		return () => {
-			socket.disconnect();
-		};
-	}, []);
+                return () => {
+                        socket?.off("settings");
+                };
+        }, []);
 
 	const handleChangeBooleanSetting = async e => {
 		const selectedValue = e.target.checked ? "enabled" : "disabled";

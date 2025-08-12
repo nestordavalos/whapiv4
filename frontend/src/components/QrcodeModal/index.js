@@ -38,10 +38,10 @@ const QrcodeModal = ({ open, onClose, whatsAppId }) => {
 			}
 		});
 
-		return () => {
-			socket.disconnect();
-		};
-	}, [whatsAppId, onClose]);
+                return () => {
+                        socket.off("whatsappSession");
+                };
+        }, [whatsAppId, onClose]);
 
 	return (
 		<Dialog open={open} onClose={onClose} maxWidth="lg" scroll="paper">

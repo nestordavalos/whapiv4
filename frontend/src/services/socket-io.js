@@ -2,7 +2,13 @@ import openSocket from "socket.io-client";
 import { jwtDecode } from "jwt-decode";
 import { getBackendUrl } from "../config";
 
+let socket;
+
 function connectToSocket() {
+  if (socket && socket.connected) {
+    return socket;
+  }
+
   const stored = localStorage.getItem("token");
   if (!stored) return null;
 
@@ -25,17 +31,25 @@ function connectToSocket() {
     return null;
   }
 
-  const socket = openSocket(getBackendUrl(), {
-    transports: ["websocket", "polling"],
+  socket = openSocket(getBackendUrl(), {
+    transports: ["websocket"],
     query: { token },
-    reconnectionAttempts: 5,
+    reconnection: true,
     reconnectionDelay: 1000,
-    forceNew: true
+    reconnectionAttempts: 5,
+    forceNew: false,
+    timeout: 10000
   });
 
-  socket.on("connect_error", err => {
-    if (err.message === "ERR_SESSION_EXPIRED") {
+  socket.on("connect_error", error => {
+    if (
+      error.message.includes("jwt expired") ||
+      error.message.includes("invalid token") ||
+      error.message.includes("jwt malformed")
+    ) {
+      socket.disconnect();
       localStorage.removeItem("token");
+      window.location.reload();
     }
   });
 

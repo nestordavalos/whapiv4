@@ -114,7 +114,8 @@ const useWhatsApps = () => {
 
                 return () => {
                         isMounted = false;
-                        socket.disconnect();
+                        socket.off("whatsapp");
+                        socket.off("whatsappSession");
                 };
         }, []);
 

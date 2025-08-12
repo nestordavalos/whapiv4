@@ -472,7 +472,6 @@ const MessagesList = ({ ticketId, isGroup }) => {
 
     return () => {
       socket.off("appMessage", handleMessage);
-      socket.disconnect();
     };
   }, [ticketId]);
 

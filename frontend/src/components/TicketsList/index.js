@@ -312,10 +312,12 @@ const TicketsList = (props) => {
 		});
 	}
 
-		return () => {
-			socket.disconnect();
-		};
-	}, [status, showAll, user, selectedQueueIds]);
+                return () => {
+                        socket.off("ticket");
+                        socket.off("appMessage");
+                        socket.off("contact");
+                };
+        }, [status, showAll, user, selectedQueueIds]);
 
 	useEffect(() => {
 		if (typeof updateCount === "function") {

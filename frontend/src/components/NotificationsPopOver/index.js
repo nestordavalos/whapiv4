@@ -146,7 +146,8 @@ const NotificationsPopOver = () => {
 		});
 
                 return () => {
-                        socket.disconnect();
+                        socket.off("ticket");
+                        socket.off("appMessage");
                 };
         }, [user, profile, queues]);
 

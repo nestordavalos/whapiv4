@@ -107,7 +107,7 @@ const useAuth = () => {
                 });
 
                 return () => {
-                        socket.disconnect();
+                        socket.off("user");
                 };
         }, [user]);
 

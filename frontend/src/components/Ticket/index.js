@@ -138,7 +138,6 @@ const Ticket = () => {
     return () => {
       socket.off("ticket", handleTicket);
       socket.off("contact", handleContact);
-      socket.disconnect();
     };
   }, [ticketId, history]);
 

@@ -63,9 +63,9 @@ const Settings = () => {
     }, []);
 
     useEffect(() => {
-        const socket = openSocket(process.env.REACT_APP_BACKEND_URL);
+        const socket = openSocket();
 
-        socket.on("settings", data => {
+        socket?.on("settings", data => {
             if (data.action === "update") {
                 setSettings(prevState => {
                     const aux = [...prevState];
@@ -77,7 +77,7 @@ const Settings = () => {
         });
 
         return () => {
-            socket.disconnect();
+            socket?.off("settings");
         };
     }, []);
 

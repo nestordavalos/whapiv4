@@ -1,5 +1,5 @@
 import openSocket from "socket.io-client";
-import jwtDecode from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 import { getBackendUrl } from "../config";
 
 function connectToSocket() {

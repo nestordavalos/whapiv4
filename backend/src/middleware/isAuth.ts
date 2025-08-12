@@ -37,12 +37,15 @@ const isAuth = async (
     const decoded = verify(token, authConfig.secret);
     const { id, profile, iat } = decoded as TokenPayload;
     const userId = Number(id);
-    let lastActivity = getLastActivity(userId);
+    const storedLastActivity = getLastActivity(userId);
     const iatMs = iat * 1000;
+    const lastActivity =
+      !storedLastActivity || iatMs > storedLastActivity
+        ? iatMs
+        : storedLastActivity;
 
     // Initialize or refresh stored activity based on token issuance
-    if (!lastActivity || iatMs > lastActivity) {
-      lastActivity = iatMs;
+    if (!storedLastActivity || iatMs > storedLastActivity) {
       updateActivity(userId, lastActivity);
     }
 

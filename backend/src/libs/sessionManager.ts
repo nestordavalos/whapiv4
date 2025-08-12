@@ -1,4 +1,5 @@
 const sessions = new Map<number, number>();
+const INACTIVITY_LIMIT_MS = 8 * 60 * 60 * 1000; // 8 hours
 
 export const getLastActivity = (userId: number): number | undefined => {
   return sessions.get(userId);
@@ -13,7 +14,7 @@ export const updateActivity = (
 
 export const isExpired = (
   last: number,
-  limit = 8 * 60 * 60 * 1000
+  limit = INACTIVITY_LIMIT_MS
 ): boolean => {
   return Date.now() - last > limit;
 };

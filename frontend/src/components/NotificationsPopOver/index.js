@@ -55,20 +55,17 @@ const NotificationsPopOver = () => {
 	const [, setDesktopNotifications] = useState([]);
 
 	const { tickets } = useTickets({ withUnreadMessages: "true" });
-	const [play] = useSound(alertSound);
-	const soundAlertRef = useRef();
+        const [play] = useSound(alertSound);
 
 	const historyRef = useRef(history);
 
-	useEffect(() => {
-		soundAlertRef.current = play;
-
-		if (!("Notification" in window)) {
-			console.log("This browser doesn't support notifications");
-		} else {
-			Notification.requestPermission();
-		}
-	}, [play]);
+        useEffect(() => {
+                if (!("Notification" in window)) {
+                        console.log("This browser doesn't support notifications");
+                } else {
+                        Notification.requestPermission();
+                }
+        }, []);
 
 	useEffect(() => {
 		const queueIds = queues.map((q) => q.id);
@@ -86,10 +83,11 @@ const NotificationsPopOver = () => {
 	}, [ticketIdUrl]);
 
 	useEffect(() => {
-		const socket = openSocket();
-		const queueIds = queues.map((q) => q.id);
+                const socket = openSocket();
+                if (!socket) return;
+                const queueIds = queues.map((q) => q.id);
 
-		socket.on("connect", () => socket.emit("joinNotification"));
+                socket.on("connect", () => socket.emit("joinNotification"));
 
 		socket.on("ticket", data => {
 			if (data.action === "updateUnread" || data.action === "delete") {
@@ -147,10 +145,10 @@ const NotificationsPopOver = () => {
 			}
 		});
 
-		return () => {
-			socket.disconnect();
-		};
-	}, [user, profile, queues]);
+                return () => {
+                        socket.disconnect();
+                };
+        }, [user, profile, queues]);
 
 	const handleNotifications = data => {
 		const { message, contact, ticket } = data;
@@ -184,8 +182,8 @@ const NotificationsPopOver = () => {
 			return [notification, ...prevState];
 		});
 
-		soundAlertRef.current();
-	};
+                play();
+        };
 
 	const handleClick = () => {
 		setIsOpen(prevState => !prevState);

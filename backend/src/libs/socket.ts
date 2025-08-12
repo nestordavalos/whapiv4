@@ -7,6 +7,14 @@ import authConfig from "../config/auth";
 import User from "../models/User";
 import { updateActivity, clearSession } from "./sessionManager";
 
+interface SocketTokenPayload {
+  id: string;
+  username: string;
+  profile: string;
+  iat: number;
+  exp: number;
+}
+
 let io: SocketIO;
 
 export const initIO = (httpServer: Server): SocketIO => {
@@ -19,10 +27,10 @@ export const initIO = (httpServer: Server): SocketIO => {
 
   io.on("connection", async socket => {
     const { token } = socket.handshake.query;
-    let tokenData = null;
+    let tokenData: SocketTokenPayload | null = null;
     try {
       const tokenString = Array.isArray(token) ? token[0] : token; // Ensure token is a string
-      tokenData = verify(tokenString, authConfig.secret) as any;
+      tokenData = verify(tokenString, authConfig.secret) as SocketTokenPayload;
       logger.debug(JSON.stringify(tokenData), "io-onConnection: tokenData");
     } catch (error) {
       logger.error(JSON.stringify(error), "Error decoding token");

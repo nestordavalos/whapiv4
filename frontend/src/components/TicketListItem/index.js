@@ -24,7 +24,7 @@ import MarkdownWrapper from "../MarkdownWrapper";
 import { Tooltip } from "@material-ui/core";
 import { AuthContext } from "../../context/Auth/AuthContext";
 import toastError from "../../errors/toastError";
-import AcceptTicketWithouSelectQueue from "../AcceptTicketWithoutQueueModal";
+import AcceptTicketWithoutSelectQueue from "../AcceptTicketWithoutQueueModal";
 import { system } from "../../config.json";
 import { Can } from "../../components/Can";
 import receiveIcon from "../../assets/receive.png";
@@ -148,12 +148,14 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 	const { ticketId } = useParams();
 	const isMounted = useRef(true);
 	const { user } = useContext(AuthContext);
-	const [acceptTicketWithouSelectQueueOpen, setAcceptTicketWithouSelectQueueOpen] = useState(false);
-	const [tag, setTag] = useState([]);
+        const [acceptTicketWithoutSelectQueueOpen, setAcceptTicketWithoutSelectQueueOpen] = useState(false);
+        const [tag, setTag] = useState([]);
+        const [unreadCount, setUnreadCount] = useState(ticket.unreadMessages);
 
-	useEffect(() => {
-		const delayDebounceFn = setTimeout(() => {
-			const fetchTicket = async () => {
+        useEffect(() => {
+                const debounceDelay = 500;
+                const delayDebounceFn = setTimeout(() => {
+                        const fetchTicket = async () => {
 				try {
 					const { data } = await api.get("/tickets/" + ticket.id);
 
@@ -163,19 +165,25 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 				}
 			};
 			fetchTicket();
-		}, 500);
+                }, debounceDelay);
 		return () => {
 			if (delayDebounceFn !== null) {
 				clearTimeout(delayDebounceFn);
 			}
 		};
-	}, [ticketId, user, history]);
+        }, [ticketId, user, history]);
 
-	useEffect(() => {
-		return () => {
-			isMounted.current = false;
-		};
-	}, []);
+        useEffect(() => {
+                return () => {
+                        isMounted.current = false;
+                };
+        }, []);
+
+        useEffect(() => {
+                if (!(ticketId && +ticketId === ticket.id)) {
+                        setUnreadCount(ticket.unreadMessages);
+                }
+        }, [ticket.unreadMessages, ticket.id, ticketId]);
 
 	const ContactTag = ({ tag }) => {
 
@@ -198,13 +206,13 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 		)
 	}
 
-	const handleAcepptTicket = async id => {
-		setLoading(true);
-		try {
-			await api.put(`/tickets/${id}`, {
-				status: "open",
-				userId: user?.id,
-			});
+        const handleAcceptTicket = async id => {
+                setLoading(true);
+                try {
+                        await api.put(`/tickets/${id}`, {
+                                status: "open",
+                                userId: user?.id,
+                        });
 		} catch (err) {
 			setLoading(false);
 			toastError(err);
@@ -213,8 +221,8 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 			setLoading(false);
 		}
 		handleChangeTab(null, "open");
-		history.push(`/tickets/${id}`);
-	}; const queueName = selectedTicket => {
+                history.push(`/tickets/${id}`);
+        }; const queueName = selectedTicket => {
 		let name = null;
 		let color = null;
 		user.queues.forEach(userQueue => {
@@ -228,8 +236,8 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 			color
 		};
 	}
-	const handleOpenAcceptTicketWithouSelectQueue = () => {
-		setAcceptTicketWithouSelectQueueOpen(true);
+        const handleOpenAcceptTicketWithoutSelectQueue = () => {
+                setAcceptTicketWithoutSelectQueueOpen(true);
 	};
 
 	const handleReopenTicket = async id => {
@@ -282,9 +290,10 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 		history.push(`/tickets/${id}`);
 	};
 
-	const handleSelectTicket = id => {
-		history.push(`/tickets/${id}`);
-	};
+        const handleSelectTicket = id => {
+                setUnreadCount(0);
+                history.push(`/tickets/${id}`);
+        };
 
 	// Nome do atendente
 	const [uName, setUserName] = useState(null);
@@ -313,11 +322,11 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 
 	return (
 		<React.Fragment key={ticket.id}>
-			<AcceptTicketWithouSelectQueue
-				modalOpen={acceptTicketWithouSelectQueueOpen}
-				onClose={(e) => setAcceptTicketWithouSelectQueueOpen(false)}
-				ticketId={ticket.id}
-			/>
+                        <AcceptTicketWithoutSelectQueue
+                                modalOpen={acceptTicketWithoutSelectQueueOpen}
+                                onClose={(e) => setAcceptTicketWithoutSelectQueueOpen(false)}
+                                ticketId={ticket.id}
+                        />
 			<ListItem
 				dense
 				button
@@ -413,13 +422,14 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 								)}
 							</Typography>
 
-							<Badge
-								className={classes.newMessagesCount}
-								badgeContent={ticket.unreadMessages}
-								overlap="rectangular"
-								classes={{
-									badge: classes.badgeStyle,
-								}} />
+                                                        <Badge
+                                                                className={classes.newMessagesCount}
+                                                                badgeContent={unreadCount}
+                                                                max={9999}
+                                                                overlap="rectangular"
+                                                                classes={{
+                                                                        badge: classes.badgeStyle,
+                                                                }} />
 						</span>
 							<span className={classes.Radiusdot}>
 								{viewConection ? (
@@ -533,7 +543,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 						<IconButton
 							className={classes.bottomButton}
 							color="primary"
-							onClick={e => handleOpenAcceptTicketWithouSelectQueue()}
+                                                    onClick={e => handleOpenAcceptTicketWithoutSelectQueue()}
 							loading={loading}>
 							<DoneIcon />
 						</IconButton>
@@ -544,7 +554,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 						<IconButton
 							className={classes.bottomButton}
 							color="primary"
-							onClick={e => handleAcepptTicket(ticket.id)} >
+                                                    onClick={e => handleAcceptTicket(ticket.id)} >
 							<DoneIcon />
 						</IconButton>
 					</Tooltip>

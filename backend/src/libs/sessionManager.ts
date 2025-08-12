@@ -1,7 +1,8 @@
 const sessions = new Map<number, number>();
 
-export const getLastActivity = (userId: number): number | undefined =>
-  sessions.get(userId);
+export const getLastActivity = (userId: number): number | undefined => {
+  return sessions.get(userId);
+};
 
 export const updateActivity = (
   userId: number,

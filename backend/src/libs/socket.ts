@@ -16,6 +16,9 @@ interface SocketTokenPayload {
 }
 
 let io: SocketIO;
+// Track active socket connections per user so a single disconnect
+// doesn't mark the user offline when other tabs are still connected
+const connections = new Map<number, number>();
 
 export const initIO = (httpServer: Server): SocketIO => {
   io = new SocketIO(httpServer, {
@@ -46,6 +49,9 @@ export const initIO = (httpServer: Server): SocketIO => {
     await user.update({ online: true });
     socket.join(String(user.id));
     updateActivity(user.id);
+    const userId = user.id;
+    const count = connections.get(userId) || 0;
+    connections.set(userId, count + 1);
 
     socket.onAny((event, ...args) => {
       logger.info({ event, args }, "socket event");
@@ -73,14 +79,21 @@ export const initIO = (httpServer: Server): SocketIO => {
     });
 
     socket.on("logout", async () => {
-      clearSession(user.id);
+      clearSession(userId);
       await user.update({ online: false });
+      connections.delete(userId);
       socket.disconnect();
     });
 
     socket.on("disconnect", async () => {
-      clearSession(user.id);
-      await user.update({ online: false });
+      const current = connections.get(userId) || 1;
+      if (current <= 1) {
+        connections.delete(userId);
+        clearSession(userId);
+        await user.update({ online: false });
+      } else {
+        connections.set(userId, current - 1);
+      }
     });
 
     return socket;

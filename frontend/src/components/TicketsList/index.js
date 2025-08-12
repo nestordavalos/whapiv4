@@ -269,11 +269,9 @@ const TicketsList = (props) => {
                 }
 
                 const shouldUpdateTicket = (ticket) =>
+                        (!status || ticket.status === status) &&
                         (!ticket.userId || ticket.userId === user?.id || showAll) &&
                         (!ticket.queueId || selectedQueueIds.indexOf(ticket.queueId) > -1);
-
-                const notBelongsToUserQueues = (ticket) =>
-                        ticket.queueId && selectedQueueIds.indexOf(ticket.queueId) === -1;
 
                 socket.on("ticket", (data) => {
                         if (data.action === "updateUnread") {
@@ -281,23 +279,33 @@ const TicketsList = (props) => {
                                         type: "RESET_UNREAD",
                                         payload: data.ticketId,
                                 });
+                                return;
                         }
 
-			if (data.action === "update" && shouldUpdateTicket(data.ticket)) {
-				dispatch({
-					type: "UPDATE_TICKET",
-					payload: data.ticket,
-				});
-			}
+                        if (data.action === "create" && shouldUpdateTicket(data.ticket)) {
+                                dispatch({
+                                        type: "UPDATE_TICKET",
+                                        payload: data.ticket,
+                                });
+                                return;
+                        }
 
-			if (data.action === "update" && notBelongsToUserQueues(data.ticket)) {
-				dispatch({ type: "DELETE_TICKET", payload: data.ticket.id });
-			}
+                        if (data.action === "update") {
+                                if (shouldUpdateTicket(data.ticket)) {
+                                        dispatch({
+                                                type: "UPDATE_TICKET",
+                                                payload: data.ticket,
+                                        });
+                                } else {
+                                        dispatch({ type: "DELETE_TICKET", payload: data.ticket.id });
+                                }
+                                return;
+                        }
 
-			if (data.action === "delete") {
-				dispatch({ type: "DELETE_TICKET", payload: data.ticketId });
-			}
-		});
+                        if (data.action === "delete") {
+                                dispatch({ type: "DELETE_TICKET", payload: data.ticketId });
+                        }
+                });
 
 	if (status) {
 		socket.on("appMessage", (data) => {

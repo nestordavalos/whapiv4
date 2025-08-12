@@ -17,6 +17,7 @@ import TicketListItem from "../TicketListItem";
 import { i18n } from "../../translate/i18n";
 import useTickets from "../../hooks/useTickets";
 import alertSound from "../../assets/sound.mp3";
+import useSound from "use-sound";
 import { AuthContext } from "../../context/Auth/AuthContext";
 
 const useStyles = makeStyles(theme => ({
@@ -52,7 +53,7 @@ const NotificationsPopOver = () => {
 	const [, setDesktopNotifications] = useState([]);
 
         const { tickets } = useTickets({ withUnreadMessages: "true" });
-        const audioRef = useRef(new Audio(alertSound));
+        const [play] = useSound(alertSound);
 
 	const historyRef = useRef(history);
 
@@ -188,8 +189,7 @@ const NotificationsPopOver = () => {
                 }
 
                 try {
-                        audioRef.current.currentTime = 0;
-                        audioRef.current.play();
+                        play();
                 } catch (err) {
                         console.error("Failed to play sound", err);
                 }

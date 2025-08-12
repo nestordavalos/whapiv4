@@ -43,11 +43,9 @@ const useStyles = makeStyles(theme => ({
 const NotificationsPopOver = () => {
 	const classes = useStyles();
 
-	const history = useHistory();
-	const { user } = useContext(AuthContext);
-	const ticketIdUrl = +history.location.pathname.split("/")[2];
-	const ticketIdRef = useRef(ticketIdUrl);
-	const anchorEl = useRef();
+        const history = useHistory();
+        const { user } = useContext(AuthContext);
+        const anchorEl = useRef();
 	const [isOpen, setIsOpen] = useState(false);
 	const [notifications, setNotifications] = useState([]);
 	const { profile, queues } = user;
@@ -78,11 +76,7 @@ const NotificationsPopOver = () => {
 		}
 	}, [tickets, queues, profile]);
 
-	useEffect(() => {
-		ticketIdRef.current = ticketIdUrl;
-	}, [ticketIdUrl]);
-
-	useEffect(() => {
+        useEffect(() => {
                 const socket = openSocket();
                 if (!socket) return;
                 const queueIds = queues.map((q) => q.id);
@@ -133,17 +127,16 @@ const NotificationsPopOver = () => {
 					return [data.ticket, ...prevState];
 				});
 
-				const shouldNotNotificate =
-					(data.message.ticketId === ticketIdRef.current &&
-						document.visibilityState === "visible") ||
-					(data.ticket.userId && data.ticket.userId !== user?.id) ||
-					data.ticket.isGroup || data.ticket.chatbot;
+                                const shouldNotNotificate =
+                                        (data.ticket.userId && data.ticket.userId !== user?.id) ||
+                                        data.ticket.isGroup ||
+                                        data.ticket.chatbot;
 
-				if (shouldNotNotificate) return;
-
-				handleNotifications(data);
-			}
-		});
+                                if (!shouldNotNotificate) {
+                                        handleNotifications(data);
+                                }
+                        }
+                });
 
                 return () => {
                         socket.off("ticket");

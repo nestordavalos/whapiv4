@@ -144,19 +144,22 @@ const Tags = () => {
 
   useEffect(() => {
     const socket = openSocket();
+    if (socket) {
+      socket.on("tags", (data) => {
+        if (data.action === "update" || data.action === "create") {
+          dispatch({ type: "UPDATE_TAGS", payload: data.tags });
+        }
 
-    socket?.on("tags", (data) => {
-      if (data.action === "update" || data.action === "create") {
-        dispatch({ type: "UPDATE_TAGS", payload: data.tags });
-      }
-
-      if (data.action === "delete") {
-        dispatch({ type: "DELETE_TAGS", payload: +data.tagId });
-      }
-    });
+        if (data.action === "delete") {
+          dispatch({ type: "DELETE_TAGS", payload: +data.tagId });
+        }
+      });
+    }
 
     return () => {
-      socket?.off("tags");
+      if (socket) {
+        socket.off("tags");
+      }
     };
   }, []);
 

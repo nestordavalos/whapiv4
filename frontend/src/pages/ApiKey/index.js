@@ -64,20 +64,23 @@ const Settings = () => {
 
     useEffect(() => {
         const socket = openSocket();
-
-        socket?.on("settings", data => {
-            if (data.action === "update") {
-                setSettings(prevState => {
-                    const aux = [...prevState];
-                    const settingIndex = aux.findIndex(s => s.key === data.setting.key);
-                    aux[settingIndex].value = data.setting.value;
-                    return aux;
-                });
-            }
-        });
+        if (socket) {
+            socket.on("settings", data => {
+                if (data.action === "update") {
+                    setSettings(prevState => {
+                        const aux = [...prevState];
+                        const settingIndex = aux.findIndex(s => s.key === data.setting.key);
+                        aux[settingIndex].value = data.setting.value;
+                        return aux;
+                    });
+                }
+            });
+        }
 
         return () => {
-            socket?.off("settings");
+            if (socket) {
+                socket.off("settings");
+            }
         };
     }, []);
 

@@ -273,7 +273,7 @@ const TicketsList = (props) => {
                         (!ticket.userId || ticket.userId === user?.id || showAll) &&
                         (!ticket.queueId || selectedQueueIds.indexOf(ticket.queueId) > -1);
 
-                socket.on("ticket", (data) => {
+                const handleTicket = (data) => {
                         if (data.action === "updateUnread") {
                                 dispatch({
                                         type: "RESET_UNREAD",
@@ -305,33 +305,42 @@ const TicketsList = (props) => {
                         if (data.action === "delete") {
                                 dispatch({ type: "DELETE_TICKET", payload: data.ticketId });
                         }
-                });
+                };
+                socket.on("ticket", handleTicket);
 
-	if (status) {
-		socket.on("appMessage", (data) => {
-			if (data.action === "create" && shouldUpdateTicket(data.ticket)) {
-				dispatch({
-					type: "UPDATE_TICKET_UNREAD_MESSAGES",
-					payload: data.ticket,
-				});
-			}
-		});
+        let handleAppMessage;
+        let handleContact;
 
-		socket.on("contact", (data) => {
-			if (data.action === "update") {
-				dispatch({
-					type: "UPDATE_TICKET_CONTACT",
-					payload: data.contact,
-				});
-			}
-		});
-	}
+        if (status) {
+                handleAppMessage = (data) => {
+                        console.debug("TicketsList received appMessage", data);
+                        if (data.action === "create" && shouldUpdateTicket(data.ticket)) {
+                                dispatch({
+                                        type: "UPDATE_TICKET_UNREAD_MESSAGES",
+                                        payload: data.ticket,
+                                });
+                        }
+                };
+                socket.on("appMessage", handleAppMessage);
+
+                handleContact = (data) => {
+                        if (data.action === "update") {
+                                dispatch({
+                                        type: "UPDATE_TICKET_CONTACT",
+                                        payload: data.contact,
+                                });
+                        }
+                };
+                socket.on("contact", handleContact);
+        }
 
                 return () => {
                         socket.off("connect", join);
-                        socket.off("ticket");
-                        socket.off("appMessage");
-                        socket.off("contact");
+                        socket.off("ticket", handleTicket);
+                        if (status) {
+                                socket.off("appMessage", handleAppMessage);
+                                socket.off("contact", handleContact);
+                        }
                 };
         }, [status, showAll, user, selectedQueueIds]);
 

@@ -40,10 +40,8 @@ const isAuth = async (
     let lastActivity = getLastActivity(userId);
     const iatMs = iat * 1000;
 
-    if (!lastActivity) {
-      lastActivity = Date.now();
-      updateActivity(userId, lastActivity);
-    } else if (iatMs > lastActivity) {
+    // Initialize or refresh stored activity based on token issuance
+    if (!lastActivity || iatMs > lastActivity) {
       lastActivity = iatMs;
       updateActivity(userId, lastActivity);
     }

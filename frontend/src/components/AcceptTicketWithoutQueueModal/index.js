@@ -9,10 +9,12 @@ import {
     DialogTitle,
     FormControl,
     InputLabel,
-    makeStyles,
     MenuItem,
-    Select
- } from "@material-ui/core";
+    Select,
+} from "@mui/material";
+
+
+import makeStyles from '@mui/styles/makeStyles';
 
 
 import api from "../../services/api";

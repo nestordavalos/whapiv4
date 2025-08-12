@@ -17,11 +17,11 @@ import {
 	InputAdornment,
 	IconButton,
 	Link
-} from '@material-ui/core';
+} from '@mui/material';
 
-import { Visibility, VisibilityOff } from '@material-ui/icons';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 
-import { makeStyles } from "@material-ui/core/styles";
+import makeStyles from '@mui/styles/makeStyles';
 
 import { i18n } from "../../translate/i18n";
 
@@ -88,9 +88,9 @@ const SignUp = () => {
 	};
 
 	return (
-		<Container component="main" maxWidth="xs">
-			<CssBaseline />
-			<div className={classes.paper}>
+        <Container component="main" maxWidth="xs">
+            <CssBaseline />
+            <div className={classes.paper}>
 				<img alt="logo" src={logo}></img>
 				<Typography component="h1" variant="h5">
 					{i18n.t("signup.title")}
@@ -154,9 +154,9 @@ const SignUp = () => {
 											endAdornment: (
 												<InputAdornment position="end">
 													<IconButton
-														aria-label="toggle password visibility"
-														onClick={() => setShowPassword((e) => !e)}
-													>
+                                                        aria-label="toggle password visibility"
+                                                        onClick={() => setShowPassword((e) => !e)}
+                                                        size="large">
 														{showPassword ? <VisibilityOff color="secondary" /> : <Visibility color="secondary" />}
 													</IconButton>
 												</InputAdornment>
@@ -174,7 +174,7 @@ const SignUp = () => {
 							>
 								{i18n.t("signup.buttons.submit")}
 							</Button>
-							<Grid container justify="flex-end">
+							<Grid container justifyContent="flex-end">
 								<Grid item>
 									<Link
 										href="#"
@@ -190,9 +190,9 @@ const SignUp = () => {
 					)}
 				</Formik>
 			</div>
-			<Box mt={5}><Copyright /></Box>
-		</Container>
-	);
+            <Box mt={5}><Copyright /></Box>
+        </Container>
+    );
 };
 
 export default SignUp;

@@ -17,13 +17,14 @@ import {
     DialogTitle,
     IconButton,
     InputAdornment,
-    makeStyles,
-    TextField
-} from "@material-ui/core";
+    TextField,
+} from "@mui/material";
 
-import { Colorize } from "@material-ui/icons";
+import makeStyles from '@mui/styles/makeStyles';
+
+import { Colorize } from "@mui/icons-material";
 import { ColorBox } from 'material-ui-color';
-import { green } from "@material-ui/core/colors";
+import { green } from "@mui/material/colors";
 
 import { i18n } from "../../translate/i18n";
 

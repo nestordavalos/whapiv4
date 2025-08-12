@@ -6,12 +6,11 @@ import {
   AddCircleOutline, 
   DeleteOutline, 
   Edit 
-} from "@material-ui/icons";
+} from "@mui/icons-material";
 
 import {
   Button,
   IconButton,
-  makeStyles,
   Paper,
   Table,
   TableBody,
@@ -19,8 +18,10 @@ import {
   TableHead,
   TableRow,
   Typography,
-  Tooltip
-} from "@material-ui/core";
+  Tooltip,
+} from "@mui/material";
+
+import makeStyles from '@mui/styles/makeStyles';
 
 import ConfirmationModal from "../../components/ConfirmationModal";
 import MainContainer from "../../components/MainContainer";

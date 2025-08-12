@@ -1,22 +1,15 @@
 import React, { useContext, useEffect, useState } from "react";
 
-import { 
-  Badge,
-  Button,
-  FormControlLabel,
-  makeStyles,
-  Paper,
-  Tab,
-  Tabs,
-  Switch
-} from "@material-ui/core";
+import { Badge, Button, FormControlLabel, Paper, Tab, Tabs, Switch } from "@mui/material";
+
+import makeStyles from '@mui/styles/makeStyles';
 
 import {
   AllInboxRounded,
   HourglassEmptyRounded,
   MoveToInbox,
   Search
-} from "@material-ui/icons";
+} from "@mui/icons-material";
 
 import NewTicketModal from "../NewTicketModal";
 import TicketsList from "../TicketsList";

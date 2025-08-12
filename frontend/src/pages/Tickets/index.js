@@ -1,14 +1,14 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import Grid from "@material-ui/core/Grid";
-import Paper from "@material-ui/core/Paper";
-import { makeStyles } from "@material-ui/core/styles";
+import Grid from "@mui/material/Grid";
+import Paper from "@mui/material/Paper";
+import makeStyles from '@mui/styles/makeStyles';
 
 import TicketsManager from "../../components/TicketsManager/";
 import Ticket from "../../components/Ticket/";
 
 // import { i18n } from "../../translate/i18n";
-import Hidden from "@material-ui/core/Hidden";
+import Hidden from "@mui/material/Hidden";
 
 import logo from "../../assets/Logo_circle.png";
 
@@ -39,7 +39,7 @@ const useStyles = makeStyles((theme) => ({
     height: "100%",
     flexDirection: "column",
     overflowY: "hidden",
-    [theme.breakpoints.down("sm")]: {
+    [theme.breakpoints.down('md')]: {
       display: "none",
     },
   },
@@ -58,7 +58,7 @@ const useStyles = makeStyles((theme) => ({
   },
   ticketsManager: {},
   ticketsManagerClosed: {
-    [theme.breakpoints.down("sm")]: {
+    [theme.breakpoints.down('md')]: {
       display: "none",
     },
   },

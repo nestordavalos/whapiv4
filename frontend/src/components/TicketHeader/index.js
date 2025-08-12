@@ -1,9 +1,9 @@
 import React from "react";
 
-import { Card } from "@material-ui/core";
-import { makeStyles } from "@material-ui/core/styles";
+import { Card } from "@mui/material";
+import makeStyles from '@mui/styles/makeStyles';
 import TicketHeaderSkeleton from "../TicketHeaderSkeleton";
-import ArrowBackIos from "@material-ui/icons/ArrowBackIos";
+import ArrowBackIos from "@mui/icons-material/ArrowBackIos";
 import { useHistory } from "react-router-dom";
 
 const useStyles = makeStyles((theme) => ({

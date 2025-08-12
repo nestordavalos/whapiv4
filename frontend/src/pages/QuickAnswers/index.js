@@ -5,7 +5,6 @@ import { useHistory } from "react-router-dom";
 import {
   Button,
   IconButton,
-  makeStyles,
   Paper,
   Table,
   TableBody,
@@ -14,15 +13,16 @@ import {
   TableRow,
   InputAdornment,
   TextField,
-  Tooltip
-} from "@material-ui/core";
+  Tooltip,
+} from "@mui/material";
+import makeStyles from '@mui/styles/makeStyles';
 import {
   AddCircleOutline,
   DeleteForever,
   DeleteOutline,
   Edit,
   Search
-} from "@material-ui/icons";
+} from "@mui/icons-material";
 
 import api from "../../services/api";
 import { i18n } from "../../translate/i18n";
@@ -268,7 +268,7 @@ const QuickAnswers = () => {
             perform="drawer-admin-items:view"
             yes={() => (//Função que identifica o usuario e bloqueia a visão caso não seja admin
 
-              <Tooltip title={i18n.t("quickAnswers.buttons.deleteAll")}>
+              (<Tooltip title={i18n.t("quickAnswers.buttons.deleteAll")}>
                 <Button
                   variant="contained"
                   color="primary"
@@ -279,7 +279,7 @@ const QuickAnswers = () => {
                 >
                   <DeleteForever />
                 </Button>
-              </Tooltip>
+              </Tooltip>)
             )}
           />
 
@@ -322,7 +322,7 @@ const QuickAnswers = () => {
                       role={user.profile}
                       perform="drawer-admin-items:view"
                       yes={() => ( //Função que identifica o usuario e bloqueia a visão caso não seja admin
-                        <IconButton
+                        (<IconButton
                           size="small"
                           onClick={(e) => {
                             setConfirmModalOpen(true);
@@ -330,7 +330,7 @@ const QuickAnswers = () => {
                           }}
                         >
                           <DeleteOutline color="secondary" />
-                        </IconButton>
+                        </IconButton>)
                       )}
                     />
 

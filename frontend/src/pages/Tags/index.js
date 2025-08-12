@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect, useReducer, useCallback } from 
 import { toast } from "react-toastify";
 import openSocket from "socket.io-client";
 
-import { makeStyles } from "@material-ui/core/styles";
+import makeStyles from '@mui/styles/makeStyles';
 import { CSVLink } from "react-csv";
 import {
   Button,
@@ -16,7 +16,7 @@ import {
   TableRow,
   TextField,
   Tooltip
-} from "@material-ui/core";
+} from "@mui/material";
 
 import {
   AddCircleOutline,
@@ -25,7 +25,7 @@ import {
   Archive,
   Edit,
   Search
-} from "@material-ui/icons";
+} from "@mui/icons-material";
 
 import MainContainer from "../../components/MainContainer";
 import MainHeader from "../../components/MainHeader";
@@ -283,7 +283,7 @@ const Tags = () => {
             perform="drawer-admin-items:view"
             yes={() => (//Função que identifica o usuario e bloqueia a visão caso não seja admin
 
-              <CSVLink
+              (<CSVLink
                 className={classes.csvbtn}
                 separator=";"
                 filename="mkthub-contacts.csv"
@@ -292,8 +292,6 @@ const Tags = () => {
                   contactName: contact.name,
                   contactNumber: contact.number
                 })))}>
-
-
                 <Tooltip title={i18n.t("tags.buttons.download")}>
                   <Button
                     variant="contained"
@@ -302,7 +300,7 @@ const Tags = () => {
                     <Archive />
                   </Button>
                 </Tooltip>
-              </CSVLink>
+              </CSVLink>)
 
             )}
           />
@@ -312,7 +310,7 @@ const Tags = () => {
             perform="drawer-admin-items:view"
             yes={() => (//Função que identifica o usuario e bloqueia a visão caso não seja admin
 
-              <Tooltip Tooltip title={i18n.t("tags.buttons.deleteAll")}>
+              (<Tooltip Tooltip title={i18n.t("tags.buttons.deleteAll")}>
                 <Button
                   variant="contained"
                   color="primary"
@@ -323,7 +321,7 @@ const Tags = () => {
                 >
                   <DeleteForever />
                 </Button>
-              </Tooltip>
+              </Tooltip>)
 
             )}
           />
@@ -384,7 +382,7 @@ const Tags = () => {
                       role={user.profile}
                       perform="drawer-admin-items:view"
                       yes={() => (//Função que identifica o usuario e bloqueia a visão caso não seja admin
-                        <IconButton
+                        (<IconButton
                           size="small"
                           onClick={(e) => {
                             setConfirmModalOpen(true);
@@ -392,7 +390,7 @@ const Tags = () => {
                           }}
                         >
                           <DeleteOutline color="secondary" />
-                        </IconButton>
+                        </IconButton>)
 
                       )}
                     />

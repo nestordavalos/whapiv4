@@ -12,7 +12,6 @@ import {
   DialogTitle,
   IconButton,
   InputAdornment,
-  makeStyles,
   TextField,
   Typography,
   Stepper,
@@ -20,20 +19,22 @@ import {
   StepLabel,
   StepContent,
   Switch,
-} from "@material-ui/core";
+} from "@mui/material";
 
-import { FormControlLabel } from "@material-ui/core";
-import { green } from "@material-ui/core/colors";
+import makeStyles from '@mui/styles/makeStyles';
+
+import { FormControlLabel } from "@mui/material";
+import { green } from "@mui/material/colors";
 import { toast } from "react-toastify";
-import SaveIcon from "@material-ui/icons/Save";
-import EditIcon from "@material-ui/icons/Edit";
-import HelpOutlineOutlinedIcon from "@material-ui/icons/HelpOutlineOutlined";
+import SaveIcon from "@mui/icons-material/Save";
+import EditIcon from "@mui/icons-material/Edit";
+import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import { i18n } from "../../translate/i18n";
 import api from "../../services/api";
 import toastError from "../../errors/toastError";
 import ColorPicker from "../ColorPicker";
-import { Colorize } from "@material-ui/icons";
-import DeleteOutline from "@material-ui/icons/DeleteOutline";
+import { Colorize } from "@mui/icons-material";
+import DeleteOutline from "@mui/icons-material/DeleteOutline";
 import ConfirmationModal from "../ConfirmationModal";
 import OptionsChatBot from "../ChatBots/options";
 import CustomToolTip from "../ToolTips";

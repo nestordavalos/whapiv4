@@ -8,16 +8,17 @@ import {
   IconButton,
   Link,
   List,
-  makeStyles,
   Menu,
   MenuItem,
   Toolbar,
-  Typography
-} from "@material-ui/core";
+  Typography,
+} from "@mui/material";
 
-import MenuIcon from "@material-ui/icons/Menu";
-import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
-import AccountCircle from "@material-ui/icons/AccountCircle";
+import makeStyles from '@mui/styles/makeStyles';
+
+import MenuIcon from "@mui/icons-material/Menu";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import AccountCircle from "@mui/icons-material/AccountCircle";
 
 import MainListItems from "./MainListItems";
 import NotificationsPopOver from "../components/NotificationsPopOver";
@@ -38,7 +39,7 @@ const useStyles = makeStyles((theme) => ({
   root: {
     display: "flex",
     height: "100vh",
-    [theme.breakpoints.down("sm")]: {
+    [theme.breakpoints.down('md')]: {
       height: "calc(100vh - 56px)",
     },
   },
@@ -207,7 +208,7 @@ const LoggedInLayout = ({ children }) => {
       >
         <div className={classes.toolbarIcon}>
           <img src={logodash} style={{width:"60%"}} alt="logo" />
-          <IconButton color="secondary" onClick={() => setDrawerOpen(!drawerOpen)}>
+          <IconButton color="secondary" onClick={() => setDrawerOpen(!drawerOpen)} size="large">
             <ChevronLeftIcon />
           </IconButton>
         </div>
@@ -237,7 +238,7 @@ const LoggedInLayout = ({ children }) => {
               classes.menuButton,
               drawerOpen && classes.menuButtonHidden
             )}
-          >
+            size="large">
             <MenuIcon />
           </IconButton>
           <span
@@ -258,7 +259,7 @@ const LoggedInLayout = ({ children }) => {
               aria-haspopup="true"
               onClick={handleMenu}
               color="inherit"
-            >
+              size="large">
               <AccountCircle />
             </IconButton>
             <Menu

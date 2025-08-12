@@ -2,20 +2,21 @@ import React, { useState, useEffect } from "react";
 import openSocket from "socket.io-client";
 import { useHistory } from "react-router-dom";
 
-import { makeStyles, withStyles } from "@material-ui/core/styles";
-import Paper from "@material-ui/core/Paper";
-import Typography from "@material-ui/core/Typography";
-import Container from "@material-ui/core/Container";
-import Select from "@material-ui/core/Select";
+import makeStyles from '@mui/styles/makeStyles';
+import withStyles from '@mui/styles/withStyles';
+import Paper from "@mui/material/Paper";
+import Typography from "@mui/material/Typography";
+import Container from "@mui/material/Container";
+import Select from "@mui/material/Select";
 import { toast } from "react-toastify";
 
-import Tooltip from "@material-ui/core/Tooltip";
+import Tooltip from "@mui/material/Tooltip";
 
 import api from "../../services/api";
 import { i18n } from "../../translate/i18n.js";
 import toastError from "../../errors/toastError";
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import Switch from '@material-ui/core/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 
 const useStyles = makeStyles(theme => ({
 	root: {
@@ -167,18 +168,18 @@ const Settings = () => {
 	};
 
 	return (
-		// <div className={classes.root}>
-		// 	<Typography variant="h2">Configurações Gerais</Typography>
-		// 	<Container maxWidth="sm">
-		// 		{/* Seu conteúdo aqui */}
-		// 	</Container>
-		// </div>
+        // <div className={classes.root}>
+        // 	<Typography variant="h2">Configurações Gerais</Typography>
+        // 	<Container maxWidth="sm">
+        // 		{/* Seu conteúdo aqui */}
+        // 	</Container>
+        // </div>
 
-		<div className={classes.root}>
-			<Paper className={classes.paper} style={{ margin: '10px' }}>
+        <div className={classes.root}>
+            <Paper className={classes.paper} style={{ margin: '10px' }}>
 				<Typography variant="h4"><b>Configuración general</b></Typography>
 			</Paper>
-			<div maxWidth="sm">
+            <div maxWidth="sm">
 				<div style={{ display: 'flex' }}>
 					<div style={{ width: '50%', paddingRight: '10px' }}>
 						<Container className={classes.container} maxWidth="xs">
@@ -371,8 +372,8 @@ const Settings = () => {
 					</div>
 				</div>
 			</div>
-		</div>
-	);
+        </div>
+    );
 };
 
 export default Settings;

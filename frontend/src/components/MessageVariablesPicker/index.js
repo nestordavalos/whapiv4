@@ -1,5 +1,6 @@
 import React from "react";
-import { Chip, makeStyles } from "@material-ui/core";
+import { Chip } from "@mui/material";
+import makeStyles from '@mui/styles/makeStyles';
 import { i18n } from "../../translate/i18n";
 import OutlinedDiv from "../OutlinedDiv";
 

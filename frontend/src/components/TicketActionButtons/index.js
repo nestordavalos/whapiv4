@@ -1,9 +1,10 @@
 import React, { useContext, useState } from "react";
 import { useHistory } from "react-router-dom";
 
-import { makeStyles, createTheme, ThemeProvider } from "@material-ui/core/styles";
-import { IconButton } from "@material-ui/core";
-import { MoreVert, Replay } from "@material-ui/icons";
+import { createTheme, ThemeProvider, StyledEngineProvider, adaptV4Theme } from "@mui/material/styles";
+import makeStyles from '@mui/styles/makeStyles';
+import { IconButton } from "@mui/material";
+import { MoreVert, Replay } from "@mui/icons-material";
 
 import { i18n } from "../../translate/i18n";
 import api from "../../services/api";
@@ -11,11 +12,11 @@ import TicketOptionsMenu from "../TicketOptionsMenu";
 import ButtonWithSpinner from "../ButtonWithSpinner";
 import toastError from "../../errors/toastError";
 import { AuthContext } from "../../context/Auth/AuthContext";
-import CheckCircleIcon from '@material-ui/icons/CheckCircle';
-import UndoRoundedIcon from '@material-ui/icons/UndoRounded';
-import CancelIcon from '@material-ui/icons/Cancel';
-import Tooltip from '@material-ui/core/Tooltip';
-import { green, red } from '@material-ui/core/colors';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import UndoRoundedIcon from '@mui/icons-material/UndoRounded';
+import CancelIcon from '@mui/icons-material/Cancel';
+import Tooltip from '@mui/material/Tooltip';
+import { green, red } from '@mui/material/colors';
 
 const useStyles = makeStyles(theme => ({
 	actionButtons: {
@@ -37,12 +38,12 @@ const TicketActionButtons = ({ ticket }) => {
 	const ticketOptionsMenuOpen = Boolean(anchorEl);
 	const { user } = useContext(AuthContext);
 
-	const customTheme = createTheme({
+	const customTheme = createTheme(adaptV4Theme({
 		palette: {
 			primary: green,
 			secondary: red,
 		}
-	});
+	}));
 
 	const handleOpenTicketOptionsMenu = e => {
 		setAnchorEl(e.currentTarget);
@@ -76,32 +77,43 @@ const TicketActionButtons = ({ ticket }) => {
 	};
 
 	return (
-		<div className={classes.actionButtons}>
-			{ticket.status === "closed" && (
+        <div className={classes.actionButtons}>
+            {ticket.status === "closed" && (
 				<Tooltip title={i18n.t("messagesList.header.buttons.reopen")}>
-					<IconButton loading={loading} style={{ marginRight: 20 }} onClick={e => handleUpdateTicketStatus(e, "open", user?.id,false)} color="primary">
+					<IconButton
+                        loading={loading}
+                        style={{ marginRight: 20 }}
+                        onClick={e => handleUpdateTicketStatus(e, "open", user?.id,false)}
+                        color="primary"
+                        size="large">
 						<Replay />
 					</IconButton>
 				</Tooltip>
 			)}
-			{ticket.status === "open" && (
+            {ticket.status === "open" && (
 				<>
 					<Tooltip title={i18n.t("messagesList.header.buttons.return")}>
-						<IconButton loading={loading} onClick={e => handleUpdateTicketStatus(e, "pending", null, false)}>
+						<IconButton
+                            loading={loading}
+                            onClick={e => handleUpdateTicketStatus(e, "pending", null, false)}
+                            size="large">
 							<UndoRoundedIcon />
 						</IconButton>
 					</Tooltip>
-					<ThemeProvider theme={customTheme}>
-						<Tooltip title={i18n.t("messagesList.header.buttons.resolve")}>
-							<IconButton 
-							loading={loading} 
-							onClick={e => handleUpdateTicketStatus(e, "closed", user?.id, false)} 
-							color="secondary">
-								<CancelIcon />
-							</IconButton>
-						</Tooltip>
-					</ThemeProvider>
-					<IconButton loading={loading} onClick={handleOpenTicketOptionsMenu}>
+					<StyledEngineProvider injectFirst>
+                        <ThemeProvider theme={customTheme}>
+                            <Tooltip title={i18n.t("messagesList.header.buttons.resolve")}>
+                                <IconButton
+                                    loading={loading}
+                                    onClick={e => handleUpdateTicketStatus(e, "closed", user?.id, false)}
+                                    color="secondary"
+                                    size="large">
+                                    <CancelIcon />
+                                </IconButton>
+                            </Tooltip>
+                        </ThemeProvider>
+                    </StyledEngineProvider>
+					<IconButton loading={loading} onClick={handleOpenTicketOptionsMenu} size="large">
 						<MoreVert />
 					</IconButton>
 					<TicketOptionsMenu
@@ -112,18 +124,15 @@ const TicketActionButtons = ({ ticket }) => {
 					/>
 				</>
 			)}
-			
-			{/* {ticket.status === "pending" && (
+            {/* {ticket.status === "pending" && (
 				<Tooltip title={i18n.t("messagesList.header.buttons.accept")}>
 					<IconButton loading={loading} style={{ marginRight: 20 }} onClick={e => handleUpdateTicketStatus(e, "open", user?.id)} color="primary">
 						<CheckCircleIcon />
 					</IconButton>
 				</Tooltip>
 			)} */}
-				
-			
-		</div>
-	);
+        </div>
+    );
 };
 
 export default TicketActionButtons;

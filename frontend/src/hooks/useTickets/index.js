@@ -21,6 +21,7 @@ const useTickets = ({
 
     useEffect(() => {
         setLoading(true);
+        const debounceDelay = 500;
         const delayDebounceFn = setTimeout(() => {
             const fetchTickets = async() => {
                 try {
@@ -72,8 +73,10 @@ const useTickets = ({
             // }
 
             fetchTickets()
-        }, 500)
-        return () => clearTimeout(delayDebounceFn)
+        }, debounceDelay);
+        return () => {
+            clearTimeout(delayDebounceFn);
+        };
     }, [
         searchParam,
         pageNumber,

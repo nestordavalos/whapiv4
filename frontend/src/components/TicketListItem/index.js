@@ -24,7 +24,7 @@ import MarkdownWrapper from "../MarkdownWrapper";
 import { Tooltip } from "@material-ui/core";
 import { AuthContext } from "../../context/Auth/AuthContext";
 import toastError from "../../errors/toastError";
-import AcceptTicketWithouSelectQueue from "../AcceptTicketWithoutQueueModal";
+import AcceptTicketWithoutSelectQueue from "../AcceptTicketWithoutQueueModal";
 import { system } from "../../config.json";
 import { Can } from "../../components/Can";
 import receiveIcon from "../../assets/receive.png";
@@ -148,11 +148,12 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 	const { ticketId } = useParams();
 	const isMounted = useRef(true);
 	const { user } = useContext(AuthContext);
-        const [acceptTicketWithouSelectQueueOpen, setAcceptTicketWithouSelectQueueOpen] = useState(false);
+        const [acceptTicketWithoutSelectQueueOpen, setAcceptTicketWithoutSelectQueueOpen] = useState(false);
         const [tag, setTag] = useState([]);
         const [unreadCount, setUnreadCount] = useState(ticket.unreadMessages);
 
         useEffect(() => {
+                const debounceDelay = 500;
                 const delayDebounceFn = setTimeout(() => {
                         const fetchTicket = async () => {
 				try {
@@ -164,7 +165,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 				}
 			};
 			fetchTicket();
-		}, 500);
+                }, debounceDelay);
 		return () => {
 			if (delayDebounceFn !== null) {
 				clearTimeout(delayDebounceFn);
@@ -233,8 +234,8 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 			color
 		};
 	}
-	const handleOpenAcceptTicketWithouSelectQueue = () => {
-		setAcceptTicketWithouSelectQueueOpen(true);
+        const handleOpenAcceptTicketWithoutSelectQueue = () => {
+                setAcceptTicketWithoutSelectQueueOpen(true);
 	};
 
 	const handleReopenTicket = async id => {
@@ -319,11 +320,11 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 
 	return (
 		<React.Fragment key={ticket.id}>
-			<AcceptTicketWithouSelectQueue
-				modalOpen={acceptTicketWithouSelectQueueOpen}
-				onClose={(e) => setAcceptTicketWithouSelectQueueOpen(false)}
-				ticketId={ticket.id}
-			/>
+                        <AcceptTicketWithoutSelectQueue
+                                modalOpen={acceptTicketWithoutSelectQueueOpen}
+                                onClose={(e) => setAcceptTicketWithoutSelectQueueOpen(false)}
+                                ticketId={ticket.id}
+                        />
 			<ListItem
 				dense
 				button
@@ -540,7 +541,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 						<IconButton
 							className={classes.bottomButton}
 							color="primary"
-							onClick={e => handleOpenAcceptTicketWithouSelectQueue()}
+                                                    onClick={e => handleOpenAcceptTicketWithoutSelectQueue()}
 							loading={loading}>
 							<DoneIcon />
 						</IconButton>

@@ -39,7 +39,7 @@ const useStyles = makeStyles((theme) => ({
 	},
 }));
 
-const AcceptTicketWithouSelectQueue = ({ modalOpen, onClose, ticketId }) => {
+const AcceptTicketWithoutSelectQueue = ({ modalOpen, onClose, ticketId }) => {
 	const history = useHistory();
 	const classes = useStyles();
 	const [selectedQueue, setSelectedQueue] = useState('');
@@ -116,4 +116,4 @@ return (
 );
 };
 
-export default AcceptTicketWithouSelectQueue;
+export default AcceptTicketWithoutSelectQueue;

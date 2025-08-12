@@ -124,7 +124,11 @@ const NotificationsPopOver = () => {
                                 !data.message.read &&
                                 (data.ticket.userId === user?.id || !data.ticket.userId)
                         ) {
-                                if (profile === 'user' && (queueIds.indexOf(data.ticket.queue?.id) === -1 || data.ticket.queue === null)) {
+                                if (
+                                        profile === "user" &&
+                                        data.ticket.queue &&
+                                        queueIds.indexOf(data.ticket.queue.id) === -1
+                                ) {
                                         return;
                                 }
 

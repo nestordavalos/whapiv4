@@ -69,6 +69,23 @@ const NotificationsPopOver = () => {
                 audioRef.current.load();
         }, []);
 
+        useEffect(() => {
+                const unlock = () => {
+                        const audio = audioRef.current;
+                        audio.play()
+                                .then(() => {
+                                        audio.pause();
+                                        audio.currentTime = 0;
+                                })
+                                .catch(err =>
+                                        console.debug("Audio unlock failed", err)
+                                );
+                        document.removeEventListener("click", unlock);
+                };
+                document.addEventListener("click", unlock);
+                return () => document.removeEventListener("click", unlock);
+        }, []);
+
 	useEffect(() => {
 		const queueIds = queues.map((q) => q.id);
 		const filteredTickets = tickets.filter((t) => queueIds.indexOf(t.queueId) > -1);

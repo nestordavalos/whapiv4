@@ -125,15 +125,19 @@ const useStyles = makeStyles(theme => ({
 		borderRadius: 10,
 		fontSize: "0.9em"
 	},
-	Radiusdot: {
-		"& .MuiBadge-badge": {
-			borderRadius: 6,
-			position: "inherit",
-			height: 14,
-			margin: 4,
-			padding: 3,
-			whiteSpace: "nowrap",
-		},
+        Radiusdot: {
+                "& .MuiBadge-badge": {
+                        borderRadius: 6,
+                        position: "inherit",
+                        height: 14,
+                        margin: 4,
+                        padding: 3,
+                        whiteSpace: "nowrap",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        textAlign: "center",
+                },
                "& .MuiBadge-anchorOriginTopRightRectangular": {
                        transform: "scale(1) translate(0%, -40%)",
                },

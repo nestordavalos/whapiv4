@@ -180,8 +180,10 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
         }, []);
 
         useEffect(() => {
-                setUnreadCount(ticket.unreadMessages);
-        }, [ticket.unreadMessages]);
+                if (!(ticketId && +ticketId === ticket.id)) {
+                        setUnreadCount(ticket.unreadMessages);
+                }
+        }, [ticket.unreadMessages, ticket.id, ticketId]);
 
 	const ContactTag = ({ tag }) => {
 
@@ -204,13 +206,13 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 		)
 	}
 
-	const handleAcepptTicket = async id => {
-		setLoading(true);
-		try {
-			await api.put(`/tickets/${id}`, {
-				status: "open",
-				userId: user?.id,
-			});
+        const handleAcceptTicket = async id => {
+                setLoading(true);
+                try {
+                        await api.put(`/tickets/${id}`, {
+                                status: "open",
+                                userId: user?.id,
+                        });
 		} catch (err) {
 			setLoading(false);
 			toastError(err);
@@ -219,8 +221,8 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 			setLoading(false);
 		}
 		handleChangeTab(null, "open");
-		history.push(`/tickets/${id}`);
-	}; const queueName = selectedTicket => {
+                history.push(`/tickets/${id}`);
+        }; const queueName = selectedTicket => {
 		let name = null;
 		let color = null;
 		user.queues.forEach(userQueue => {
@@ -552,7 +554,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 						<IconButton
 							className={classes.bottomButton}
 							color="primary"
-							onClick={e => handleAcepptTicket(ticket.id)} >
+                                                    onClick={e => handleAcceptTicket(ticket.id)} >
 							<DoneIcon />
 						</IconButton>
 					</Tooltip>

@@ -2319,6 +2319,41 @@ const handleMessage = async (
 
     const contact = await verifyContact(msgContact);
 
+    if (!msg.fromMe) {
+      try {
+        const closedTicket = await Ticket.findOne({
+          where: {
+            contactId: groupContact ? groupContact.id : contact.id,
+            whatsappId: wbot.id!,
+            status: "closed"
+          },
+          order: [["updatedAt", "DESC"]]
+        });
+
+        if (closedTicket) {
+          const ticket = await ShowTicketService(closedTicket.id);
+          const ticketTraking = await TicketTraking.findOne({
+            where: { ticketId: ticket.id, finishedAt: null }
+          });
+
+          if (ticketTraking && verifyRating(ticketTraking) && whatsapp.ratingMessage) {
+            const rate = +msg.body;
+            if (!Number.isNaN(rate) && Number.isInteger(rate) && !isNull(rate)) {
+              await handleRating(msg, ticket, ticketTraking);
+            } else {
+              const bodyRatingMessage = `\u200e${whatsapp.ratingMessage}\n`;
+              const sentMessage = await SendWhatsAppMessage({ body: bodyRatingMessage, ticket });
+              await verifyMessage(sentMessage, ticket, ticket.contact);
+            }
+            return;
+          }
+        }
+      } catch (err) {
+        Sentry.captureException(err);
+        logger.error(`Error handling rating reply. Err: ${err}`);
+      }
+    }
+
     // console.log("OUTRO TESTE " + unreadMessages)
     let ticket = await FindOrCreateTicketService(
       contact,
@@ -2360,36 +2395,11 @@ const handleMessage = async (
     //   return;
     // }
 
-    const ticketTraking = await FindOrCreateATicketTrakingService({
+    await FindOrCreateATicketTrakingService({
       ticketId: ticket.id,
       whatsappId: whatsapp?.id,
       userId: ticket.userId
     });
-
-    try {
-      if (!msg.fromMe) {
-        if (ticketTraking !== null && verifyRating(ticketTraking) && whatsapp.ratingMessage) {
-          let rate = +msg.body;
-          //testa se o usuário digitou uma avaliação numérica, se não enviou, envia novametne a mensagem de avaliação
-          if (!Number.isNaN(rate) && Number.isInteger(rate) && !isNull(rate)) {
-            handleRating(msg, ticket, ticketTraking);
-            return;
-          }
-          else {
-            let bodyRatingMessage = `\u200e${whatsapp.ratingMessage}\n`;
-
-            const msg = await SendWhatsAppMessage({ body: bodyRatingMessage, ticket });
-
-            await verifyMessage(msg, ticket, ticket.contact);
-
-            return;
-          }
-        }
-      }
-    } catch (e) {
-      Sentry.captureException(e);
-      console.log(e);
-    }
 
     if (msg.hasMedia) {
       await verifyMediaMessage(msg, ticket, contact);
@@ -2499,62 +2509,60 @@ const handleRating = async (msg: WbotMessage, ticket: Ticket, ticketTraking: Tic
   const io = getIO();
   let rate: number | null = null;
 
-  const bodyMessage = msg.body;
-  const { farewellMessage, ratingMessage } = await ShowWhatsAppService(ticket.whatsappId);
+  try {
+    const bodyMessage = msg.body;
+    const { farewellMessage } = await ShowWhatsAppService(ticket.whatsappId);
 
-
-  if (bodyMessage) {
-    rate = +bodyMessage;
-  }
-
-  if (!Number.isNaN(rate) && Number.isInteger(rate) && !isNull(rate)) {
-
-    let finalRate = rate;
-
-    if (rate < 0) {
-      finalRate = 0;
-    }
-    if (rate > 10) {
-      finalRate = 10;
+    if (bodyMessage) {
+      rate = +bodyMessage;
     }
 
+    if (!Number.isNaN(rate) && Number.isInteger(rate) && !isNull(rate)) {
+      let finalRate = rate;
 
+      if (rate < 0) {
+        finalRate = 0;
+      }
+      if (rate > 10) {
+        finalRate = 10;
+      }
 
-    await UserRating.create({
-      ticketId: ticketTraking.ticketId,
-      userId: ticketTraking.userId,
-      rate: finalRate,
-    });
+      await UserRating.create({
+        ticketId: ticketTraking.ticketId,
+        userId: ticketTraking.userId,
+        rate: finalRate
+      });
 
-    // await record?.update({ rate: finalRate });
+      if (farewellMessage.trim() !== "") {
+        const body = `\u200e${farewellMessage}`;
+        await SendWhatsAppMessage({ body, ticket });
+      }
 
-    if (farewellMessage.trim() !== '') {
-      const body = `\u200e${farewellMessage}`;
+      await ticketTraking.update({
+        ratingAt: moment().toDate(),
+        finishedAt: moment().toDate(),
+        rated: true
+      });
 
-      await SendWhatsAppMessage({ body, ticket });
+      await ticket.update({
+        status: "closed"
+      });
+
+      io.to("open").emit(`ticket`, {
+        action: "delete",
+        ticket,
+        ticketId: ticket.id
+      });
+
+      io.to(ticket.status).to(ticket.id.toString()).emit(`ticket`, {
+        action: "update",
+        ticket,
+        ticketId: ticket.id
+      });
     }
-    await ticketTraking.update({
-      ratingAt: moment().toDate(),
-      finishedAt: moment().toDate(),
-      rated: true,
-    });
-
-    await ticket.update({
-      status: "closed"
-    });
-
-
-    io.to("open").emit(`ticket`, {
-      action: "delete",
-      ticket,
-      ticketId: ticket.id
-    });
-
-    io.to(ticket.status).to(ticket.id.toString()).emit(`ticket`, {
-      action: "update",
-      ticket,
-      ticketId: ticket.id
-    });
+  } catch (err) {
+    Sentry.captureException(err);
+    logger.error(`Error handling rating. Err: ${err}`);
   }
 };
 

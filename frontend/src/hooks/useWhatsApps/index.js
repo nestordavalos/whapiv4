@@ -1,4 +1,5 @@
 import { useState, useEffect, useReducer } from "react";
+import axios from "axios";
 import openSocket from "../../services/socket-io";
 import toastError from "../../errors/toastError";
 
@@ -57,46 +58,63 @@ const useWhatsApps = () => {
 	const [whatsApps, dispatch] = useReducer(reducer, []);
 	const [loading, setLoading] = useState(true);
 
-	useEffect(() => {
-		setLoading(true);
-		const fetchSession = async () => {
-			try {
-				const { data } = await api.get("/whatsapp/");
-				dispatch({ type: "LOAD_WHATSAPPS", payload: data });
-				setLoading(false);
-			} catch (err) {
-				setLoading(false);
-				toastError(err);
-			}
-		};
-		fetchSession();
-	}, []);
+        useEffect(() => {
+                let isMounted = true;
+                const source = axios.CancelToken.source();
+                setLoading(true);
+                const fetchSession = async () => {
+                        try {
+                                const { data } = await api.get("/whatsapp/", {
+                                        cancelToken: source.token,
+                                });
+                                if (isMounted) {
+                                        dispatch({ type: "LOAD_WHATSAPPS", payload: data });
+                                        setLoading(false);
+                                }
+                        } catch (err) {
+                                if (!axios.isCancel(err) && isMounted) {
+                                        setLoading(false);
+                                        toastError(err);
+                                }
+                        }
+                };
+                fetchSession();
+                return () => {
+                        isMounted = false;
+                        source.cancel();
+                };
+        }, []);
 
-	useEffect(() => {
-		const socket = openSocket();
+        useEffect(() => {
+                let isMounted = true;
+                const socket = openSocket();
 
-		socket.on("whatsapp", data => {
-			if (data.action === "update") {
-				dispatch({ type: "UPDATE_WHATSAPPS", payload: data.whatsapp });
-			}
-		});
+                socket.on("whatsapp", data => {
+                        if (isMounted && data.action === "update") {
+                                dispatch({
+                                        type: "UPDATE_WHATSAPPS",
+                                        payload: data.whatsapp,
+                                });
+                        }
+                });
 
-		socket.on("whatsapp", data => {
-			if (data.action === "delete") {
-				dispatch({ type: "DELETE_WHATSAPPS", payload: data.whatsappId });
-			}
-		});
+                socket.on("whatsapp", data => {
+                        if (isMounted && data.action === "delete") {
+                                dispatch({ type: "DELETE_WHATSAPPS", payload: data.whatsappId });
+                        }
+                });
 
-		socket.on("whatsappSession", data => {
-			if (data.action === "update") {
-				dispatch({ type: "UPDATE_SESSION", payload: data.session });
-			}
-		});
+                socket.on("whatsappSession", data => {
+                        if (isMounted && data.action === "update") {
+                                dispatch({ type: "UPDATE_SESSION", payload: data.session });
+                        }
+                });
 
-		return () => {
-			socket.disconnect();
-		};
-	}, []);
+                return () => {
+                        isMounted = false;
+                        socket.disconnect();
+                };
+        }, []);
 
 	return { whatsApps, loading };
 };

@@ -1,7 +1,11 @@
-function getConfig(name, defaultValue=null) {
-    // If inside a docker container, use window.ENV
-    if( window.ENV !== undefined ) {
-        return window.ENV[name] || defaultValue;
+function getConfig(name, defaultValue = null) {
+    // Prefer runtime environment variables injected via window.ENV,
+    // but fall back to build-time variables if the key is missing.
+    if (typeof window !== "undefined" && window.ENV) {
+        const value = window.ENV[name];
+        if (value !== undefined && value !== null) {
+            return value;
+        }
     }
 
     return process.env[name] || defaultValue;

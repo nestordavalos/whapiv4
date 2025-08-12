@@ -17,7 +17,7 @@ import TicketListItem from "../TicketListItem";
 import { i18n } from "../../translate/i18n";
 import useTickets from "../../hooks/useTickets";
 import alertSound from "../../assets/sound.mp3";
-import useSound from "use-sound";
+
 import { AuthContext } from "../../context/Auth/AuthContext";
 
 const useStyles = makeStyles(theme => ({
@@ -50,12 +50,12 @@ const NotificationsPopOver = () => {
 	const [notifications, setNotifications] = useState([]);
 	const { profile, queues } = user;
 
-	const [, setDesktopNotifications] = useState([]);
+        const [, setDesktopNotifications] = useState([]);
 
         const { tickets } = useTickets({ withUnreadMessages: "true" });
-        const [play] = useSound(alertSound, { interrupt: true });
+        const audioRef = useRef(new Audio(alertSound));
 
-	const historyRef = useRef(history);
+        const historyRef = useRef(history);
 
         useEffect(() => {
                 if (!("Notification" in window)) {
@@ -63,6 +63,10 @@ const NotificationsPopOver = () => {
                 } else {
                         Notification.requestPermission();
                 }
+        }, []);
+
+        useEffect(() => {
+                audioRef.current.load();
         }, []);
 
 	useEffect(() => {
@@ -191,7 +195,9 @@ const NotificationsPopOver = () => {
                 }
 
                 try {
-                        play().catch(err => console.error("Failed to play sound", err));
+                        const audio = audioRef.current;
+                        audio.currentTime = 0;
+                        audio.play().catch(err => console.error("Failed to play sound", err));
                 } catch (err) {
                         console.error("Failed to play sound", err);
                 }

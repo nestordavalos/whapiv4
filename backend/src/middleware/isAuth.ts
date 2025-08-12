@@ -3,7 +3,12 @@ import { Request, Response, NextFunction } from "express";
 
 import AppError from "../errors/AppError";
 import authConfig from "../config/auth";
-import { isExpired, updateActivity, clearSession } from "../libs/sessionManager";
+import {
+  isExpired,
+  updateActivity,
+  clearSession,
+  getLastActivity
+} from "../libs/sessionManager";
 import { getIO } from "../libs/socket";
 import User from "../models/User";
 
@@ -30,12 +35,16 @@ const isAuth = async (
 
   try {
     const decoded = verify(token, authConfig.secret);
-    const { id, profile } = decoded as TokenPayload;
+    const { id, profile, iat } = decoded as TokenPayload;
+    const userId = Number(id);
+    const iatMs = iat * 1000;
+    const last = getLastActivity(userId);
+    const lastActivity = last && last > iatMs ? last : iatMs;
 
-    if (isExpired(Number(id))) {
+    if (isExpired(lastActivity)) {
       const user = await User.findByPk(id);
       if (user) await user.update({ online: false });
-      clearSession(Number(id));
+      clearSession(userId);
       try {
         getIO().emit("session:expired", { userId: id });
       } catch (error) {
@@ -49,7 +58,7 @@ const isAuth = async (
       profile
     };
 
-    updateActivity(Number(id));
+    updateActivity(userId);
   } catch (err) {
     if (err instanceof AppError) {
       throw err;

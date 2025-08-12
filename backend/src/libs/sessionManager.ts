@@ -1,15 +1,19 @@
 const sessions = new Map<number, number>();
 
-export const updateActivity = (userId: number): void => {
-  sessions.set(userId, Date.now());
+export const getLastActivity = (userId: number): number | undefined =>
+  sessions.get(userId);
+
+export const updateActivity = (
+  userId: number,
+  timestamp = Date.now()
+): void => {
+  sessions.set(userId, timestamp);
 };
 
 export const isExpired = (
-  userId: number,
+  last: number,
   limit = 8 * 60 * 60 * 1000
 ): boolean => {
-  const last = sessions.get(userId);
-  if (!last) return false;
   return Date.now() - last > limit;
 };
 

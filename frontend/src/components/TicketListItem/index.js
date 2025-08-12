@@ -148,12 +148,13 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 	const { ticketId } = useParams();
 	const isMounted = useRef(true);
 	const { user } = useContext(AuthContext);
-	const [acceptTicketWithouSelectQueueOpen, setAcceptTicketWithouSelectQueueOpen] = useState(false);
-	const [tag, setTag] = useState([]);
+        const [acceptTicketWithouSelectQueueOpen, setAcceptTicketWithouSelectQueueOpen] = useState(false);
+        const [tag, setTag] = useState([]);
+        const [unreadCount, setUnreadCount] = useState(ticket.unreadMessages);
 
-	useEffect(() => {
-		const delayDebounceFn = setTimeout(() => {
-			const fetchTicket = async () => {
+        useEffect(() => {
+                const delayDebounceFn = setTimeout(() => {
+                        const fetchTicket = async () => {
 				try {
 					const { data } = await api.get("/tickets/" + ticket.id);
 
@@ -169,13 +170,17 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 				clearTimeout(delayDebounceFn);
 			}
 		};
-	}, [ticketId, user, history]);
+        }, [ticketId, user, history]);
 
-	useEffect(() => {
-		return () => {
-			isMounted.current = false;
-		};
-	}, []);
+        useEffect(() => {
+                return () => {
+                        isMounted.current = false;
+                };
+        }, []);
+
+        useEffect(() => {
+                setUnreadCount(ticket.unreadMessages);
+        }, [ticket.unreadMessages]);
 
 	const ContactTag = ({ tag }) => {
 
@@ -282,9 +287,10 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 		history.push(`/tickets/${id}`);
 	};
 
-	const handleSelectTicket = id => {
-		history.push(`/tickets/${id}`);
-	};
+        const handleSelectTicket = id => {
+                setUnreadCount(0);
+                history.push(`/tickets/${id}`);
+        };
 
 	// Nome do atendente
 	const [uName, setUserName] = useState(null);
@@ -413,13 +419,14 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 								)}
 							</Typography>
 
-							<Badge
-								className={classes.newMessagesCount}
-								badgeContent={ticket.unreadMessages}
-								overlap="rectangular"
-								classes={{
-									badge: classes.badgeStyle,
-								}} />
+                                                        <Badge
+                                                                className={classes.newMessagesCount}
+                                                                badgeContent={unreadCount}
+                                                                max={9999}
+                                                                overlap="rectangular"
+                                                                classes={{
+                                                                        badge: classes.badgeStyle,
+                                                                }} />
 						</span>
 							<span className={classes.Radiusdot}>
 								{viewConection ? (

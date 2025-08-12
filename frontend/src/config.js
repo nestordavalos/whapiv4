@@ -1,20 +1,41 @@
-function getConfig(name, defaultValue = null) {
-    // Prefer runtime environment variables injected via window.ENV,
-    // but fall back to build-time variables if the key is missing.
-    if (typeof window !== "undefined" && window.ENV) {
-        const value = window.ENV[name];
-        if (value !== undefined && value !== null) {
-            return value;
-        }
-    }
+// Build-time variables must be referenced explicitly so they are baked
+// into the bundle by the build tool. We keep a static map here for any
+// config key we want to expose at runtime.
+const buildEnv = {
+  REACT_APP_BACKEND_URL: process.env.REACT_APP_BACKEND_URL,
+};
 
-    return process.env[name] || defaultValue;
+function getConfig(name, defaultValue = null) {
+  // Prefer runtime environment variables injected via window.ENV, but
+  // fall back to the build-time value when the key is missing or blank.
+  if (typeof window !== "undefined" && window.ENV) {
+    const value = window.ENV[name];
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== "" &&
+      value !== "undefined"
+    ) {
+      return value;
+    }
+  }
+
+  const buildValue = buildEnv[name];
+  if (buildValue !== undefined && buildValue !== null && buildValue !== "") {
+    return buildValue;
+  }
+
+  return defaultValue;
 }
 
 export function getBackendUrl() {
-    return getConfig('REACT_APP_BACKEND_URL');
+  const url = getConfig("REACT_APP_BACKEND_URL");
+  if (!url) {
+    console.error("REACT_APP_BACKEND_URL is not defined");
+  }
+  return url;
 }
 
 // export function getHoursCloseTicketsAuto() {
-//     return getConfig('REACT_APP_HOURS_CLOSE_TICKETS_AUTO');
+//   return getConfig('REACT_APP_HOURS_CLOSE_TICKETS_AUTO');
 // }

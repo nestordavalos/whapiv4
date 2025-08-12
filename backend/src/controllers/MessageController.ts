@@ -9,6 +9,8 @@ import ShowTicketService from "../services/TicketServices/ShowTicketService";
 import DeleteWhatsAppMessage from "../services/WbotServices/DeleteWhatsAppMessage";
 import SendWhatsAppMedia from "../services/WbotServices/SendWhatsAppMedia";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
+import CreateMessageService from "../services/MessageServices/CreateMessageService";
+import { Message as WbotMessage } from "whatsapp-web.js";
 
 type IndexQuery = {
   pageNumber: string;
@@ -53,11 +55,56 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   if (medias && medias.length > 0) {
     await Promise.all(
       medias.map(async (media: Express.Multer.File) => {
-        await SendWhatsAppMedia({ media, ticket, body, quotedMsg });
+        const sentMsg: WbotMessage = await SendWhatsAppMedia({
+          media,
+          ticket,
+          body,
+          quotedMsg
+        });
+
+        const timestamp = sentMsg.timestamp
+          ? new Date(sentMsg.timestamp * 1000)
+          : new Date();
+
+        await CreateMessageService({
+          messageData: {
+            id: sentMsg.id.id,
+            ticketId: ticket.id,
+            body: sentMsg.body || body,
+            fromMe: true,
+            read: true,
+            mediaUrl: media.filename,
+            mediaType: media.mimetype.split("/")[0],
+            quotedMsgId: quotedMsg?.id,
+            createdAt: timestamp,
+            updatedAt: timestamp
+          }
+        });
       })
     );
   } else {
-    await SendWhatsAppMessage({ body, ticket, quotedMsg });
+    const sentMsg: WbotMessage = await SendWhatsAppMessage({
+      body,
+      ticket,
+      quotedMsg
+    });
+
+    const timestamp = sentMsg.timestamp
+      ? new Date(sentMsg.timestamp * 1000)
+      : new Date();
+
+    await CreateMessageService({
+      messageData: {
+        id: sentMsg.id.id,
+        ticketId: ticket.id,
+        body: sentMsg.body,
+        fromMe: true,
+        read: true,
+        quotedMsgId: quotedMsg?.id,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      }
+    });
   }
 
   return res.send();

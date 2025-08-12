@@ -114,24 +114,25 @@ const Settings = () => {
 		fetchSession();
 	}, []);
 
-        useEffect(() => {
-                const socket = openSocket();
+       useEffect(() => {
+               const socket = openSocket();
+               if (!socket) return;
 
-                socket?.on("settings", data => {
-                        if (data.action === "update") {
-                                setSettings(prevState => {
-                                        const aux = [...prevState];
-                                        const settingIndex = aux.findIndex(s => s.key === data.setting.key);
-                                        aux[settingIndex].value = data.setting.value;
-                                        return aux;
-                                });
-                        }
-                });
+               socket.on("settings", data => {
+                       if (data.action === "update") {
+                               setSettings(prevState => {
+                                       const aux = [...prevState];
+                                       const settingIndex = aux.findIndex(s => s.key === data.setting.key);
+                                       aux[settingIndex].value = data.setting.value;
+                                       return aux;
+                               });
+                       }
+               });
 
-                return () => {
-                        socket?.off("settings");
-                };
-        }, []);
+               return () => {
+                       socket.off("settings");
+               };
+       }, []);
 
 	const handleChangeBooleanSetting = async e => {
 		const selectedValue = e.target.checked ? "enabled" : "disabled";

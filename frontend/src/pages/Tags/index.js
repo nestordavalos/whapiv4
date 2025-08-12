@@ -143,20 +143,23 @@ const Tags = () => {
   }, [searchParam, pageNumber, fetchTags]);
 
   useEffect(() => {
-    const socket = openSocket(process.env.REACT_APP_BACKEND_URL);
+    const socket = openSocket();
+    if (socket) {
+      socket.on("tags", (data) => {
+        if (data.action === "update" || data.action === "create") {
+          dispatch({ type: "UPDATE_TAGS", payload: data.tags });
+        }
 
-    socket.on("tags", (data) => {
-      if (data.action === "update" || data.action === "create") {
-        dispatch({ type: "UPDATE_TAGS", payload: data.tags });
-      }
-
-      if (data.action === "delete") {
-        dispatch({ type: "DELETE_TAGS", payload: +data.tagId });
-      }
-    });
+        if (data.action === "delete") {
+          dispatch({ type: "DELETE_TAGS", payload: +data.tagId });
+        }
+      });
+    }
 
     return () => {
-      socket.disconnect();
+      if (socket) {
+        socket.off("tags");
+      }
     };
   }, []);
 

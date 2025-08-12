@@ -9,6 +9,7 @@ import {
   createAccessToken,
   createRefreshToken
 } from "../../helpers/CreateTokens";
+import { updateActivity } from "../../libs/sessionManager";
 
 interface RefreshTokenPayload {
   id: string;
@@ -38,6 +39,7 @@ export const RefreshTokenService = async (
 
     const newToken = createAccessToken(user);
     const refreshToken = createRefreshToken(user);
+    updateActivity(user.id);
 
     return { user, newToken, refreshToken };
   } catch (err) {

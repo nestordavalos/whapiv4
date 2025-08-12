@@ -107,10 +107,9 @@ const Ticket = () => {
 
   useEffect(() => {
     const socket = openSocket();
+    if (!socket) return undefined;
 
-    socket.on("connect", () => socket.emit("joinChatBox", ticketId));
-
-    socket.on("ticket", (data) => {
+    const handleTicket = data => {
       if (data.action === "update") {
         setTicket(data.ticket);
       }
@@ -119,21 +118,26 @@ const Ticket = () => {
         toast.success("Chamado apagado com sucesso.");
         history.push("/tickets");
       }
-    });
+    };
 
-    socket.on("contact", (data) => {
+    const handleContact = data => {
       if (data.action === "update") {
-        setContact((prevState) => {
+        setContact(prevState => {
           if (prevState.id === data.contact?.id) {
             return { ...prevState, ...data.contact };
           }
           return prevState;
         });
       }
-    });
+    };
+
+    socket.emit("joinChatBox", ticketId);
+    socket.on("ticket", handleTicket);
+    socket.on("contact", handleContact);
 
     return () => {
-      socket.disconnect();
+      socket.off("ticket", handleTicket);
+      socket.off("contact", handleContact);
     };
   }, [ticketId, history]);
 

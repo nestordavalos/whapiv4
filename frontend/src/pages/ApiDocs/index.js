@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import openSocket from "socket.io-client";
+import openSocket from "../../services/socket-io";
 import { makeStyles } from "@material-ui/core/styles";
 
 const useStyles = makeStyles(theme => ({
@@ -27,12 +27,12 @@ const useStyles = makeStyles(theme => ({
 const ApiDocs = () => {
 	const classes = useStyles();
 
-	useEffect(() => {
-		const socket = openSocket(process.env.REACT_APP_BACKEND_URL);
-		return () => {
-			socket.disconnect();
-		};
-	}, []);
+        useEffect(() => {
+                const socket = openSocket();
+                return () => {
+                        if (socket) socket.off();
+                };
+        }, []);
 
     const back = process.env.REACT_APP_BACKEND_URL;
     const endapi = "/api-docs";

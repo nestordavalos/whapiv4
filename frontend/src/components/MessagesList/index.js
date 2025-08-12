@@ -454,10 +454,9 @@ const MessagesList = ({ ticketId, isGroup }) => {
 
   useEffect(() => {
     const socket = openSocket();
+    if (!socket) return undefined;
 
-    socket.on("connect", () => socket.emit("joinChatBox", ticketId));
-
-    socket.on("appMessage", (data) => {
+    const handleMessage = data => {
       if (data.action === "create") {
         dispatch({ type: "ADD_MESSAGE", payload: data.message });
         scrollToBottom();
@@ -466,10 +465,19 @@ const MessagesList = ({ ticketId, isGroup }) => {
       if (data.action === "update") {
         dispatch({ type: "UPDATE_MESSAGE", payload: data.message });
       }
-    });
+    };
+
+    const join = () => socket.emit("joinChatBox", ticketId);
+    if (socket.connected) {
+      join();
+    } else {
+      socket.on("connect", join);
+    }
+    socket.on("appMessage", handleMessage);
 
     return () => {
-      socket.disconnect();
+      socket.off("connect", join);
+      socket.off("appMessage", handleMessage);
     };
   }, [ticketId]);
 

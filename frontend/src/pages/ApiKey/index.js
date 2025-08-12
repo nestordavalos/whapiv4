@@ -63,21 +63,24 @@ const Settings = () => {
     }, []);
 
     useEffect(() => {
-        const socket = openSocket(process.env.REACT_APP_BACKEND_URL);
-
-        socket.on("settings", data => {
-            if (data.action === "update") {
-                setSettings(prevState => {
-                    const aux = [...prevState];
-                    const settingIndex = aux.findIndex(s => s.key === data.setting.key);
-                    aux[settingIndex].value = data.setting.value;
-                    return aux;
-                });
-            }
-        });
+        const socket = openSocket();
+        if (socket) {
+            socket.on("settings", data => {
+                if (data.action === "update") {
+                    setSettings(prevState => {
+                        const aux = [...prevState];
+                        const settingIndex = aux.findIndex(s => s.key === data.setting.key);
+                        aux[settingIndex].value = data.setting.value;
+                        return aux;
+                    });
+                }
+            });
+        }
 
         return () => {
-            socket.disconnect();
+            if (socket) {
+                socket.off("settings");
+            }
         };
     }, []);
 

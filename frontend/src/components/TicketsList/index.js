@@ -250,72 +250,99 @@ const TicketsList = (props) => {
 
 	}, [tickets, status, searchParam, queues, profile]);
 
-	useEffect(() => {
-		const socket = openSocket();
+        useEffect(() => {
+                const socket = openSocket();
+                if (!socket) return;
 
-		const shouldUpdateTicket = (ticket) =>
-			(!ticket.userId || ticket.userId === user?.id || showAll) &&
-			(!ticket.queueId || selectedQueueIds.indexOf(ticket.queueId) > -1);
+                const join = () => {
+                        if (status) {
+                                socket.emit("joinTickets", status);
+                        } else {
+                                socket.emit("joinNotification");
+                        }
+                };
 
-		const notBelongsToUserQueues = (ticket) =>
-			ticket.queueId && selectedQueueIds.indexOf(ticket.queueId) === -1;
+                if (socket.connected) {
+                        join();
+                } else {
+                        socket.on("connect", join);
+                }
 
-		socket.on("connect", () => {
-			if (status) {
-				socket.emit("joinTickets", status);
-			} else {
-				socket.emit("joinNotification");
-			}
-		});
+                const shouldUpdateTicket = (ticket) =>
+                        (!status || ticket.status === status) &&
+                        (!ticket.userId || ticket.userId === user?.id || showAll) &&
+                        (!ticket.queueId || selectedQueueIds.indexOf(ticket.queueId) > -1);
 
-		socket.on("ticket", (data) => {
-			if (data.action === "updateUnread") {
-				dispatch({
-					type: "RESET_UNREAD",
-					payload: data.ticketId,
-				});
-			}
+                const handleTicket = (data) => {
+                        if (data.action === "updateUnread") {
+                                dispatch({
+                                        type: "RESET_UNREAD",
+                                        payload: data.ticketId,
+                                });
+                                return;
+                        }
 
-			if (data.action === "update" && shouldUpdateTicket(data.ticket)) {
-				dispatch({
-					type: "UPDATE_TICKET",
-					payload: data.ticket,
-				});
-			}
+                        if (data.action === "create" && shouldUpdateTicket(data.ticket)) {
+                                dispatch({
+                                        type: "UPDATE_TICKET",
+                                        payload: data.ticket,
+                                });
+                                return;
+                        }
 
-			if (data.action === "update" && notBelongsToUserQueues(data.ticket)) {
-				dispatch({ type: "DELETE_TICKET", payload: data.ticket.id });
-			}
+                        if (data.action === "update") {
+                                if (shouldUpdateTicket(data.ticket)) {
+                                        dispatch({
+                                                type: "UPDATE_TICKET",
+                                                payload: data.ticket,
+                                        });
+                                } else {
+                                        dispatch({ type: "DELETE_TICKET", payload: data.ticket.id });
+                                }
+                                return;
+                        }
 
-			if (data.action === "delete") {
-				dispatch({ type: "DELETE_TICKET", payload: data.ticketId });
-			}
-		});
+                        if (data.action === "delete") {
+                                dispatch({ type: "DELETE_TICKET", payload: data.ticketId });
+                        }
+                };
+                socket.on("ticket", handleTicket);
 
-	if (status) {
-		socket.on("appMessage", (data) => {
-			if (data.action === "create" && shouldUpdateTicket(data.ticket)) {
-				dispatch({
-					type: "UPDATE_TICKET_UNREAD_MESSAGES",
-					payload: data.ticket,
-				});
-			}
-		});
+        let handleAppMessage;
+        let handleContact;
 
-		socket.on("contact", (data) => {
-			if (data.action === "update") {
-				dispatch({
-					type: "UPDATE_TICKET_CONTACT",
-					payload: data.contact,
-				});
-			}
-		});
-	}
+        if (status) {
+                handleAppMessage = (data) => {
+                        console.debug("TicketsList received appMessage", data);
+                        if (data.action === "create" && shouldUpdateTicket(data.ticket)) {
+                                dispatch({
+                                        type: "UPDATE_TICKET_UNREAD_MESSAGES",
+                                        payload: data.ticket,
+                                });
+                        }
+                };
+                socket.on("appMessage", handleAppMessage);
 
-		return () => {
-			socket.disconnect();
-		};
-	}, [status, showAll, user, selectedQueueIds]);
+                handleContact = (data) => {
+                        if (data.action === "update") {
+                                dispatch({
+                                        type: "UPDATE_TICKET_CONTACT",
+                                        payload: data.contact,
+                                });
+                        }
+                };
+                socket.on("contact", handleContact);
+        }
+
+                return () => {
+                        socket.off("connect", join);
+                        socket.off("ticket", handleTicket);
+                        if (status) {
+                                socket.off("appMessage", handleAppMessage);
+                                socket.off("contact", handleContact);
+                        }
+                };
+        }, [status, showAll, user, selectedQueueIds]);
 
 	useEffect(() => {
 		if (typeof updateCount === "function") {

@@ -12,6 +12,7 @@ interface MessageData {
   read?: boolean;
   mediaType?: string;
   mediaUrl?: string;
+  quotedMsgId?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

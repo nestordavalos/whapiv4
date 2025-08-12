@@ -47,7 +47,8 @@
     "react-trello": "^2.2.11",
     "recharts": "^2.0.2",
     "socket.io-client": "^4.7.3",
-    "use-sound": "^2.0.1",
+    "jwt-decode": "^4.0.0",
+    "use-sound": "^4.0.1",
     "yup": "^0.32.8"
   },
   "scripts": {

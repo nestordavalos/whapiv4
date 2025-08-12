@@ -132,7 +132,7 @@ const Queues = () => {
     });
 
     return () => {
-      socket.disconnect();
+      socket.off("queue");
     };
   }, []);
 

@@ -16,6 +16,9 @@ import {
 	Tooltip,
 	Typography,
 	CircularProgress,
+	Box,
+	Chip,
+	Divider,
 } from "@material-ui/core";
 import {
 	Edit,
@@ -27,7 +30,10 @@ import {
 	DeleteOutline,
 	SyncOutlined,
 	WhatsApp,
-	Replay
+	Replay,
+	Phone,
+	Schedule,
+	MoreVert,
 } from "@material-ui/icons";
 
 import MainContainer from "../../components/MainContainer";
@@ -51,6 +57,158 @@ const useStyles = makeStyles(theme => ({
 		margin: theme.spacing(1),
 		overflowY: "scroll",
 		...theme.scrollbarStyles,
+		borderRadius: 8,
+		backgroundColor: "transparent",
+		border: "none",
+	},
+	connectionsGrid: {
+		display: "grid",
+		gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+		gap: theme.spacing(2),
+	},
+	connectionCard: {
+		padding: theme.spacing(2.5),
+		border: "1px solid rgba(0, 0, 0, 0.12)",
+		borderRadius: 12,
+		backgroundColor: "#fff",
+		boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+		display: "flex",
+		flexDirection: "column",
+		gap: theme.spacing(2),
+		transition: "all 0.3s ease",
+		position: "relative",
+		"&:hover": {
+			boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+			transform: "translateY(-2px)",
+		},
+	},
+	connectionInfo: {
+		display: "flex",
+		flexDirection: "column",
+		gap: theme.spacing(1.5),
+		flex: 1,
+	},
+	connectionHeader: {
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "space-between",
+		marginBottom: theme.spacing(1),
+	},
+	connectionTitle: {
+		display: "flex",
+		alignItems: "center",
+		gap: theme.spacing(1),
+		flex: 1,
+	},
+	connectionName: {
+		fontWeight: 600,
+		fontSize: "1.125rem",
+		color: theme.palette.text.primary,
+		overflow: "hidden",
+		textOverflow: "ellipsis",
+		whiteSpace: "nowrap",
+	},
+	connectionId: {
+		fontSize: "0.7rem",
+		color: theme.palette.text.secondary,
+		backgroundColor: theme.palette.action.hover,
+		padding: "2px 6px",
+		borderRadius: 8,
+		fontWeight: 500,
+	},
+	connectionDetails: {
+		display: "flex",
+		flexDirection: "column",
+		gap: theme.spacing(1),
+		paddingTop: theme.spacing(1),
+		borderTop: "1px solid rgba(0, 0, 0, 0.08)",
+	},
+	detailItem: {
+		display: "flex",
+		alignItems: "center",
+		gap: theme.spacing(1),
+		fontSize: "0.875rem",
+		color: theme.palette.text.secondary,
+	},
+	detailIcon: {
+		fontSize: "1.125rem",
+		color: theme.palette.action.active,
+	},
+	detailLabel: {
+		fontWeight: 500,
+		minWidth: 70,
+		color: theme.palette.text.secondary,
+	},
+	detailValue: {
+		color: theme.palette.text.primary,
+	},
+	statusChip: {
+		display: "inline-flex",
+		alignItems: "center",
+		gap: theme.spacing(0.5),
+		padding: "6px 12px",
+		borderRadius: 20,
+		fontSize: "0.75rem",
+		fontWeight: 600,
+		textTransform: "uppercase",
+		letterSpacing: "0.5px",
+	},
+	statusConnected: {
+		backgroundColor: "rgba(76, 175, 80, 0.1)",
+		color: green[700],
+	},
+	statusDisconnected: {
+		backgroundColor: "rgba(244, 67, 54, 0.1)",
+		color: "#d32f2f",
+	},
+	statusOpening: {
+		backgroundColor: "rgba(33, 150, 243, 0.1)",
+		color: "#1976d2",
+	},
+	statusQrcode: {
+		backgroundColor: "rgba(255, 152, 0, 0.1)",
+		color: "#f57c00",
+	},
+	connectionActions: {
+		display: "flex",
+		gap: theme.spacing(1),
+		flexWrap: "wrap",
+		alignItems: "center",
+		justifyContent: "space-between",
+		marginTop: theme.spacing(1),
+	},
+	actionButtons: {
+		display: "flex",
+		gap: theme.spacing(1),
+		flex: 1,
+	},
+	actionButton: {
+		minWidth: "auto",
+		padding: "6px 12px",
+		textTransform: "none",
+		fontSize: "0.75rem",
+		borderRadius: 8,
+		flex: 1,
+	},
+	iconButtons: {
+		display: "flex",
+		gap: theme.spacing(0.5),
+	},
+	iconButton: {
+		padding: 6,
+		"&:hover": {
+			backgroundColor: theme.palette.action.hover,
+		},
+	},
+	defaultBadge: {
+		backgroundColor: theme.palette.primary.main,
+		color: "white",
+		padding: "3px 10px",
+		borderRadius: 10,
+		fontSize: "0.65rem",
+		fontWeight: 600,
+		textTransform: "uppercase",
+		letterSpacing: "0.5px",
 	},
 	customTableCell: {
 		display: "flex",
@@ -69,6 +227,14 @@ const useStyles = makeStyles(theme => ({
 	},
 	buttonProgress: {
 		color: green[500],
+	},
+	emptyState: {
+		display: "flex",
+		flexDirection: "column",
+		alignItems: "center",
+		justifyContent: "center",
+		padding: theme.spacing(8, 2),
+		color: theme.palette.text.secondary,
 	},
 }));
 
@@ -230,7 +396,7 @@ const Connections = () => {
 			<>
 				{whatsApp.status === "qrcode" && (
 					<Button
-						size="small"
+						className={classes.actionButton}
 						variant="contained"
 						color="primary"
 						onClick={() => handleOpenQrModal(whatsApp)}
@@ -241,15 +407,15 @@ const Connections = () => {
 				{whatsApp.status === "DISCONNECTED" && (
 					<>
 						<Button
-							size="small"
+							className={classes.actionButton}
 							variant="outlined"
 							color="primary"
 							onClick={() => handleStartWhatsAppSession(whatsApp.id)}
 						>
 							{i18n.t("connections.buttons.tryAgain")}
-						</Button>{" "}
+						</Button>
 						<Button
-							size="small"
+							className={classes.actionButton}
 							variant="outlined"
 							color="secondary"
 							onClick={() => handleRequestNewQrCode(whatsApp.id)}
@@ -263,17 +429,17 @@ const Connections = () => {
 					whatsApp.status === "TIMEOUT") && (
 						<>
 							<Button
-								size="small"
+								className={classes.actionButton}
 								variant="outlined"
 								color="primary"
 								onClick={() => handleRestartSession(whatsApp.id)}
-								startIcon={restartingId === whatsApp.id ? <CircularProgress size={20} /> : <Replay />}
+								startIcon={restartingId === whatsApp.id ? <CircularProgress size={16} /> : <Replay />}
 								disabled={restartingId === whatsApp.id}
 							>
 								{restartingId === whatsApp.id ? "Reiniciando..." : i18n.t("connections.buttons.restart")}
-							</Button>{" "}
+							</Button>
 							<Button
-								size="small"
+								className={classes.actionButton}
 								variant="outlined"
 								color="secondary"
 								onClick={() => {
@@ -286,7 +452,7 @@ const Connections = () => {
 						</>
 					)}
 				{whatsApp.status === "OPENING" && (
-					<Button size="small" variant="outlined" disabled color="default">
+					<Button className={classes.actionButton} variant="outlined" disabled color="default">
 						{i18n.t("connections.buttons.connecting")}
 					</Button>
 				)}
@@ -384,97 +550,124 @@ const Connections = () => {
 					</Tooltip>
 				</MainHeaderButtonsWrapper>
 			</MainHeader>
-			<Paper className={classes.mainPaper} variant="outlined">
-				<Table size="small">
-					<TableHead>
-						<TableRow>
-							<TableCell align="center">
-								{i18n.t("connections.table.id")}
-							</TableCell>
-							<TableCell align="center">
-								{i18n.t("connections.table.name")}
-							</TableCell>
-							<TableCell align="center">
-								{i18n.t("connections.table.status")}
-							</TableCell>
-							<TableCell align="center">
-								{i18n.t("connections.table.number")}
-							</TableCell>
-							<TableCell align="center">
-								{i18n.t("connections.table.session")}
-							</TableCell>
-							<TableCell align="center">
-								{i18n.t("connections.table.lastUpdate")}
-							</TableCell>
-							<TableCell align="center">
-								{i18n.t("connections.table.default")}
-							</TableCell>
-							<TableCell align="center">
-								{i18n.t("connections.table.actions")}
-							</TableCell>
-						</TableRow>
-					</TableHead>
-					<TableBody>
-						{loading ? (
-							<TableRowSkeleton />
-						) : (
-							<>
-								{whatsApps?.length > 0 &&
-									whatsApps.map(whatsApp => (
-										<TableRow key={whatsApp.id}>
-											<TableCell align="center">
-												{whatsApp.id}
-											</TableCell>
-											<TableCell align="center">
-												{whatsApp.name}
-											</TableCell>
-											<TableCell align="center">
-												{renderStatusToolTips(whatsApp)}
-											</TableCell>
-											<TableCell align="center">
-												{whatsApp.number ? (
-													<>
-														+{whatsApp.number}
-													</>
-												) : "-"}
+			<Paper className={classes.mainPaper} elevation={0}>
+				{loading ? (
+					<TableRowSkeleton />
+				) : whatsApps?.length > 0 ? (
+					<Box className={classes.connectionsGrid}>
+						{whatsApps.map(whatsApp => (
+							<Paper key={whatsApp.id} className={classes.connectionCard} elevation={0}>
+				{/* Header */}
+				<Box className={classes.connectionHeader}>
+					<Box className={classes.connectionTitle}>
+						<WhatsApp style={{ color: "#25D366", fontSize: "1.5rem" }} />
+						<Typography className={classes.connectionName}>
+							{whatsApp.name}
+						</Typography>
+						<span className={classes.connectionId}>#{whatsApp.id}</span>
+					</Box>
+					{whatsApp.isDefault && (
+						<span className={classes.defaultBadge}>
+							PRINCIPAL
+						</span>
+					)}
+				</Box>								{/* Status */}
+								<Box>
+									<Box
+										className={`${classes.statusChip} ${
+											whatsApp.status === "CONNECTED"
+												? classes.statusConnected
+												: whatsApp.status === "DISCONNECTED"
+												? classes.statusDisconnected
+												: whatsApp.status === "OPENING"
+												? classes.statusOpening
+												: classes.statusQrcode
+										}`}
+									>
+										{whatsApp.status === "CONNECTED" && (
+											<SignalCellular4Bar style={{ fontSize: "0.9rem" }} />
+										)}
+										{whatsApp.status === "DISCONNECTED" && (
+											<SignalCellularConnectedNoInternet0Bar style={{ fontSize: "0.9rem" }} />
+										)}
+										{whatsApp.status === "OPENING" && (
+											<CircularProgress size={12} style={{ color: "inherit" }} />
+										)}
+										{whatsApp.status === "qrcode" && (
+											<CropFree style={{ fontSize: "0.9rem" }} />
+										)}
+										{(whatsApp.status === "TIMEOUT" || whatsApp.status === "PAIRING") && (
+											<SignalCellularConnectedNoInternet2Bar style={{ fontSize: "0.9rem" }} />
+										)}
+										<span>{whatsApp.status}</span>
+									</Box>
+								</Box>
 
-											</TableCell>
-											<TableCell align="center">
-												{renderActionButtons(whatsApp)}
-											</TableCell>
-											<TableCell align="center">
-												{format(parseISO(whatsApp.updatedAt), "dd/MM/yy HH:mm")}
-											</TableCell>
-											<TableCell align="center">
-												{whatsApp.isDefault && (
-													<div className={classes.customTableCell}>
-														<CheckCircle style={{ color: green[500] }} />
-													</div>
-												)}
-											</TableCell>
-											<TableCell align="center">
+								{/* Details */}
+								<Box className={classes.connectionDetails}>
+										{whatsApp.number ? (
+											<Box className={classes.detailItem}>
+												<Phone className={classes.detailIcon} />
+												<span className={classes.detailLabel}>Número:</span>
+												<span className={classes.detailValue}>+{whatsApp.number}</span>
+											</Box>
+										) : (
+											<Box className={classes.detailItem}>
+												<Phone className={classes.detailIcon} />
+												<span className={classes.detailLabel}>Número:</span>
+												<span className={classes.detailValue}>Sin número</span>
+											</Box>
+										)}
+
+										<Box className={classes.detailItem}>
+											<Schedule className={classes.detailIcon} />
+											<span className={classes.detailLabel}>Actualizado:</span>
+											<span className={classes.detailValue}>{format(parseISO(whatsApp.updatedAt), "dd/MM/yy HH:mm")}</span>
+										</Box>
+									</Box>
+
+									{/* Actions */}
+									<Box className={classes.connectionActions}>
+										<Box className={classes.actionButtons}>
+											{renderActionButtons(whatsApp)}
+										</Box>
+										<Box className={classes.iconButtons}>
+											<Tooltip title={i18n.t("connections.buttons.edit")}>
 												<IconButton
 													size="small"
+													className={classes.iconButton}
 													onClick={() => handleEditWhatsApp(whatsApp)}
+													color="primary"
 												>
-													<Edit color="secondary" />
+													<Edit fontSize="small" />
 												</IconButton>
-
+											</Tooltip>
+											<Tooltip title={i18n.t("connections.buttons.delete")}>
 												<IconButton
 													size="small"
-													onClick={e => {
-														handleOpenConfirmationModal("delete", whatsApp.id);
-													}}
+													className={classes.iconButton}
+													onClick={() => handleOpenConfirmationModal("delete", whatsApp.id)}
+													color="secondary"
 												>
-													<DeleteOutline color="secondary" />
+													<DeleteOutline fontSize="small" />
 												</IconButton>
-											</TableCell>
-										</TableRow>
-									))}
-							</>
-						)}
-					</TableBody>
-				</Table>
+											</Tooltip>
+										</Box>
+									</Box>
+								</Paper>
+						))}
+					</Box>
+				) : (
+					<Box className={classes.emptyState}>
+						<WhatsApp style={{ fontSize: 64, opacity: 0.3, marginBottom: 16 }} />
+						<Typography variant="h6" gutterBottom>
+							{i18n.t("connections.empty.title")}
+						</Typography>
+						<Typography variant="body2">
+							{i18n.t("connections.empty.message")}
+						</Typography>
+					</Box>
+				)}
 			</Paper>
 		</MainContainer>
 	);

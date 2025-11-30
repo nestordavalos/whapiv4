@@ -87,6 +87,12 @@ const messages = {
           newQr: "Nuevo CÓDIGO QR",
           connecting: "Conectando",
           restart: "Reiniciar",
+          edit: "Editar",
+          delete: "Eliminar",
+        },
+        empty: {
+          title: "No hay conexiones",
+          message: "Agrega una conexión de WhatsApp para comenzar",
         },
         toolTips: {
           disconnected: {

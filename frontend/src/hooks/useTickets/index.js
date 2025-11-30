@@ -11,6 +11,9 @@ const useTickets = ({
     date,
     showAll,
     queueIds,
+    tags,
+    whatsappIds,
+    userIds,
     userId,
     withUnreadMessages,
 }) => {
@@ -24,18 +27,24 @@ const useTickets = ({
         const delayDebounceFn = setTimeout(() => {
             const fetchTickets = async() => {
                 try {
-                    const { data } = await api.get("/tickets", {
-                        params: {
-                            searchParam,
-                            pageNumber,
-                            status,
-                            date,
-                            showAll,
-                            queueIds,
-                            userId,
-                            withUnreadMessages,
-                        },
-                    })
+                    // Construir params solo con valores definidos
+                    const params = {
+                        searchParam,
+                        pageNumber,
+                        status,
+                        date,
+                        showAll,
+                        queueIds,
+                        userId,
+                        withUnreadMessages,
+                    };
+
+                    // Solo agregar si tienen valores
+                    if (tags) params.tags = tags;
+                    if (whatsappIds) params.whatsappIds = whatsappIds;
+                    if (userIds) params.userIds = userIds;
+
+                    const { data } = await api.get("/tickets", { params });
                     setTickets(data.tickets)
 
                     // let horasFecharAutomaticamente = getHoursCloseTicketsAuto(); 
@@ -81,6 +90,9 @@ const useTickets = ({
         date,
         showAll,
         queueIds,
+        tags,
+        whatsappIds,
+        userIds,
         userId,
         withUnreadMessages,
     ])

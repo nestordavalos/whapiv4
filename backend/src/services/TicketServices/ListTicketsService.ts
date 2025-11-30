@@ -6,6 +6,8 @@ import Contact from "../../models/Contact";
 import Message from "../../models/Message";
 import Queue from "../../models/Queue";
 import Whatsapp from "../../models/Whatsapp";
+import Tag from "../../models/Tag";
+import ContactTag from "../../models/ContactTag";
 import ShowUserService from "../UserServices/ShowUserService";
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
 
@@ -18,6 +20,9 @@ interface Request {
   userId: string;
   withUnreadMessages?: string;
   queueIds: number[];
+  tags?: number[];
+  whatsappIds?: number[];
+  userIds?: number[];
 }
 
 interface Response {
@@ -30,6 +35,9 @@ const ListTicketsService = async ({
   searchParam = "",
   pageNumber = "1",
   queueIds,
+  tags,
+  whatsappIds,
+  userIds,
   status,
   date,
   showAll,
@@ -37,8 +45,7 @@ const ListTicketsService = async ({
   withUnreadMessages
 }: Request): Promise<Response> => {
   let whereCondition: Filterable["where"] = {
-    [Op.or]: [{ userId }, { status: "pending" }],
-    queueId: { [Op.or]: [queueIds, null] }
+    [Op.or]: [{ userId }, { status: "pending" }]
   };
   let includeCondition: Includeable[];
 
@@ -46,8 +53,15 @@ const ListTicketsService = async ({
     {
       model: Contact,
       as: "contact",
-      attributes: ["id", "name", "number", "profilePicUrl"]
-      // include: ["extraInfo", "contactTags", "tags"]
+      attributes: ["id", "name", "number", "profilePicUrl"],
+      include: [
+        {
+          model: Tag,
+          as: "tags",
+          attributes: ["id", "name", "color"],
+          through: { attributes: [] }
+        }
+      ]
     },
     {
       model: Queue,
@@ -57,12 +71,49 @@ const ListTicketsService = async ({
     {
       model: Whatsapp,
       as: "whatsapp",
-      attributes: ["name"]
+      attributes: ["id", "name"]
     }
   ];
 
+  // Aplicar filtro de sectores solo si se especifican
+  if (queueIds && queueIds.length > 0) {
+    whereCondition = {
+      ...whereCondition,
+      queueId: { [Op.or]: [queueIds, null] }
+    };
+  }
+
   if (showAll === "true") {
-    whereCondition = { queueId: { [Op.or]: [queueIds, null] } };
+    // En modo showAll, si hay queueIds los aplicamos, sino mostramos todos
+    if (queueIds && queueIds.length > 0) {
+      whereCondition = { queueId: { [Op.or]: [queueIds, null] } };
+    } else {
+      whereCondition = {};
+    }
+  }
+
+  // Filtro por etiquetas
+  if (tags && tags.length > 0) {
+    whereCondition = {
+      ...whereCondition,
+      "$contact.tags.id$": { [Op.in]: tags }
+    };
+  }
+
+  // Filtro por conexiones (WhatsApp)
+  if (whatsappIds && whatsappIds.length > 0) {
+    whereCondition = {
+      ...whereCondition,
+      whatsappId: { [Op.in]: whatsappIds }
+    };
+  }
+
+  // Filtro por agentes/usuarios atribuidos
+  if (userIds && userIds.length > 0) {
+    whereCondition = {
+      ...whereCondition,
+      userId: { [Op.in]: userIds }
+    };
   }
 
   if (status) {

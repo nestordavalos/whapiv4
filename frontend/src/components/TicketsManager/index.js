@@ -21,9 +21,8 @@ import {
 import NewTicketModal from "../NewTicketModal";
 import TicketsList from "../TicketsList";
 import TabPanel from "../TabPanel";
-import { TagsFilter } from "../TagsFilter";
 import { Can } from "../Can";
-import TicketsQueueSelect from "../TicketsQueueSelect";
+import TicketsManagerFilters from "../TicketsManagerFilters";
 
 import { i18n } from "../../translate/i18n";
 import { AuthContext } from "../../context/Auth/AuthContext";
@@ -116,14 +115,15 @@ const TicketsManager = () => {
   const [openCount, setOpenCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [selectedTags, setSelectedTags] = useState([]);
-
-  const userQueueIds = user.queues.map((q) => q.id);
-  const [selectedQueueIds, setSelectedQueueIds] = useState(userQueueIds || []);
+  const [selectedWhatsappIds, setSelectedWhatsappIds] = useState([]);
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [selectedQueueIds, setSelectedQueueIds] = useState([]);
 
   useEffect(() => {
     if (user.profile.toUpperCase() === "ADMIN") {
       setShowAllTickets(true);
     }
+    // No inicializamos selectedQueueIds automáticamente
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -139,11 +139,6 @@ const TicketsManager = () => {
     }
 
   };
-
-  const handleSelectedTags = (selecteds) => {
-    const tags = selecteds.map(t => t.id);
-    setSelectedTags(tags);
-  }
 
   const handleChangeTab = (e, newValue) => {
     setTab(newValue);
@@ -230,43 +225,58 @@ const TicketsManager = () => {
           role={user.profile}
           perform="tickets-manager:showall"
           yes={() => (
-            <FormControlLabel
-              label={i18n.t("tickets.buttons.showAll")}
-              labelPlacement="start"
-              control={
-                <Switch
-                  size="small"
-                  checked={showAllTickets}
-                  onChange={() =>
-                    setShowAllTickets((prevState) => !prevState)
-                  }
-                  name="showAllTickets"
-                  color="primary"
-                />
-              }
-            />
+            <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
+              <FormControlLabel
+                label={i18n.t("tickets.buttons.showAll")}
+                labelPlacement="start"
+                control={
+                  <Switch
+                    size="small"
+                    checked={showAllTickets}
+                    onChange={() =>
+                      setShowAllTickets((prevState) => !prevState)
+                    }
+                    name="showAllTickets"
+                    color="primary"
+                  />
+                }
+              />
+            </div>
           )}
         />
-        <TicketsQueueSelect
-          style={{ marginLeft: 6 }}
-          selectedQueueIds={selectedQueueIds}
-          userQueues={user?.queues}
-          onChange={(values) => setSelectedQueueIds(values)}
-        />
       </Paper>
+      
+      {/* Filtros Avanzados */}
+      <TicketsManagerFilters
+        selectedQueueIds={selectedQueueIds}
+        onQueueChange={setSelectedQueueIds}
+        selectedTagIds={selectedTags}
+        onTagChange={setSelectedTags}
+        selectedWhatsappIds={selectedWhatsappIds}
+        onWhatsappChange={setSelectedWhatsappIds}
+        selectedUserIds={selectedUserIds}
+        onUserChange={setSelectedUserIds}
+        userQueues={user?.queues}
+      />
+      
       <TabPanel value={tab} name="open" className={classes.ticketsWrapper}>
-      <TagsFilter onFiltered={handleSelectedTags} />
         <Paper className={classes.ticketsWrapper}>
           <TicketsList
             status="open"
             showAll={showAllTickets}
             selectedQueueIds={selectedQueueIds}
+            selectedTagIds={selectedTags}
+            selectedWhatsappIds={selectedWhatsappIds}
+            selectedUserIds={selectedUserIds}
             updateCount={(val) => setOpenCount(val)}
             style={applyPanelStyle("open")}
           />
           <TicketsList
             status="pending"
             selectedQueueIds={selectedQueueIds}
+            selectedTagIds={selectedTags}
+            selectedWhatsappIds={selectedWhatsappIds}
+            selectedUserIds={selectedUserIds}
             updateCount={(val) => setPendingCount(val)}
             style={applyPanelStyle("pending")}
           />
@@ -274,31 +284,37 @@ const TicketsManager = () => {
       </TabPanel>
 
       <TabPanel value={tab} name="pending" className={classes.ticketsWrapper}>
-      <TagsFilter onFiltered={handleSelectedTags} />
         <TicketsList
-        handleChangeTab={handleChangeTab}
+          handleChangeTab={handleChangeTab}
           status="pending"
           showAll={true}
           selectedQueueIds={selectedQueueIds}
+          selectedTagIds={selectedTags}
+          selectedWhatsappIds={selectedWhatsappIds}
+          selectedUserIds={selectedUserIds}
           updateCount={(val) => setPendingCount(val)}
         />
       </TabPanel>
 
       <TabPanel value={tab} name="closed" className={classes.ticketsWrapper}>
-      <TagsFilter onFiltered={handleSelectedTags} />
         <TicketsList
           status="closed"
           showAll={true}
           selectedQueueIds={selectedQueueIds}
+          selectedTagIds={selectedTags}
+          selectedWhatsappIds={selectedWhatsappIds}
+          selectedUserIds={selectedUserIds}
         />
       </TabPanel>
       <TabPanel value={tab} name="search" className={classes.ticketsWrapper}>
-      <TagsFilter onFiltered={handleSelectedTags} />
         <TicketsList
           searchParam={searchParam}
           tags={selectedTags}
           showAll={true}
           selectedQueueIds={selectedQueueIds}
+          selectedTagIds={selectedTags}
+          selectedWhatsappIds={selectedWhatsappIds}
+          selectedUserIds={selectedUserIds}
         />
       </TabPanel>
     </Paper>

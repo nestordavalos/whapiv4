@@ -6,23 +6,15 @@ import { makeStyles } from "@material-ui/core/styles";
 import { green } from "@material-ui/core/colors";
 import {
 	Button,
-	TableBody,
-	TableRow,
-	TableCell,
 	IconButton,
-	Table,
-	TableHead,
 	Paper,
 	Tooltip,
 	Typography,
 	CircularProgress,
 	Box,
-	Chip,
-	Divider,
 } from "@material-ui/core";
 import {
 	Edit,
-	CheckCircle,
 	SignalCellularConnectedNoInternet2Bar,
 	SignalCellularConnectedNoInternet0Bar,
 	SignalCellular4Bar,
@@ -33,7 +25,6 @@ import {
 	Replay,
 	Phone,
 	Schedule,
-	MoreVert,
 } from "@material-ui/icons";
 
 import MainContainer from "../../components/MainContainer";
@@ -460,6 +451,7 @@ const Connections = () => {
 		);
 	};
 
+	// eslint-disable-next-line no-unused-vars
 	const renderStatusToolTips = whatsApp => {
 		return (
 			<div className={classes.customTableCell}>

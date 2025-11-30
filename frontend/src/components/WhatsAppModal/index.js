@@ -18,7 +18,6 @@ import {
   FormControlLabel,
   FormControl,
   FormGroup,
-  Tooltip,
   Grid,
   MenuItem,
   InputLabel,
@@ -426,7 +425,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
       >
         <DialogTitle>
           <Box display="flex" alignItems="center" gap={1}>
-            <span style={{ fontSize: 24 }}>💬</span>
+            <span role="img" aria-label="chat" style={{ fontSize: 24 }}>💬</span>
             <span>
               {whatsAppId
                 ? i18n.t("whatsappModal.title.edit")
@@ -449,7 +448,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
             <Form>
               <DialogContent dividers>
                 <Typography className={classes.sectionTitle}>
-                  <span>⚙️</span> Configuración Básica
+                  <span role="img" aria-label="settings">⚙️</span> Configuración Básica
                 </Typography>
                 <Field
                   as={TextField}
@@ -501,7 +500,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
 
                 <Divider style={{ margin: '24px 0 16px 0' }} />
                 <Typography className={classes.sectionTitle}>
-                  <span>💬</span> Mensajes Automáticos
+                  <span role="img" aria-label="messages">💬</span> Mensajes Automáticos
                 </Typography>
                 <div className={classes.messageField}>
                   <Field
@@ -561,7 +560,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
 
                 <Divider style={{ margin: '24px 0 16px 0' }} />
                 <Typography className={classes.sectionTitle}>
-                  <span>⏱️</span> Mensajes de Inactividad
+                  <span role="img" aria-label="timer">⏱️</span> Mensajes de Inactividad
                 </Typography>
                 <Box className={classes.switchControlBox}>
                   <FormControlLabel
@@ -633,7 +632,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
 
                 <Divider style={{ margin: '24px 0 16px 0' }} />
                 <Typography className={classes.sectionTitle}>
-                  <span>🕐</span> Horarios de Atención
+                  <span role="img" aria-label="clock">🕐</span> Horarios de Atención
                 </Typography>
 
                 <div>
@@ -1214,7 +1213,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
 
                 <Divider style={{ margin: '24px 0 16px 0' }} />
                 <Typography className={classes.sectionTitle}>
-                  <span>📋</span> Colas
+                  <span role="img" aria-label="clipboard">📋</span> Colas
                 </Typography>
                 <QueueSelect
                   selectedQueueIds={selectedQueueIds}

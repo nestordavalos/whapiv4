@@ -13,7 +13,7 @@ import { i18n } from "../../translate/i18n";
 import { AuthContext } from "../../context/Auth/AuthContext";
 
 const useStyles = makeStyles((theme) => ({
-	ticketsListWrapper: {
+	ticketListWrapper: {
 		position: "relative",
 		display: "flex",
 		height: "100%",
@@ -22,13 +22,15 @@ const useStyles = makeStyles((theme) => ({
 		borderTopRightRadius: 0,
 		marginRight: -8,
 		borderBottomRightRadius: 0,
+		backgroundColor: "#fff",
 	},
 
 	ticketsList: {
 		flex: 1,
 		overflowY: "scroll",
 		...theme.scrollbarStyles,
-		borderTop: "2px solid rgba(0, 0, 0, 0.12)",
+		borderTop: "1px solid #e8e8e8",
+		padding: 0,
 	},
 
 	ticketsListHeader: {
@@ -160,6 +162,9 @@ const TicketsList = (props) => {
 		searchParam,
 		showAll,
 		selectedQueueIds,
+		selectedTagIds,
+		selectedWhatsappIds,
+		selectedUserIds,
 		updateCount,
 		style,
 		tags,
@@ -174,15 +179,23 @@ const TicketsList = (props) => {
 	useEffect(() => {
 		dispatch({ type: "RESET" });
 		setPageNumber(1);
-	}, [status, searchParam, dispatch, showAll, selectedQueueIds, tags]);
+	}, [status, searchParam, dispatch, showAll, selectedQueueIds, selectedTagIds, selectedWhatsappIds, selectedUserIds, tags]);
 
 	const { tickets, hasMore, loading } = useTickets({
 		pageNumber,
 		searchParam,
 		status,
 		showAll,
-		tags: JSON.stringify(tags),
-		queueIds: JSON.stringify(selectedQueueIds),
+		tags: (tags && tags.length > 0) ? JSON.stringify(tags) 
+			: (selectedTagIds && selectedTagIds.length > 0) ? JSON.stringify(selectedTagIds) 
+			: undefined,
+		queueIds: JSON.stringify(selectedQueueIds || []),
+		whatsappIds: (selectedWhatsappIds && selectedWhatsappIds.length > 0) 
+			? JSON.stringify(selectedWhatsappIds) 
+			: undefined,
+		userIds: (selectedUserIds && selectedUserIds.length > 0) 
+			? JSON.stringify(selectedUserIds) 
+			: undefined,
 	});
 
 

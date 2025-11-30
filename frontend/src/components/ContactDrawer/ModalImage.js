@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { makeStyles } from "@material-ui/core/styles";
+import axios from "axios";
 
 import ModalImage from "react-modal-image";
-import api from "../../services/api";
 
 const useStyles = makeStyles(theme => ({
 	messageMedia: {
@@ -18,21 +18,36 @@ const ModalImageContatc = ({ imageUrl }) => {
 	const classes = useStyles();
 	const [fetching, setFetching] = useState(true);
 	const [blobUrl, setBlobUrl] = useState("");
+	const [imageError, setImageError] = useState(false);
 
 	useEffect(() => {
 		if (!imageUrl) return;
 		const fetchImage = async () => {
-			const { data, headers } = await api.get(imageUrl, {
-				responseType: "blob",
-			});
-			const url = window.URL.createObjectURL(
-				new Blob([data], { type: headers["content-type"] })
-			);
-			setBlobUrl(url);
-			setFetching(false);
+			try {
+				const { data, headers } = await axios.get(imageUrl, {
+					responseType: "blob",
+				});
+				const url = window.URL.createObjectURL(
+					new Blob([data], { type: headers["content-type"] })
+				);
+				setBlobUrl(url);
+				setFetching(false);
+				setImageError(false);
+			} catch (err) {
+				// Si es 404, marcar como error y no mostrar nada
+				if (err.response && err.response.status === 404) {
+					setImageError(true);
+				}
+				setFetching(false);
+			}
 		};
 		fetchImage();
 	}, [imageUrl]);
+
+	// No renderizar nada si la imagen no existe
+	if (imageError) {
+		return null;
+	}
 
 	return (
 		<ModalImage

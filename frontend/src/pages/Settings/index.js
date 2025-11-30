@@ -179,7 +179,7 @@ const Settings = () => {
 			<Paper className={classes.paper} style={{ margin: '10px' }}>
 				<Typography variant="h4"><b>Configuración general</b></Typography>
 			</Paper>
-			<div maxWidth="sm">
+			<div style={{ maxWidth: '600px' }}>
 				<div style={{ display: 'flex' }}>
 					<div style={{ width: '50%', paddingRight: '10px' }}>
 						<Container className={classes.container} maxWidth="xs">

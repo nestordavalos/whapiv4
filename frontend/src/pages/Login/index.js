@@ -1,5 +1,4 @@
 import React, { useState, useContext } from "react";
-import { Link as RouterLink } from "react-router-dom";
 
 import {
   Button,
@@ -16,7 +15,6 @@ import {
 
 import { Visibility, VisibilityOff } from '@material-ui/icons';
 import { makeStyles } from "@material-ui/core/styles";
-import { i18n } from "../../translate/i18n";
 
 import { AuthContext } from "../../context/Auth/AuthContext";
 import { system } from "../../config.json";
@@ -114,7 +112,6 @@ const Login = () => {
               fullWidth
               name="password"
               label="Contraseña"
-              type="password"
               id="password"
               value={user.password}
               onChange={handleChangeInput}

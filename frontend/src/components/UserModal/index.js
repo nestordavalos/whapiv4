@@ -330,66 +330,60 @@ const UserModal = ({ open, onClose, userId }) => {
 
 
 
-								<Can
-									role={loggedInUser.profile}
-									perform="user-modal:editProfile"
-									yes={() => (!loading &&
-										<form className={classes.container} noValidate>
-											<Field
-												as={TextField}
-												label={i18n.t("userModal.form.startWork")}
-												type="time"
-												ampm={false}
-												defaultValue="00:00"
-												inputRef={startWorkRef}
-												InputLabelProps={{
-													shrink: true,
-												}}
-												inputProps={{
-													step: 600, // 5 min
-												}}
-												fullWidth
-												name="startWork"
-												error={
-													touched.startWork && Boolean(errors.startWork)
-												}
-												helperText={
-													touched.startWork && errors.startWork
-												}
-												variant="outlined"
-												margin="dense"
-												className={classes.textField}
-											/>
-											<Field
-												as={TextField}
-												label={i18n.t("userModal.form.endWork")}
-												type="time"
-												ampm={false}
-												defaultValue="23:59"
-												inputRef={endWorkRef}
-												InputLabelProps={{
-													shrink: true,
-												}}
-												inputProps={{
-													step: 600, // 5 min
-												}}
-												fullWidth
-												name="endWork"
-												error={
-													touched.endWork && Boolean(errors.endWork)
-												}
-												helperText={
-													touched.endWork && errors.endWork
-												}
-												variant="outlined"
-												margin="dense"
-												className={classes.textField}
-											/>
-										</form>
-									)}
-								/>
-
-
+							<Can
+								role={loggedInUser.profile}
+								perform="user-modal:editProfile"
+								yes={() => (!loading &&
+									<div className={classes.container}>
+										<Field
+											as={TextField}
+											label={i18n.t("userModal.form.startWork")}
+											type="time"
+											inputRef={startWorkRef}
+											InputLabelProps={{
+												shrink: true,
+											}}
+											inputProps={{
+												step: 600, // 5 min
+											}}
+											fullWidth
+											name="startWork"
+											error={
+												touched.startWork && Boolean(errors.startWork)
+											}
+											helperText={
+												touched.startWork && errors.startWork
+											}
+											variant="outlined"
+											margin="dense"
+											className={classes.textField}
+										/>
+										<Field
+											as={TextField}
+											label={i18n.t("userModal.form.endWork")}
+											type="time"
+											inputRef={endWorkRef}
+											InputLabelProps={{
+												shrink: true,
+											}}
+											inputProps={{
+												step: 600, // 5 min
+											}}
+											fullWidth
+											name="endWork"
+											error={
+												touched.endWork && Boolean(errors.endWork)
+											}
+											helperText={
+												touched.endWork && errors.endWork
+											}
+											variant="outlined"
+											margin="dense"
+											className={classes.textField}
+										/>
+									</div>
+								)}
+							/>
 
 
 

@@ -12,11 +12,6 @@ import useTickets from "../../hooks/useTickets";
 import { i18n } from "../../translate/i18n";
 import { AuthContext } from "../../context/Auth/AuthContext";
 
-import api from "../../services/api";
-import toastError from "../../errors/toastError";
-import { toast } from "react-toastify";
-import { useHistory } from "react-router-dom";
-
 const useStyles = makeStyles((theme) => ({
 	ticketsListWrapper: {
 		position: "relative",
@@ -170,12 +165,10 @@ const TicketsList = (props) => {
 		tags,
 	} = props;
 	const classes = useStyles();
-	const history = useHistory();
 	const [pageNumber, setPageNumber] = useState(1);
 	const [ticketsList, dispatch] = useReducer(reducer, []);
 	const { user } = useContext(AuthContext);
 	const { profile, queues } = user;
-	const [settings, setSettings] = useState([]);
 
 
 	useEffect(() => {
@@ -195,44 +188,9 @@ const TicketsList = (props) => {
 
 
 	useEffect(() => {
-		const fetchSession = async () => {
-			try {
-				const { data } = await api.get("/settings");
-				setSettings(data);
-			} catch (err) {
-				toastError(err);
-			}
-		};
-		fetchSession();
-	}, []);
-
-
-
-	const handleChangeBooleanSetting = async e => {
-		const selectedValue = e.target.checked ? "enabled" : "disabled";
-		const settingKey = e.target.name;
-
-		try {
-			await api.put(`/settings/${settingKey}`, {
-				value: selectedValue,
-			});
-			toast.success(i18n.t("settings.success"));
-			history.go(0);
-		} catch (err) {
-			toastError(err);
-		}
-	};
-
-
-
-	useEffect(() => {
 
 		const queueIds = queues.map((q) => q.id);
 		const filteredTickets = tickets.filter((t) => queueIds.indexOf(t.queueId) > -1);
-		const getSettingValue = key => {
-			const { value } = settings.find(s => s.key === key);
-			return value;
-		};
 		const allticket = user.allTicket === 'enabled';
 
 
@@ -248,7 +206,7 @@ const TicketsList = (props) => {
 
 
 
-	}, [tickets, status, searchParam, queues, profile]);
+	}, [tickets, status, searchParam, queues, profile, user.allTicket]);
 
         useEffect(() => {
                 const socket = openSocket();

@@ -16,7 +16,6 @@ import Badge from "@material-ui/core/Badge";
 import UndoRoundedIcon from '@material-ui/icons/UndoRounded';
 import { i18n } from "../../translate/i18n";
 import DoneIcon from '@material-ui/icons/Done';
-import ReplayIcon from '@material-ui/icons/Replay';
 import { IconButton } from "@material-ui/core";
 import api from "../../services/api";
 import CancelIcon from '@material-ui/icons/Cancel';
@@ -169,7 +168,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 				clearTimeout(delayDebounceFn);
 			}
 		};
-	}, [ticketId, user, history]);
+	}, [ticket.id]);
 
 	useEffect(() => {
 		return () => {
@@ -180,20 +179,21 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 	const ContactTag = ({ tag }) => {
 
 		return (
-			<span className={classes.Radiusdot}>
-				<Badge
-					style={{
-						backgroundColor: tag.color,
-						height: 20,
-						padding: 3,
-						marginRight: 3,
-						marginTop: "2px",
-						position: "inherit",
-						borderRadius: 4,
-						border: "2px solid #CCC",
-						color: "white"
-					}}
-					badgeContent={tag.name} />
+			<span
+				style={{
+					backgroundColor: tag.color,
+					padding: "3px 10px",
+					marginRight: 4,
+					borderRadius: 12,
+					fontSize: "11px",
+					fontWeight: 500,
+					color: "white",
+					display: "inline-block",
+					whiteSpace: "nowrap",
+					verticalAlign: "middle"
+				}}
+			>
+				{tag.name}
 			</span>
 		)
 	}
@@ -425,26 +425,26 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 								{viewConection ? (
 									<>
 										{ticket.whatsappId && (
-											<Tooltip title={i18n.t("messageVariablesPicker.vars.connection")}>
-												<Badge
-													className={classes.Radiusdot}
-													style={{
-														backgroundColor: system.color.lightTheme.palette.primary,
-														height: 20,
-														padding: 3,
-														marginRight: 5,
-														position: "inherit",
-														borderRadius: 4,
-														border: "2px solid #CCC",
-														color: "white"
+								<Tooltip title={i18n.t("messageVariablesPicker.vars.connection")}>
+									<Badge
+										className={classes.Radiusdot}
+										overlap="rectangular"
+										style={{
+											backgroundColor: system.color.lightTheme.palette.primary,
+											height: 20,
+											padding: 3,
+											marginRight: 5,
+											position: "inherit",
+											borderRadius: 4,
+											border: "2px solid #CCC",
+											color: "white"
 
-													}}
-													badgeContent={ticket.whatsapp?.name || i18n.t("userModal.form.user")}
+										}}
+										badgeContent={ticket.whatsapp?.name || i18n.t("userModal.form.user")}
 
-												/>
-
-											</Tooltip>
-										)}
+									/>
+								</Tooltip>
+							)}
 									</>
 								) : null}
 
@@ -452,11 +452,12 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 									<>
 										{
 											ticket.queueId && (
-												<Tooltip title={i18n.t("messageVariablesPicker.vars.queue")}>
-													<Badge
-														className={classes.Radiusdot}
-														style={{
-															backgroundColor: ticket.queue?.color || "#7C7C7C",
+											<Tooltip title={i18n.t("messageVariablesPicker.vars.queue")}>
+												<Badge
+													className={classes.Radiusdot}
+													overlap="rectangular"
+													style={{
+														backgroundColor: ticket.queue?.color || "#7C7C7C",
 															height: 20,
 															padding: 3,
 															marginRight: 3,
@@ -483,11 +484,12 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 										yes={() => (
 											<>
 												{uName && uName !== "" && (
-													<Tooltip title={i18n.t("messageVariablesPicker.vars.user")}>
-														<Badge
-															className={classes.Radiusdot}
-															style={{
-																backgroundColor: "#000",
+												<Tooltip title={i18n.t("messageVariablesPicker.vars.user")}>
+													<Badge
+														className={classes.Radiusdot}
+														overlap="rectangular"
+														style={{
+															backgroundColor: "#000",
 																height: 20,
 																padding: 3,
 																marginRight: 5,
@@ -510,20 +512,18 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 							</span>
 
 							<br></br>
-							{viewTags ? (
-								<span>
-									<Tooltip title={"Tags"}>
-										<span className={classes.Radiusdot}>
-											{
-												tag?.map((tag) => {
-													return (
-														<ContactTag tag={tag} key={`ticket-contact-tag-${ticket.id}-${tag.id}`} />
-													);
-												})
-											}
-										</span>
-									</Tooltip>
-								</span>
+							{viewTags && tag?.length > 0 ? (
+								<div style={{ 
+									display: "flex", 
+									flexWrap: "wrap", 
+									gap: "4px", 
+									marginTop: "4px",
+									alignItems: "center" 
+								}}>
+									{tag.map((tag) => (
+										<ContactTag tag={tag} key={`ticket-contact-tag-${ticket.id}-${tag.id}`} />
+									))}
+								</div>
 							) : null}
 						</>
 					}
@@ -534,7 +534,7 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 							className={classes.bottomButton}
 							color="primary"
 							onClick={e => handleOpenAcceptTicketWithouSelectQueue()}
-							loading={loading}>
+							disabled={loading}>
 							<DoneIcon />
 						</IconButton>
 					</Tooltip>

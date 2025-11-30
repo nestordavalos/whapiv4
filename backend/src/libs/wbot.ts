@@ -1,6 +1,8 @@
 import qrCode from "qrcode-terminal";
 import { Client, LocalAuth } from "whatsapp-web.js";
 import { Op } from "sequelize";
+import fs from "fs/promises";
+import path from "path";
 import { getIO } from "./socket";
 import Whatsapp from "../models/Whatsapp";
 import AppError from "../errors/AppError";
@@ -8,6 +10,7 @@ import { logger } from "../utils/logger";
 import { handleMsgAck, handleMessage } from "../services/WbotServices/wbotMessageListener";
 import * as Sentry from "@sentry/node";
 import Message from "../models/Message";
+import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
 
 interface Session extends Client {
   id?: number;
@@ -265,5 +268,112 @@ export const removeWbot = (whatsappId: number): void => {
     }
     session.destroy();
     sessions.splice(index, 1);
+  }
+};
+
+export const restartWbot = async (whatsappId: number): Promise<Session> => {
+  try {
+    console.log(`[restartWbot] Buscando sesión con ID: ${whatsappId}`);
+    
+    const sessionIndex = sessions.findIndex(s => s.id === whatsappId);
+    if (sessionIndex === -1) {
+      console.warn(`[restartWbot] Sesión con ID ${whatsappId} no encontrada`);
+      throw new AppError("WhatsApp session not initialized.");
+    }
+    
+    const whatsapp = await Whatsapp.findByPk(whatsappId);
+    if (!whatsapp) {
+      console.error(`[restartWbot] WhatsApp con ID ${whatsappId} no existe en DB`);
+      throw new AppError("WhatsApp not found.");
+    }
+    
+    console.log(`[restartWbot] Limpiando intervalo de ping para ID: ${whatsappId}`);
+    // Limpiar el intervalo de ping antes de destruir
+    const session = sessions[sessionIndex];
+    if (session.pingInterval) {
+      clearInterval(session.pingInterval);
+      session.pingInterval = undefined;
+    }
+    
+    console.log(`[restartWbot] Destruyendo sesión para ID: ${whatsappId}`);
+    session.destroy();
+    sessions.splice(sessionIndex, 1);
+    
+    // Esperar un poco antes de reiniciar para asegurar limpieza completa
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    console.log(`[restartWbot] Iniciando nueva sesión para ID: ${whatsappId}`);
+    const newSession = await initWbot(whatsapp);
+    
+    console.log(`[restartWbot] Sesión reiniciada exitosamente para ID: ${whatsappId}`);
+    return newSession;
+  } catch (error) {
+    console.error(`[restartWbot] Error al reiniciar sesión ${whatsappId}:`, error);
+    throw error;
+  }
+};
+
+export const shutdownWbot = async (whatsappId: string): Promise<void> => {
+  const whatsappIDNumber: number = parseInt(whatsappId, 10);
+
+  if (Number.isNaN(whatsappIDNumber)) {
+    throw new AppError("Invalid WhatsApp ID format.");
+  }
+
+  const whatsapp = await Whatsapp.findByPk(whatsappIDNumber);
+  if (!whatsapp) {
+    throw new AppError("WhatsApp not found.");
+  }
+
+  const sessionIndex = sessions.findIndex(s => s.id === whatsappIDNumber);
+  if (sessionIndex === -1) {
+    console.warn(`Sessão com ID ${whatsappIDNumber} não foi encontrada.`);
+    throw new AppError("WhatsApp session not initialized.");
+  }
+
+  const sessionPath = path.resolve(
+    __dirname,
+    `../../.wwebjs_auth/session-bd_${whatsappIDNumber}`
+  );
+
+  try {
+    console.log(`Desligando sessão para WhatsApp ID: ${whatsappIDNumber}`);
+    
+    // Limpiar el intervalo de ping antes de destruir
+    const session = sessions[sessionIndex];
+    if (session.pingInterval) {
+      clearInterval(session.pingInterval);
+      session.pingInterval = undefined;
+    }
+    
+    await session.destroy();
+    console.log(`Sessão com ID ${whatsappIDNumber} desligada com sucesso.`);
+
+    console.log(`Removendo arquivos da sessão: ${sessionPath}`);
+    await fs.rm(sessionPath, { recursive: true, force: true });
+    console.log(`Arquivos da sessão removidos com sucesso: ${sessionPath}`);
+
+    sessions.splice(sessionIndex, 1);
+    console.log(
+      `Sessão com ID ${whatsappIDNumber} removida da lista de sessões.`
+    );
+
+    const retry = whatsapp.retries;
+    await whatsapp.update({
+      status: "DISCONNECTED",
+      qrcode: "",
+      session: "",
+      retries: retry + 1,
+      number: ""
+    });
+
+    StartWhatsAppSession(whatsapp);
+    
+  } catch (error) {
+    console.error(
+      `Erro ao desligar ou limpar a sessão com ID ${whatsappIDNumber}:`,
+      error
+    );
+    throw new AppError("Failed to destroy WhatsApp session.");
   }
 };

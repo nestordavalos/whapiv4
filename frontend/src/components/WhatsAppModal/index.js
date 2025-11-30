@@ -24,6 +24,9 @@ import {
   InputLabel,
   Select,
   Checkbox,
+  Divider,
+  Typography,
+  Box,
 } from "@material-ui/core";
 
 import api from "../../services/api";
@@ -39,9 +42,14 @@ const useStyles = makeStyles(theme => ({
 
   multFieldLine: {
     display: "flex",
-    "& > *:not(:last-child)": {
-      marginRight: theme.spacing(1),
-    },
+    gap: theme.spacing(1.5),
+    alignItems: "center",
+    flexWrap: "wrap",
+    marginBottom: theme.spacing(2),
+    padding: theme.spacing(2),
+    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)',
+    borderRadius: 8,
+    border: `1px solid ${theme.palette.divider}`,
   },
 
   btnWrapper: {
@@ -55,6 +63,37 @@ const useStyles = makeStyles(theme => ({
     left: "50%",
     marginTop: -12,
     marginLeft: -12,
+  },
+
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: 600,
+    color: theme.palette.primary.main,
+    marginTop: theme.spacing(3),
+    marginBottom: theme.spacing(2),
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(1),
+  },
+
+  messageField: {
+    marginBottom: theme.spacing(2),
+  },
+
+  switchControlBox: {
+    padding: theme.spacing(1.5),
+    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(33, 150, 243, 0.08)' : 'rgba(33, 150, 243, 0.04)',
+    borderRadius: 8,
+    border: `1px solid ${theme.palette.primary.main}33`,
+    marginBottom: theme.spacing(2),
+  },
+
+  workHoursBox: {
+    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#fafafa',
+    borderRadius: 8,
+    padding: theme.spacing(2),
+    marginTop: theme.spacing(1),
+    border: `1px solid ${theme.palette.divider}`,
   },
 
   expediente: {
@@ -386,9 +425,14 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
         scroll="paper"
       >
         <DialogTitle>
-          {whatsAppId
-            ? i18n.t("whatsappModal.title.edit")
-            : i18n.t("whatsappModal.title.add")}
+          <Box display="flex" alignItems="center" gap={1}>
+            <span style={{ fontSize: 24 }}>💬</span>
+            <span>
+              {whatsAppId
+                ? i18n.t("whatsappModal.title.edit")
+                : i18n.t("whatsappModal.title.add")}
+            </span>
+          </Box>
         </DialogTitle>
         <Formik
           initialValues={whatsApp}
@@ -404,18 +448,22 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
           {({ values, touched, errors, isSubmitting }) => (
             <Form>
               <DialogContent dividers>
-                <div className={classes.multFieldLine}>
-                  <Field
-                    as={TextField}
-                    label={i18n.t("whatsappModal.form.name")}
-                    autoFocus
-                    name="name"
-                    error={touched.name && Boolean(errors.name)}
-                    helperText={touched.name && errors.name}
-                    variant="outlined"
-                    margin="dense"
-                    className={classes.textField}
-                  />
+                <Typography className={classes.sectionTitle}>
+                  <span>⚙️</span> Configuración Básica
+                </Typography>
+                <Field
+                  as={TextField}
+                  label={i18n.t("whatsappModal.form.name")}
+                  autoFocus
+                  name="name"
+                  error={touched.name && Boolean(errors.name)}
+                  helperText={touched.name && errors.name}
+                  variant="outlined"
+                  margin="dense"
+                  fullWidth
+                  style={{ marginBottom: 16 }}
+                />
+                <div className={classes.multFieldLine} style={{ padding: '12px 16px' }}>
                   <FormControlLabel
                     control={
                       <Field
@@ -450,13 +498,18 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     label={i18n.t("whatsappModal.form.group")}
                   />
                 </div>
-                <div>
+
+                <Divider style={{ margin: '24px 0 16px 0' }} />
+                <Typography className={classes.sectionTitle}>
+                  <span>💬</span> Mensajes Automáticos
+                </Typography>
+                <div className={classes.messageField}>
                   <Field
                     as={TextField}
                     label={i18n.t("queueModal.form.greetingMessage")}
                     type="greetingMessage"
                     multiline
-                    rows={5}
+                    rows={4}
                     fullWidth
                     name="greetingMessage"
                     error={
@@ -469,13 +522,13 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     margin="dense"
                   />
                 </div>
-                <div>
+                <div className={classes.messageField}>
                   <Field
                     as={TextField}
                     label={i18n.t("whatsappModal.form.farewellMessage")}
                     type="farewellMessage"
                     multiline
-                    rows={5}
+                    rows={4}
                     fullWidth
                     name="farewellMessage"
                     error={
@@ -488,13 +541,13 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     margin="dense"
                   />
                 </div>
-                <div>
+                <div className={classes.messageField}>
 									<Field
 										as={TextField}
 										label={i18n.t("whatsappModal.form.ratingMessage")}
 										type="ratingMessage"
 										multiline
-										rows={5}
+										rows={4}
 										fullWidth
 										name="ratingMessage"
 										helperText={i18n.t("whatsappModal.form.instructionRatingMessage")}
@@ -504,8 +557,13 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
 										variant="outlined"
 										margin="dense"
 									/>
-								</div> 
-                <div>
+								</div>
+
+                <Divider style={{ margin: '24px 0 16px 0' }} />
+                <Typography className={classes.sectionTitle}>
+                  <span>⏱️</span> Mensajes de Inactividad
+                </Typography>
+                <Box className={classes.switchControlBox}>
                   <FormControlLabel
                     control={
                       <Field
@@ -517,9 +575,9 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     }
                       label={i18n.t("whatsappModal.form.sendInactiveMessage")}
                    />
-                </div>
+                </Box>
                 
-                <div>
+                <div className={classes.messageField}>
                   <Field
                     as={TextField}
                     label={i18n.t("whatsappModal.form.inactiveMessage")}
@@ -573,18 +631,21 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     </FormControl>
                   </Grid>
 
+                <Divider style={{ margin: '24px 0 16px 0' }} />
+                <Typography className={classes.sectionTitle}>
+                  <span>🕐</span> Horarios de Atención
+                </Typography>
+
                 <div>
                   {/* Expediente */}
 
                   {defineWorkHours === true ? (
 
 
-                    <div
-                    // className={classes.textoExpediente}
-                    >
+                    <Box className={classes.workHoursBox}>
                       <TextField
                         label={i18n.t("whatsappModal.form.outOfWorkMessage")}
-                        rows={4}
+                        rows={3}
                         multiline
                         fullWidth
                         name="outOfWorkMessage"
@@ -603,61 +664,27 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                         onChange={(e) => setOutOfWorkMessage(e.target.value)}
                       />
 
-                    </div>
+                    </Box>
                   ) : (
                     ""
                   )}
-                  <div ></div>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={12} className={classes.diasSemana}>
-                      <FormControl component="fieldset">
-                        <FormGroup
-                          aria-label="position"
-                          row
-                          sx={{
-                            width: {
-                              xs: 100,
-                              sm: 200,
-                              md: 300,
-                              lg: 600,
-                              xl: 700,
-                            },
-                          }}
-                        >
-                          <Tooltip title={i18n.t("whatsappModal.form.longText")} placement="top">
-                            {/* <FormControlLabel
-                              value="defineWorkHours"
-                              control={
-                                <Checkbox
-                                  size="small"
-                                  checked={defineWorkHours}
-                                  onChange={handleChange}
-                                />
-                              }
-                              label="Definir horário de expediente"
-                              labelPlacement="end"
-
-                            /> */}
-
-                            <FormControlLabel
-                              control={
-                                <Field
-                                  as={Switch}
-                                  value="defineWorkHours"
-                                  name="outOfWorkMessage"
-                                  color="primary"
-                                  checked={defineWorkHours}
-                                  onChange={handleChange}
-                                />
-                              }
-                              label="Definir horário de Atención"
-                              labelPlacement="end"
-                            />
-                          </Tooltip>
-                        </FormGroup>
-                      </FormControl>
-                    </Grid>
-                  </Grid>
+                  <div></div>
+                  <Box className={classes.switchControlBox} style={{ marginTop: 16 }}>
+                    <FormControlLabel
+                      control={
+                        <Field
+                          as={Switch}
+                          value="defineWorkHours"
+                          name="outOfWorkMessage"
+                          color="primary"
+                          checked={defineWorkHours}
+                          onChange={handleChange}
+                        />
+                      }
+                      label="Definir horário de Atención"
+                      labelPlacement="end"
+                    />
+                  </Box>
                   {defineWorkHours === true ? (
                     <>
                       <Grid item xs={12} sm={12} className={classes.diasSemana} >
@@ -1185,17 +1212,22 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                 </div>
 
 
+                <Divider style={{ margin: '24px 0 16px 0' }} />
+                <Typography className={classes.sectionTitle}>
+                  <span>📋</span> Colas
+                </Typography>
                 <QueueSelect
                   selectedQueueIds={selectedQueueIds}
                   onChange={selectedIds => setSelectedQueueIds(selectedIds)}
                 />
               </DialogContent>
-              <DialogActions>
+              <DialogActions style={{ padding: '16px 24px', gap: '12px' }}>
                 <Button
                   onClick={handleClose}
                   color="secondary"
                   disabled={isSubmitting}
                   variant="outlined"
+                  size="large"
                 >
                   {i18n.t("whatsappModal.buttons.cancel")}
                 </Button>
@@ -1204,6 +1236,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                   color="primary"
                   disabled={isSubmitting}
                   variant="contained"
+                  size="large"
                   className={classes.btnWrapper}
                 >
                   {whatsAppId

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useHistory } from "react-router-dom";
 import toastError from "../../errors/toastError";
 import api from "../../services/api";
@@ -7,15 +7,12 @@ import Avatar from "@material-ui/core/Avatar";
 import Typography from "@material-ui/core/Typography";
 import Grid from "@material-ui/core/Grid";
 
-import { AuthContext } from "../../context/Auth/AuthContext";
-
 import { Button, Divider, } from "@material-ui/core";
 import NewTicketModalPageContact from "../../components/NewTicketModalPageContact";
 
 
 const VcardPreview = ({ contact, numbers }) => {
     const history = useHistory();
-    const { user } = useContext(AuthContext);
 
     const [selectedContact, setContact] = useState({
         name: "",
@@ -23,7 +20,6 @@ const VcardPreview = ({ contact, numbers }) => {
         profilePicUrl: ""
     });
     const [newTicketModalOpen, setNewTicketModalOpen] = useState(false);
-    const [contactTicket, setContactTicket] = useState({});
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
@@ -106,9 +102,7 @@ const VcardPreview = ({ contact, numbers }) => {
                             fullWidth
                             color="primary"
                             key={selectedContact.id}
-                            // onClick={handleNewChat}
                             onClick={() => {
-                                setContactTicket(selectedContact.id);
                                 setNewTicketModalOpen(true);
                             }}
                             disabled={!selectedContact.number}

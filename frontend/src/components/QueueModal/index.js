@@ -357,13 +357,11 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
                     margin="dense"
                   />
                 </div>
-                <form className={classes.container} noValidate>
+                <div className={classes.container}>
                   <Field
                     as={TextField}
                     label={i18n.t("queueModal.form.startWork")}
                     type="time"
-                    ampm={false}
-                    defaultValue="08:00"
                     inputRef={startWorkRef}
                     InputLabelProps={{
                       shrink: true,
@@ -383,8 +381,6 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
                     as={TextField}
                     label={i18n.t("queueModal.form.endWork")}
                     type="time"
-                    ampm={false}
-                    defaultValue="18:00"
                     inputRef={endWorkRef}
                     InputLabelProps={{
                       shrink: true,
@@ -400,7 +396,7 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
                     margin="dense"
                     className={classes.textField}
                   />
-                </form>
+                </div>
                 <div>
                   <Field
                     as={TextField}
@@ -408,7 +404,7 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
                     type="absenceMessage"
                     multiline
                     inputRef={absenceRef}
-                    rows={2}
+                    minRows={2}
                     fullWidth
                     name="absenceMessage"
                     error={

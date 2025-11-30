@@ -12,7 +12,6 @@ import {
   ClickAwayListener,
   IconButton,
   InputBase,
-  TextField,
   makeStyles,
   Paper,
   FormControlLabel,

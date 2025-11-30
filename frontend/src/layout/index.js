@@ -6,13 +6,11 @@ import {
   Divider,
   Drawer,
   IconButton,
-  Link,
   List,
   makeStyles,
   Menu,
   MenuItem,
-  Toolbar,
-  Typography
+  Toolbar
 } from "@material-ui/core";
 
 import MenuIcon from "@material-ui/icons/Menu";
@@ -29,7 +27,6 @@ import { i18n } from "../translate/i18n";
 import api from "../services/api";
 import toastError from "../errors/toastError";
 import { system } from "../config.json";
-import { systemVersion } from "../../package.json";
 import logodash from "../assets/logo-dash.jpeg";
 
 const drawerWidth = 240;
@@ -135,6 +132,7 @@ const LoggedInLayout = ({ children }) => {
   const { user } = useContext(AuthContext);
 
   useEffect(() => {
+    let isMounted = true;
 
     if (document.body.offsetWidth > 600) {
       const fetchDrawerState = async () => {
@@ -143,15 +141,23 @@ const LoggedInLayout = ({ children }) => {
 
           const settingIndex = data.filter(s => s.key === 'sideMenu');
 
-          setDrawerOpen(settingIndex[0].value === "disabled" ? false : true);
+          if (isMounted) {
+            setDrawerOpen(settingIndex[0].value === "disabled" ? false : true);
+          }
 
         } catch (err) {
-          setDrawerOpen(true);
+          if (isMounted) {
+            setDrawerOpen(true);
+          }
           toastError(err);
         }
       };
       fetchDrawerState();
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {

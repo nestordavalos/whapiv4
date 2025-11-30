@@ -108,7 +108,7 @@ const TicketsManager = () => {
 
   const [searchParam, setSearchParam] = useState("");
   const [tab, setTab] = useState("open");
-  const [tabOpen, setTabOpen] = useState("open");
+  const [tabOpen] = useState("open");
   const [newTicketModalOpen, setNewTicketModalOpen] = useState(false);
   const [showAllTickets, setShowAllTickets] = useState(false);
   const { user } = useContext(AuthContext);
@@ -147,10 +147,6 @@ const TicketsManager = () => {
 
   const handleChangeTab = (e, newValue) => {
     setTab(newValue);
-  };
-
-  const handleChangeTabOpen = (e, newValue) => {
-    setTabOpen(newValue);
   };
 
   const applyPanelStyle = (status) => {

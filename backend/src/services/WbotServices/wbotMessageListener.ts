@@ -2391,6 +2391,17 @@ const handleMessage = async (
       console.log(e);
     }
 
+    // Verificar si el mensaje ya existe en la BD (evita duplicados de mensajes enviados desde el panel)
+    const existingMessage = await Message.findByPk(msg.id.id);
+    
+    if (existingMessage) {
+      // El mensaje ya existe, solo actualizar el ack si es necesario
+      if (existingMessage.ack !== msg.ack) {
+        await existingMessage.update({ ack: msg.ack });
+      }
+      return;
+    }
+
     if (msg.hasMedia) {
       await verifyMediaMessage(msg, ticket, contact);
     } else {

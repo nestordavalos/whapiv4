@@ -26,7 +26,8 @@ import {
 	CropFree,
 	DeleteOutline,
 	SyncOutlined,
-	WhatsApp
+	WhatsApp,
+	Replay
 } from "@material-ui/icons";
 
 import MainContainer from "../../components/MainContainer";
@@ -103,6 +104,7 @@ const Connections = () => {
 	const [qrModalOpen, setQrModalOpen] = useState(false);
 	const [selectedWhatsApp, setSelectedWhatsApp] = useState(null);
 	const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+	const [restartingId, setRestartingId] = useState(null);
 	const confirmationModalInitialState = {
 		action: "",
 		title: "",
@@ -127,6 +129,32 @@ const Connections = () => {
 			await api.put(`/whatsappsession/${whatsAppId}`);
 		} catch (err) {
 			toastError(err);
+		}
+	};
+
+	const handleRestartSession = async whatsAppId => {
+		let toastId;
+		try {
+			setRestartingId(whatsAppId);
+			
+			toastId = toast.info("Reiniciando sesión de WhatsApp...", {
+				autoClose: false,
+				closeButton: false,
+			});
+			
+			await api.post(`/whatsapp/${whatsAppId}/restart`);
+			
+			if (toastId) {
+				toast.dismiss(toastId);
+			}
+			toast.success(i18n.t("connections.toasts.restarted"));
+		} catch (err) {
+			if (toastId) {
+				toast.dismiss(toastId);
+			}
+			toastError(err);
+		} finally {
+			setRestartingId(null);
 		}
 	};
 
@@ -233,16 +261,29 @@ const Connections = () => {
 				{(whatsApp.status === "CONNECTED" ||
 					whatsApp.status === "PAIRING" ||
 					whatsApp.status === "TIMEOUT") && (
-						<Button
-							size="small"
-							variant="outlined"
-							color="secondary"
-							onClick={() => {
-								handleOpenConfirmationModal("disconnect", whatsApp.id);
-							}}
-						>
-							{i18n.t("connections.buttons.disconnect")}
-						</Button>
+						<>
+							<Button
+								size="small"
+								variant="outlined"
+								color="primary"
+								onClick={() => handleRestartSession(whatsApp.id)}
+								startIcon={restartingId === whatsApp.id ? <CircularProgress size={20} /> : <Replay />}
+								disabled={restartingId === whatsApp.id}
+							>
+								{restartingId === whatsApp.id ? "Reiniciando..." : i18n.t("connections.buttons.restart")}
+							</Button>{" "}
+							<Button
+								size="small"
+								variant="outlined"
+								color="secondary"
+								onClick={() => {
+									handleOpenConfirmationModal("disconnect", whatsApp.id);
+								}}
+								disabled={restartingId === whatsApp.id}
+							>
+								{i18n.t("connections.buttons.disconnect")}
+							</Button>
+						</>
 					)}
 				{whatsApp.status === "OPENING" && (
 					<Button size="small" variant="outlined" disabled color="default">

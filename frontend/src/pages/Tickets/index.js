@@ -17,7 +17,8 @@ const useStyles = makeStyles((theme) => ({
     flex: 1,
     // backgroundColor: "#eee",
     // padding: theme.spacing(4),
-    height: `calc(97% - 48px)`,
+    height: `calc(100vh - 72px)`,
+    minHeight: 0,
     overflowY: "hidden",
     margin: theme.spacing(1),
   },
@@ -26,19 +27,22 @@ const useStyles = makeStyles((theme) => ({
     // backgroundColor: "red",
     display: "flex",
     height: "100%",
+    minHeight: 0,
   },
 
   contactsWrapper: {
     display: "flex",
     height: "100%",
     flexDirection: "column",
-    overflowY: "hidden",
+    overflowY: "auto",
+    minHeight: 0,
   },
   contactsWrapperSmall: {
     display: "flex",
     height: "100%",
     flexDirection: "column",
-    overflowY: "hidden",
+    overflowY: "auto",
+    minHeight: 0,
     [theme.breakpoints.down("sm")]: {
       display: "none",
     },
@@ -47,6 +51,7 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     height: "100%",
     flexDirection: "column",
+    minHeight: 0,
   },
   welcomeMsg: {
     backgroundColor: theme.palette.background.paper,

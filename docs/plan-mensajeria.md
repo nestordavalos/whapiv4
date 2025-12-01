@@ -9,7 +9,7 @@
 - [x] Normalizar filtros de `/tickets` para `queueIds`, `tags`, `whatsappIds`, `userIds`.
 - [x] Refactorizar `verifyQueue` usando helper por dia/horario.
 - [x] Manejar errores en `SendWhatsAppMessage` sin `process.exit(1)`.
-- [ ] Optimizar cron `ClosedAllOpenTickets` (query paginada + cache de conexiones).
+- [x] Optimizar cron `ClosedAllOpenTickets` (query paginada + cache de conexiones).
 
 ## Checklist Frontend
 - [x] Ajustar `TicketsList` para aceptar eventos cuando no hay filtros de cola.

@@ -31,11 +31,37 @@ const useStyles = makeStyles((theme) => ({
   ticketsWrapper: {
     position: "relative",
     display: "flex",
-    height: "100%",
+    flex: 1,
     flexDirection: "column",
     overflow: "hidden",
+    minHeight: 0,
     borderTopRightRadius: 0,
     borderBottomRightRadius: 0,
+  },
+
+  tabPanels: {
+    flex: 1,
+    minHeight: 0,
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+  },
+
+  tabPanel: {
+    flex: 1,
+    minHeight: 0,
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    height: "100%",
+  },
+
+  tabPanelContent: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    overflowY: "auto",
+    minHeight: 0,
   },
 
   tabsHeader: {
@@ -110,6 +136,7 @@ const TicketsManager = () => {
   const [tabOpen] = useState("open");
   const [newTicketModalOpen, setNewTicketModalOpen] = useState(false);
   const [showAllTickets, setShowAllTickets] = useState(false);
+  const [showAllInitialized, setShowAllInitialized] = useState(false);
   const { user } = useContext(AuthContext);
 
   const [openCount, setOpenCount] = useState(0);
@@ -119,13 +146,17 @@ const TicketsManager = () => {
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [selectedQueueIds, setSelectedQueueIds] = useState([]);
 
+  const normalizedProfile = (user?.profile || "").toUpperCase();
+
   useEffect(() => {
-    if (user.profile.toUpperCase() === "ADMIN") {
+    if (showAllInitialized) return;
+    if (!normalizedProfile) return;
+
+    if (normalizedProfile === "ADMIN") {
       setShowAllTickets(true);
     }
-    // No inicializamos selectedQueueIds automáticamente
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    setShowAllInitialized(true);
+  }, [normalizedProfile, showAllInitialized]);
 
   const handleSearch = (e) => {
     const searchedTerm = e.target.value.toLowerCase();
@@ -146,10 +177,10 @@ const TicketsManager = () => {
 
   const applyPanelStyle = (status) => {
     if (tabOpen !== status) {
-      return { width: 0, height: 0 };
+      return { display: "none" };
     }
 
-    return undefined;
+    return { display: "flex", flex: 1, minHeight: 0 };
   };
 
 
@@ -262,8 +293,9 @@ const TicketsManager = () => {
         userQueues={user?.queues}
       />
       
-      <TabPanel value={tab} name="open" className={classes.ticketsWrapper}>
-        <Paper className={classes.ticketsWrapper}>
+      <div className={classes.tabPanels}>
+        <TabPanel value={tab} name="open" className={classes.tabPanel}>
+          <Paper className={classes.tabPanelContent}>
           <TicketsList
             status="open"
             showAll={showAllTickets}
@@ -283,43 +315,50 @@ const TicketsManager = () => {
             updateCount={(val) => setPendingCount(val)}
             style={applyPanelStyle("pending")}
           />
-        </Paper>
-      </TabPanel>
+          </Paper>
+        </TabPanel>
 
-      <TabPanel value={tab} name="pending" className={classes.ticketsWrapper}>
-        <TicketsList
-          handleChangeTab={handleChangeTab}
-          status="pending"
-          showAll={true}
-          selectedQueueIds={selectedQueueIds}
-          selectedTagIds={selectedTags}
-          selectedWhatsappIds={selectedWhatsappIds}
-          selectedUserIds={selectedUserIds}
-          updateCount={(val) => setPendingCount(val)}
-        />
-      </TabPanel>
+        <TabPanel value={tab} name="pending" className={classes.tabPanel}>
+          <Paper className={classes.tabPanelContent}>
+            <TicketsList
+              handleChangeTab={handleChangeTab}
+              status="pending"
+              showAll={true}
+              selectedQueueIds={selectedQueueIds}
+              selectedTagIds={selectedTags}
+              selectedWhatsappIds={selectedWhatsappIds}
+              selectedUserIds={selectedUserIds}
+              updateCount={(val) => setPendingCount(val)}
+            />
+          </Paper>
+        </TabPanel>
 
-      <TabPanel value={tab} name="closed" className={classes.ticketsWrapper}>
-        <TicketsList
-          status="closed"
-          showAll={true}
-          selectedQueueIds={selectedQueueIds}
-          selectedTagIds={selectedTags}
-          selectedWhatsappIds={selectedWhatsappIds}
-          selectedUserIds={selectedUserIds}
-        />
-      </TabPanel>
-      <TabPanel value={tab} name="search" className={classes.ticketsWrapper}>
-        <TicketsList
-          searchParam={searchParam}
-          tags={selectedTags}
-          showAll={true}
-          selectedQueueIds={selectedQueueIds}
-          selectedTagIds={selectedTags}
-          selectedWhatsappIds={selectedWhatsappIds}
-          selectedUserIds={selectedUserIds}
-        />
-      </TabPanel>
+        <TabPanel value={tab} name="closed" className={classes.tabPanel}>
+          <Paper className={classes.tabPanelContent}>
+            <TicketsList
+              status="closed"
+              showAll={true}
+              selectedQueueIds={selectedQueueIds}
+              selectedTagIds={selectedTags}
+              selectedWhatsappIds={selectedWhatsappIds}
+              selectedUserIds={selectedUserIds}
+            />
+          </Paper>
+        </TabPanel>
+        <TabPanel value={tab} name="search" className={classes.tabPanel}>
+          <Paper className={classes.tabPanelContent}>
+            <TicketsList
+              searchParam={searchParam}
+              tags={selectedTags}
+              showAll={true}
+              selectedQueueIds={selectedQueueIds}
+              selectedTagIds={selectedTags}
+              selectedWhatsappIds={selectedWhatsappIds}
+              selectedUserIds={selectedUserIds}
+            />
+          </Paper>
+        </TabPanel>
+      </div>
     </Paper>
   );
 };

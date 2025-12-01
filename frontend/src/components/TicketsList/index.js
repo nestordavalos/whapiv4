@@ -16,7 +16,9 @@ const useStyles = makeStyles((theme) => ({
 	ticketListWrapper: {
 		position: "relative",
 		display: "flex",
+		flex: 1,
 		height: "100%",
+		minHeight: 0,
 		flexDirection: "column",
 		overflow: "hidden",
 		borderTopRightRadius: 0,
@@ -28,6 +30,8 @@ const useStyles = makeStyles((theme) => ({
 	ticketsList: {
 		flex: 1,
 		overflowY: "scroll",
+		minHeight: 0,
+		height: "100%",
 		...theme.scrollbarStyles,
 		borderTop: "1px solid #e8e8e8",
 		padding: 0,
@@ -210,7 +214,7 @@ const TicketsList = (props) => {
 
 
 		// Função para identificação liberação da settings 
-		if (profile === "admin" || allticket) {
+		if ((profile || "").toUpperCase() === "ADMIN" || allticket) {
 			dispatch({ type: "LOAD_TICKETS", payload: tickets });
 		} else {
 			dispatch({ type: "LOAD_TICKETS", payload: filteredTickets });

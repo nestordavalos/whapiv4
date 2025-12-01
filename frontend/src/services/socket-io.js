@@ -36,7 +36,9 @@ function connectToSocket() {
     query: { token },
     reconnection: true,
     reconnectionDelay: 1000,
-    reconnectionAttempts: 5,
+    reconnectionDelayMax: 30000,
+    randomizationFactor: 0.5,
+    reconnectionAttempts: Infinity,
     forceNew: false,
     timeout: 10000
   });
@@ -51,6 +53,12 @@ function connectToSocket() {
       localStorage.removeItem("token");
       window.location.reload();
     }
+  });
+
+  socket.on("session:expired", () => {
+    console.warn("Socket session expired, forcing logout");
+    localStorage.removeItem("token");
+    window.location.href = "/login";
   });
 
   return socket;

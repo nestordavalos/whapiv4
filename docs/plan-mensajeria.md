@@ -14,7 +14,8 @@
 ## Checklist Frontend
 - [x] Ajustar `TicketsList` para aceptar eventos cuando no hay filtros de cola.
 - [ ] Escuchar `session:expired` del backend y mostrar aviso/login.
-- [ ] Permitir reconexion ilimitada o backoff progresivo en `socket-io.js`.
+ - [x] Escuchar `session:expired` del backend y mostrar aviso/login.
+ - [x] Permitir reconexion ilimitada o backoff progresivo en `socket-io.js`.
 
 ## Seguimiento Operativo
 1. Validar en staging: crear tickets con y sin cola, confirmar que las listas reaccionan con filtros vacios y activos.

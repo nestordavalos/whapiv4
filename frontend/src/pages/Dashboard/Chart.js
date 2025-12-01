@@ -1,15 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "@material-ui/core/styles";
 import {
-	// BarChart,
 	CartesianGrid,
-	// Bar,
 	XAxis,
 	Tooltip,
   AreaChart,
   Area,
-  // Line,
-  LineChart,
 	YAxis,
 	// Label,
 	ResponsiveContainer,
@@ -28,22 +24,7 @@ import { Divider } from "@material-ui/core";
 const Chart = () => {
 	const theme = useTheme();
 	const date = useRef(new Date().toISOString());
-	const { tickets } = useTickets({ date: date.current });
-	function getIntroOfPage(label) {
-  		if (label === 'Page A') {
-    return 'Page A is about mens clothing';
-  } if (label === 'Page B') {
-    return 'Page B is about womens dress';
-  } if (label === 'Page C') {
-    return 'Page C is about womens bag';
-  } if (label === 'Page D') {
-    return 'Page D is about household goods';
-  } if (label === 'Page E') {
-    return 'Page E is about food';
-  } if (label === 'Page F') {
-    return 'Page F is about baby food';
-  }
-}
+  const { tickets } = useTickets({ date: date.current });
 
 function CustomTooltip({ payload, label, active }) {
   if (active) {
@@ -51,10 +32,10 @@ function CustomTooltip({ payload, label, active }) {
       <div>
         <div style={{ backgroundColor: "#333333ff", borderRadius:"4px", outline: "none" }}>
           <div>
-            {payload.map((pld) => (
+            {(payload || []).map(pld => (
               <div style={{ display: "inline-block", padding: 10 }}>
                 <div style={{ color: "white", fontWeight:"600", fontSize:"13px" }}>{`${label}`}</div>
-                <div style={{ color: "white",fontWeight:"400", fontSize:"13px" }}>Tickets: {pld.value}</div>
+                <div style={{ color: "white",fontWeight:"400", fontSize:"13px" }}>Tickets: {pld ? pld.value : 0}</div>
               </div>
             ))}
           </div>
@@ -147,7 +128,7 @@ function CustomTooltip({ payload, label, active }) {
         >
           <XAxis
             tick={tickProps => {
-              const { x, y, payload } = tickProps;
+              const { x, y } = tickProps;
               return (
                 <circle
                   cx={x}

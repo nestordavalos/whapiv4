@@ -2690,10 +2690,10 @@ const handleMessage = async (
         const obj = [];
         // eslint-disable-next-line no-shadow
         let contact = "";
-        for (let index = 0; index < array.length; index++) {
+        for (let index = 0; index < array.length; index += 1) {
           const v = array[index];
           const values = v.split(":");
-          for (let ind = 0; ind < values.length; ind++) {
+          for (let ind = 0; ind < values.length; ind += 1) {
             if (values[ind].indexOf("+") !== -1) {
               obj.push({ number: values[ind] });
             }

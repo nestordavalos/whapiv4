@@ -1,7 +1,6 @@
-import { Sequelize, Op, Filterable, Includeable } from "sequelize";
+import { Sequelize, Op, Filterable } from "sequelize";
 import { intersection } from "lodash";
 import Contact from "../../models/Contact";
-import Tag from "../../models/Tag";
 import ContactTag from "../../models/ContactTag";
 
 interface Request {
@@ -40,15 +39,6 @@ const ListContactsService = async ({
       }
     ]
   };
-
-  let includeCondition: Includeable[];
-  includeCondition = [
-    {
-      model: Tag,
-      as: "tags",
-      attributes: ["id", "name", "color"]
-    }
-  ];
 
   if (Array.isArray(tags) && tags.length > 0) {
     const contactsTagFilter = [];

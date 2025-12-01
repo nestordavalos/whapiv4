@@ -30,4 +30,3 @@ module.exports = {
     await queryInterface.removeColumn("Messages", "bodySearch");
   }
 };
-

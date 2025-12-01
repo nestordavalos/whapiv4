@@ -7,7 +7,8 @@ import UpdateSettingService from "../services/SettingServices/UpdateSettingServi
 import ListSettingsService from "../services/SettingServices/ListSettingsService";
 
 export const index = async (req: Request, res: Response): Promise<Response> => {
-  if (req.user.profile === "") { // Função que libera ou bloqueio os usuarios de acessar as configurações do Settings
+  if (req.user.profile === "") {
+    // Função que libera ou bloqueio os usuarios de acessar as configurações do Settings
     throw new AppError("ERR_NO_PERMISSION", 403);
   }
 

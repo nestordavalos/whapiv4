@@ -10,6 +10,9 @@ module.exports = {
   },
 
   down: (queryInterface: QueryInterface) => {
-    return queryInterface.removeColumn("Whatsapps", "StartDefineWorkHoursFriday");
+    return queryInterface.removeColumn(
+      "Whatsapps",
+      "StartDefineWorkHoursFriday"
+    );
   }
 };

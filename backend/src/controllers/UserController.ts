@@ -48,7 +48,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     viewSector,
     viewName,
     viewTags,
-    allTicket,
+    allTicket
   } = req.body;
 
   if (
@@ -75,7 +75,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     viewSector,
     viewName,
     viewTags,
-    allTicket,
+    allTicket
   });
 
   const io = getIO();

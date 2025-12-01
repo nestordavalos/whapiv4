@@ -30,7 +30,6 @@ class TicketTraking extends Model<TicketTraking> {
   @BelongsTo(() => Ticket)
   ticket: Ticket;
 
-
   @ForeignKey(() => Whatsapp)
   @Column
   whatsappId: number;

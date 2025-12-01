@@ -1,17 +1,16 @@
 import gracefulShutdown from "http-graceful-shutdown";
-import app from "./app";
 import cron from "node-cron";
+import swaggerUi from "swagger-ui-express";
+import app from "./app";
 import { initIO } from "./libs/socket";
 import { logger } from "./utils/logger";
 import { StartAllWhatsAppsSessions } from "./services/WbotServices/StartAllWhatsAppsSessions";
 import { ClosedAllOpenTickets } from "./services/WbotServices/wbotCloseTickets";
 
-import swaggerUi from "swagger-ui-express";
-
 import swaggerDocs from "./swagger.json";
 
-var options = {
-  customCss: '.swagger-ui .topbar { display: none }'
+const options = {
+  customCss: ".swagger-ui .topbar { display: none }"
 };
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs, options));
@@ -21,14 +20,11 @@ const server = app.listen(process.env.PORT, () => {
 });
 
 cron.schedule("*/1 * * * *", async () => {
-
   try {
     await ClosedAllOpenTickets();
-  }
-  catch (error) {
+  } catch (error) {
     logger.error(error);
   }
-
 });
 
 initIO(server);

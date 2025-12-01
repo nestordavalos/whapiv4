@@ -60,7 +60,6 @@ class Whatsapp extends Model<Whatsapp> {
   @Column(DataType.TEXT)
   ratingMessage: string;
 
-
   // __________________________________________________________________ Reconhecimento do horario de atendimento
   @Column(DataType.BOOLEAN)
   defineWorkHours: boolean;
@@ -181,7 +180,6 @@ class Whatsapp extends Model<Whatsapp> {
 
   @Column(DataType.TEXT)
   EndDefineWorkHoursSundayLunch: string;
-
 
   @Default(false)
   @AllowNull

@@ -37,7 +37,11 @@ const wbotMonitor = async (
       logger.info(`Disconnected session: ${sessionName}, reason: ${reason}`);
       try {
         if (reason === "LOGOUT") {
-          await whatsapp.update({ status: "DISCONNECTED", session: "", number: "" });
+          await whatsapp.update({
+            status: "DISCONNECTED",
+            session: "",
+            number: ""
+          });
           io.emit("whatsappSession", {
             action: "update",
             session: whatsapp

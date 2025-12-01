@@ -2,14 +2,21 @@ import { QueryInterface, DataTypes } from "sequelize";
 
 module.exports = {
   up: (queryInterface: QueryInterface) => {
-    return queryInterface.addColumn("Whatsapps", "StartDefineWorkHoursThursdayLunch", {
-      type: DataTypes.TEXT,
-      defaultValue: null,
-      allowNull: true
-    });
+    return queryInterface.addColumn(
+      "Whatsapps",
+      "StartDefineWorkHoursThursdayLunch",
+      {
+        type: DataTypes.TEXT,
+        defaultValue: null,
+        allowNull: true
+      }
+    );
   },
 
   down: (queryInterface: QueryInterface) => {
-    return queryInterface.removeColumn("Whatsapps", "StartDefineWorkHoursThursdayLunch");
+    return queryInterface.removeColumn(
+      "Whatsapps",
+      "StartDefineWorkHoursThursdayLunch"
+    );
   }
 };

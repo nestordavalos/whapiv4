@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 
+import { Message as WbotMessage } from "whatsapp-web.js";
 import SetTicketMessagesAsRead from "../helpers/SetTicketMessagesAsRead";
 import { getIO } from "../libs/socket";
-import Message from "../models/Message";
 
 import ListMessagesService from "../services/MessageServices/ListMessagesService";
 import ShowTicketService from "../services/TicketServices/ShowTicketService";
@@ -10,17 +10,9 @@ import DeleteWhatsAppMessage from "../services/WbotServices/DeleteWhatsAppMessag
 import SendWhatsAppMedia from "../services/WbotServices/SendWhatsAppMedia";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import CreateMessageService from "../services/MessageServices/CreateMessageService";
-import { Message as WbotMessage } from "whatsapp-web.js";
 
 type IndexQuery = {
   pageNumber: string;
-};
-
-type MessageData = {
-  body: string;
-  fromMe: boolean;
-  read: boolean;
-  quotedMsg?: Message;
 };
 
 export const index = async (req: Request, res: Response): Promise<Response> => {

@@ -19,7 +19,7 @@ interface Request {
   viewSector?: string;
   viewName?: string;
   viewTags?: string;
-  allTicket?:string;
+  allTicket?: string;
 }
 
 interface Response {
@@ -44,7 +44,7 @@ const CreateUserService = async ({
   viewSector,
   viewName,
   viewTags,
-  allTicket,
+  allTicket
 }: Request): Promise<Response> => {
   const schema = Yup.object().shape({
     allHistoric: Yup.string(),
@@ -68,11 +68,11 @@ const CreateUserService = async ({
   });
 
   try {
-    await schema.validate({ 
-      email, 
-      password, 
-      name});
-
+    await schema.validate({
+      email,
+      password,
+      name
+    });
   } catch (err) {
     throw new AppError(err.message);
   }
@@ -92,7 +92,7 @@ const CreateUserService = async ({
       viewSector,
       viewName,
       viewTags,
-      allTicket,
+      allTicket
     },
     { include: ["queues", "whatsapp"] }
   );

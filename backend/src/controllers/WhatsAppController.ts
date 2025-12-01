@@ -291,26 +291,28 @@ export const restart = async (
 
   try {
     console.log(`Iniciando restart para WhatsApp ID: ${whatsappId}`);
-    
+
     await restartWbot(+whatsappId);
-    
-    console.log(`Restart realizado com sucesso para WhatsApp ID: ${whatsappId}`);
-    
+
+    console.log(
+      `Restart realizado com sucesso para WhatsApp ID: ${whatsappId}`
+    );
+
     // Obtener el whatsapp actualizado para enviarlo en el socket
     const whatsapp = await ShowWhatsAppService(whatsappId);
-    
+
     const io = getIO();
     io.emit("whatsapp", {
       action: "update",
       whatsapp
     });
-    
+
     return res
       .status(200)
       .json({ message: "WhatsApp session restarted successfully." });
   } catch (error) {
     console.error(`Erro ao reiniciar WhatsApp ID ${whatsappId}:`, error);
-    
+
     return res.status(500).json({
       message: "Failed to restart WhatsApp session.",
       error: (error as Error).message
@@ -366,10 +368,10 @@ export const start = async (req: Request, res: Response): Promise<Response> => {
 
   try {
     await initWbot(whatsapp);
-    
+
     // Obtener el whatsapp actualizado
     const updatedWhatsapp = await ShowWhatsAppService(whatsappId);
-    
+
     const io = getIO();
     io.emit("whatsapp", {
       action: "update",

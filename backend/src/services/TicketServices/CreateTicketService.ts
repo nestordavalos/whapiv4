@@ -9,9 +9,9 @@ interface Request {
   contactId: number;
   status: string;
   userId: number;
-  queueId ?: number;
-  fromMe ?: boolean;
-  isMsgGroup ?: boolean;
+  queueId?: number;
+  fromMe?: boolean;
+  isMsgGroup?: boolean;
 }
 
 const CreateTicketService = async ({
@@ -28,8 +28,8 @@ const CreateTicketService = async ({
 
   const { isGroup } = await ShowContactService(contactId);
 
-  if(queueId === undefined) {
-    const user = await User.findByPk(userId, { include: ["queues"]});
+  if (queueId === undefined) {
+    const user = await User.findByPk(userId, { include: ["queues"] });
     queueId = user?.queues.length === 1 ? user.queues[0].id : undefined;
   }
 

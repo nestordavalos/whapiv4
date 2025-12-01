@@ -53,10 +53,10 @@ export const hour = (): string => {
 
 export const firstName = (ticket?: Ticket): string => {
   if (ticket && ticket.contact.name) {
-    const nameArr = ticket.contact.name.split(' ');
+    const nameArr = ticket.contact.name.split(" ");
     return nameArr[0];
   }
-  return '';
+  return "";
 };
 
 export default (body: string, ticket?: Ticket): string => {

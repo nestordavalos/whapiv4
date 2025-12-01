@@ -68,7 +68,7 @@ const AuthUserService = async ({
 
   const serializedUser = SerializeUser(user);
 
-  await user.update({ online: true } );
+  await user.update({ online: true });
 
   return {
     serializedUser,

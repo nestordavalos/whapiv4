@@ -10,10 +10,10 @@ interface Request {
   greetingMessage?: string;
   farewellMessage?: string;
 
-  //Difinindo horario comercial
+  // Difinindo horario comercial
   defineWorkHours?: boolean;
   outOfWorkMessage?: string;
-  //Dias da semana.
+  // Dias da semana.
   monday?: boolean;
   tuesday?: boolean;
   wednesday?: boolean;

@@ -81,7 +81,7 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
     tags,
     whatsappIds,
     userIds,
-    withUnreadMessages,
+    withUnreadMessages
   });
 
   return res.status(200).json({ tickets, count, hasMore });
@@ -134,7 +134,12 @@ export const update = async (
     }
   }
 
-  if (ticket.status === "closed" && ticket.isGroup === false && ticket.user !== null && !ticketData.isFinished) {
+  if (
+    ticket.status === "closed" &&
+    ticket.isGroup === false &&
+    ticket.user !== null &&
+    !ticketData.isFinished
+  ) {
     const whatsapp = await ShowWhatsAppService(ticket.whatsappId);
 
     const { farewellMessage } = whatsapp;
@@ -146,8 +151,11 @@ export const update = async (
       });
     }
   }
-  if (ticket.status === "closed" && ticket.isGroup === false && ticketData.isFinished) {
-    
+  if (
+    ticket.status === "closed" &&
+    ticket.isGroup === false &&
+    ticketData.isFinished
+  ) {
   }
 
   return res.status(200).json(ticket);
@@ -162,13 +170,10 @@ export const remove = async (
   const ticket = await DeleteTicketService(ticketId);
 
   const io = getIO();
-  io.to(ticket.status)
-    .to(ticketId)
-    .to("notification")
-    .emit("ticket", {
-      action: "delete",
-      ticketId: +ticketId
-    });
+  io.to(ticket.status).to(ticketId).to("notification").emit("ticket", {
+    action: "delete",
+    ticketId: +ticketId
+  });
 
   return res.status(200).json({ message: "ticket deleted" });
 };

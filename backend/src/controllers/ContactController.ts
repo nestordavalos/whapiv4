@@ -9,7 +9,7 @@ import UpdateContactService from "../services/ContactServices/UpdateContactServi
 import DeleteContactService from "../services/ContactServices/DeleteContactService";
 import DeleteAllContactService from "../services/ContactServices/DeleteAllContactService";
 
-import CheckContactNumber from "../services/WbotServices/CheckNumber"
+import CheckContactNumber from "../services/WbotServices/CheckNumber";
 import CheckIsValidContact from "../services/WbotServices/CheckIsValidContact";
 import GetProfilePicUrl from "../services/WbotServices/GetProfilePicUrl";
 import AppError from "../errors/AppError";
@@ -48,7 +48,10 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   return res.json({ contacts, count, hasMore });
 };
 
-export const getContact = async (req: Request, res: Response): Promise<Response> => {
+export const getContact = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   const { name, number, email } = req.body as IndexGetContactQuery;
 
   const contact = await GetContactService({
@@ -62,13 +65,14 @@ export const getContact = async (req: Request, res: Response): Promise<Response>
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const newContact: ContactData = req.body;
-  newContact.number = newContact.number.replace("-", "")
+  newContact.number = newContact.number
+    .replace("-", "")
     .replace(" ", "")
     .replace("(", "")
     .replace(")", "")
     .replace("+", "")
     .replace(".", "")
-    .replace("_", "");;
+    .replace("_", "");
 
   const schema = Yup.object().shape({
     name: Yup.string().required(),
@@ -84,14 +88,14 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   }
 
   await CheckIsValidContact(newContact.number);
-  const validNumber: any = await CheckContactNumber(newContact.number)
+  const validNumber: any = await CheckContactNumber(newContact.number);
 
   const profilePicUrl = await GetProfilePicUrl(validNumber);
 
-  let name = newContact.name
-  let number = validNumber
-  let email = newContact.email
-  let extraInfo = newContact.extraInfo
+  const { name } = newContact;
+  const number = validNumber;
+  const { email } = newContact;
+  const { extraInfo } = newContact;
 
   const contact = await CreateContactService({
     name,
@@ -172,8 +176,6 @@ export const removeAll = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { contactId } = req.params;
-
   await DeleteAllContactService();
 
   return res.send();

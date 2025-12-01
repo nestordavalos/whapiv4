@@ -13,10 +13,10 @@ interface WhatsappData {
   isDefault?: boolean;
   greetingMessage?: string;
   farewellMessage?: string;
-  //Difinindo horario comercial
+  // Difinindo horario comercial
   defineWorkHours?: boolean;
   outOfWorkMessage?: string;
-  //Dias da semana.
+  // Dias da semana.
   monday?: boolean;
   tuesday?: boolean;
   wednesday?: boolean;
@@ -252,7 +252,7 @@ const UpdateWhatsAppService = async ({
     EndDefineWorkHoursSunday,
     StartDefineWorkHoursSundayLunch,
     EndDefineWorkHoursSundayLunch,
-    
+
     ratingMessage,
     isDefault,
     isDisplay,

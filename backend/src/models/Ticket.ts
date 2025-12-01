@@ -43,6 +43,7 @@ class Ticket extends Model<Ticket> {
   @Default(false)
   @Column
   isBot: boolean;
+
   @Index
   @CreatedAt
   createdAt: Date;

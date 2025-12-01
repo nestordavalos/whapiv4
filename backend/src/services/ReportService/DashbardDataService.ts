@@ -166,78 +166,78 @@ export default async function DashboardDataService(
     ,
    (select IFNULL(CONCAT('[', GROUP_CONCAT(JSON_OBJECT('id', id,'name', name, 'online', online, 'avgSupportTime', avgSupportTime, 'tickets', tickets, 'rating', rating, 'countRating', countRating) SEPARATOR ','), ']'), '[]') attendants from attedants a) attendants ;
 `;
-  
-  let where = 'where tt.id is not null';
-const replacements: any[] = [];
 
-if (_.has(params, "days")) {
-  where += ` and tt.createdAt >= (curdate() - interval ? day)`;
-  replacements.push(parseInt(`${params.days}`.replace(/\D/g, ""), 10));
-}
+  let where = "where tt.id is not null";
+  const replacements: any[] = [];
 
-if (_.has(params, "date_from") && _.has(params, "date_to")) {
-  where += ` and date(tt.createdAt) between '${params.date_from}' and '${params.date_to}'`;
-  // replacements.push(`${params.date_from}`);
-  // console.log(replacements)
-}
+  if (_.has(params, "days")) {
+    where += " and tt.createdAt >= (curdate() - interval ? day)";
+    replacements.push(parseInt(`${params.days}`.replace(/\D/g, ""), 10));
+  }
 
-if (_.has(params, "userId")) {
-  const usersFilter = params.userId;
-  if ( usersFilter !== undefined){
-      if (usersFilter?.length > 1 ) {
+  if (_.has(params, "date_from") && _.has(params, "date_to")) {
+    where += ` and date(tt.createdAt) between '${params.date_from}' and '${params.date_to}'`;
+    // replacements.push(`${params.date_from}`);
+    // console.log(replacements)
+  }
+
+  if (_.has(params, "userId")) {
+    const usersFilter = params.userId;
+    if (usersFilter !== undefined) {
+      if (usersFilter?.length > 1) {
         let count = 0;
-        where += ` and ( `;
-        usersFilter.forEach( async u=> {
-          if (count === 0 ) {
-            where += ` tt.userId = ?`;
+        where += " and ( ";
+        usersFilter.forEach(async u => {
+          if (count === 0) {
+            where += " tt.userId = ?";
             replacements.push(`${u}`);
-            count = count + 1;
+            count += 1;
           } else {
-            where += ` or tt.userId = ?`;
+            where += " or tt.userId = ?";
             replacements.push(`${u}`);
           }
-      });
-      where += ` )`;        
+        });
+        where += " )";
       } else {
-        where += ` and tt.userId = ?`;
-        replacements.push(`${usersFilter}`);          
+        where += " and tt.userId = ?";
+        replacements.push(`${usersFilter}`);
       }
-    }      
-}
+    }
+  }
 
-if (_.has(params, "queueId")) {
-  const queuesFilter = params.queueId;
-  if ( queuesFilter !== undefined){
-      if (queuesFilter?.length > 1 ) {
+  if (_.has(params, "queueId")) {
+    const queuesFilter = params.queueId;
+    if (queuesFilter !== undefined) {
+      if (queuesFilter?.length > 1) {
         let count = 0;
-        where += ` and ( `;
-        queuesFilter.forEach( async q=> {
-          if (count === 0 ) {
-            where += ` t.queueId = ?`;
+        where += " and ( ";
+        queuesFilter.forEach(async q => {
+          if (count === 0) {
+            where += " t.queueId = ?";
             replacements.push(`${q}`);
-            count = count + 1;
+            count += 1;
           } else {
-            where += ` or t.queueId = ?`;
+            where += " or t.queueId = ?";
             replacements.push(`${q}`);
           }
-      });
-      where += ` )`;        
+        });
+        where += " )";
       } else {
-        where += ` and t.queueId = ?`;
-        replacements.push(`${queuesFilter}`);          
+        where += " and t.queueId = ?";
+        replacements.push(`${queuesFilter}`);
       }
-    }     
-}
-  
+    }
+  }
+
   const finalQuery = query.replace("-- filterPeriod", where);
-  
+
   const responseData: DashboardData = await sequelize.query(finalQuery, {
     replacements,
     type: QueryTypes.SELECT,
     plain: true
   });
 
-  console.log(responseData)
+  console.log(responseData);
 
   return responseData;
 }

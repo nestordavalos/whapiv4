@@ -7,7 +7,6 @@ import Message from "../../models/Message";
 import Queue from "../../models/Queue";
 import Whatsapp from "../../models/Whatsapp";
 import Tag from "../../models/Tag";
-import ContactTag from "../../models/ContactTag";
 import ShowUserService from "../UserServices/ShowUserService";
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
 

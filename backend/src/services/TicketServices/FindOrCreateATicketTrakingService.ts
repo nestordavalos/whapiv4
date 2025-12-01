@@ -10,8 +10,7 @@ const FindOrCreateATicketTrakingService = async ({
   ticketId,
   whatsappId,
   userId
-  }: Params): Promise<TicketTraking > => {
-
+}: Params): Promise<TicketTraking> => {
   const ticketTraking = await TicketTraking.findOne({
     where: {
       ticketId,

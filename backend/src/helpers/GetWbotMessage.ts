@@ -41,7 +41,7 @@ export const GetWbotMessage = async (
       const errorMsg = ticket.isGroup
         ? `Não foi possível encontrar a mensagem nas últimas ${maxLimit} mensagens do grupo`
         : `Não foi possível encontrar a mensagem nas últimas ${maxLimit} mensagens`;
-    
+
       console.error(errorMsg);
       throw new Error(errorMsg);
     }

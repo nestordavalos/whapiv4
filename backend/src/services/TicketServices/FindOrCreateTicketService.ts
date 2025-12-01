@@ -4,7 +4,6 @@ import Contact from "../../models/Contact";
 import Ticket from "../../models/Ticket";
 import ShowTicketService from "./ShowTicketService";
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
-import Message from "../../models/Message";
 
 const FindOrCreateTicketService = async (
   contact: Contact,
@@ -13,18 +12,18 @@ const FindOrCreateTicketService = async (
   queueId?: number,
   tagsId?: number,
   userId?: number,
-  groupContact?: Contact,
-  ): Promise<Ticket> => {
+  groupContact?: Contact
+): Promise<Ticket> => {
   let ticket = await Ticket.findOne({
     where: {
       status: {
         [Op.or]: ["open", "pending"]
       },
       contactId: groupContact ? groupContact.id : contact.id,
-      whatsappId: whatsappId
+      whatsappId
     }
   });
- 
+
   if (ticket) {
     await ticket.update({ unreadMessages });
   }
@@ -33,7 +32,7 @@ const FindOrCreateTicketService = async (
     ticket = await Ticket.findOne({
       where: {
         contactId: groupContact.id,
-        whatsappId: whatsappId
+        whatsappId
       },
       order: [["updatedAt", "DESC"]]
     });
@@ -49,17 +48,21 @@ const FindOrCreateTicketService = async (
   }
 
   if (!ticket && !groupContact) {
-    const listSettingsService = await ListSettingsServiceOne({ key: "timeCreateNewTicket" });
-    var timeCreateNewTicket = listSettingsService?.value;
-
+    const listSettingsService = await ListSettingsServiceOne({
+      key: "timeCreateNewTicket"
+    });
+    const timeCreateNewTicket = listSettingsService?.value;
 
     ticket = await Ticket.findOne({
       where: {
         updatedAt: {
-          [Op.between]: [+subSeconds(new Date(), Number(timeCreateNewTicket)), +new Date()]
+          [Op.between]: [
+            +subSeconds(new Date(), Number(timeCreateNewTicket)),
+            +new Date()
+          ]
         },
         contactId: contact.id,
-        whatsappId: whatsappId
+        whatsappId
       },
       order: [["updatedAt", "DESC"]]
     });
@@ -86,18 +89,18 @@ const FindOrCreateTicketService = async (
   }
 
   if (queueId != 0 && queueId != undefined) {
-    //Determina qual a fila esse ticket pertence.
-    await ticket.update({ queueId: queueId });
+    // Determina qual a fila esse ticket pertence.
+    await ticket.update({ queueId });
   }
 
   if (tagsId != 0 && tagsId != undefined) {
-    //Determina qual a fila esse ticket pertence.
-    await ticket.update({ tagsId: tagsId });
+    // Determina qual a fila esse ticket pertence.
+    await ticket.update({ tagsId });
   }
 
   if (userId != 0 && userId != undefined) {
-    //Determina qual a fila esse ticket pertence.
-    await ticket.update({ userId: userId });
+    // Determina qual a fila esse ticket pertence.
+    await ticket.update({ userId });
   }
 
   ticket = await ShowTicketService(ticket.id);

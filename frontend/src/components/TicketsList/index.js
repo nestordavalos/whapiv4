@@ -239,10 +239,16 @@ const TicketsList = (props) => {
                         socket.on("connect", join);
                 }
 
-                const shouldUpdateTicket = (ticket) =>
-                        (!status || ticket.status === status) &&
-                        (!ticket.userId || ticket.userId === user?.id || showAll) &&
-                        (!ticket.queueId || selectedQueueIds.indexOf(ticket.queueId) > -1);
+				const matchesQueueFilter = (ticket) => {
+					if (!ticket.queueId) return true;
+					if (!selectedQueueIds || selectedQueueIds.length === 0) return true;
+					return selectedQueueIds.indexOf(ticket.queueId) > -1;
+				};
+
+				const shouldUpdateTicket = (ticket) =>
+					(!status || ticket.status === status) &&
+					(!ticket.userId || ticket.userId === user?.id || showAll) &&
+					matchesQueueFilter(ticket);
 
                 const handleTicket = (data) => {
                         if (data.action === "updateUnread") {

@@ -2848,6 +2848,8 @@ const handleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
 
 const wbotMessageListener = async (wbot: Session): Promise<void> => {
   wbot.on("message_create", async msg => {
+    if (!msg.fromMe) return;
+
     try {
       await handleMessage(msg, wbot);
     } catch (err) {
@@ -2857,6 +2859,8 @@ const wbotMessageListener = async (wbot: Session): Promise<void> => {
   });
 
   wbot.on("media_uploaded", async msg => {
+    if (!msg.fromMe) return;
+
     try {
       await handleMessage(msg, wbot);
     } catch (err) {

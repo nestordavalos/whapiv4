@@ -1,10 +1,21 @@
 import AppError from "../../errors/AppError";
 import Chatbot from "../../models/Chatbot";
 import Queue from "../../models/Queue";
+import User from "../../models/User";
 
 const ShowQueueService = async (queueId: number | string): Promise<Queue> => {
   const queue = await Queue.findByPk(queueId, {
-    include: ["chatbots"],
+    include: [
+      {
+        model: Chatbot,
+        as: "chatbots"
+      },
+      {
+        model: User,
+        as: "users",
+        attributes: ["id", "name"]
+      }
+    ],
     order: [
       [{ model: Chatbot, as: "chatbots" }, "id", "asc"],
       ["id", "ASC"]

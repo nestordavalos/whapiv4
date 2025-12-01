@@ -42,7 +42,8 @@ const FindOrCreateTicketService = async (
         status: "pending",
         userId: null,
         unreadMessages,
-        isBot: true
+        isBot: true,
+        queueId: null
       });
     }
   }
@@ -72,7 +73,8 @@ const FindOrCreateTicketService = async (
         status: "pending",
         userId: null,
         unreadMessages,
-        isBot: true
+        isBot: true,
+        queueId: null
       });
     }
   }

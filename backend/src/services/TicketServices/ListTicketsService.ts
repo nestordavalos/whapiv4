@@ -78,14 +78,20 @@ const ListTicketsService = async ({
   if (queueIds && queueIds.length > 0) {
     whereCondition = {
       ...whereCondition,
-      queueId: { [Op.or]: [queueIds, null] }
+      queueId: {
+        [Op.or]: [{ [Op.in]: queueIds }, { [Op.is]: null }]
+      }
     };
   }
 
   if (showAll === "true") {
     // En modo showAll, si hay queueIds los aplicamos, sino mostramos todos
     if (queueIds && queueIds.length > 0) {
-      whereCondition = { queueId: { [Op.or]: [queueIds, null] } };
+      whereCondition = {
+        queueId: {
+          [Op.or]: [{ [Op.in]: queueIds }, { [Op.is]: null }]
+        }
+      };
     } else {
       whereCondition = {};
     }

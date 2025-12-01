@@ -505,7 +505,7 @@ const verifyQueue = async (
     if (queue.chatbots && queue.chatbots.length > 0) {
       let options = "";
       queue.chatbots.forEach((chatbot, index) => {
-        options += `- *${index + 1}* - ${chatbot.name}\n`;
+        options += `🔹 *${index + 1}* - ${chatbot.name}\n`;
       });
 
       const header = queue.greetingMessage || "";
@@ -555,12 +555,12 @@ const verifyQueue = async (
     let options = "";
 
     queues.forEach((queue, index) => {
+      const baseOption = `🔹 *${index + 1}* - ${queue.name}`;
+
       if (queue.startWork && queue.endWork && isDisplay) {
-        options += `*${index + 1}* - ${queue.name} das ${queue.startWork} as ${
-          queue.endWork
-        }\n`;
+        options += `${baseOption} das ${queue.startWork} as ${queue.endWork}\n`;
       } else {
-        options += `*${index + 1}* - ${queue.name}\n`;
+        options += `${baseOption}\n`;
       }
     });
 

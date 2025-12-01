@@ -49,25 +49,35 @@ const SendWhatsAppMedia = async ({
     // fs.unlinkSync(media.path);
     return sentMessage;
   } catch (err) {
+    logger.error(`[SendWhatsAppMedia] Error inicial: ${err.message}`);
+
+    // Retry: Intentar verificar si el mensaje se envió
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       const chat = await wbot.getChatById(
         `${ticket.contact.number}@${ticket.isGroup ? "g" : "c"}.us`
       );
       const [lastMessage] = await chat.fetchMessages({ limit: 1 });
       if (lastMessage && lastMessage.fromMe && lastMessage.hasMedia) {
+        logger.info(
+          `[SendWhatsAppMedia] Mensaje verificado exitosamente en retry`
+        );
         await ticket.update({ lastMessage: body || media.filename });
         // NO borrar el archivo - se necesita para mostrarlo en el panel
         // fs.unlinkSync(media.path);
         return lastMessage as WbotMessage;
       }
     } catch (checkErr) {
-      logger.warn(`Failed to verify sent media: ${checkErr}`);
+      logger.error(
+        `[SendWhatsAppMedia] Error en verificación: ${checkErr.message}`
+      );
     }
 
     // NO borrar el archivo - se necesita para mostrarlo en el panel
     // fs.unlinkSync(media.path);
-    logger.warn(`Error sending WhatsApp media: ${err}`);
+    logger.error(
+      `[SendWhatsAppMedia] Error final enviando media: ${err.message}`
+    );
     throw new AppError("ERR_SENDING_WAPP_MSG");
   }
 };

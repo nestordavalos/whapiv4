@@ -283,20 +283,98 @@ const MessageInput = ({ ticketStatus }) => {
       return;
     }
     const selectedMedias = Array.from(e.target.files);
+    
+    // Validar número máximo de archivos
+    if (selectedMedias.length > 10) {
+      toastError({ message: i18n.t("messagesInput.errors.tooManyFiles") || "Máximo 10 archivos permitidos" });
+      return;
+    }
+
+    // Validar tamaño de cada archivo (20MB)
+    const maxSize = 20 * 1024 * 1024;
+    const invalidFiles = selectedMedias.filter(file => file.size > maxSize);
+    
+    if (invalidFiles.length > 0) {
+      toastError({ 
+        message: i18n.t("messagesInput.errors.fileTooLarge") || 
+        `Archivo(s) muy grande(s): ${invalidFiles.map(f => f.name).join(", ")}. Máximo 20MB por archivo` 
+      });
+      return;
+    }
+
+    // Validar tipos de archivo permitidos
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'video/mp4', 'video/mpeg', 'video/webm',
+      'audio/mpeg', 'audio/mp3', 'audio/ogg', 'audio/wav', 'audio/webm',
+      'application/pdf',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/csv', 'text/plain'
+    ];
+
+    const invalidTypes = selectedMedias.filter(file => !allowedTypes.includes(file.type));
+    
+    if (invalidTypes.length > 0) {
+      toastError({ 
+        message: i18n.t("messagesInput.errors.invalidFileType") || 
+        `Tipo de archivo no permitido: ${invalidTypes.map(f => f.name).join(", ")}` 
+      });
+      return;
+    }
+
     setMedias(selectedMedias);
   };
 
   const handleInputPaste = (e) => {
     if (e.clipboardData.files[0]) {
       const selectedMedias = Array.from(e.clipboardData.files);
+      
+      // Aplicar las mismas validaciones que handleChangeMedias
+      if (selectedMedias.length > 10) {
+        toastError({ message: i18n.t("messagesInput.errors.tooManyFiles") || "Máximo 10 archivos permitidos" });
+        return;
+      }
+
+      const maxSize = 20 * 1024 * 1024;
+      const invalidFiles = selectedMedias.filter(file => file.size > maxSize);
+      
+      if (invalidFiles.length > 0) {
+        toastError({ 
+          message: i18n.t("messagesInput.errors.fileTooLarge") || 
+          "Archivo(s) muy grande(s). Máximo 20MB por archivo" 
+        });
+        return;
+      }
+
       setMedias(selectedMedias);
     }
   };
 
   const handleInputDrop = (e) => {
     e.preventDefault();
+    setOnDragEnter(false);
+    
     if (e.dataTransfer.files[0]) {
       const selectedMedias = Array.from(e.dataTransfer.files);
+      
+      // Aplicar las mismas validaciones
+      if (selectedMedias.length > 10) {
+        toastError({ message: i18n.t("messagesInput.errors.tooManyFiles") || "Máximo 10 archivos permitidos" });
+        return;
+      }
+
+      const maxSize = 20 * 1024 * 1024;
+      const invalidFiles = selectedMedias.filter(file => file.size > maxSize);
+      
+      if (invalidFiles.length > 0) {
+        toastError({ 
+          message: i18n.t("messagesInput.errors.fileTooLarge") || 
+          "Archivo(s) muy grande(s). Máximo 20MB por archivo" 
+        });
+        return;
+      }
+
       setMedias(selectedMedias);
     }
   };
@@ -316,6 +394,13 @@ const MessageInput = ({ ticketStatus }) => {
     if (e) {
       e.preventDefault();
     }
+
+    // Validación final antes de enviar
+    if (medias.length === 0) {
+      setLoading(false);
+      return;
+    }
+
     const formData = new FormData();
     formData.append("fromMe", true);
     medias.forEach((media) => {
@@ -328,7 +413,16 @@ const MessageInput = ({ ticketStatus }) => {
       formData.append("quotedMsg", JSON.stringify(replyingMessage));
     }
     try {
-      await api.post(`/messages/${ticketId}`, formData);
+      await api.post(`/messages/${ticketId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          // Aquí podrías mostrar una barra de progreso si lo deseas
+          console.log(`Upload progress: ${percentCompleted}%`);
+        }
+      });
     } catch (err) {
       toastError(err);
     }
@@ -541,7 +635,7 @@ const MessageInput = ({ ticketStatus }) => {
             </IconButton>
             {showEmoji ? (
               <div className={classes.emojiBox}>
-                <ClickAwayListener onClickAway={(e) => setShowEmoji(true)}>
+                <ClickAwayListener onClickAway={(e) => setShowEmoji(false)}>
                   <Picker
                     perLine={16}
                     theme={"dark"}
@@ -709,7 +803,7 @@ const MessageInput = ({ ticketStatus }) => {
             </IconButton>
             {showEmoji ? (
               <div className={classes.emojiBox}>
-                <ClickAwayListener onClickAway={(e) => setShowEmoji(true)}>
+                <ClickAwayListener onClickAway={(e) => setShowEmoji(false)}>
                   <Picker
                     perLine={16}
                     theme={"dark"}

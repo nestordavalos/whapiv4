@@ -5,13 +5,22 @@ interface ChatbotData {
   id?: number;
   name?: string;
   greetingMessage?: string;
-  options: Chatbot[];
+  mediaPath?: string;
+  queueId?: number;
+  chatbotId?: number;
+  isAgent?: boolean;
+  options?: Chatbot[];
 }
 
 const UpdateChatBotServices = async (
   chatBotId: number | string,
   chatbotData: ChatbotData
 ): Promise<Chatbot> => {
+  console.log('[UpdateChatBotServices] ========== UPDATING ==========');
+  console.log('[UpdateChatBotServices] chatBotId:', chatBotId);
+  console.log('[UpdateChatBotServices] chatbotData:', JSON.stringify(chatbotData, null, 2));
+  console.log('[UpdateChatBotServices] mediaPath received:', chatbotData.mediaPath);
+  
   const { options } = chatbotData;
 
   const chatbot = await Chatbot.findOne({
@@ -42,25 +51,30 @@ const UpdateChatBotServices = async (
     );
   }
 
+  console.log('[UpdateChatBotServices] Updating chatbot with data:', JSON.stringify(chatbotData, null, 2));
   await chatbot.update(chatbotData);
 
+  console.log('[UpdateChatBotServices] Chatbot updated, reloading...');
   await chatbot.reload({
     include: [
       {
         model: Chatbot,
         as: "mainChatbot",
-        attributes: ["id", "name", "greetingMessage"],
+        attributes: ["id", "name", "greetingMessage", "mediaPath"],
         order: [[{ model: Chatbot, as: "mainChatbot" }, "id", "ASC"]]
       },
       {
         model: Chatbot,
         as: "options",
         order: [[{ model: Chatbot, as: "options" }, "id", "ASC"]],
-        attributes: ["id", "name", "greetingMessage"]
+        attributes: ["id", "name", "greetingMessage", "mediaPath", "isAgent"]
       }
     ],
     order: [["id", "asc"]]
   });
+
+  console.log('[UpdateChatBotServices] Chatbot reloaded. Final mediaPath:', chatbot.mediaPath);
+  console.log('[UpdateChatBotServices] ========== UPDATE COMPLETE ==========');
 
   return chatbot;
 };

@@ -90,15 +90,23 @@ const UpdateQueueService = async (
   await queue.update(queueData);
 
   await queue.reload({
-    attributes: ["id", "color", "name", "greetingMessage"],
+    attributes: [
+      "id",
+      "color",
+      "name",
+      "greetingMessage",
+      "startWork",
+      "endWork",
+      "absenceMessage"
+    ],
     include: [
       {
         model: Chatbot,
         as: "chatbots",
-        attributes: ["id", "name", "greetingMessage"],
-        order: [[{ model: Chatbot, as: "chatbots" }, "id", "asc"], ["id", "ASC"]]
+        attributes: ["id", "name", "greetingMessage", "isAgent"]
       }
-    ]
+    ],
+    order: [[{ model: Chatbot, as: "chatbots" }, "id", "ASC"]]
   });
 
   return queue;

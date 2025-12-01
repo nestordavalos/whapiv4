@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
+import { Message as WbotMessage } from "whatsapp-web.js";
 
 import SetTicketMessagesAsRead from "../helpers/SetTicketMessagesAsRead";
 import { getIO } from "../libs/socket";
-import Message from "../models/Message";
 
 import ListMessagesService from "../services/MessageServices/ListMessagesService";
 import ShowTicketService from "../services/TicketServices/ShowTicketService";
@@ -10,17 +10,9 @@ import DeleteWhatsAppMessage from "../services/WbotServices/DeleteWhatsAppMessag
 import SendWhatsAppMedia from "../services/WbotServices/SendWhatsAppMedia";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import CreateMessageService from "../services/MessageServices/CreateMessageService";
-import { Message as WbotMessage } from "whatsapp-web.js";
 
 type IndexQuery = {
   pageNumber: string;
-};
-
-type MessageData = {
-  body: string;
-  fromMe: boolean;
-  read: boolean;
-  quotedMsg?: Message;
 };
 
 export const index = async (req: Request, res: Response): Promise<Response> => {
@@ -41,11 +33,15 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const { ticketId } = req.params;
   const { body } = req.body;
-  const quotedMsg = req.body.quotedMsg
-    ? typeof req.body.quotedMsg === "string"
-      ? JSON.parse(req.body.quotedMsg)
-      : req.body.quotedMsg
-    : undefined;
+
+  let quotedMsg;
+  if (req.body.quotedMsg) {
+    quotedMsg =
+      typeof req.body.quotedMsg === "string"
+        ? JSON.parse(req.body.quotedMsg)
+        : req.body.quotedMsg;
+  }
+
   const medias = req.files as Express.Multer.File[] | undefined;
 
   const ticket = await ShowTicketService(ticketId);
@@ -53,6 +49,13 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
   SetTicketMessagesAsRead(ticket);
 
   if (medias && medias.length > 0) {
+    // Validar que no se excedan los límites
+    if (medias.length > 10) {
+      return res.status(400).json({
+        error: "Máximo 10 archivos permitidos por mensaje"
+      });
+    }
+
     const messages = await Promise.all(
       medias.map(async (media: Express.Multer.File) => {
         const sentMsg: WbotMessage = await SendWhatsAppMedia({
@@ -127,4 +130,20 @@ export const remove = async (
   });
 
   return res.send();
+};
+
+export const mediaUpload = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const medias = req.files as Express.Multer.File[] | undefined;
+
+  if (!medias || medias.length === 0) {
+    return res.status(400).json({ error: "No se enviaron archivos" });
+  }
+
+  // Retornar solo los nombres de los archivos guardados
+  const filenames = medias.map(media => media.filename);
+
+  return res.json(filenames);
 };

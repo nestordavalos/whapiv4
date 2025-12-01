@@ -1,0 +1,36 @@
+/**
+ * Script para activar el servicio de limpieza de archivos
+ * 
+ * INSTRUCCIONES:
+ * 1. Agregar este código en backend/src/server.ts después de initIO(server)
+ * 2. Configurar las variables según tus necesidades
+ */
+
+// Importar el servicio
+import FileCleanupService from "./services/FileCleanupService";
+
+// OPCIÓN 1: Configuración por defecto
+// - Se ejecuta todos los días a las 3 AM
+// - Elimina archivos mayores a 7 días (168 horas)
+FileCleanupService.start();
+
+// OPCIÓN 2: Configuración personalizada
+// Ejemplo: Cada 12 horas, eliminar archivos mayores a 3 días
+// FileCleanupService.start("0 */12 * * *", 72);
+
+// OPCIÓN 3: Limpieza manual inmediata
+// Útil para primera ejecución o mantenimiento
+// import { cleanupOldFiles, cleanupOrphanFiles } from "./utils/fileCleanup";
+// cleanupOldFiles(168).then(() => {
+//   logger.info("Limpieza manual completada");
+// });
+
+/**
+ * EXPRESIONES CRON COMUNES:
+ * 
+ * "0 3 * * *"      - Todos los días a las 3 AM
+ * "0 */12 * * *"   - Cada 12 horas
+ * "0 0 * * 0"      - Todos los domingos a medianoche
+ * "*/30 * * * *"   - Cada 30 minutos (solo para testing)
+ * "0 2 * * 1"      - Todos los lunes a las 2 AM
+ */

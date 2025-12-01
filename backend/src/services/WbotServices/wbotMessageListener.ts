@@ -2084,11 +2084,7 @@ const verifyQueue = async (
   }
 
   if (queues.length === 0) {
-    await UpdateTicketService({
-      ticketData: { queueId: queues[0].id },
-      ticketId: ticket.id
-    });
-
+    console.log("[wbotMessageListener] No queues available for this whatsapp");
     return;
   }
 
@@ -2234,6 +2230,16 @@ const handleMessage = async (
   if (!isValidMsg(msg)) {
     return;
   }
+  
+  // Verificar si el mensaje ya fue procesado recientemente
+  if (isMessageProcessed(msg.id.id)) {
+    console.log(`[handleMessage] Mensaje ${msg.id.id} ya procesado recientemente - ignorando duplicado`);
+    return;
+  }
+  
+  // Marcar como procesado inmediatamente
+  markMessageAsProcessed(msg.id.id);
+  
   const showMessageGroupConnection = await ShowWhatsAppService(wbot.id!);
 
   const selfJid = `${showMessageGroupConnection.number}@c.us`;
@@ -2277,9 +2283,12 @@ const handleMessage = async (
       // messages sent automatically by wbot have a special character in front of it
       // if so, this message was already been stored in database;
 
-      isBody = /\u200e/.test(msg.body[0]);
-      console.log("ISBODY  " + isBody)
-      if (isBody) return;
+      if (msg.body && msg.body.length > 0) {
+        isBody = /\u200e/.test(msg.body[0]);
+        if (isBody) {
+          return;
+        }
+      }
       // media messages sent from me from cell phone, first comes with "hasMedia = false" and type = "image/ptt/etc"
       // in this case, return and let this message be handled by "media_uploaded" event, when it will have "hasMedia = true"
 
@@ -2339,26 +2348,16 @@ const handleMessage = async (
       return;
     }
 
-
-    // if (msg.body === "#" && ticket.userId === null) {
-    //   await ticket.update({
-    //     queueOptionId: null,
-    //     chatbot: true,
-    //     queueId: null,
-    //   });
-    //   await verifyQueue(wbot, msg, ticket, ticket.contact);
-    //   return;
-    // }
-
-    // if (msg.body === "#" && ticket.userId === null) {
-    //   await ticket.update({
-    //     queueOptionId: null,
-    //     chatbot: true,
-    //     queueId: null,
-    //   });
-    //   await verifyQueue(wbot, msg, ticket, ticket.contact);
-    //   return;
-    // }
+    // Verificar si el usuario quiere volver al menú principal con #
+    if (msg.body === "#" && ticket.userId === null) {
+      await ticket.update({
+        queueOptionId: null,
+        chatbot: true,
+        queueId: null,
+      });
+      await verifyQueue(wbot, msg, ticket, ticket.contact);
+      return;
+    }
 
     const ticketTraking = await FindOrCreateATicketTrakingService({
       ticketId: ticket.id,
@@ -2487,7 +2486,13 @@ const handleMessage = async (
     await CreateOrUpdateContactService(contactData);
   } catch (err) {
     Sentry.captureException(err);
-    logger.error(`Error handling whatsapp message: Err: ${err}`);
+    console.error("[MessageListener] Error detallado:", {
+      message: err.message,
+      stack: err.stack,
+      name: err.name,
+      ...err
+    });
+    logger.error(`Error handling whatsapp message: ${err.message || err}`, err.stack);
   }
 };
 
@@ -2574,7 +2579,6 @@ const handleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
 
   const io = getIO();
 
-  console.log("ingreso el ack " + msg.body)
   try {
     const messageToUpdate = await Message.findByPk(msg.id.id, {
       include: [
@@ -2602,7 +2606,36 @@ const handleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
   }
 };
 
+// Map para trackear qué sesiones ya tienen listeners registrados
+const sessionsWithListeners = new Map<number, boolean>();
+
+// Set para trackear mensajes procesados recientemente y evitar duplicados
+const recentlyProcessedMessages = new Set<string>();
+
+const markMessageAsProcessed = (messageId: string) => {
+  recentlyProcessedMessages.add(messageId);
+  // Limpiar después de 3 segundos
+  setTimeout(() => {
+    recentlyProcessedMessages.delete(messageId);
+  }, 3000);
+};
+
+const isMessageProcessed = (messageId: string): boolean => {
+  return recentlyProcessedMessages.has(messageId);
+};
+
 const wbotMessageListener = async (wbot: Session): Promise<void> => {
+  const sessionId = wbot.id!;
+  
+  // Solo registrar listeners una vez por sesión
+  if (sessionsWithListeners.get(sessionId)) {
+    console.log(`[wbotMessageListener] Listeners ya registrados para sesión ${sessionId}`);
+    return;
+  }
+  
+  console.log(`[wbotMessageListener] Registrando listeners para sesión ${sessionId}`);
+  sessionsWithListeners.set(sessionId, true);
+  
   wbot.on("message_create", async msg => {
     try {
       await handleMessage(msg, wbot);

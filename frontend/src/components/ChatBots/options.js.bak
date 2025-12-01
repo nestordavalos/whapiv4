@@ -1,0 +1,445 @@
+import React from "react";
+import * as Yup from "yup";
+import { makeStyles } from "@material-ui/core/styles";
+import Accordion from "@material-ui/core/Accordion";
+import AccordionSummary from "@material-ui/core/AccordionSummary";
+import AccordionDetails from "@material-ui/core/AccordionDetails";
+import AccordionActions from "@material-ui/core/AccordionActions";
+import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import api from "../../services/api";
+import Typography from "@material-ui/core/Typography";
+import EditIcon from "@material-ui/icons/Edit";
+import { IconButton, Button, Box, Chip, Input } from "@material-ui/core";
+import { Formik, Field, FieldArray } from "formik";
+import DeleteOutline from "@material-ui/icons/DeleteOutline";
+import SaveIcon from "@material-ui/icons/Save";
+import AddIcon from "@material-ui/icons/Add";
+import AttachFileIcon from "@material-ui/icons/AttachFile";
+import TextField from "@material-ui/core/TextField";
+import toastError from "../../errors/toastError";
+import { toast } from "react-toastify";
+import HelpOutlineOutlinedIcon from "@material-ui/icons/HelpOutlineOutlined";
+import CustomToolTip from "../ToolTips";
+import ConfirmationModal from "../ConfirmationModal";
+import { i18n } from "../../translate/i18n";
+import Switch from "@material-ui/core/Switch";
+import { FormControlLabel, Divider } from "@material-ui/core";
+
+const QueueSchema = Yup.object().shape({
+  options: Yup.array()
+    .of(
+      Yup.object().shape({
+        name: Yup.string().min(4, "too short").required("Required"),
+      })
+    )
+    .required("Must have friends"),
+});
+
+const useStyles = makeStyles((theme) => ({
+  root: {
+    width: "100%",
+  },
+  accordion: {
+    marginBottom: theme.spacing(1),
+    "&:before": {
+      display: "none",
+    },
+  },
+  accordionSummary: {
+    backgroundColor: theme.palette.background.default,
+    minHeight: 48,
+    "&.Mui-expanded": {
+      minHeight: 48,
+    },
+  },
+  accordionDetails: {
+    flexDirection: "column",
+    padding: theme.spacing(2),
+  },
+  optionHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    gap: theme.spacing(1),
+  },
+  optionTitle: {
+    display: "flex",
+    alignItems: "center",
+    gap: theme.spacing(1),
+    flex: 1,
+  },
+  fieldRow: {
+    display: "flex",
+    gap: theme.spacing(2),
+    marginBottom: theme.spacing(2),
+    alignItems: "flex-start",
+  },
+  mediaPreview: {
+    maxWidth: 200,
+    maxHeight: 150,
+    marginTop: theme.spacing(1),
+    borderRadius: theme.spacing(1),
+  },
+  fileInput: {
+    display: "none",
+  },
+  addButton: {
+    marginTop: theme.spacing(2),
+  },
+}));
+
+function getStepContent(step) {
+  return <VerticalLinearStepper chatBotId={step} />;
+}
+
+export default function VerticalLinearStepper(props) {
+  const initialState = {
+    name: "",
+    greetingMessage: "",
+    mediaPath: "",
+    options: [],
+  };
+
+  const classes = useStyles();
+  const [expanded, setExpanded] = React.useState(false);
+  const [steps, setSteps] = React.useState(initialState);
+  const [loading, setLoading] = React.useState(false);
+  const [editingIndex, setEditingIndex] = React.useState(null);
+  const [selectedQueue, setSelectedQueue] = React.useState(null);
+  const [confirmModalOpen, setConfirmModalOpen] = React.useState(false);
+  const [uploadingMedia, setUploadingMedia] = React.useState({});
+
+  const handleSaveBot = async (values) => {
+    try {
+      if (props.chatBotId) {
+        await api.put(`/chatbot/${props.chatBotId}`, values);
+      } else {
+        await api.post("/chatbot", values);
+      }
+      toast.success("Opción guardada correctamente");
+      const { data } = await api.get(`/chatbot/${props.chatBotId}`);
+
+      setSteps(initialState);
+      setSteps(data);
+      setEditingIndex(null);
+      setExpanded(false);
+
+      setSteps(data);
+    } catch (err) {
+      toastError(err);
+    }
+  };
+
+  const handleMediaUpload = async (file, index, values) => {
+    if (!file) return;
+
+    // Validar tamaño (20MB)
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error(\"Archivo muy grande. Máximo 20MB\");
+      return;
+    }
+
+    // Validar tipo
+    const allowedTypes = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+      'video/mp4', 'video/mpeg', 'video/webm',
+      'audio/mpeg', 'audio/mp3', 'audio/ogg', 'audio/wav',
+      'application/pdf'
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error(\"Tipo de archivo no permitido\");
+      return;
+    }
+
+    setUploadingMedia({ ...uploadingMedia, [index]: true });
+
+    try {
+      const formData = new FormData();
+      formData.append(\"medias\", file);
+
+      const { data } = await api.post(\"/messages/media-upload\", formData, {
+        headers: { \"Content-Type\": \"multipart/form-data\" },
+      });
+
+      if (data && data.length > 0) {
+        values.options[index].mediaPath = data[0];
+        toast.success(\"Archivo cargado correctamente\");
+      }
+    } catch (err) {
+      toastError(err);
+    } finally {
+      setUploadingMedia({ ...uploadingMedia, [index]: false });
+    }
+  };
+
+  React.useEffect(() => {
+    setLoading(true);
+
+    const delayDebounceFn = setTimeout(() => {
+      const fetchList = async () => {
+        try {
+          const { data } = await api.get(`/chatbot/${props.chatBotId}`);
+          setSteps(data);
+          setLoading(false);
+        } catch (err) {
+          console.log(err);
+          setLoading(false);
+        }
+      };
+      fetchList();
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [props.chatBotId]);
+
+  const handleCloseConfirmationModal = () => {
+    setConfirmModalOpen(false);
+    setSelectedQueue(null);
+  };
+
+  const handleDeleteQueue = async (queueId) => {
+    try {
+      await api.delete(`/chatbot/${queueId}`);
+      const { data } = await api.get(`/chatbot/${props.chatBotId}`);
+      setSteps(initialState);
+      setSteps(data);
+      setEditingIndex(null);
+      setSteps(data);
+      toast.success(\"Opción eliminada correctamente\");
+    } catch (err) {
+      toastError(err);
+    }
+    setSelectedQueue(null);
+  };
+
+  const handleChange = (panel) => (event, isExpanded) => {
+    setExpanded(isExpanded ? panel : false);
+  };
+
+  return (
+    <div className={classes.root}>
+      <ConfirmationModal
+        title={
+          selectedQueue &&
+          `${i18n.t("queues.confirmationModal.deleteTitle")} ${
+            selectedQueue.name
+          }?`
+        }
+        open={confirmModalOpen}
+        onClose={handleCloseConfirmationModal}
+        onConfirm={() => handleDeleteQueue(selectedQueue.id)}
+      >
+        {i18n.t("¿Está seguro? Todas las opciones integradas también se eliminarán")}
+      </ConfirmationModal>
+
+      {!loading && (
+        <div>
+          <Formik
+            initialValues={steps}
+            validateOnChange={false}
+            enableReinitialize={true}
+            validationSchema={QueueSchema}
+            render={({
+              touched,
+              errors,
+              isSubmitting,
+              values,
+              handleSubmit,
+            }) => (
+              <FieldArray name="options">
+                {({ push, remove }) => (
+                  <>
+                    <Stepper
+                      nonLinear
+                      activeStep={activeStep}
+                      orientation="vertical"
+                    >
+                      {values.options &&
+                        values.options.length > 0 &&
+                        values.options.map((info, index) => (
+                          <Step
+                            key={`${info.id ? info.id : index}-options`}
+                            onClick={() => setActiveStep(index)}
+                          >
+                            <StepLabel key={`${info.id}-options`}>
+                              {isNameEdit !== index &&
+                              steps.options[index]?.name ? (
+                                <div
+                                  className={classes.greetingMessage}
+                                  variant="body1"
+                                >
+                                  {values.options[index].name}
+
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => {
+                                      setIsNamedEdit(index);
+                                      setIsStepContent(false);
+                                    }}
+                                  >
+                                    <EditIcon />
+                                  </IconButton>
+
+                                  <IconButton
+                                    onClick={() => {
+                                      setSelectedQueue(info);
+                                      setConfirmModalOpen(true);
+                                    }}
+                                    size="small"
+                                  >
+                                    <DeleteOutline />
+                                  </IconButton>
+                                </div>
+                              ) : (
+                                <>
+                                  <Field
+                                    as={TextField}
+                                    name={`options[${index}].name`}
+                                    variant="standard"
+                                    color="primary"
+                                    disabled={isSubmitting}
+                                    autoFocus
+                                    error={
+                                      touched?.options?.[index]?.name &&
+                                      Boolean(errors.options?.[index]?.name)
+                                    }
+                                    className={classes.textField}
+                                  />
+
+                                  <FormControlLabel
+                                    control={
+                                      <Field
+                                        as={Switch}
+                                        color="primary"
+                                        name={`options[${index}].isAgent`}
+                                        checked={
+                                          values.options[index].isAgent || false
+                                        }
+                                      />
+                                    }
+                                    label="Agente"
+                                  />
+
+                                  <IconButton
+                                    size="small"
+                                    onClick={() =>
+                                      values.options[index].name
+                                        ? handleSaveBot(values)
+                                        : null
+                                    }
+                                    disabled={isSubmitting}
+                                  >
+                                    <SaveIcon />
+                                  </IconButton>
+
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => remove(index)}
+                                    disabled={isSubmitting}
+                                  >
+                                    <DeleteOutline />
+                                  </IconButton>
+                                </>
+                              )}
+                            </StepLabel>
+
+                            {isStepContent && steps.options[index] && (
+                              <StepContent>
+                                <>
+                                  {isGreetingMessageEdit !== index ? (
+                                    <div className={classes.greetingMessage}>
+                                      <Typography
+                                        color="textSecondary"
+                                        variant="body1"
+                                      >
+                                        Message:
+                                      </Typography>
+
+                                      {values.options[index].greetingMessage}
+
+                                      {!steps.options[index]
+                                        ?.greetingMessage && (
+                                        <CustomToolTip
+                                          title="A mensagem é obrigatória para seguir ao próximo nível"
+                                          content="Se a mensagem não estiver definida, o bot não seguirá adiante"
+                                        >
+                                          <HelpOutlineOutlinedIcon
+                                            color="secondary"
+                                            style={{ marginLeft: "4px" }}
+                                            fontSize="small"
+                                          />
+                                        </CustomToolTip>
+                                      )}
+
+                                      <IconButton
+                                        size="small"
+                                        onClick={() =>
+                                          setGreetingMessageEdit(index)
+                                        }
+                                      >
+                                        <EditIcon />
+                                      </IconButton>
+                                    </div>
+                                  ) : (
+                                    <div className={classes.greetingMessage}>
+                                      <Field
+                                        as={TextField}
+                                        name={`options[${index}].greetingMessage`}
+                                        variant="standard"
+                                        margin="dense"
+                                        fullWidth
+                                        multiline
+                                        error={
+                                          touched.greetingMessage &&
+                                          Boolean(errors.greetingMessage)
+                                        }
+                                        helperText={
+                                          touched.greetingMessage &&
+                                          errors.greetingMessage
+                                        }
+                                        className={classes.textField}
+                                      />
+
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => handleSaveBot(values)}
+                                        disabled={isSubmitting}
+                                      >
+                                        {" "}
+                                        <SaveIcon />
+                                      </IconButton>
+                                    </div>
+                                  )}
+
+                                  {getStepContent(info.id)}
+                                </>
+                              </StepContent>
+                            )}
+                          </Step>
+                        ))}
+
+                      <Step>
+                        <StepLabel
+                          onClick={() =>
+                            push({
+                              name: undefined,
+                              greetingMessage: undefined,
+                            })
+                          }
+                        >
+                        Añadir opciones
+                        </StepLabel>
+                      </Step>
+                    </Stepper>
+                  </>
+                )}
+              </FieldArray>
+            )}
+          />
+        </div>
+      )}
+    </div>
+  );
+}

@@ -27,6 +27,9 @@ class Chatbot extends Model<Chatbot> {
   @Column
   greetingMessage: string;
 
+  @Column
+  mediaPath: string;
+
   @ForeignKey(() => Queue)
   @Column
   queueId: number;
@@ -41,10 +44,10 @@ class Chatbot extends Model<Chatbot> {
   @Column
   isAgent: boolean;
 
-  @BelongsTo(() => Chatbot)
+  @BelongsTo(() => Chatbot, 'chatbotId')
   mainChatbot: Chatbot;
 
-  @HasMany(() => Chatbot)
+  @HasMany(() => Chatbot, 'chatbotId')
   options: Chatbot[];
 
   @CreatedAt

@@ -1,0 +1,120 @@
+
+> backend@1.0.0 dev
+> ts-node-dev --respawn --transpile-only --ignore node_modules src/server.ts
+
+[INFO] 23:35:39 ts-node-dev ver. 1.1.8 (using ts-node ver. 9.1.1, typescript ver. 4.9.5)
+
+[32mINFO[39m [23:35:44.726] (10620): [36mServidor iniciado na porta: 8080[39m
+[32mINFO[39m [23:35:53.093] (10620): [36mSession: asasas AUTHENTICATED[39m
+[32mINFO[39m [23:35:53.391] (10620): [36mSession: asasas READY[39m
+[wbotMessageListener] Registrando listeners para sesión 21
+[INFO] 23:36:04 Restarting: C:\Users\nes_t\Documents\DSA\whapiv4\backend\src\services\WbotServices\ChatBotListener.ts has been modified
+
+[32mINFO[39m [23:36:06.706] (11744): [36mServidor iniciado na porta: 8080[39m
+[32mINFO[39m [23:36:14.390] (11744): [36mSession: asasas AUTHENTICATED[39m
+[32mINFO[39m [23:36:14.674] (11744): [36mSession: asasas READY[39m
+[wbotMessageListener] Registrando listeners para sesión 21
+[34mDEBUG[39m [23:36:31.084] (11744): [36m{"username":"admin","profile":"admin","id":1,"iat":1764532574,"exp":1764561374}[39m
+[INFO] 23:36:50 Restarting: C:\Users\nes_t\Documents\DSA\whapiv4\backend\src\services\WbotServices\ChatBotListener.ts has been modified
+
+[32mINFO[39m [23:36:52.496] (5088): [36mServidor iniciado na porta: 8080[39m
+[34mDEBUG[39m [23:36:52.682] (5088): [36m{"username":"admin","profile":"admin","id":1,"iat":1764532574,"exp":1764561374}[39m
+[32mINFO[39m [23:36:58.191] (5088): [36mSession: asasas AUTHENTICATED[39m
+[wbotMessageListener] Registrando listeners para sesión 21
+[32mINFO[39m [23:36:59.428] (5088): [36mSession: asasas READY[39m
+[34mDEBUG[39m [23:42:52.460] (5088): [36m{"username":"admin","profile":"admin","id":1,"iat":1764532574,"exp":1764561374}[39m
+[34mDEBUG[39m [23:42:52.475] (5088): [36m{"username":"admin","profile":"admin","id":1,"iat":1764532574,"exp":1764561374}[39m
+[32mINFO[39m [23:42:52.607] (5088): [36msocket event[39m
+    event: "joinNotification"
+    args: []
+[32mINFO[39m [23:42:52.607] (5088): [36mA client joined notification channel[39m
+[handleMessage] Mensaje 3EB0297040A2DFCE9804DD ya procesado recientemente - ignorando duplicado
+[handleMessage] Mensaje 3EB099A1EAE334FD9645B6 ya procesado recientemente - ignorando duplicado
+[handleMessage] Mensaje 3EB0B5ED3ADC579BC27011 ya procesado recientemente - ignorando duplicado
+[ChatBotListener] getStageBot: { contactId: 2, chatbotId: 38, selectedOption: '1', selected: '1' }
+[ChatBotListener] Chatbot padre cargado: {
+  id: 38,
+  name: 'hola2',
+  chatbotId: 37,
+  queueId: null,
+  hasOptions: true,
+  optionsLength: 0,
+  optionsDetails: []
+}
+[ChatBotListener] No hay subopciones disponibles
+[ChatBotListener] Chatbot marcado como agente: hola2
+[ChatBotListener] ADVERTENCIA: Usuario hola2 no existe - continuando con flujo normal
+[ChatBotListener] Enviando mensaje del chatbot actual (sin subopciones)
+[sendDialog] Iniciando para chatbot 38
+[sendDialog] Chatbot cargado: {
+  id: 38,
+  name: 'hola2',
+  hasGreeting: true,
+  hasMedia: false,
+  optionsCount: 0,
+  options: []
+}
+[sendDialog] No hay subopciones para mostrar
+[sendDialog] Enviando mensaje completo
+[sendDialog] No hay multimedia configurada para este chatbot
+[sendDialog] Completado para chatbot 38
+[INFO] 23:43:55 Restarting: C:\Users\nes_t\Documents\DSA\whapiv4\backend\src\services\ChatBotServices\UpdateChatBotServices.ts has been modified
+
+[32mINFO[39m [23:43:58.452] (18984): [36mServidor iniciado na porta: 8080[39m
+[INFO] 23:44:04 Restarting: C:\Users\nes_t\Documents\DSA\whapiv4\backend\src\services\ChatBotServices\UpdateChatBotServices.ts has been modified
+
+[32mINFO[39m [23:44:08.479] (19628): [36mServidor iniciado na porta: 8080[39m
+[34mDEBUG[39m [23:44:10.975] (19628): [36m{"username":"admin","profile":"admin","id":1,"iat":1764532574,"exp":1764561374}[39m
+[INFO] 23:44:14 Restarting: C:\Users\nes_t\Documents\DSA\whapiv4\backend\src\services\ChatBotServices\UpdateChatBotServices.ts has been modified
+
+[32mINFO[39m [23:44:16.820] (964): [36mServidor iniciado na porta: 8080[39m
+[34mDEBUG[39m [23:44:17.029] (964): [36m{"username":"admin","profile":"admin","id":1,"iat":1764532574,"exp":1764561374}[39m
+[34mDEBUG[39m [23:44:17.036] (964): [36m{"username":"admin","profile":"admin","id":1,"iat":1764532574,"exp":1764561374}[39m
+[32mINFO[39m [23:44:23.279] (964): [36mSession: asasas AUTHENTICATED[39m
+[32mINFO[39m [23:44:24.182] (964): [36mSession: asasas READY[39m
+[wbotMessageListener] Registrando listeners para sesión 21
+[INFO] 23:44:33 Restarting: C:\Users\nes_t\Documents\DSA\whapiv4\backend\src\services\ChatBotServices\CreateChatBotServices.ts has been modified
+
+[32mINFO[39m [23:44:35.942] (20280): [36mServidor iniciado na porta: 8080[39m
+[34mDEBUG[39m [23:44:36.078] (20280): [36m{"username":"admin","profile":"admin","id":1,"iat":1764532574,"exp":1764561374}[39m
+[32mINFO[39m [23:44:42.009] (20280): [36mSession: asasas AUTHENTICATED[39m
+[wbotMessageListener] Registrando listeners para sesión 21
+[32mINFO[39m [23:44:43.650] (20280): [36mSession: asasas READY[39m
+[handleMessage] Mensaje 3EB0AD4810D639E3F50112 ya procesado recientemente - ignorando duplicado
+[handleMessage] Mensaje 3EB06BD1A2D6329E94A973 ya procesado recientemente - ignorando duplicado
+[handleMessage] Mensaje 3EB0959DE5361C932CAF7F ya procesado recientemente - ignorando duplicado
+[ChatBotListener] getStageBot: { contactId: 2, chatbotId: 38, selectedOption: '1', selected: '1' }
+[ChatBotListener] Chatbot padre cargado: {
+  id: 38,
+  name: 'hola2',
+  chatbotId: 37,
+  queueId: null,
+  hasOptions: true,
+  optionsLength: 0,
+  optionsDetails: []
+}
+[ChatBotListener] No hay subopciones disponibles
+[ChatBotListener] Chatbot marcado como agente: hola2
+[ChatBotListener] ADVERTENCIA: Usuario hola2 no existe - continuando con flujo normal
+[ChatBotListener] Enviando mensaje del chatbot actual (sin subopciones)
+[sendDialog] Iniciando para chatbot 38
+[sendDialog] Chatbot cargado: {
+  id: 38,
+  name: 'hola2',
+  hasGreeting: true,
+  hasMedia: false,
+  optionsCount: 0,
+  options: []
+}
+[sendDialog] No hay subopciones para mostrar
+[sendDialog] Enviando mensaje completo
+[sendDialog] No hay multimedia configurada para este chatbot
+[sendDialog] Completado para chatbot 38
+[INFO] 23:51:25 Restarting: C:\Users\nes_t\Documents\DSA\whapiv4\backend\src\services\WbotServices\ChatBotListener.ts has been modified
+
+[32mINFO[39m [23:51:28.641] (12920): [36mServidor iniciado na porta: 8080[39m
+[34mDEBUG[39m [23:51:28.848] (12920): [36m{"username":"admin","profile":"admin","id":1,"iat":1764532574,"exp":1764561374}[39m
+[34mDEBUG[39m [23:51:28.852] (12920): [36m{"username":"admin","profile":"admin","id":1,"iat":1764532574,"exp":1764561374}[39m
+[32mINFO[39m [23:51:35.003] (12920): [36mSession: asasas AUTHENTICATED[39m
+[32mINFO[39m [23:51:36.777] (12920): [36mSession: asasas READY[39m
+[wbotMessageListener] Registrando listeners para sesión 21

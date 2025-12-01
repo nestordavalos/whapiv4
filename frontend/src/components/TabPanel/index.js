@@ -12,7 +12,9 @@ const TabPanel = ({ children, value, name, ...rest }) => {
 				<>{children}</>
 			</div>
 		);
-	} else return null;
+	}
+
+	return null;
 };
 
 export default TabPanel;

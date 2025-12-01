@@ -148,7 +148,10 @@ const TicketsManager = () => {
     if (tabOpen !== status) {
       return { width: 0, height: 0 };
     }
+
+    return undefined;
   };
+
 
   return (
     <Paper elevation={0} variant="outlined" className={classes.ticketsWrapper}>

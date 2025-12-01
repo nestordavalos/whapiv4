@@ -8,7 +8,7 @@
 ## Checklist Backend
 - [x] Normalizar filtros de `/tickets` para `queueIds`, `tags`, `whatsappIds`, `userIds`.
 - [x] Refactorizar `verifyQueue` usando helper por dia/horario.
-- [ ] Manejar errores en `SendWhatsAppMessage` sin `process.exit(1)`.
+- [x] Manejar errores en `SendWhatsAppMessage` sin `process.exit(1)`.
 - [ ] Optimizar cron `ClosedAllOpenTickets` (query paginada + cache de conexiones).
 
 ## Checklist Frontend

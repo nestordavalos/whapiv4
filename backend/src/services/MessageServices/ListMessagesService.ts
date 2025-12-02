@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import AppError from "../../errors/AppError";
 import Message from "../../models/Message";
 import MessageReaction from "../../models/MessageReaction";
@@ -30,17 +30,18 @@ const ListMessagesService = async ({
   const limit = 20;
   const offset = limit * (+pageNumber - 1);
 
-  const tickets = await Ticket.findAll({
-    where: {
-      contactId: ticket.contactId,
-      whatsappId: ticket.whatsappId
-    },
-    attributes: ["id"]
-  });
-  const ticketIds = tickets.map(t => t.id);
-
+  // Optimized: Use subquery instead of separate query + IN clause
+  // This reduces database round trips and is more efficient
   const { count, rows: messages } = await Message.findAndCountAll({
-    where: { ticketId: { [Op.in]: ticketIds } },
+    where: {
+      ticketId: {
+        [Op.in]: Sequelize.literal(`(
+          SELECT id FROM Tickets 
+          WHERE contactId = ${ticket.contactId} 
+          AND whatsappId = ${ticket.whatsappId}
+        )`)
+      }
+    },
     limit,
     include: [
       "contact",

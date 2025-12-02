@@ -101,19 +101,23 @@ const FindOrCreateTicketService = async (
     });
   }
 
+  // Optimized: Single update instead of multiple separate updates
+  const updateFields: Partial<Ticket> = {};
+
   if (queueId != 0 && queueId != undefined) {
-    // Determina qual a fila esse ticket pertence.
-    await ticket.update({ queueId });
+    updateFields.queueId = queueId;
   }
 
   if (tagsId != 0 && tagsId != undefined) {
-    // Determina qual a fila esse ticket pertence.
-    await ticket.update({ tagsId });
+    (updateFields as any).tagsId = tagsId;
   }
 
   if (userId != 0 && userId != undefined) {
-    // Determina qual a fila esse ticket pertence.
-    await ticket.update({ userId });
+    updateFields.userId = userId;
+  }
+
+  if (Object.keys(updateFields).length > 0) {
+    await ticket.update(updateFields);
   }
 
   ticket = await ShowTicketService(ticket.id);

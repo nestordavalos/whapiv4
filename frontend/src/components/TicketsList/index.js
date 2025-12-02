@@ -346,7 +346,7 @@ const TicketsList = (props) => {
                                 socket.off("contact", handleContact);
                         }
                 };
-        }, [status, showAll, user, selectedQueueIds]);
+        }, [status, showAll, user, selectedQueueIds, profile]);
 
 	useEffect(() => {
 		if (typeof updateCount === "function") {

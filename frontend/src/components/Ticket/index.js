@@ -104,6 +104,11 @@ const Ticket = () => {
     const handleTicket = data => {
       if (data.action === "update") {
         setTicket(data.ticket);
+        // Si el ticket cambia a pending o closed, redirigir a /tickets
+        if (data.ticket.status === "pending" || data.ticket.status === "closed") {
+          history.push("/tickets");
+          return;
+        }
       }
 
       if (data.action === "delete") {

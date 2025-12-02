@@ -242,6 +242,13 @@ const useStyles = makeStyles((theme) => ({
     lineHeight: 1.4,
   },
 
+  textContentItemEdited: {
+    overflowWrap: "break-word",
+    padding: "3px 115px 6px 6px",
+    fontSize: "0.9rem",
+    lineHeight: 1.4,
+  },
+
   textContentItemDeleted: {
     fontStyle: "italic",
     color: theme.palette.type === "dark" ? "rgba(255, 255, 255, 0.36)" : "rgba(0, 0, 0, 0.36)",
@@ -276,6 +283,75 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     alignItems: "center",
     gap: 2,
+  },
+
+  editedIndicator: {
+    fontSize: 10,
+    fontStyle: "italic",
+    color: theme.palette.type === "dark" ? "#a0aec0" : "#667781",
+    marginRight: 3,
+    whiteSpace: "nowrap",
+  },
+
+  reactionsContainer: {
+    position: "absolute",
+    bottom: -10,
+    left: 6,
+    display: "flex",
+    flexWrap: "nowrap",
+    gap: 2,
+    zIndex: 1,
+  },
+
+  reactionBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.palette.type === "dark" ? "#1e2428" : "#ffffff",
+    borderRadius: 16,
+    padding: "2px 6px",
+    fontSize: "0.85rem",
+    cursor: "default",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+    minHeight: 20,
+    "&:hover": {
+      transform: "scale(1.1)",
+    },
+    transition: "transform 0.15s ease",
+  },
+
+  reactionBadgeRight: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: theme.palette.type === "dark" ? "#0b4f30" : "#dcf8c6",
+    borderRadius: 16,
+    padding: "2px 6px",
+    fontSize: "0.85rem",
+    cursor: "default",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+    minHeight: 20,
+    "&:hover": {
+      transform: "scale(1.1)",
+    },
+    transition: "transform 0.15s ease",
+  },
+
+  reactionEmoji: {
+    fontSize: "0.9rem",
+    lineHeight: 1,
+  },
+
+  reactionCount: {
+    fontSize: "0.65rem",
+    color: theme.palette.type === "dark" ? "#a0aec0" : "#667781",
+    fontWeight: 600,
+    marginLeft: 2,
+  },
+
+  // Añadir margen inferior a los mensajes que tienen reacciones
+  messageWithReaction: {
+    marginBottom: 14,
   },
 
   dailyTimestamp: {
@@ -501,6 +577,44 @@ const reducer = (state, action) => {
     return [...state];
   }
 
+  if (action.type === "UPDATE_REACTION") {
+    const { messageId, reaction } = action.payload;
+    const messageIndex = state.findIndex((m) => m.id === messageId);
+
+    if (messageIndex !== -1) {
+      const message = state[messageIndex];
+      const reactions = message.reactions || [];
+      const reactionIndex = reactions.findIndex(
+        (r) => r.senderId === reaction.senderId
+      );
+
+      if (reactionIndex !== -1) {
+        reactions[reactionIndex] = reaction;
+      } else {
+        reactions.push(reaction);
+      }
+
+      state[messageIndex] = { ...message, reactions };
+    }
+
+    return [...state];
+  }
+
+  if (action.type === "REMOVE_REACTION") {
+    const { messageId, senderId } = action.payload;
+    const messageIndex = state.findIndex((m) => m.id === messageId);
+
+    if (messageIndex !== -1) {
+      const message = state[messageIndex];
+      const reactions = (message.reactions || []).filter(
+        (r) => r.senderId !== senderId
+      );
+      state[messageIndex] = { ...message, reactions };
+    }
+
+    return [...state];
+  }
+
   if (action.type === "RESET") {
     return [];
   }
@@ -577,6 +691,20 @@ const MessagesList = ({ ticketId, isGroup }) => {
 
       if (data.action === "update") {
         dispatch({ type: "UPDATE_MESSAGE", payload: data.message });
+      }
+
+      if (data.action === "reactionUpdate") {
+        dispatch({
+          type: "UPDATE_REACTION",
+          payload: { messageId: data.reaction.messageId, reaction: data.reaction }
+        });
+      }
+
+      if (data.action === "reactionRemoved") {
+        dispatch({
+          type: "REMOVE_REACTION",
+          payload: { messageId: data.messageId, senderId: data.senderId }
+        });
       }
     };
 
@@ -782,6 +910,47 @@ const MessagesList = ({ ticketId, isGroup }) => {
     if (message.ack === 3 || message.ack === 4) {
       return <DoneAll fontSize="small" className={classes.ackDoneAllIcon} />;
     }
+  };
+
+  const renderReactions = (message) => {
+    if (!message.reactions || message.reactions.length === 0) {
+      return null;
+    }
+
+    // Agrupar reacciones por emoji
+    const groupedReactions = message.reactions.reduce((acc, reaction) => {
+      if (!acc[reaction.emoji]) {
+        acc[reaction.emoji] = [];
+      }
+      acc[reaction.emoji].push(reaction);
+      return acc;
+    }, {});
+
+    const isFromMe = message.fromMe;
+
+    return (
+      <div className={classes.reactionsContainer} style={isFromMe ? { left: 'auto', right: 6 } : {}}>
+        {Object.entries(groupedReactions).map(([emoji, reactions]) => (
+          <Tooltip
+            key={emoji}
+            title={reactions.map((r) => r.senderName || r.senderId).join(", ")}
+            arrow
+            placement="top"
+          >
+            <span className={isFromMe ? classes.reactionBadgeRight : classes.reactionBadge}>
+              <span className={classes.reactionEmoji}>{emoji}</span>
+              {reactions.length > 1 && (
+                <span className={classes.reactionCount}>{reactions.length}</span>
+              )}
+            </span>
+          </Tooltip>
+        ))}
+      </div>
+    );
+  };
+
+  const hasReactions = (message) => {
+    return message.reactions && message.reactions.length > 0;
   };
 
   const renderDailyTimestamps = (message, index) => {
@@ -1030,6 +1199,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
                   id={`message-${message.id}`}
                   className={clsx(classes.messageLeft, {
                     [classes.messageSelected]: isMessageSelected(message.id),
+                    [classes.messageWithReaction]: hasReactions(message),
                   })}
                   onDoubleClick={(e) => hanldeReplyMessage(e, message)}
                   onClick={() => selectionMode && handleSelectMessage(message)}
@@ -1075,13 +1245,21 @@ const MessagesList = ({ ticketId, isGroup }) => {
                     message.mediaType === "vcard") &&
                     //|| message.mediaType === "multi_vcard"
                     checkMessageMedia(message)}
-                  <div className={classes.textContentItem}>
+                  <div className={clsx(classes.textContentItem, {
+                    [classes.textContentItemEdited]: message.isEdited,
+                  })}>
                     {message.quotedMsg && renderQuotedMessage(message)}
                     <MarkdownWrapper>{message.body}</MarkdownWrapper>
                     <span className={classes.timestamp}>
+                      {message.isEdited && (
+                        <span className={classes.editedIndicator}>
+                          {i18n.t("messagesList.edited")}
+                        </span>
+                      )}
                       {format(parseISO(message.createdAt), "HH:mm")}
                     </span>
                   </div>
+                  {renderReactions(message)}
                 </div>
               </div>
             </React.Fragment>
@@ -1098,6 +1276,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
                   id={`message-${message.id}`}
                   className={clsx(classes.messageRight, {
                     [classes.messageSelected]: isMessageSelected(message.id),
+                    [classes.messageWithReaction]: hasReactions(message),
                   })}
                   onDoubleClick={(e) => hanldeReplyMessage(e, message)}
                   onClick={() => selectionMode && handleSelectMessage(message)}
@@ -1129,6 +1308,7 @@ const MessagesList = ({ ticketId, isGroup }) => {
                   <div
                     className={clsx(classes.textContentItem, {
                       [classes.textContentItemDeleted]: message.isDeleted,
+                      [classes.textContentItemEdited]: message.isEdited && !message.isDeleted,
                     })}
                   >
                     {message.isDeleted && (
@@ -1141,10 +1321,16 @@ const MessagesList = ({ ticketId, isGroup }) => {
                     {message.quotedMsg && renderQuotedMessage(message)}
                     <MarkdownWrapper>{message.body}</MarkdownWrapper>
                     <span className={classes.timestamp}>
+                      {message.isEdited && (
+                        <span className={classes.editedIndicator}>
+                          {i18n.t("messagesList.edited")}
+                        </span>
+                      )}
                       {format(parseISO(message.createdAt), "HH:mm")}
                       {renderMessageAck(message)}
                     </span>
                   </div>
+                  {renderReactions(message)}
                 </div>
                 {selectionMode && (
                   <div className={classes.checkboxContainer}>

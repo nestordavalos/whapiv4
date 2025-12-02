@@ -363,6 +363,7 @@ const messages = {
         },
         notification: {
           message: "Mensagem de",
+          reaction: "Reação de",
         },
         tabs: {
           open: { title: "Atendendo" },
@@ -680,6 +681,7 @@ const messages = {
             sync: "Sincronizar mensagens",
           },
         },
+        edited: "Editado",
       },
       messagesInput: {
         placeholderOpen: "Digite uma mensagem",
@@ -722,10 +724,22 @@ const messages = {
         delete: "Deletar",
         reply: "Responder",
         forward: "Encaminhar",
+        edit: "Editar",
         confirmationModal: {
           title: "Apagar mensagem?",
           message: "Esta ação não pode ser revertida.",
         },
+      },
+      editMessageModal: {
+        title: "Editar mensagem",
+        messageLabel: "Mensagem",
+        placeholder: "Digite a nova mensagem...",
+        characters: "caracteres",
+        timeRemaining: "Tempo restante para editar",
+        timeExpired: "O tempo para editar esta mensagem expirou (máximo 15 minutos)",
+        success: "Mensagem editada com sucesso",
+        cancel: "Cancelar",
+        save: "Salvar",
       },
       forwardMessageModal: {
         title: "Encaminhar mensagem",
@@ -753,6 +767,12 @@ const messages = {
         ERR_INVALID_CREDENTIALS: "Erro de autenticação. Por favor, tente novamente.",
         ERR_SENDING_WAPP_MSG: "Erro ao enviar mensagem do WhatsApp. Verifique a página de conexões.",
         ERR_DELETE_WAPP_MSG: "Não foi possível excluir a mensagem do WhatsApp.",
+        ERR_EDIT_WAPP_MSG: "Não foi possível editar a mensagem do WhatsApp.",
+        ERR_MESSAGE_NOT_FOUND: "Mensagem não encontrada.",
+        ERR_EDIT_ONLY_OWN_MESSAGES: "Você só pode editar suas próprias mensagens.",
+        ERR_CANNOT_EDIT_DELETED_MESSAGE: "Não é possível editar uma mensagem excluída.",
+        ERR_CANNOT_EDIT_MEDIA_MESSAGE: "Apenas mensagens de texto podem ser editadas.",
+        ERR_MESSAGE_EDIT_TIME_EXPIRED: "O tempo para editar esta mensagem expirou (máximo 15 minutos).",
         ERR_OTHER_OPEN_TICKET: "Já existe um chamado aberto para este contato.",
         ERR_SESSION_EXPIRED: "Sessão expirada. Por favor entre.",
         ERR_USER_CREATION_DISABLED: "A criação do atendente foi desabilitada pelo administrador.",

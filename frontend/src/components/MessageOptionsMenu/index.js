@@ -6,14 +6,19 @@ import { i18n } from "../../translate/i18n";
 import api from "../../services/api";
 import ConfirmationModal from "../ConfirmationModal";
 import ForwardMessageModal from "../ForwardMessageModal";
+import EditMessageModal from "../EditMessageModal";
 import { Menu } from "@material-ui/core";
 import { ReplyMessageContext } from "../../context/ReplyingMessage/ReplyingMessageContext";
 import toastError from "../../errors/toastError";
+
+// Tiempo máximo para editar un mensaje (15 minutos en milisegundos)
+const MAX_EDIT_TIME_MS = 15 * 60 * 1000;
 
 const MessageOptionsMenu = ({ message, menuOpen, handleClose, anchorEl }) => {
   const { setReplyingMessage } = useContext(ReplyMessageContext);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [forwardModalOpen, setForwardModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const handleDeleteMessage = async () => {
     try {
@@ -42,6 +47,28 @@ const MessageOptionsMenu = ({ message, menuOpen, handleClose, anchorEl }) => {
     setForwardModalOpen(false);
   };
 
+  const handleOpenEditModal = () => {
+    setEditModalOpen(true);
+    handleClose();
+  };
+
+  const handleCloseEditModal = () => {
+    setEditModalOpen(false);
+  };
+
+  // Verificar si el mensaje puede ser editado (dentro de 15 minutos y es de texto)
+  const canEditMessage = () => {
+    if (!message || !message.fromMe) return false;
+    if (message.isDeleted) return false;
+    if (message.mediaType && message.mediaType !== "chat") return false;
+    
+    const messageCreatedAt = new Date(message.createdAt).getTime();
+    const currentTime = Date.now();
+    const elapsedTime = currentTime - messageCreatedAt;
+    
+    return elapsedTime <= MAX_EDIT_TIME_MS;
+  };
+
   return (
     <>
       <ConfirmationModal
@@ -56,6 +83,11 @@ const MessageOptionsMenu = ({ message, menuOpen, handleClose, anchorEl }) => {
         open={forwardModalOpen}
         onClose={handleCloseForwardModal}
         messages={[message]}
+      />
+      <EditMessageModal
+        open={editModalOpen}
+        onClose={handleCloseEditModal}
+        message={message}
       />
       <Menu
         anchorEl={anchorEl}
@@ -74,6 +106,11 @@ const MessageOptionsMenu = ({ message, menuOpen, handleClose, anchorEl }) => {
         {message.fromMe && (
           <MenuItem onClick={handleOpenConfirmationModal}>
             {i18n.t("messageOptionsMenu.delete")}
+          </MenuItem>
+        )}
+        {canEditMessage() && (
+          <MenuItem onClick={handleOpenEditModal}>
+            {i18n.t("messageOptionsMenu.edit")}
           </MenuItem>
         )}
         <MenuItem onClick={hanldeReplyMessage}>

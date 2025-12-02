@@ -79,8 +79,7 @@ const TicketActionButtons = ({ ticket }) => {
 			
 			if (data.synced > 0) {
 				toast.success(`${data.message}`);
-				// Recargar la página para mostrar los nuevos mensajes
-				window.location.reload();
+				// Los mensajes se actualizan automáticamente via socket
 			} else {
 				toast.info(data.message);
 			}

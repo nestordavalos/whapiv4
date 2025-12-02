@@ -102,7 +102,7 @@ const SyncMessagesService = async ({
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await handleMessage(msg, wbot as any);
+      await handleMessage(msg, wbot as any, true); // isSync = true
       syncedCount += 1;
 
       logger.debug(`[SyncMessages] Mensaje sincronizado: ${msg.id.id}`);

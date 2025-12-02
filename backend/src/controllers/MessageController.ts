@@ -8,6 +8,7 @@ import ListMessagesService from "../services/MessageServices/ListMessagesService
 import SyncMessagesService from "../services/MessageServices/SyncMessagesService";
 import ShowTicketService from "../services/TicketServices/ShowTicketService";
 import DeleteWhatsAppMessage from "../services/WbotServices/DeleteWhatsAppMessage";
+import EditWhatsAppMessage from "../services/WbotServices/EditWhatsAppMessage";
 import SendWhatsAppMedia from "../services/WbotServices/SendWhatsAppMedia";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import ForwardWhatsAppMessage from "../services/WbotServices/ForwardWhatsAppMessage";
@@ -122,6 +123,24 @@ export const remove = async (
   });
 
   return res.send();
+};
+
+export const edit = async (req: Request, res: Response): Promise<Response> => {
+  const { messageId } = req.params;
+  const { body } = req.body;
+
+  const message = await EditWhatsAppMessage({
+    messageId,
+    newBody: body
+  });
+
+  const io = getIO();
+  io.to(message.ticketId.toString()).emit("appMessage", {
+    action: "update",
+    message
+  });
+
+  return res.json(message);
 };
 
 type SyncQuery = {

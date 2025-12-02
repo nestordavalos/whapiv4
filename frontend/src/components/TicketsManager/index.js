@@ -213,7 +213,9 @@ const useStyles = makeStyles((theme) => ({
   showAllSwitch: {
     display: "flex",
     alignItems: "center",
-    marginLeft: "auto",
+    position: "absolute",
+    left: "50%",
+    transform: "translateX(-50%)",
     "& .MuiFormControlLabel-label": {
       fontSize: "0.8rem",
       fontWeight: 500,
@@ -223,6 +225,8 @@ const useStyles = makeStyles((theme) => ({
       marginLeft: 4,
     },
     [theme.breakpoints.down("xs")]: {
+      position: "static",
+      transform: "none",
       marginLeft: 0,
       justifySelf: "center",
       "& .MuiFormControlLabel-label": {

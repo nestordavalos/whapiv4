@@ -396,6 +396,7 @@ const messages = {
         },
         notification: {
           message: "Mensaje de",
+          reaction: "Reacción de",
         },
         tabs: {
           open: { title: "Entrada" },
@@ -707,6 +708,7 @@ const messages = {
             sync: "Sincronizar mensajes",
           },
         },
+        edited: "Editado",
       },
       messagesInput: {
         placeholderOpen: "Ingrese un mensaje",
@@ -749,10 +751,22 @@ const messages = {
         delete: "Eliminar",
         reply: "Responder",
         forward: "Reenviar",
+        edit: "Editar",
         confirmationModal: {
           title: "¿Eliminar mensaje?",
           message: "Esta acción no se puede revertir.",
         },
+      },
+      editMessageModal: {
+        title: "Editar mensaje",
+        messageLabel: "Mensaje",
+        placeholder: "Escribe el nuevo mensaje...",
+        characters: "caracteres",
+        timeRemaining: "Tiempo restante para editar",
+        timeExpired: "El tiempo para editar este mensaje ha expirado (máximo 15 minutos)",
+        success: "Mensaje editado exitosamente",
+        cancel: "Cancelar",
+        save: "Guardar",
       },
       forwardMessageModal: {
         title: "Reenviar mensaje",
@@ -780,6 +794,12 @@ const messages = {
         ERR_INVALID_CREDENTIALS: "Error de autenticación. Vuelva a intentarlo",
         ERR_SENDING_WAPP_MSG: "Error al enviar el mensaje de WhatsApp. Verificar página de conexiones.",
         ERR_DELETE_WAPP_MSG: "No se pudo eliminar el mensaje de WhatsApp.",
+        ERR_EDIT_WAPP_MSG: "No se pudo editar el mensaje de WhatsApp.",
+        ERR_MESSAGE_NOT_FOUND: "Mensaje no encontrado.",
+        ERR_EDIT_ONLY_OWN_MESSAGES: "Solo puedes editar tus propios mensajes.",
+        ERR_CANNOT_EDIT_DELETED_MESSAGE: "No se puede editar un mensaje eliminado.",
+        ERR_CANNOT_EDIT_MEDIA_MESSAGE: "Solo se pueden editar mensajes de texto.",
+        ERR_MESSAGE_EDIT_TIME_EXPIRED: "El tiempo para editar este mensaje ha expirado (máximo 15 minutos).",
         ERR_OTHER_OPEN_TICKET: "Ya hay un ticket abierto para este contacto.",
         ERR_SESSION_EXPIRED: "Sesión caducada. Inicie sesión.",
         ERR_USER_CREATION_DISABLED: "La creación de Agentes ha sido deshabilitada por el administrador.",

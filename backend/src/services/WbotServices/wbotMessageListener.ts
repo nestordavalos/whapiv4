@@ -9,7 +9,8 @@ import {
   Contact as WbotContact,
   Message as WbotMessage,
   MessageAck,
-  Client
+  Client,
+  Reaction
 } from "whatsapp-web.js";
 
 import Contact from "../../models/Contact";
@@ -20,6 +21,7 @@ import Queue from "../../models/Queue";
 
 import { getIO } from "../../libs/socket";
 import CreateMessageService from "../MessageServices/CreateMessageService";
+import HandleMessageReactionService from "../MessageServices/HandleMessageReactionService";
 import { logger } from "../../utils/logger";
 import CreateOrUpdateContactService from "../ContactServices/CreateOrUpdateContactService";
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
@@ -668,15 +670,20 @@ const isValidMsg = (msg: WbotMessage): boolean => {
 
 const handleMessage = async (
   msg: WbotMessage,
-  wbot: Session
+  wbot: Session,
+  isSync = false // Parámetro para indicar si es una sincronización
 ): Promise<void> => {
+  logger.debug(`[handleMessage] Inicio - msgId: ${msg.id.id}, fromMe: ${msg.fromMe}, type: ${msg.type}, isSync: ${isSync}`);
+  
   if (!isValidMsg(msg)) {
+    logger.debug(`[handleMessage] Mensaje ${msg.id.id} no es válido (isValidMsg=false)`);
     return;
   }
   const showMessageGroupConnection = await ShowWhatsAppService(wbot.id!);
 
   const selfJid = `${showMessageGroupConnection.number}@c.us`;
   if (msg.from === selfJid && msg.to === selfJid) {
+    logger.debug(`[handleMessage] Mensaje ${msg.id.id} ignorado - es mensaje a sí mismo`);
     return;
   }
 
@@ -690,14 +697,18 @@ const handleMessage = async (
     !showMessageGroupConnection.isGroup
   ) {
     const chat = await msg.getChat();
+    
+    // Log detallado para debug
+    logger.debug(`[handleMessage] Verificando mensaje ${msg.id.id}: type=${msg.type}, from=${msg.from}, to=${msg.to}, author=${msg.author}, chat.id=${chat.id?._serialized}, chat.name=${chat.name}, chat.isGroup=${chat.isGroup}`);
+    
     if (
       // msg.type === "sticker" ||
       msg.type === "e2e_notification" ||
       msg.type === "notification_template" ||
       msg.from === "status@broadcast" ||
-      (msg.author !== null && msg.author !== undefined) ||
       chat.isGroup
     ) {
+      logger.debug(`[handleMessage] Mensaje ${msg.id.id} ignorado - tipo no permitido o grupo (type=${msg.type}, from=${msg.from}, isGroup=${chat.isGroup})`);
       return;
     }
   }
@@ -717,10 +728,13 @@ const handleMessage = async (
     if (msg.fromMe) {
       // messages sent automatically by wbot have a special character in front of it
       // if so, this message was already been stored in database;
+      // Skip this check during sync to allow importing historical messages
 
-      isBody = /\u200e/.test(msg.body[0]);
-      console.log(`ISBODY  ${isBody}`);
-      if (isBody) return;
+      if (!isSync) {
+        isBody = /\u200e/.test(msg.body[0]);
+        console.log(`ISBODY  ${isBody}`);
+        if (isBody) return;
+      }
       // media messages sent from me from cell phone, first comes with "hasMedia = false" and type = "image/ptt/etc"
       // in this case, return and let this message be handled by "media_uploaded" event, when it will have "hasMedia = true"
 
@@ -842,11 +856,14 @@ const handleMessage = async (
 
     if (existingMessage) {
       // El mensaje ya existe, solo actualizar el ack si es necesario
+      logger.debug(`[handleMessage] Mensaje ${msg.id.id} ya existe en BD, ticketId: ${existingMessage.ticketId}`);
       if (existingMessage.ack !== msg.ack) {
         await existingMessage.update({ ack: msg.ack });
       }
       return;
     }
+
+    logger.info(`[handleMessage] Creando mensaje nuevo: ${msg.id.id}, fromMe: ${msg.fromMe}, type: ${msg.type}`);
 
     let createdMessage: Message | null = null;
 
@@ -1182,9 +1199,15 @@ const getAckName = (ack: MessageAck): string => {
 
 const wbotMessageListener = async (wbot: Session): Promise<void> => {
   wbot.on("message_create", async msg => {
-    if (!msg.fromMe) return;
+    logger.debug(`[message_create] Mensaje recibido - id: ${msg.id?.id}, fromMe: ${msg.fromMe}, type: ${msg.type}, body: "${msg.body?.substring(0, 50)}..."`);
+    
+    if (!msg.fromMe) {
+      logger.debug(`[message_create] Ignorando mensaje - no es fromMe`);
+      return;
+    }
 
     try {
+      logger.debug(`[message_create] Procesando mensaje fromMe - id: ${msg.id?.id}`);
       await handleMessage(msg, wbot);
     } catch (err) {
       Sentry.captureException(err);
@@ -1221,6 +1244,74 @@ const wbotMessageListener = async (wbot: Session): Promise<void> => {
     } catch (err) {
       Sentry.captureException(err);
       logger.error(`Error handling message_revoke_everyone: ${err}`);
+    }
+  });
+
+  wbot.on("message_reaction", async (reaction: Reaction) => {
+    try {
+      // Log para debug de la estructura de la reacción
+      logger.info(
+        `[Reaction] Recibida: ${JSON.stringify({
+          id: reaction.id,
+          msgId: reaction.msgId,
+          reaction: reaction.reaction,
+          senderId: reaction.senderId,
+          ack: reaction.ack
+        })}`
+      );
+
+      // reaction.msgId es el MessageId del mensaje al que se reaccionó
+      // reaction.id es el ID de la propia reacción
+      // reaction.reaction es el emoji (vacío si se quitó)
+      // reaction.senderId es quien envió la reacción
+
+      // Usar msgId que contiene el ID del mensaje original
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const msgIdRaw = reaction.msgId as any;
+      const messageId =
+        typeof msgIdRaw === "string"
+          ? msgIdRaw
+          : msgIdRaw?.id || msgIdRaw?._serialized || reaction.id?.id;
+
+      const emoji = reaction.reaction;
+
+      // senderId puede ser string o objeto con _serialized
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const senderIdRaw = reaction.senderId as any;
+      const senderId =
+        typeof senderIdRaw === "string"
+          ? senderIdRaw
+          : senderIdRaw._serialized || String(senderIdRaw);
+
+      // fromMe indica si la reacción es nuestra
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fromMe = (reaction as any).id?.fromMe || false;
+
+      logger.info(
+        `[Reaction] Procesando: messageId=${messageId}, emoji=${emoji}, senderId=${senderId}`
+      );
+
+      // Obtener nombre del contacto si está disponible
+      let senderName: string | undefined;
+      try {
+        const contact = await wbot.getContactById(senderId);
+        senderName = contact?.pushname || contact?.name;
+      } catch {
+        // Ignorar si no se puede obtener el contacto
+      }
+
+      await HandleMessageReactionService({
+        reactionData: {
+          messageId,
+          emoji,
+          senderId,
+          senderName,
+          fromMe
+        }
+      });
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error(`Error handling message_reaction: ${err}`);
     }
   });
 };

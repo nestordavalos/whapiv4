@@ -12,10 +12,12 @@ import {
   ForeignKey,
   Index,
   BeforeCreate,
-  BeforeUpdate
+  BeforeUpdate,
+  HasMany
 } from "sequelize-typescript";
 import Contact from "./Contact";
 import Ticket from "./Ticket";
+import MessageReaction from "./MessageReaction";
 
 @Table({ timestamps: true })
 class Message extends Model<Message> {
@@ -66,6 +68,10 @@ class Message extends Model<Message> {
   @Column
   isDeleted: boolean;
 
+  @Default(false)
+  @Column
+  isEdited: boolean;
+
   @Index
   @CreatedAt
   @Column(DataType.DATE(6))
@@ -97,6 +103,9 @@ class Message extends Model<Message> {
 
   @BelongsTo(() => Contact, "contactId")
   contact: Contact;
+
+  @HasMany(() => MessageReaction, "messageId")
+  reactions: MessageReaction[];
 
   @BeforeCreate
   @BeforeUpdate

@@ -137,6 +137,22 @@ const NotificationsPopOver = () => {
 
                 const handleAppMessageEvent = data => {
                         console.debug("appMessage event received", data);
+                        
+                        // Manejar notificaciones de reacciones
+                        if (data.action === "reactionUpdate" && !data.reaction.fromMe) {
+                                if (data.ticket && data.contact) {
+                                        const shouldNotNotificate =
+                                                (data.ticket.userId && data.ticket.userId !== user?.id) ||
+                                                data.ticket.isGroup ||
+                                                data.ticket.chatbot;
+
+                                        if (!shouldNotNotificate) {
+                                                handleReactionNotification(data);
+                                        }
+                                }
+                                return;
+                        }
+
                         if (
                                 data.action === "create" &&
                                 !data.message.read &&
@@ -190,6 +206,58 @@ const NotificationsPopOver = () => {
                         socket.off("appMessage", handleAppMessageEvent);
                 };
         }, [user, profile, queues]);
+
+        const handleReactionNotification = data => {
+                const { reaction, contact, ticket } = data;
+                console.debug("Preparing reaction notification for ticket", ticket.id);
+
+                const senderName = reaction.senderName || contact.name;
+                const options = {
+                        body: `${senderName} reaccionó ${reaction.emoji} - ${format(new Date(), "HH:mm")}`,
+                        icon: contact.profilePicUrl,
+                        tag: `reaction-${ticket.id}-${reaction.id}`,
+                        renotify: true,
+                };
+
+                try {
+                        if (Notification.permission === "granted") {
+                                const notification = new Notification(
+                                        `${i18n.t("tickets.notification.reaction") || "Reacción de"} ${contact.name}`,
+                                        options
+                                );
+
+                                notification.onclick = e => {
+                                        e.preventDefault();
+                                        window.focus();
+                                        historyRef.current.push(`/tickets/${ticket.id}`);
+                                };
+
+                                setDesktopNotifications(prevState => {
+                                        const notfiticationIndex = prevState.findIndex(
+                                                n => n.tag === notification.tag
+                                        );
+                                        if (notfiticationIndex !== -1) {
+                                                prevState[notfiticationIndex] = notification;
+                                                return [...prevState];
+                                        }
+                                        return [notification, ...prevState];
+                                });
+                        }
+                } catch (err) {
+                        console.error("Failed to show reaction notification", err);
+                }
+
+                try {
+                        const audio = audioRef.current;
+                        audio.currentTime = 0;
+                        audio
+                                .play()
+                                .then(() => console.debug("Reaction notification sound played"))
+                                .catch(err => console.error("Failed to play sound", err));
+                } catch (err) {
+                        console.error("Failed to play sound", err);
+                }
+        };
 
         const handleNotifications = data => {
                 const { message, contact, ticket } = data;

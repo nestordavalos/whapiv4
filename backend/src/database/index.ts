@@ -17,6 +17,7 @@ import Tag from "../models/Tag";
 import ContactTag from "../models/ContactTag";
 import UserRating from "../models/UserRating";
 import QueueIntegrations from "../models/QueueIntegrations";
+import MessageReaction from "../models/MessageReaction";
 
 // eslint-disable-next-line
 const dbConfig = require("../config/database");
@@ -29,6 +30,7 @@ const models = [
   Contact,
   Ticket,
   Message,
+  MessageReaction,
   Whatsapp,
   ContactCustomField,
   Setting,

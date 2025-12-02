@@ -15,16 +15,13 @@ messageRoutes.post(
   upload.array("medias"),
   MessageController.store
 );
-messageRoutes.post(
-  "/messages/:ticketId/sync",
-  isAuth,
-  MessageController.sync
-);
+messageRoutes.post("/messages/:ticketId/sync", isAuth, MessageController.sync);
 messageRoutes.post(
   "/messages/:messageId/forward",
   isAuth,
   MessageController.forward
 );
+messageRoutes.put("/messages/:messageId", isAuth, MessageController.edit);
 messageRoutes.delete("/messages/:messageId", isAuth, MessageController.remove);
 
 export default messageRoutes;

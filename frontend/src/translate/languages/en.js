@@ -362,6 +362,7 @@ const messages = {
         },
         notification: {
           message: "Message from",
+          reaction: "Reaction from",
         },
         tabs: {
           open: { title: "Inbox" },
@@ -663,6 +664,7 @@ const messages = {
             sync: "Sync messages",
           },
         },
+        edited: "Edited",
       },
       messagesInput: {
         placeholderOpen: "Enter a message",
@@ -705,10 +707,22 @@ const messages = {
         delete: "Delete",
         reply: "Reply",
         forward: "Forward",
+        edit: "Edit",
         confirmationModal: {
           title: "Delete message?",
           message: "This action cannot be reversed.",
         },
+      },
+      editMessageModal: {
+        title: "Edit message",
+        messageLabel: "Message",
+        placeholder: "Type the new message...",
+        characters: "characters",
+        timeRemaining: "Time remaining to edit",
+        timeExpired: "The time to edit this message has expired (maximum 15 minutes)",
+        success: "Message edited successfully",
+        cancel: "Cancel",
+        save: "Save",
       },
       forwardMessageModal: {
         title: "Forward message",
@@ -736,6 +750,12 @@ const messages = {
         ERR_INVALID_CREDENTIALS: "Authentication error. Please try again.",
         ERR_SENDING_WAPP_MSG: "Error sending WhatsApp message. Check connections page.",
         ERR_DELETE_WAPP_MSG: "Unable to delete WhatsApp message.",
+        ERR_EDIT_WAPP_MSG: "Unable to edit WhatsApp message.",
+        ERR_MESSAGE_NOT_FOUND: "Message not found.",
+        ERR_EDIT_ONLY_OWN_MESSAGES: "You can only edit your own messages.",
+        ERR_CANNOT_EDIT_DELETED_MESSAGE: "Cannot edit a deleted message.",
+        ERR_CANNOT_EDIT_MEDIA_MESSAGE: "Only text messages can be edited.",
+        ERR_MESSAGE_EDIT_TIME_EXPIRED: "The time to edit this message has expired (maximum 15 minutes).",
         ERR_OTHER_OPEN_TICKET: "There is already an open ticket for this contact.",
         ERR_SESSION_EXPIRED: "Session expired. Please sign in.",
         ERR_USER_CREATION_DISABLED: "Creation of the attendant has been disabled by the administrator.",

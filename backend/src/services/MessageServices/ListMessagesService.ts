@@ -1,6 +1,7 @@
 import { Op } from "sequelize";
 import AppError from "../../errors/AppError";
 import Message from "../../models/Message";
+import MessageReaction from "../../models/MessageReaction";
 import Ticket from "../../models/Ticket";
 import ShowTicketService from "../TicketServices/ShowTicketService";
 
@@ -48,6 +49,10 @@ const ListMessagesService = async ({
         model: Message,
         as: "quotedMsg",
         include: ["contact"]
+      },
+      {
+        model: MessageReaction,
+        as: "reactions"
       }
     ],
     offset,

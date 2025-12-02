@@ -79,6 +79,13 @@ interface WhatsappData {
   webhookEnabled?: boolean;
   // Archive chat on ticket close
   archiveOnClose?: boolean;
+  // Sync configuration
+  syncMaxMessagesPerChat?: number;
+  syncMaxChats?: number;
+  syncMaxMessageAgeHours?: number;
+  syncDelayBetweenChats?: number;
+  syncMarkAsSeen?: boolean;
+  syncCreateClosedForRead?: boolean;
 }
 
 interface Request {
@@ -168,6 +175,12 @@ const UpdateWhatsAppService = async ({
     webhookUrls,
     webhookEnabled,
     archiveOnClose,
+    syncMaxMessagesPerChat,
+    syncMaxChats,
+    syncMaxMessageAgeHours,
+    syncDelayBetweenChats,
+    syncMarkAsSeen,
+    syncCreateClosedForRead,
     queueIds = []
   } = whatsappData;
 
@@ -277,7 +290,13 @@ const UpdateWhatsAppService = async ({
     timeInactiveMessage,
     webhookUrls: webhookUrls ? JSON.stringify(webhookUrls) : undefined,
     webhookEnabled,
-    archiveOnClose
+    archiveOnClose,
+    syncMaxMessagesPerChat,
+    syncMaxChats,
+    syncMaxMessageAgeHours,
+    syncDelayBetweenChats,
+    syncMarkAsSeen,
+    syncCreateClosedForRead
   });
 
   await AssociateWhatsappQueue(whatsapp, queueIds);

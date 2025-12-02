@@ -74,6 +74,13 @@ interface Request {
     events: string[];
   }>;
   webhookEnabled?: boolean;
+  // Sync configuration
+  syncMaxMessagesPerChat?: number;
+  syncMaxChats?: number;
+  syncMaxMessageAgeHours?: number;
+  syncDelayBetweenChats?: number;
+  syncMarkAsSeen?: boolean;
+  syncCreateClosedForRead?: boolean;
 }
 
 interface Response {
@@ -142,7 +149,13 @@ const CreateWhatsAppService = async ({
   inactiveMessage = "",
   timeInactiveMessage = "0",
   webhookUrls = [],
-  webhookEnabled = false
+  webhookEnabled = false,
+  syncMaxMessagesPerChat = 50,
+  syncMaxChats = 100,
+  syncMaxMessageAgeHours = 24,
+  syncDelayBetweenChats = 100,
+  syncMarkAsSeen = true,
+  syncCreateClosedForRead = true
 }: Request): Promise<Response> => {
   const schema = Yup.object().shape({
     name: Yup.string()
@@ -259,7 +272,13 @@ const CreateWhatsAppService = async ({
       inactiveMessage,
       timeInactiveMessage,
       webhookUrls: webhookUrls.length > 0 ? JSON.stringify(webhookUrls) : null,
-      webhookEnabled
+      webhookEnabled,
+      syncMaxMessagesPerChat,
+      syncMaxChats,
+      syncMaxMessageAgeHours,
+      syncDelayBetweenChats,
+      syncMarkAsSeen,
+      syncCreateClosedForRead
     },
     { include: ["queues"] }
   );

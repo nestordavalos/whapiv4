@@ -231,6 +231,31 @@ class Whatsapp extends Model<Whatsapp> {
   @Column(DataType.BOOLEAN)
   archiveOnClose: boolean;
 
+  // Sync configuration per instance
+  @Default(50)
+  @Column(DataType.INTEGER)
+  syncMaxMessagesPerChat: number;
+
+  @Default(100)
+  @Column(DataType.INTEGER)
+  syncMaxChats: number;
+
+  @Default(24)
+  @Column(DataType.INTEGER)
+  syncMaxMessageAgeHours: number;
+
+  @Default(100)
+  @Column(DataType.INTEGER)
+  syncDelayBetweenChats: number;
+
+  @Default(true)
+  @Column(DataType.BOOLEAN)
+  syncMarkAsSeen: boolean;
+
+  @Default(true)
+  @Column(DataType.BOOLEAN)
+  syncCreateClosedForRead: boolean;
+
   @HasMany(() => Ticket)
   tickets: Ticket[];
 

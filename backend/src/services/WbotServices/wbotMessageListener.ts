@@ -668,13 +668,26 @@ const isValidMsg = (msg: WbotMessage): boolean => {
   return false;
 };
 
+interface HandleMessageOptions {
+  /** Indica si es una sincronización de mensajes históricos */
+  isSync?: boolean;
+  /** Indica si el mensaje ya fue leído (para crear ticket como cerrado) */
+  isAlreadyRead?: boolean;
+}
+
 const handleMessage = async (
   msg: WbotMessage,
   wbot: Session,
-  isSync = false // Parámetro para indicar si es una sincronización
+  options: boolean | HandleMessageOptions = false
 ): Promise<void> => {
+  // Compatibilidad con llamadas antiguas que pasan boolean
+  const opts: HandleMessageOptions =
+    typeof options === "boolean" ? { isSync: options } : options;
+  const { isSync = false, isAlreadyRead = false } = opts;
+
   logger.debug(
-    `[handleMessage] Inicio - msgId: ${msg.id.id}, fromMe: ${msg.fromMe}, type: ${msg.type}, isSync: ${isSync}`
+    `[handleMessage] Inicio - msgId: ${msg.id.id}, fromMe: ${msg.fromMe}, ` +
+      `type: ${msg.type}, isSync: ${isSync}, isAlreadyRead: ${isAlreadyRead}`
   );
 
   if (!isValidMsg(msg)) {
@@ -785,6 +798,12 @@ const handleMessage = async (
 
     const contact = await verifyContact(msgContact);
 
+    // Determinar si crear ticket como cerrado (para sincronización de mensajes ya leídos)
+    const shouldCreateAsClosed =
+      isSync &&
+      isAlreadyRead &&
+      process.env.SYNC_CREATE_CLOSED_FOR_READ !== "false";
+
     // console.log("OUTRO TESTE " + unreadMessages)
     const ticket = await FindOrCreateTicketService(
       contact,
@@ -793,8 +812,15 @@ const handleMessage = async (
       queueId,
       tagsId,
       userId,
-      groupContact
+      groupContact,
+      { createAsClosed: shouldCreateAsClosed }
     );
+
+    if (shouldCreateAsClosed) {
+      logger.debug(
+        `[handleMessage] Ticket ${ticket.id} creado como cerrado (sync de mensaje leído)`
+      );
+    }
 
     if (
       unreadMessages === 0 &&
@@ -1269,7 +1295,9 @@ const wbotMessageListener = async (wbot: Session): Promise<void> => {
   wbot.on("message_edit", async (msg: WbotMessage, newBody: string) => {
     try {
       logger.info(
-        `[MessageEdit] Evento recibido - id: ${msg.id?.id}, fromMe: ${msg.fromMe}, newBody: "${newBody.substring(0, 50)}..."`
+        `[MessageEdit] Evento recibido - id: ${msg.id?.id}, fromMe: ${
+          msg.fromMe
+        }, newBody: "${newBody.substring(0, 50)}..."`
       );
 
       // Extract the message ID

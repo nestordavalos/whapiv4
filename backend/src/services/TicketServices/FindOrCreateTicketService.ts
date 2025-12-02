@@ -5,6 +5,11 @@ import Ticket from "../../models/Ticket";
 import ShowTicketService from "./ShowTicketService";
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
 
+interface FindOrCreateOptions {
+  /** If true and no open ticket exists, create as closed (for synced read messages) */
+  createAsClosed?: boolean;
+}
+
 const FindOrCreateTicketService = async (
   contact: Contact,
   whatsappId: number,
@@ -12,8 +17,11 @@ const FindOrCreateTicketService = async (
   queueId?: number,
   tagsId?: number,
   userId?: number,
-  groupContact?: Contact
+  groupContact?: Contact,
+  options?: FindOrCreateOptions
 ): Promise<Ticket> => {
+  const { createAsClosed = false } = options || {};
+
   let ticket = await Ticket.findOne({
     where: {
       status: {
@@ -80,9 +88,12 @@ const FindOrCreateTicketService = async (
   }
 
   if (!ticket) {
+    // Determine initial status based on options
+    const initialStatus = createAsClosed ? "closed" : "pending";
+
     ticket = await Ticket.create({
       contactId: groupContact ? groupContact.id : contact.id,
-      status: "pending",
+      status: initialStatus,
       isGroup: !!groupContact,
       isBot: true,
       unreadMessages,

@@ -31,6 +31,7 @@ import {
   IconButton,
   Paper,
   Collapse,
+  Slider,
 } from "@material-ui/core";
 import DeleteIcon from "@material-ui/icons/Delete";
 import AddIcon from "@material-ui/icons/Add";
@@ -257,6 +258,39 @@ const useStyles = makeStyles(theme => ({
     marginBottom: theme.spacing(3),
     width: "100%",
   },
+  // Sync config styles
+  syncConfigBox: {
+    padding: theme.spacing(2),
+    backgroundColor: theme.palette.type === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#fafafa',
+    borderRadius: 10,
+    border: `1px solid ${theme.palette.divider}`,
+    marginBottom: theme.spacing(2),
+  },
+  syncSliderLabel: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: theme.spacing(1),
+  },
+  syncSliderValue: {
+    fontWeight: 600,
+    color: theme.palette.primary.main,
+    backgroundColor: theme.palette.action.hover,
+    padding: "4px 12px",
+    borderRadius: 8,
+    fontSize: "0.85rem",
+  },
+  syncInfoBox: {
+    padding: theme.spacing(2),
+    backgroundColor: theme.palette.type === "dark" 
+      ? "rgba(33, 150, 243, 0.1)" 
+      : "rgba(33, 150, 243, 0.05)",
+    borderRadius: 8,
+    marginBottom: theme.spacing(2),
+    border: `1px solid ${theme.palette.type === "dark" 
+      ? "rgba(33, 150, 243, 0.3)" 
+      : "rgba(33, 150, 243, 0.2)"}`,
+  },
 }));
 
 const SessionSchema = Yup.object().shape({
@@ -299,6 +333,13 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     timeInactiveMessage: "",
     webhookEnabled: false,
     archiveOnClose: false,
+    // Sync configuration
+    syncMaxMessagesPerChat: 50,
+    syncMaxChats: 100,
+    syncMaxMessageAgeHours: 24,
+    syncDelayBetweenChats: 100,
+    syncMarkAsSeen: true,
+    syncCreateClosedForRead: true,
   };
   const [whatsApp, setWhatsApp] = useState(initialState);
   const [selectedQueueIds, setSelectedQueueIds] = useState([]);
@@ -686,6 +727,14 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     label={
                       <Box display="flex" alignItems="center" gap={0.5}>
                         <span role="img" aria-label="clipboard">📋</span> Colas
+                      </Box>
+                    } 
+                    className={classes.tab}
+                  />
+                  <Tab 
+                    label={
+                      <Box display="flex" alignItems="center" gap={0.5}>
+                        <span role="img" aria-label="sync">🔄</span> Sincronización
                       </Box>
                     } 
                     className={classes.tab}
@@ -1466,8 +1515,187 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     </Box>
                   </TabPanel>
 
-                  {/* Tab 4: Webhook */}
+                  {/* Tab 4: Sincronización */}
                   <TabPanel value={activeTab} index={4} className={classes.tabPanel}>
+                    <Box className={classes.tabContent}>
+                      <Typography className={classes.sectionTitle}>
+                        <span role="img" aria-label="sync">🔄</span> {i18n.t("whatsappModal.form.syncTitle")}
+                      </Typography>
+                      
+                      <Box className={classes.syncInfoBox}>
+                        <Typography variant="body2" color="textSecondary">
+                          {i18n.t("whatsappModal.form.syncDescription")}
+                        </Typography>
+                      </Box>
+
+                      <Box className={classes.syncConfigBox}>
+                        <Typography variant="subtitle2" style={{ marginBottom: 16, fontWeight: 600 }}>
+                          {i18n.t("whatsappModal.form.syncLimits")}
+                        </Typography>
+
+                        <Grid container spacing={3}>
+                          <Grid item xs={12} sm={6}>
+                            <Box className={classes.syncSliderLabel}>
+                              <Typography variant="body2">
+                                {i18n.t("whatsappModal.form.syncMaxMessagesPerChat")}
+                              </Typography>
+                              <span className={classes.syncSliderValue}>
+                                {values.syncMaxMessagesPerChat || 50}
+                              </span>
+                            </Box>
+                            <Field name="syncMaxMessagesPerChat">
+                              {({ field, form }) => (
+                                <Slider
+                                  value={field.value || 50}
+                                  onChange={(e, value) => form.setFieldValue("syncMaxMessagesPerChat", value)}
+                                  min={1}
+                                  max={500}
+                                  step={10}
+                                  valueLabelDisplay="auto"
+                                />
+                              )}
+                            </Field>
+                            <Typography variant="caption" color="textSecondary">
+                              {i18n.t("whatsappModal.form.syncMaxMessagesPerChatDesc")}
+                            </Typography>
+                          </Grid>
+
+                          <Grid item xs={12} sm={6}>
+                            <Box className={classes.syncSliderLabel}>
+                              <Typography variant="body2">
+                                {i18n.t("whatsappModal.form.syncMaxChats")}
+                              </Typography>
+                              <span className={classes.syncSliderValue}>
+                                {values.syncMaxChats || 100}
+                              </span>
+                            </Box>
+                            <Field name="syncMaxChats">
+                              {({ field, form }) => (
+                                <Slider
+                                  value={field.value || 100}
+                                  onChange={(e, value) => form.setFieldValue("syncMaxChats", value)}
+                                  min={1}
+                                  max={1000}
+                                  step={10}
+                                  valueLabelDisplay="auto"
+                                />
+                              )}
+                            </Field>
+                            <Typography variant="caption" color="textSecondary">
+                              {i18n.t("whatsappModal.form.syncMaxChatsDesc")}
+                            </Typography>
+                          </Grid>
+
+                          <Grid item xs={12} sm={6}>
+                            <Box className={classes.syncSliderLabel}>
+                              <Typography variant="body2">
+                                {i18n.t("whatsappModal.form.syncMaxMessageAgeHours")}
+                              </Typography>
+                              <span className={classes.syncSliderValue}>
+                                {values.syncMaxMessageAgeHours || 24} {(values.syncMaxMessageAgeHours || 24) === 1 ? "hora" : "horas"}
+                              </span>
+                            </Box>
+                            <Field name="syncMaxMessageAgeHours">
+                              {({ field, form }) => (
+                                <Slider
+                                  value={field.value || 24}
+                                  onChange={(e, value) => form.setFieldValue("syncMaxMessageAgeHours", value)}
+                                  min={1}
+                                  max={720}
+                                  step={1}
+                                  marks={[
+                                    { value: 1, label: "1h" },
+                                    { value: 24, label: "24h" },
+                                    { value: 168, label: "7d" },
+                                    { value: 720, label: "30d" },
+                                  ]}
+                                  valueLabelDisplay="auto"
+                                />
+                              )}
+                            </Field>
+                            <Typography variant="caption" color="textSecondary">
+                              {i18n.t("whatsappModal.form.syncMaxMessageAgeHoursDesc")}
+                            </Typography>
+                          </Grid>
+
+                          <Grid item xs={12} sm={6}>
+                            <Box className={classes.syncSliderLabel}>
+                              <Typography variant="body2">
+                                {i18n.t("whatsappModal.form.syncDelayBetweenChats")}
+                              </Typography>
+                              <span className={classes.syncSliderValue}>
+                                {values.syncDelayBetweenChats || 100} ms
+                              </span>
+                            </Box>
+                            <Field name="syncDelayBetweenChats">
+                              {({ field, form }) => (
+                                <Slider
+                                  value={field.value || 100}
+                                  onChange={(e, value) => form.setFieldValue("syncDelayBetweenChats", value)}
+                                  min={0}
+                                  max={5000}
+                                  step={50}
+                                  valueLabelDisplay="auto"
+                                />
+                              )}
+                            </Field>
+                            <Typography variant="caption" color="textSecondary">
+                              {i18n.t("whatsappModal.form.syncDelayBetweenChatsDesc")}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </Box>
+
+                      <Box className={classes.syncConfigBox}>
+                        <Typography variant="subtitle2" style={{ marginBottom: 16, fontWeight: 600 }}>
+                          {i18n.t("whatsappModal.form.syncBehavior")}
+                        </Typography>
+
+                        <Box style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                          <FormControlLabel
+                            control={
+                              <Field
+                                as={Switch}
+                                color="primary"
+                                name="syncMarkAsSeen"
+                                checked={values.syncMarkAsSeen !== false}
+                              />
+                            }
+                            label={
+                              <Box>
+                                <Typography variant="body2">{i18n.t("whatsappModal.form.syncMarkAsSeen")}</Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                  {i18n.t("whatsappModal.form.syncMarkAsSeenDesc")}
+                                </Typography>
+                              </Box>
+                            }
+                          />
+
+                          <FormControlLabel
+                            control={
+                              <Field
+                                as={Switch}
+                                color="primary"
+                                name="syncCreateClosedForRead"
+                                checked={values.syncCreateClosedForRead !== false}
+                              />
+                            }
+                            label={
+                              <Box>
+                                <Typography variant="body2">{i18n.t("whatsappModal.form.syncCreateClosedForRead")}</Typography>
+                                <Typography variant="caption" color="textSecondary">
+                                  {i18n.t("whatsappModal.form.syncCreateClosedForReadDesc")}
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                        </Box>
+                      </Box>
+                    </Box>
+                  </TabPanel>
+
+                  {/* Tab 5: Webhook */}
+                  <TabPanel value={activeTab} index={5} className={classes.tabPanel}>
                     <Box className={classes.tabContent}>
                       <Typography className={classes.sectionTitle}>
                         <span role="img" aria-label="webhook">🔗</span> {i18n.t("whatsappModal.form.webhooksTitle")}

@@ -12,6 +12,10 @@ import {
 	Typography,
 	CircularProgress,
 	Box,
+	Menu,
+	MenuItem,
+	ListItemIcon,
+	ListItemText,
 } from "@material-ui/core";
 import {
 	Edit,
@@ -25,6 +29,9 @@ import {
 	Replay,
 	Phone,
 	Schedule,
+	CloudDownload,
+	History,
+	MailOutline,
 } from "@material-ui/icons";
 
 import MainContainer from "../../components/MainContainer";
@@ -289,6 +296,9 @@ const Connections = () => {
 	const [selectedWhatsApp, setSelectedWhatsApp] = useState(null);
 	const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 	const [restartingId, setRestartingId] = useState(null);
+	const [syncingId, setSyncingId] = useState(null);
+	const [syncMenuAnchor, setSyncMenuAnchor] = useState(null);
+	const [syncMenuWhatsAppId, setSyncMenuWhatsAppId] = useState(null);
 	const confirmationModalInitialState = {
 		action: "",
 		title: "",
@@ -340,6 +350,62 @@ const Connections = () => {
 		} finally {
 			setRestartingId(null);
 		}
+	};
+
+	const handleSyncMessages = async (whatsAppId, mode = "unread") => {
+		let toastId;
+		try {
+			setSyncingId(whatsAppId);
+			
+			const modeLabel = mode === "all" 
+				? i18n.t("connections.toasts.syncingAll") 
+				: i18n.t("connections.toasts.syncing");
+			
+			toastId = toast.info(modeLabel, {
+				autoClose: false,
+				closeButton: false,
+			});
+			
+			const { data } = await api.post(`/whatsappsession/${whatsAppId}/sync?mode=${mode}`);
+			
+			if (toastId) {
+				toast.dismiss(toastId);
+			}
+			
+			const { result } = data;
+			toast.success(
+				i18n.t("connections.toasts.syncSuccess", {
+					chats: result.chatsProcessed,
+					newMessages: result.messagesNew,
+					duplicates: result.messagesDuplicate,
+					mode: result.mode === "all" ? "todos" : "no leídos",
+				})
+			);
+		} catch (err) {
+			if (toastId) {
+				toast.dismiss(toastId);
+			}
+			toastError(err);
+		} finally {
+			setSyncingId(null);
+		}
+	};
+
+	const handleOpenSyncMenu = (event, whatsAppId) => {
+		setSyncMenuAnchor(event.currentTarget);
+		setSyncMenuWhatsAppId(whatsAppId);
+	};
+
+	const handleCloseSyncMenu = () => {
+		setSyncMenuAnchor(null);
+		setSyncMenuWhatsAppId(null);
+	};
+
+	const handleSyncMenuOption = (mode) => {
+		if (syncMenuWhatsAppId) {
+			handleSyncMessages(syncMenuWhatsAppId, mode);
+		}
+		handleCloseSyncMenu();
 	};
 
 	const handleOpenWhatsAppModal = () => {
@@ -446,13 +512,33 @@ const Connections = () => {
 					whatsApp.status === "PAIRING" ||
 					whatsApp.status === "TIMEOUT") && (
 						<>
+							<Tooltip title={i18n.t("connections.buttons.syncMessages")}>
+								<Button
+									className={classes.actionButton}
+									variant="outlined"
+									style={{ 
+										borderColor: "#4caf50", 
+										color: "#4caf50",
+										minWidth: "auto",
+										padding: "6px 10px"
+									}}
+									onClick={(e) => handleOpenSyncMenu(e, whatsApp.id)}
+									disabled={syncingId === whatsApp.id || restartingId === whatsApp.id}
+								>
+									{syncingId === whatsApp.id ? (
+										<CircularProgress size={16} style={{ color: "#4caf50" }} />
+									) : (
+										<CloudDownload fontSize="small" />
+									)}
+								</Button>
+							</Tooltip>
 							<Button
 								className={classes.actionButton}
 								variant="outlined"
 								color="primary"
 								onClick={() => handleRestartSession(whatsApp.id)}
 								startIcon={restartingId === whatsApp.id ? <CircularProgress size={16} /> : <Replay />}
-								disabled={restartingId === whatsApp.id}
+								disabled={restartingId === whatsApp.id || syncingId === whatsApp.id}
 							>
 								{restartingId === whatsApp.id ? "Reiniciando..." : i18n.t("connections.buttons.restart")}
 							</Button>
@@ -463,7 +549,7 @@ const Connections = () => {
 								onClick={() => {
 									handleOpenConfirmationModal("disconnect", whatsApp.id);
 								}}
-								disabled={restartingId === whatsApp.id}
+								disabled={restartingId === whatsApp.id || syncingId === whatsApp.id}
 							>
 								{i18n.t("connections.buttons.disconnect")}
 							</Button>
@@ -528,6 +614,32 @@ const Connections = () => {
 
 	return (
 		<MainContainer>
+			{/* Menú de opciones de sincronización */}
+			<Menu
+				anchorEl={syncMenuAnchor}
+				open={Boolean(syncMenuAnchor)}
+				onClose={handleCloseSyncMenu}
+			>
+				<MenuItem onClick={() => handleSyncMenuOption("unread")}>
+					<ListItemIcon>
+						<MailOutline fontSize="small" style={{ color: "#4caf50" }} />
+					</ListItemIcon>
+					<ListItemText 
+						primary={i18n.t("connections.syncMenu.unread")}
+						secondary={i18n.t("connections.syncMenu.unreadDesc")}
+					/>
+				</MenuItem>
+				<MenuItem onClick={() => handleSyncMenuOption("all")}>
+					<ListItemIcon>
+						<History fontSize="small" style={{ color: "#2196f3" }} />
+					</ListItemIcon>
+					<ListItemText 
+						primary={i18n.t("connections.syncMenu.all")}
+						secondary={i18n.t("connections.syncMenu.allDesc")}
+					/>
+				</MenuItem>
+			</Menu>
+
 			<ConfirmationModal
 				title={confirmModalInfo.title}
 				open={confirmModalOpen}

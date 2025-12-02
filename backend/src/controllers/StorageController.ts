@@ -171,6 +171,13 @@ export const verifyMigration = async (
 ): Promise<Response> => {
   const service = new StorageMigrationService();
 
+  if (!service.isS3Available()) {
+    return res.status(400).json({
+      error: "S3 is not configured",
+      message: "Cannot verify migration without S3 configuration"
+    });
+  }
+
   const result = await service.verifyMigration();
 
   return res.json({

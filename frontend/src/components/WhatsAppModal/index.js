@@ -1481,14 +1481,30 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                           </Box>
 
                           <Typography variant="body2" color="textSecondary" style={{ marginTop: 16, padding: 12, backgroundColor: 'rgba(0,0,0,0.04)', borderRadius: 8 }}>
-                            <strong>📝 Ejemplo de payload:</strong><br/>
-                            <code style={{ fontSize: '0.85em' }}>
+                            <strong><span role="img" aria-label="nota">📝</span> Ejemplo de payload (mensaje con media):</strong><br/>
+                            <code style={{ fontSize: '0.85em', whiteSpace: 'pre-wrap' }}>
                               {`{
   "event": "message_received",
   "timestamp": "2024-12-01T10:30:00Z",
   "connectionId": 1,
   "connectionName": "WhatsApp Principal",
-  "data": { ... }
+  "data": {
+    "messageId": "3EB0...",
+    "body": "Descripción del archivo",
+    "fromMe": false,
+    "hasMedia": true,
+    "ticketId": 123,
+    "contact": {
+      "id": 1,
+      "name": "Juan",
+      "number": "595991234567"
+    },
+    "media": {
+      "url": "http://localhost:8080/public/1701432600000.jpg",
+      "mimeType": "image",
+      "type": "image"
+    }
+  }
 }`}
                             </code>
                           </Typography>

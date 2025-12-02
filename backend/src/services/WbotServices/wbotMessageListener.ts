@@ -274,7 +274,7 @@ export const verifyMessage = async (
   msg: WbotMessage,
   ticket: Ticket,
   contact: Contact
-) => {
+): Promise<Message> => {
   if (msg.type === "location") msg = prepareLocation(msg);
 
   const quotedMsg = await verifyQuotedMessage(msg);
@@ -323,7 +323,8 @@ export const verifyMessage = async (
           : `${"🢇" + "⠀"}${msg.body}`
     });
   }
-  await CreateMessageService({ messageData });
+  const newMessage = await CreateMessageService({ messageData });
+  return newMessage;
 };
 
 const verifyQueue = async (
@@ -813,13 +814,28 @@ const handleMessage = async (
       return;
     }
 
+    let createdMessage: Message | null = null;
+
     if (msg.hasMedia) {
-      await verifyMediaMessage(msg, ticket, contact);
+      createdMessage = await verifyMediaMessage(msg, ticket, contact);
     } else {
-      await verifyMessage(msg, ticket, contact);
+      createdMessage = await verifyMessage(msg, ticket, contact);
     }
 
     // Enviar webhook de mensaje recibido o enviado
+    // Construir la URL del media si existe
+    let mediaUrl: string | null = null;
+    let mediaMimeType: string | null = null;
+
+    if (msg.hasMedia && createdMessage) {
+      // Obtener el mensaje con la URL completa del media
+      const messageWithMedia = await Message.findByPk(createdMessage.id);
+      if (messageWithMedia) {
+        mediaUrl = messageWithMedia.mediaUrl;
+        mediaMimeType = messageWithMedia.mediaType;
+      }
+    }
+
     const webhookMessageData = {
       messageId: msg.id.id,
       body: msg.body,
@@ -832,7 +848,15 @@ const handleMessage = async (
         id: contact.id,
         name: contact.name,
         number: contact.number
-      }
+      },
+      // Información de multimedia
+      media: msg.hasMedia
+        ? {
+            url: mediaUrl,
+            mimeType: mediaMimeType,
+            type: msg.type // image, video, audio, document, sticker, etc.
+          }
+        : null
     };
 
     if (msg.fromMe) {
@@ -999,7 +1023,11 @@ const handleRating = async (
   }
 };
 
-const handleMsgAck = async (msg: WbotMessage, ack: MessageAck, wbot: Session) => {
+const handleMsgAck = async (
+  msg: WbotMessage,
+  ack: MessageAck,
+  wbot: Session
+) => {
   await new Promise(r => setTimeout(r, 500));
 
   const io = getIO();

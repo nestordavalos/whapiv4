@@ -256,7 +256,8 @@ const CreateWhatsAppService = async ({
       timeInactiveMessage,
       webhookUrl,
       webhookEnabled,
-      webhookEvents: webhookEvents.length > 0 ? JSON.stringify(webhookEvents) : null
+      webhookEvents:
+        webhookEvents.length > 0 ? JSON.stringify(webhookEvents) : null
     },
     { include: ["queues"] }
   );

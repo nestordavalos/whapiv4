@@ -276,7 +276,11 @@ const UpdateWhatsAppService = async ({
   await AssociateWhatsappQueue(whatsapp, queueIds);
 
   // Invalidar cache de webhook si se actualizaron los campos de webhook
-  if (webhookUrl !== undefined || webhookEnabled !== undefined || webhookEvents !== undefined) {
+  if (
+    webhookUrl !== undefined ||
+    webhookEnabled !== undefined ||
+    webhookEvents !== undefined
+  ) {
     invalidateWebhookCache(whatsapp.id);
   }
 

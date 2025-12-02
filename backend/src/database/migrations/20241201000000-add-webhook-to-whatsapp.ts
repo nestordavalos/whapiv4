@@ -17,7 +17,8 @@ module.exports = {
         type: DataTypes.TEXT,
         allowNull: true,
         defaultValue: null,
-        comment: "JSON array of event types to send: message_received, message_sent, message_ack, connection_update, ticket_created, ticket_updated"
+        comment:
+          "JSON array of event types to send: message_received, message_sent, message_ack, connection_update, ticket_created, ticket_updated"
       })
     ]);
   },

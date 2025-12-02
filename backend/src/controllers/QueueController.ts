@@ -20,7 +20,8 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     startWork,
     endWork,
     absenceMessage,
-    chatbots
+    chatbots,
+    integrationId
   } = req.body;
 
   const queue = await CreateQueueService({
@@ -30,7 +31,8 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     startWork,
     endWork,
     absenceMessage,
-    chatbots
+    chatbots,
+    integrationId: integrationId || null
   });
 
   const io = getIO();

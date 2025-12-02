@@ -20,6 +20,10 @@ import {
   StepLabel,
   StepContent,
   Switch,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@material-ui/core";
 
 import { FormControlLabel } from "@material-ui/core";
@@ -122,10 +126,12 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
     endWork: "",
     absenceMessage: "",
     chatbots: [],
+    integrationId: "",
   };
 
   const [colorPickerModalOpen, setColorPickerModalOpen] = useState(false);
   const [queue, setQueue] = useState(initialState);
+  const [integrations, setIntegrations] = useState([]);
   const greetingRef = useRef();
   const absenceRef = useRef();
   const startWorkRef = useRef();
@@ -136,6 +142,17 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
   const [isStepContent, setIsStepContent] = React.useState(true);
   const [isNameEdit, setIsNamedEdit] = React.useState(null);
   const [isGreetingMessageEdit, setGreetingMessageEdit] = React.useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await api.get(`/queue-integrations`);
+        setIntegrations(data.queueIntegrations || []);
+      } catch (err) {
+        console.error("Error loading integrations:", err);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -159,6 +176,7 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
         startWork: "",
         endWork: "",
         absenceMessage: "",
+        integrationId: "",
       });
     };
   }, [queueId, open]);
@@ -415,6 +433,36 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
                     margin="dense"
                   />
                 </div>
+
+                <div style={{ marginTop: 16, marginBottom: 16 }}>
+                  <FormControl
+                    variant="outlined"
+                    margin="dense"
+                    fullWidth
+                  >
+                    <InputLabel id="integration-selection-label">
+                      {i18n.t("queueModal.form.integration")}
+                    </InputLabel>
+                    <Field
+                      as={Select}
+                      label={i18n.t("queueModal.form.integration")}
+                      labelId="integration-selection-label"
+                      id="integrationId"
+                      name="integrationId"
+                      value={values.integrationId || ""}
+                    >
+                      <MenuItem value="">
+                        <em>{i18n.t("queueModal.form.noIntegration")}</em>
+                      </MenuItem>
+                      {integrations.map((integration) => (
+                        <MenuItem key={integration.id} value={integration.id}>
+                          {integration.name}
+                        </MenuItem>
+                      ))}
+                    </Field>
+                  </FormControl>
+                </div>
+
                 <Typography variant="subtitle1">
                   Opciones para chatbot
                   <CustomToolTip

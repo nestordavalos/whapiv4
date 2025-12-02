@@ -17,6 +17,11 @@ interface TicketData {
   fromMe?: boolean;
   isMsgGroup?: boolean;
   isFinished?: boolean;
+  useIntegration?: boolean;
+  integrationId?: number | null;
+  typebotSessionId?: string | null;
+  typebotStatus?: boolean;
+  isBot?: boolean;
 }
 
 interface Request {
@@ -39,8 +44,19 @@ const UpdateTicketService = async ({
   const io = getIO();
 
   const ticket = await ShowTicketService(ticketId);
-  const { userId, queueId, whatsappId, fromMe, isMsgGroup, isFinished } =
-    ticketData;
+  const {
+    userId,
+    queueId,
+    whatsappId,
+    fromMe,
+    isMsgGroup,
+    isFinished,
+    useIntegration,
+    integrationId,
+    typebotSessionId,
+    typebotStatus,
+    isBot
+  } = ticketData;
 
   await SetTicketMessagesAsRead(ticket);
 
@@ -101,7 +117,12 @@ const UpdateTicketService = async ({
     queueId,
     userId,
     fromMe,
-    isMsgGroup
+    isMsgGroup,
+    useIntegration,
+    integrationId,
+    typebotSessionId,
+    typebotStatus,
+    isBot
   });
 
   if (whatsappId) {

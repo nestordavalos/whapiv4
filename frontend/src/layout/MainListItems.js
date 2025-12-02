@@ -23,7 +23,8 @@ import {
   SettingsOutlined,
   SyncAlt,
   VpnKeyRounded,
-  WhatsApp
+  WhatsApp,
+  DeviceHub
 } from "@material-ui/icons";
 
 import { i18n } from "../translate/i18n";
@@ -249,6 +250,12 @@ const MainListItems = (props) => {
               to="/queues"
               primary={i18n.t("mainDrawer.listItems.queues")}
               icon={<AccountTreeOutlined />}
+              collapsed={collapsed}
+            />
+            <ListItemLink
+              to="/queue-integrations"
+              primary={i18n.t("mainDrawer.listItems.integrations")}
+              icon={<DeviceHub />}
               collapsed={collapsed}
             />
             <ListItemLink

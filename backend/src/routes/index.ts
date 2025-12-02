@@ -16,6 +16,7 @@ import chatBot from "./chatBotRoutes";
 import tagRoutes from "./tagRoutes";
 import dashboardRoutes from "./dashboardRoutes";
 import systemRoutes from "./systemRoutes";
+import queueIntegrationRoutes from "./queueIntegrationRoutes";
 
 const routes = Router();
 
@@ -35,5 +36,6 @@ routes.use("/api/v1", webhookApiRoutes);
 routes.use(tagRoutes);
 routes.use(dashboardRoutes);
 routes.use(systemRoutes);
+routes.use(queueIntegrationRoutes);
 
 export default routes;

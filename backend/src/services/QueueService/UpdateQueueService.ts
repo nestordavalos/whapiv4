@@ -13,6 +13,7 @@ interface QueueData {
   startWork?: string;
   endWork?: string;
   absenceMessage?: string;
+  integrationId?: number | null;
 }
 
 const UpdateQueueService = async (

@@ -17,6 +17,7 @@ import Api from "../pages/Api/";
 import ApiDocs from "../pages/ApiDocs/";
 import ApiKey from "../pages/ApiKey/";
 import Tags from "../pages/Tags";
+import QueueIntegration from "../pages/QueueIntegration";
 
 import { AuthProvider } from "../context/Auth/AuthContext";
 import { WhatsAppsProvider } from "../context/WhatsApp/WhatsAppsContext";
@@ -43,6 +44,7 @@ const Routes = () => {
               <Route exact path="/apikey" component={ApiKey} isPrivate />
               <Route exact path="/Queues" component={Queues} isPrivate />
               <Route exact path="/Tags" component={Tags} isPrivate />
+              <Route exact path="/queue-integrations" component={QueueIntegration} isPrivate />
             </LoggedInLayout>
           </WhatsAppsProvider>
         </Switch>

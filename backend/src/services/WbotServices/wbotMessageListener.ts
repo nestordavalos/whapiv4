@@ -2,7 +2,7 @@ import { join } from "path";
 import { promisify } from "util";
 import { writeFile } from "fs";
 import * as Sentry from "@sentry/node";
-import { isNull } from "lodash";
+import { isNull, isNil } from "lodash";
 import moment from "moment";
 
 import {
@@ -17,6 +17,7 @@ import Ticket from "../../models/Ticket";
 import Message from "../../models/Message";
 import Settings from "../../models/Setting";
 import Queue from "../../models/Queue";
+import QueueIntegrations from "../../models/QueueIntegrations";
 
 import { getIO } from "../../libs/socket";
 import CreateMessageService from "../MessageServices/CreateMessageService";
@@ -47,6 +48,8 @@ import {
   sendMessageSentWebhook,
   sendMessageAckWebhook
 } from "../WebhookService/SendWebhookEvent";
+import typebotListener from "../TypebotServices/typebotListener";
+import ShowQueueIntegrationService from "../QueueIntegrationServices/ShowQueueIntegrationService";
 
 interface Session extends Client {
   id?: number;
@@ -537,7 +540,11 @@ const verifyQueue = async (
       ticketId: ticket.id
     });
 
-    await sendQueueGreeting(queue);
+    // Don't send queue greeting if queue has typebot integration
+    // Typebot will handle the greeting
+    if (!queue.integrationId) {
+      await sendQueueGreeting(queue);
+    }
   };
 
   const handleSingleQueue = async () => {
@@ -888,7 +895,62 @@ const handleMessage = async (
       console.log(e);
     }
 
-    if (ticket.queue && ticket.queueId) {
+    // Handle integration with Typebot, n8n or webhooks
+    // Check if ticket already has an active integration
+    if (
+      !msg.fromMe &&
+      !chat.isGroup &&
+      ticket.useIntegration &&
+      ticket.integrationId
+    ) {
+      try {
+        const integration = await ShowQueueIntegrationService(
+          ticket.integrationId
+        );
+        if (integration.type === "typebot") {
+          await typebotListener({ wbot, msg, ticket, typebot: integration });
+          return;
+        }
+      } catch (error) {
+        logger.error("Error handling integration: ", error);
+      }
+    }
+
+    // Check if queue has an integration configured
+    if (
+      ticket.queue &&
+      ticket.queueId &&
+      !msg.fromMe &&
+      !chat.isGroup &&
+      !ticket.userId
+    ) {
+      try {
+        const queue = await Queue.findByPk(ticket.queueId, {
+          include: [{ model: QueueIntegrations, as: "integration" }]
+        });
+
+        if (queue && queue.integrationId && !isNil(queue.integration)) {
+          if (queue.integration.type === "typebot") {
+            await ticket.update({
+              useIntegration: true,
+              integrationId: queue.integrationId
+            });
+            await typebotListener({
+              wbot,
+              msg,
+              ticket,
+              typebot: queue.integration
+            });
+            return;
+          }
+        }
+      } catch (error) {
+        logger.error("Error checking queue integration: ", error);
+      }
+    }
+
+    // Only run internal chatbot if there's no active typebot integration
+    if (ticket.queue && ticket.queueId && !ticket.useIntegration) {
       if (!ticket.user) {
         await sayChatbot(ticket.queueId, wbot, ticket, contact, msg);
       }
@@ -1032,7 +1094,6 @@ const handleMsgAck = async (
 
   const io = getIO();
 
-  console.log(`ingreso el ack ${msg.body}`);
   try {
     const messageToUpdate = await Message.findByPk(msg.id.id, {
       include: [

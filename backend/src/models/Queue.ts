@@ -9,11 +9,14 @@ import {
   AllowNull,
   Unique,
   BelongsToMany,
-  HasMany
+  HasMany,
+  ForeignKey,
+  BelongsTo
 } from "sequelize-typescript";
 import Chatbot from "./Chatbot";
 import User from "./User";
 import UserQueue from "./UserQueue";
+import QueueIntegrations from "./QueueIntegrations";
 
 import Whatsapp from "./Whatsapp";
 import WhatsappQueue from "./WhatsappQueue";
@@ -61,6 +64,13 @@ class Queue extends Model<Queue> {
 
   @HasMany(() => Chatbot)
   chatbots: Chatbot[];
+
+  @ForeignKey(() => QueueIntegrations)
+  @Column
+  integrationId: number;
+
+  @BelongsTo(() => QueueIntegrations)
+  integration: QueueIntegrations;
 }
 
 export default Queue;

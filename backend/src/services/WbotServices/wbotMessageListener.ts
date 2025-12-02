@@ -19,6 +19,7 @@ import Queue from "../../models/Queue";
 import { getIO } from "../../libs/socket";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import HandleMessageReactionService from "../MessageServices/HandleMessageReactionService";
+import HandleMessageEditService from "../MessageServices/HandleMessageEditService";
 import { logger } from "../../utils/logger";
 import CreateOrUpdateContactService from "../ContactServices/CreateOrUpdateContactService";
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
@@ -1261,6 +1262,31 @@ const wbotMessageListener = async (wbot: Session): Promise<void> => {
     } catch (err) {
       Sentry.captureException(err);
       logger.error(`Error handling message_revoke_everyone: ${err}`);
+    }
+  });
+
+  // Handler for message edit events (both from user and contacts)
+  wbot.on("message_edit", async (msg: WbotMessage, newBody: string) => {
+    try {
+      logger.info(
+        `[MessageEdit] Evento recibido - id: ${msg.id?.id}, fromMe: ${msg.fromMe}, newBody: "${newBody.substring(0, 50)}..."`
+      );
+
+      // Extract the message ID
+      const messageId = msg.id?.id;
+      if (!messageId) {
+        logger.warn("[MessageEdit] No se pudo obtener el ID del mensaje");
+        return;
+      }
+
+      await HandleMessageEditService({
+        messageId,
+        newBody,
+        fromMe: msg.fromMe
+      });
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error(`Error handling message_edit: ${err}`);
     }
   });
 

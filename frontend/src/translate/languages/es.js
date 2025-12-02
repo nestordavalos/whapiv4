@@ -703,6 +703,7 @@ const messages = {
             reopen: "Reabrir",
             accept: "Aceptar",
             finish: "Finalizar",
+            sync: "Sincronizar mensajes",
           },
         },
       },

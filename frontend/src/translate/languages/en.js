@@ -659,6 +659,7 @@ const messages = {
             resolve: "Solve",
             reopen: "Reopen",
             accept: "Accept",
+            sync: "Sync messages",
           },
         },
       },

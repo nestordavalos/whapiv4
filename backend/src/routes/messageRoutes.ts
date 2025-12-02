@@ -15,6 +15,11 @@ messageRoutes.post(
   upload.array("medias"),
   MessageController.store
 );
+messageRoutes.post(
+  "/messages/:ticketId/sync",
+  isAuth,
+  MessageController.sync
+);
 messageRoutes.delete("/messages/:messageId", isAuth, MessageController.remove);
 
 export default messageRoutes;

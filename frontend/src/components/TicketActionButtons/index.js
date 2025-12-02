@@ -2,8 +2,8 @@ import React, { useContext, useState } from "react";
 import { useHistory } from "react-router-dom";
 
 import { makeStyles } from "@material-ui/core/styles";
-import { IconButton } from "@material-ui/core";
-import { MoreVert, Replay } from "@material-ui/icons";
+import { IconButton, CircularProgress } from "@material-ui/core";
+import { MoreVert, Replay, Sync } from "@material-ui/icons";
 
 import { i18n } from "../../translate/i18n";
 import api from "../../services/api";
@@ -13,6 +13,7 @@ import { AuthContext } from "../../context/Auth/AuthContext";
 import UndoRoundedIcon from '@material-ui/icons/UndoRounded';
 import CancelIcon from '@material-ui/icons/Cancel';
 import Tooltip from '@material-ui/core/Tooltip';
+import { toast } from "react-toastify";
 
 const useStyles = makeStyles(theme => ({
 	actionButtons: {
@@ -41,8 +42,14 @@ const useStyles = makeStyles(theme => ({
 	reopenButton: {
 		color: theme.palette.success.main,
 	},
+	syncButton: {
+		color: theme.palette.info.main,
+	},
 	moreButton: {
 		color: theme.palette.text.secondary,
+	},
+	syncSpinner: {
+		color: theme.palette.info.main,
 	},
 }));
 
@@ -51,6 +58,7 @@ const TicketActionButtons = ({ ticket }) => {
 	const history = useHistory();
 	const [anchorEl, setAnchorEl] = useState(null);
 	const [loading, setLoading] = useState(false);
+	const [syncing, setSyncing] = useState(false);
 	const ticketOptionsMenuOpen = Boolean(anchorEl);
 	const { user } = useContext(AuthContext);
 
@@ -60,6 +68,27 @@ const TicketActionButtons = ({ ticket }) => {
 
 	const handleCloseTicketOptionsMenu = e => {
 		setAnchorEl(null);
+	};
+
+	const handleSyncMessages = async () => {
+		setSyncing(true);
+		try {
+			const { data } = await api.post(`/messages/${ticket.id}/sync`, null, {
+				params: { limit: 100 }
+			});
+			
+			if (data.synced > 0) {
+				toast.success(`${data.message}`);
+				// Recargar la página para mostrar los nuevos mensajes
+				window.location.reload();
+			} else {
+				toast.info(data.message);
+			}
+		} catch (err) {
+			toastError(err);
+		} finally {
+			setSyncing(false);
+		}
 	};
 
 	const handleUpdateTicketStatus = async (e, status, userId, isFinished) => {
@@ -87,6 +116,24 @@ const TicketActionButtons = ({ ticket }) => {
 
 	return (
 		<div className={classes.actionButtons}>
+			{/* Botón de sincronizar mensajes - disponible en todos los estados */}
+			<Tooltip title={i18n.t("messagesList.header.buttons.sync") || "Sincronizar mensajes"}>
+				<span>
+					<IconButton 
+						disabled={syncing || loading} 
+						className={`${classes.actionButton} ${classes.syncButton}`}
+						onClick={handleSyncMessages}
+						size="small"
+					>
+						{syncing ? (
+							<CircularProgress size={18} className={classes.syncSpinner} />
+						) : (
+							<Sync fontSize="small" />
+						)}
+					</IconButton>
+				</span>
+			</Tooltip>
+
 			{ticket.status === "closed" && (
 				<Tooltip title={i18n.t("messagesList.header.buttons.reopen")}>
 					<IconButton 

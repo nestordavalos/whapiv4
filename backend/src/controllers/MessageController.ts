@@ -5,6 +5,7 @@ import SetTicketMessagesAsRead from "../helpers/SetTicketMessagesAsRead";
 import { getIO } from "../libs/socket";
 
 import ListMessagesService from "../services/MessageServices/ListMessagesService";
+import SyncMessagesService from "../services/MessageServices/SyncMessagesService";
 import ShowTicketService from "../services/TicketServices/ShowTicketService";
 import DeleteWhatsAppMessage from "../services/WbotServices/DeleteWhatsAppMessage";
 import SendWhatsAppMedia from "../services/WbotServices/SendWhatsAppMedia";
@@ -119,4 +120,20 @@ export const remove = async (
   });
 
   return res.send();
+};
+
+type SyncQuery = {
+  limit?: string;
+};
+
+export const sync = async (req: Request, res: Response): Promise<Response> => {
+  const { ticketId } = req.params;
+  const { limit } = req.query as SyncQuery;
+
+  const result = await SyncMessagesService({
+    ticketId,
+    limit: limit ? parseInt(limit, 10) : 100
+  });
+
+  return res.json(result);
 };

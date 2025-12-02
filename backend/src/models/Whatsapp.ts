@@ -226,6 +226,11 @@ class Whatsapp extends Model<Whatsapp> {
   @Column(DataType.BOOLEAN)
   webhookEnabled: boolean;
 
+  // Archive chat on ticket close
+  @Default(false)
+  @Column(DataType.BOOLEAN)
+  archiveOnClose: boolean;
+
   @HasMany(() => Ticket)
   tickets: Ticket[];
 

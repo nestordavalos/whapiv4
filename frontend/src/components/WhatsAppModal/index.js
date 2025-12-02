@@ -298,6 +298,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     sendInactiveMessage: false,
     timeInactiveMessage: "",
     webhookEnabled: false,
+    archiveOnClose: false,
   };
   const [whatsApp, setWhatsApp] = useState(initialState);
   const [selectedQueueIds, setSelectedQueueIds] = useState([]);
@@ -747,6 +748,17 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                         />
                       }
                       label={i18n.t("whatsappModal.form.group")}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Field
+                          as={Switch}
+                          color="primary"
+                          name="archiveOnClose"
+                          checked={values.archiveOnClose}
+                        />
+                      }
+                      label={i18n.t("whatsappModal.form.archiveOnClose")}
                     />
                   </div>
                   <div className={classes.messageField} style={{ marginTop: 16 }}>

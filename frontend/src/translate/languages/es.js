@@ -155,6 +155,7 @@ const messages = {
           token: "Token",
           checkHourExpedient: "Consultar Horario de Oficina",
           group: "Recibir Mensaje de Grupo",
+          archiveOnClose: "Archivar chat al cerrar ticket",
           queues: "Colas",
           queuesDescription: "Selecciona las colas a las que se asignarán los tickets de esta conexión.",
           // Webhook configuration

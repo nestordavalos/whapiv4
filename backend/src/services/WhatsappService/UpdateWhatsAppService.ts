@@ -77,6 +77,8 @@ interface WhatsappData {
     events: string[];
   }>;
   webhookEnabled?: boolean;
+  // Archive chat on ticket close
+  archiveOnClose?: boolean;
 }
 
 interface Request {
@@ -165,6 +167,7 @@ const UpdateWhatsAppService = async ({
     timeInactiveMessage,
     webhookUrls,
     webhookEnabled,
+    archiveOnClose,
     queueIds = []
   } = whatsappData;
 
@@ -273,7 +276,8 @@ const UpdateWhatsAppService = async ({
     inactiveMessage,
     timeInactiveMessage,
     webhookUrls: webhookUrls ? JSON.stringify(webhookUrls) : undefined,
-    webhookEnabled
+    webhookEnabled,
+    archiveOnClose
   });
 
   await AssociateWhatsappQueue(whatsapp, queueIds);

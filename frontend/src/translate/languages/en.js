@@ -146,6 +146,7 @@ const messages = {
           longText: "Check this option to set office hours for appointments.",
           token: "Token",
           checkHourExpedient: "Check Office Hours",
+          archiveOnClose: "Archive chat on ticket close",
           queues: "Queues",
           queuesDescription: "Select the queues to which tickets from this connection will be assigned.",
         },

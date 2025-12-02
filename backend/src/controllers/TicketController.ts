@@ -10,6 +10,8 @@ import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
 import ShowQueueService from "../services/QueueService/ShowQueueService";
 import formatBody from "../helpers/Mustache";
+import { getWbot } from "../libs/wbot";
+import { logger } from "../utils/logger";
 
 type IndexQuery = {
   searchParam: string;
@@ -150,12 +152,48 @@ export const update = async (
         ticket
       });
     }
+
+    // Archive chat if enabled
+    if (whatsapp.archiveOnClose) {
+      try {
+        // Only archive if WhatsApp is connected
+        if (whatsapp.status === "CONNECTED") {
+          const wbot = getWbot(ticket.whatsappId);
+          const chatId = `${ticket.contact.number}@c.us`;
+          await wbot.archiveChat(chatId);
+          logger.info(`[TicketController] Chat archived for ticket ${ticket.id}`);
+        } else {
+          logger.warn(`[TicketController] Cannot archive chat - WhatsApp not connected (status: ${whatsapp.status})`);
+        }
+      } catch (err: any) {
+        const errorMessage = err?.message || err?.toString() || JSON.stringify(err);
+        logger.warn(`[TicketController] Could not archive chat for ticket ${ticket.id}: ${errorMessage}`);
+      }
+    }
   }
   if (
     ticket.status === "closed" &&
     ticket.isGroup === false &&
     ticketData.isFinished
   ) {
+    // Archive chat if enabled (for finished tickets too)
+    const whatsapp = await ShowWhatsAppService(ticket.whatsappId);
+    if (whatsapp.archiveOnClose) {
+      try {
+        // Only archive if WhatsApp is connected
+        if (whatsapp.status === "CONNECTED") {
+          const wbot = getWbot(ticket.whatsappId);
+          const chatId = `${ticket.contact.number}@c.us`;
+          await wbot.archiveChat(chatId);
+          logger.info(`[TicketController] Chat archived for finished ticket ${ticket.id}`);
+        } else {
+          logger.warn(`[TicketController] Cannot archive chat - WhatsApp not connected (status: ${whatsapp.status})`);
+        }
+      } catch (err: any) {
+        const errorMessage = err?.message || err?.toString() || JSON.stringify(err);
+        logger.warn(`[TicketController] Could not archive chat for finished ticket ${ticket.id}: ${errorMessage}`);
+      }
+    }
   }
 
   return res.status(200).json(ticket);

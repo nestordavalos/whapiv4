@@ -147,6 +147,7 @@ const messages = {
           longText: "Marque esta opção para definir um horário de expediente para os atendimentos.",
           token: "Token",
           checkHourExpedient: "Checar Horário de Expediente",
+          archiveOnClose: "Arquivar chat ao fechar ticket",
           queues: "Filas",
           queuesDescription: "Selecione as filas às quais os tickets desta conexão serão atribuídos.",
         },

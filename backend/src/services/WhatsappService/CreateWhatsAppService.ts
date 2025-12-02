@@ -65,6 +65,10 @@ interface Request {
   sendInactiveMessage?: boolean;
   inactiveMessage?: string;
   timeInactiveMessage?: string;
+  // Webhook configuration
+  webhookUrl?: string;
+  webhookEnabled?: boolean;
+  webhookEvents?: string[];
 }
 
 interface Response {
@@ -131,7 +135,10 @@ const CreateWhatsAppService = async ({
   isGroup = false,
   sendInactiveMessage = false,
   inactiveMessage = "",
-  timeInactiveMessage = "0"
+  timeInactiveMessage = "0",
+  webhookUrl,
+  webhookEnabled = false,
+  webhookEvents = []
 }: Request): Promise<Response> => {
   const schema = Yup.object().shape({
     name: Yup.string()
@@ -246,7 +253,10 @@ const CreateWhatsAppService = async ({
       isGroup,
       sendInactiveMessage,
       inactiveMessage,
-      timeInactiveMessage
+      timeInactiveMessage,
+      webhookUrl,
+      webhookEnabled,
+      webhookEvents: webhookEvents.length > 0 ? JSON.stringify(webhookEvents) : null
     },
     { include: ["queues"] }
   );

@@ -5,6 +5,7 @@ import AppError from "../../errors/AppError";
 import Whatsapp from "../../models/Whatsapp";
 import ShowWhatsAppService from "./ShowWhatsAppService";
 import AssociateWhatsappQueue from "./AssociateWhatsappQueue";
+import { invalidateWebhookCache } from "../WebhookService/SendWebhookEvent";
 
 interface WhatsappData {
   name?: string;
@@ -67,6 +68,10 @@ interface WhatsappData {
   sendInactiveMessage?: boolean;
   inactiveMessage?: string;
   timeInactiveMessage?: string;
+  // Webhook configuration
+  webhookUrl?: string;
+  webhookEnabled?: boolean;
+  webhookEvents?: string[];
 }
 
 interface Request {
@@ -153,6 +158,9 @@ const UpdateWhatsAppService = async ({
     sendInactiveMessage,
     inactiveMessage,
     timeInactiveMessage,
+    webhookUrl,
+    webhookEnabled,
+    webhookEvents,
     queueIds = []
   } = whatsappData;
 
@@ -259,10 +267,18 @@ const UpdateWhatsAppService = async ({
     isGroup,
     sendInactiveMessage,
     inactiveMessage,
-    timeInactiveMessage
+    timeInactiveMessage,
+    webhookUrl,
+    webhookEnabled,
+    webhookEvents: webhookEvents ? JSON.stringify(webhookEvents) : undefined
   });
 
   await AssociateWhatsappQueue(whatsapp, queueIds);
+
+  // Invalidar cache de webhook si se actualizaron los campos de webhook
+  if (webhookUrl !== undefined || webhookEnabled !== undefined || webhookEvents !== undefined) {
+    invalidateWebhookCache(whatsapp.id);
+  }
 
   return { whatsapp, oldDefaultWhatsapp };
 };

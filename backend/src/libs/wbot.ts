@@ -266,7 +266,7 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
 
       wbot.on("message_ack", async (msg, ack) => {
         try {
-          await handleMsgAck(msg, ack);
+          await handleMsgAck(msg, ack, wbot);
         } catch (err) {
           Sentry.captureException(err);
           logger.error(`Error handling message_ack: ${err}`);

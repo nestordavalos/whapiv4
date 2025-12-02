@@ -42,6 +42,11 @@ import UserRating from "../../models/UserRating";
 import TicketTraking from "../../models/TicketTraking";
 import SendWhatsAppMessage from "./SendWhatsAppMessage";
 import FindOrCreateATicketTrakingService from "../TicketServices/FindOrCreateATicketTrakingService";
+import {
+  sendMessageReceivedWebhook,
+  sendMessageSentWebhook,
+  sendMessageAckWebhook
+} from "../WebhookService/SendWebhookEvent";
 
 interface Session extends Client {
   id?: number;
@@ -814,6 +819,28 @@ const handleMessage = async (
       await verifyMessage(msg, ticket, contact);
     }
 
+    // Enviar webhook de mensaje recibido o enviado
+    const webhookMessageData = {
+      messageId: msg.id.id,
+      body: msg.body,
+      fromMe: msg.fromMe,
+      mediaType: msg.type,
+      hasMedia: msg.hasMedia,
+      timestamp: msg.timestamp,
+      ticketId: ticket.id,
+      contact: {
+        id: contact.id,
+        name: contact.name,
+        number: contact.number
+      }
+    };
+
+    if (msg.fromMe) {
+      sendMessageSentWebhook(wbot.id!, webhookMessageData);
+    } else {
+      sendMessageReceivedWebhook(wbot.id!, webhookMessageData);
+    }
+
     if (
       !ticket.queue &&
       !chat.isGroup &&
@@ -972,7 +999,7 @@ const handleRating = async (
   }
 };
 
-const handleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
+const handleMsgAck = async (msg: WbotMessage, ack: MessageAck, wbot: Session) => {
   await new Promise(r => setTimeout(r, 500));
 
   const io = getIO();
@@ -999,10 +1026,34 @@ const handleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
       action: "update",
       message: messageToUpdate
     });
+
+    // Enviar webhook de ACK
+    if (wbot.id) {
+      sendMessageAckWebhook(wbot.id, {
+        messageId: msg.id.id,
+        ack,
+        ackName: getAckName(ack),
+        ticketId: messageToUpdate.ticketId,
+        body: msg.body
+      });
+    }
   } catch (err) {
     Sentry.captureException(err);
     logger.error(`Error handling message ack. Err: ${err}`);
   }
+};
+
+// Helper function to get ACK name
+const getAckName = (ack: MessageAck): string => {
+  const ackNames: Record<number, string> = {
+    [-1]: "ERROR",
+    0: "PENDING",
+    1: "SERVER",
+    2: "DEVICE",
+    3: "READ",
+    4: "PLAYED"
+  };
+  return ackNames[ack] || "UNKNOWN";
 };
 
 const wbotMessageListener = async (wbot: Session): Promise<void> => {
@@ -1030,7 +1081,7 @@ const wbotMessageListener = async (wbot: Session): Promise<void> => {
 
   wbot.on("message_ack", async (msg, ack) => {
     try {
-      await handleMsgAck(msg, ack);
+      await handleMsgAck(msg, ack, wbot);
     } catch (err) {
       Sentry.captureException(err);
       logger.error(`Error handling message_ack: ${err}`);

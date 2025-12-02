@@ -155,7 +155,7 @@ const messages = {
           token: "Token",
           checkHourExpedient: "Consultar Horario de Oficina",
           group: "Recibir Mensaje de Grupo",
-          archiveOnClose: "Archivar chat al cerrar ticket",
+          archiveOnClose: "Archivar chat",
           queues: "Colas",
           queuesDescription: "Selecciona las colas a las que se asignarán los tickets de esta conexión.",
           // Webhook configuration
@@ -713,6 +713,7 @@ const messages = {
         placeholderClosed: "Reabrir o aceptar este ticket para enviar un mensaje.",
         signMessage: "Suscribirse",
         captionPlaceholder: "Agrega un subtítulo...",
+        cancel: "Cancelar",
       },
       contactDrawer: {
         header: "Datos de contacto",
@@ -747,9 +748,26 @@ const messages = {
       messageOptionsMenu: {
         delete: "Eliminar",
         reply: "Responder",
+        forward: "Reenviar",
         confirmationModal: {
           title: "¿Eliminar mensaje?",
           message: "Esta acción no se puede revertir.",
+        },
+      },
+      forwardMessageModal: {
+        title: "Reenviar mensaje",
+        fieldLabel: "Buscar contacto",
+        messagePreview: "Vista previa del mensaje:",
+        success: "Mensaje reenviado exitosamente",
+        buttons: {
+          cancel: "Cancelar",
+          forward: "Reenviar",
+        },
+        mediaTypes: {
+          image: "📷 Imagen",
+          video: "🎥 Video",
+          audio: "🎵 Audio",
+          document: "📄 Documento",
         },
       },
       backendErrors: {
@@ -775,6 +793,7 @@ const messages = {
         ERR_CREATING_MESSAGE: "Error al crear el mensaje en la base de datos.",
         ERR_CREATING_TICKET: "Error al crear el ticket en la base de datos.",
         ERR_FETCH_WAPP_MSG: "Error al obtener el mensaje en WhatsApp, puede ser demasiado antiguo.",
+        ERR_FORWARD_WAPP_MSG: "Error al reenviar el mensaje de WhatsApp.",
         ERR_QUEUE_COLOR_ALREADY_EXISTS: "Este color ya está en uso, elige otro.",
         ERR_WAPP_GREETING_REQUIRED: "El mensaje de saludo es obligatorio cuando hay más de un Sector.",
         ERR_USER_CREATION_COUNT: "Límite de Agentes alcanzado, comuníquese con soporte para cambiar",

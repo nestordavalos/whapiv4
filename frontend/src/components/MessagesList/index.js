@@ -13,18 +13,24 @@ import clsx from "clsx";
 import { red } from "@material-ui/core/colors";
 // import { AuthContext } from "../../context/Auth/AuthContext";
 import {
+  Badge,
   Button,
+  Checkbox,
   CircularProgress,
+  Fab,
   IconButton,
   makeStyles,
+  Tooltip,
 } from "@material-ui/core";
 import {
   AccessTime,
   Block,
+  Close,
   Done,
   DoneAll,
   ExpandMore,
   GetApp,
+  Reply,
 } from "@material-ui/icons";
 
 import MarkdownWrapper from "../MarkdownWrapper";
@@ -33,6 +39,7 @@ import LocationPreview from "../LocationPreview";
 //  import PDFThumbnail from "../PDFThumbnail";
 import ModalImageCors from "../ModalImageCors";
 import MessageOptionsMenu from "../MessageOptionsMenu";
+import ForwardMessageModal from "../ForwardMessageModal";
 import { ReplyMessageContext } from "../../context/ReplyingMessage/ReplyingMessageContext";
 
 import Audio from "../Audio";
@@ -40,6 +47,7 @@ import Audio from "../Audio";
 import api from "../../services/api";
 import toastError from "../../errors/toastError";
 import { toast } from "react-toastify";
+import { i18n } from "../../translate/i18n";
 // import { Viewer } from "@react-pdf-viewer/core";
 //import { PDFViewer, Document, Page } from "@react-pdf/renderer";
 
@@ -381,6 +389,61 @@ const useStyles = makeStyles((theme) => ({
     alignSelf: "center",
     margin: 0,
   },
+
+  // Selection mode styles
+  messageSelected: {
+    backgroundColor: theme.palette.type === "dark" 
+      ? "rgba(37, 211, 102, 0.15)" 
+      : "rgba(37, 211, 102, 0.1)",
+  },
+  checkboxContainer: {
+    position: "absolute",
+    left: -35,
+    top: "50%",
+    transform: "translateY(-50%)",
+    zIndex: 10,
+  },
+  checkboxContainerRight: {
+    position: "absolute",
+    right: -35,
+    top: "50%",
+    transform: "translateY(-50%)",
+    zIndex: 10,
+  },
+  messageWrapper: {
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+  },
+  floatingActions: {
+    position: "fixed",
+    bottom: 100,
+    right: 30,
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    zIndex: 1000,
+  },
+  fabForward: {
+    backgroundColor: "#25D366",
+    color: "#fff",
+    "&:hover": {
+      backgroundColor: "#128C7E",
+    },
+  },
+  fabCancel: {
+    backgroundColor: theme.palette.error.main,
+    color: "#fff",
+    "&:hover": {
+      backgroundColor: theme.palette.error.dark,
+    },
+  },
+  selectionBadge: {
+    "& .MuiBadge-badge": {
+      backgroundColor: theme.palette.primary.main,
+      color: "#fff",
+    },
+  },
 }));
 
 const reducer = (state, action) => {
@@ -459,6 +522,11 @@ const MessagesList = ({ ticketId, isGroup }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const messageOptionsMenuOpen = Boolean(anchorEl);
   const currentTicketId = useRef(ticketId);
+
+  // Selection mode state
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedMessages, setSelectedMessages] = useState([]);
+  const [forwardModalOpen, setForwardModalOpen] = useState(false);
 
   useEffect(() => {
     dispatch({ type: "RESET" });
@@ -565,6 +633,48 @@ const MessagesList = ({ ticketId, isGroup }) => {
 
   const handleCloseMessageOptionsMenu = (e) => {
     setAnchorEl(null);
+  };
+
+  // Selection handlers
+  const handleToggleSelectionMode = () => {
+    setSelectionMode(!selectionMode);
+    if (selectionMode) {
+      setSelectedMessages([]);
+    }
+  };
+
+  const handleSelectMessage = (message) => {
+    setSelectedMessages((prev) => {
+      const isSelected = prev.find((m) => m.id === message.id);
+      if (isSelected) {
+        return prev.filter((m) => m.id !== message.id);
+      } else {
+        return [...prev, message];
+      }
+    });
+  };
+
+  const isMessageSelected = (messageId) => {
+    return selectedMessages.some((m) => m.id === messageId);
+  };
+
+  const handleOpenForwardModal = () => {
+    if (selectedMessages.length > 0) {
+      setForwardModalOpen(true);
+    }
+  };
+
+  const handleCloseForwardModal = () => {
+    setForwardModalOpen(false);
+    setSelectionMode(false);
+    setSelectedMessages([]);
+  };
+
+  const handleLongPress = (message) => {
+    if (!selectionMode) {
+      setSelectionMode(true);
+      setSelectedMessages([message]);
+    }
   };
 
   const checkMessageMedia = (message) => {
@@ -905,49 +1015,73 @@ const MessagesList = ({ ticketId, isGroup }) => {
               {renderMessageDivider(message, index)}
               {/* {renderNumberTicket(message, index)} */}
               {renderTicketsSeparator(message, index)}
-              <div
-                id={`message-${message.id}`}
-                className={classes.messageLeft}
-                onDoubleClick={(e) => hanldeReplyMessage(e, message)}
-              >
-                <IconButton
-                  variant="contained"
-                  size="small"
-                  id="messageActionsButton"
-                  disabled={message.isDeleted}
-                  className={classes.messageActionsButton}
-                  onClick={(e) => handleOpenMessageOptionsMenu(e, message)}
-                >
-                  <ExpandMore />
-                </IconButton>
-                {isGroup && (
-                  <span className={classes.messageContactName}>
-                    {message.contact?.name}
-                  </span>
-                )}
-                {message.isDeleted && (
-                  <div>
-                    <span className={classes.deletedMsg}>
-                      <Block
-                        color=""
-                        fontSize="small"
-                        className={classes.deletedIcon}
-                      />
-                      Mensaje Borrado por el contacto
-                    </span>
+              <div className={classes.messageWrapper}>
+                {selectionMode && (
+                  <div className={classes.checkboxContainer}>
+                    <Checkbox
+                      checked={isMessageSelected(message.id)}
+                      onChange={() => handleSelectMessage(message)}
+                      color="primary"
+                      size="small"
+                    />
                   </div>
                 )}
-                {(message.mediaUrl ||
-                  message.mediaType === "location" ||
-                  message.mediaType === "vcard") &&
-                  //|| message.mediaType === "multi_vcard"
-                  checkMessageMedia(message)}
-                <div className={classes.textContentItem}>
-                  {message.quotedMsg && renderQuotedMessage(message)}
-                  <MarkdownWrapper>{message.body}</MarkdownWrapper>
-                  <span className={classes.timestamp}>
-                    {format(parseISO(message.createdAt), "HH:mm")}
-                  </span>
+                <div
+                  id={`message-${message.id}`}
+                  className={clsx(classes.messageLeft, {
+                    [classes.messageSelected]: isMessageSelected(message.id),
+                  })}
+                  onDoubleClick={(e) => hanldeReplyMessage(e, message)}
+                  onClick={() => selectionMode && handleSelectMessage(message)}
+                  onContextMenu={(e) => {
+                    if (!selectionMode) {
+                      e.preventDefault();
+                      handleLongPress(message);
+                    }
+                  }}
+                >
+                  <IconButton
+                    variant="contained"
+                    size="small"
+                    id="messageActionsButton"
+                    disabled={message.isDeleted}
+                    className={classes.messageActionsButton}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenMessageOptionsMenu(e, message);
+                    }}
+                  >
+                    <ExpandMore />
+                  </IconButton>
+                  {isGroup && (
+                    <span className={classes.messageContactName}>
+                      {message.contact?.name}
+                    </span>
+                  )}
+                  {message.isDeleted && (
+                    <div>
+                      <span className={classes.deletedMsg}>
+                        <Block
+                          color=""
+                          fontSize="small"
+                          className={classes.deletedIcon}
+                        />
+                        Mensaje Borrado por el contacto
+                      </span>
+                    </div>
+                  )}
+                  {(message.mediaUrl ||
+                    message.mediaType === "location" ||
+                    message.mediaType === "vcard") &&
+                    //|| message.mediaType === "multi_vcard"
+                    checkMessageMedia(message)}
+                  <div className={classes.textContentItem}>
+                    {message.quotedMsg && renderQuotedMessage(message)}
+                    <MarkdownWrapper>{message.body}</MarkdownWrapper>
+                    <span className={classes.timestamp}>
+                      {format(parseISO(message.createdAt), "HH:mm")}
+                    </span>
+                  </div>
                 </div>
               </div>
             </React.Fragment>
@@ -959,45 +1093,69 @@ const MessagesList = ({ ticketId, isGroup }) => {
               {renderMessageDivider(message, index)}
               {renderTicketsSeparator(message, index)}
               {/* {renderNumberTicket(message, index)} */}
-              <div
-                id={`message-${message.id}`}
-                className={classes.messageRight}
-                onDoubleClick={(e) => hanldeReplyMessage(e, message)}
-              >
-                <IconButton
-                  variant="contained"
-                  size="small"
-                  id="messageActionsButton"
-                  disabled={message.isDeleted}
-                  className={classes.messageActionsButton}
-                  onClick={(e) => handleOpenMessageOptionsMenu(e, message)}
-                >
-                  <ExpandMore />
-                </IconButton>
-                {(message.mediaUrl ||
-                  message.mediaType === "location" ||
-                  message.mediaType === "vcard") &&
-                  //|| message.mediaType === "multi_vcard"
-                  checkMessageMedia(message)}
+              <div className={classes.messageWrapper} style={{ justifyContent: 'flex-end' }}>
                 <div
-                  className={clsx(classes.textContentItem, {
-                    [classes.textContentItemDeleted]: message.isDeleted,
+                  id={`message-${message.id}`}
+                  className={clsx(classes.messageRight, {
+                    [classes.messageSelected]: isMessageSelected(message.id),
                   })}
+                  onDoubleClick={(e) => hanldeReplyMessage(e, message)}
+                  onClick={() => selectionMode && handleSelectMessage(message)}
+                  onContextMenu={(e) => {
+                    if (!selectionMode) {
+                      e.preventDefault();
+                      handleLongPress(message);
+                    }
+                  }}
                 >
-                  {message.isDeleted && (
-                    <Block
-                      color="disabled"
-                      fontSize="small"
-                      className={classes.deletedIcon}
-                    />
-                  )}
-                  {message.quotedMsg && renderQuotedMessage(message)}
-                  <MarkdownWrapper>{message.body}</MarkdownWrapper>
-                  <span className={classes.timestamp}>
-                    {format(parseISO(message.createdAt), "HH:mm")}
-                    {renderMessageAck(message)}
-                  </span>
+                  <IconButton
+                    variant="contained"
+                    size="small"
+                    id="messageActionsButton"
+                    disabled={message.isDeleted}
+                    className={classes.messageActionsButton}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenMessageOptionsMenu(e, message);
+                    }}
+                  >
+                    <ExpandMore />
+                  </IconButton>
+                  {(message.mediaUrl ||
+                    message.mediaType === "location" ||
+                    message.mediaType === "vcard") &&
+                    //|| message.mediaType === "multi_vcard"
+                    checkMessageMedia(message)}
+                  <div
+                    className={clsx(classes.textContentItem, {
+                      [classes.textContentItemDeleted]: message.isDeleted,
+                    })}
+                  >
+                    {message.isDeleted && (
+                      <Block
+                        color="disabled"
+                        fontSize="small"
+                        className={classes.deletedIcon}
+                      />
+                    )}
+                    {message.quotedMsg && renderQuotedMessage(message)}
+                    <MarkdownWrapper>{message.body}</MarkdownWrapper>
+                    <span className={classes.timestamp}>
+                      {format(parseISO(message.createdAt), "HH:mm")}
+                      {renderMessageAck(message)}
+                    </span>
+                  </div>
                 </div>
+                {selectionMode && (
+                  <div className={classes.checkboxContainer}>
+                    <Checkbox
+                      checked={isMessageSelected(message.id)}
+                      onChange={() => handleSelectMessage(message)}
+                      color="primary"
+                      size="small"
+                    />
+                  </div>
+                )}
               </div>
             </React.Fragment>
           );
@@ -1029,6 +1187,40 @@ const MessagesList = ({ ticketId, isGroup }) => {
           <CircularProgress className={classes.circleLoading} />
         </div>
       )}
+      
+      {/* Floating action buttons for selection mode */}
+      {selectionMode && selectedMessages.length > 0 && (
+        <div className={classes.floatingActions}>
+          <Tooltip title={i18n.t("messagesInput.cancel")}>
+            <Fab
+              color="default"
+              size="small"
+              className={classes.fabCancel}
+              onClick={handleToggleSelectionMode}
+            >
+              <Close />
+            </Fab>
+          </Tooltip>
+          <Badge badgeContent={selectedMessages.length} color="secondary">
+            <Tooltip title={i18n.t("messageOptionsMenu.forward")}>
+              <Fab
+                color="primary"
+                className={classes.fabForward}
+                onClick={handleOpenForwardModal}
+              >
+                <Reply style={{ transform: 'scaleX(-1)' }} />
+              </Fab>
+            </Tooltip>
+          </Badge>
+        </div>
+      )}
+      
+      {/* Forward message modal */}
+      <ForwardMessageModal
+        open={forwardModalOpen}
+        onClose={handleCloseForwardModal}
+        messages={selectedMessages}
+      />
     </div>
   );
 };

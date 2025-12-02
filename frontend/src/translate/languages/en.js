@@ -669,6 +669,7 @@ const messages = {
         placeholderClosed: "Reopen or accept this ticket to send a message.",
         signMessage: "Subscribe",
         captionPlaceholder: "Add a caption...",
+        cancel: "Cancel",
       },
       contactDrawer: {
         header: "Contact Data",
@@ -703,9 +704,26 @@ const messages = {
       messageOptionsMenu: {
         delete: "Delete",
         reply: "Reply",
+        forward: "Forward",
         confirmationModal: {
           title: "Delete message?",
           message: "This action cannot be reversed.",
+        },
+      },
+      forwardMessageModal: {
+        title: "Forward message",
+        fieldLabel: "Search contact",
+        messagePreview: "Message preview:",
+        success: "Message forwarded successfully",
+        buttons: {
+          cancel: "Cancel",
+          forward: "Forward",
+        },
+        mediaTypes: {
+          image: "📷 Image",
+          video: "🎥 Video",
+          audio: "🎵 Audio",
+          document: "📄 Document",
         },
       },
       backendErrors: {
@@ -731,6 +749,7 @@ const messages = {
         ERR_CREATING_MESSAGE: "Error creating message in database.",
         ERR_CREATING_TICKET: "Error creating ticket in database.",
         ERR_FETCH_WAPP_MSG: "Error fetching message on WhatsApp, it may be too old.",
+        ERR_FORWARD_WAPP_MSG: "Error forwarding WhatsApp message.",
         ERR_QUEUE_COLOR_ALREADY_EXISTS: "This color is already in use, choose another one.",
         ERR_WAPP_GREETING_REQUIRED: "The greeting message is required when there is more than one Sector.",
         ERR_USER_CREATION_COUNT: "Attendant limit reached, contact support to change.",

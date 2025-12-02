@@ -10,7 +10,9 @@ import ShowTicketService from "../services/TicketServices/ShowTicketService";
 import DeleteWhatsAppMessage from "../services/WbotServices/DeleteWhatsAppMessage";
 import SendWhatsAppMedia from "../services/WbotServices/SendWhatsAppMedia";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
+import ForwardWhatsAppMessage from "../services/WbotServices/ForwardWhatsAppMessage";
 import CreateMessageService from "../services/MessageServices/CreateMessageService";
+import Message from "../models/Message";
 
 type IndexQuery = {
   pageNumber: string;
@@ -136,4 +138,33 @@ export const sync = async (req: Request, res: Response): Promise<Response> => {
   });
 
   return res.json(result);
+};
+
+export const forward = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { messageId } = req.params;
+  const { contactId } = req.body;
+
+  const message = await Message.findByPk(messageId, {
+    include: ["ticket"]
+  });
+
+  if (!message) {
+    return res.status(404).json({ error: "Message not found" });
+  }
+
+  const ticket = await ShowTicketService(message.ticketId.toString());
+
+  const result = await ForwardWhatsAppMessage({
+    message,
+    ticket,
+    contactNumber: contactId
+  });
+
+  return res.json({
+    message: "Message forwarded successfully",
+    destinationTicketId: result.destinationTicketId
+  });
 };

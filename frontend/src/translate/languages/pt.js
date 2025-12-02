@@ -686,6 +686,7 @@ const messages = {
         placeholderClosed: "Reabra ou aceite esse chamado para enviar uma mensagem.",
         signMessage: "Assinar",
         captionPlaceholder: "Adicione uma legenda...",
+        cancel: "Cancelar",
       },
       contactDrawer: {
         header: "Dados do contato",
@@ -720,9 +721,26 @@ const messages = {
       messageOptionsMenu: {
         delete: "Deletar",
         reply: "Responder",
+        forward: "Encaminhar",
         confirmationModal: {
           title: "Apagar mensagem?",
           message: "Esta ação não pode ser revertida.",
+        },
+      },
+      forwardMessageModal: {
+        title: "Encaminhar mensagem",
+        fieldLabel: "Buscar contato",
+        messagePreview: "Pré-visualização da mensagem:",
+        success: "Mensagem encaminhada com sucesso",
+        buttons: {
+          cancel: "Cancelar",
+          forward: "Encaminhar",
+        },
+        mediaTypes: {
+          image: "📷 Imagem",
+          video: "🎥 Vídeo",
+          audio: "🎵 Áudio",
+          document: "📄 Documento",
         },
       },
       backendErrors: {
@@ -748,6 +766,7 @@ const messages = {
         ERR_CREATING_MESSAGE: "Erro ao criar mensagem no banco de dados.",
         ERR_CREATING_TICKET: "Erro ao criar chamado no banco de dados.",
         ERR_FETCH_WAPP_MSG: "Erro ao buscar a mensagem no WhatsApp, talvez ela seja muito antiga.",
+        ERR_FORWARD_WAPP_MSG: "Erro ao encaminhar mensagem do WhatsApp.",
         ERR_QUEUE_COLOR_ALREADY_EXISTS: "Esta cor já está em uso, escolha outra.",
         ERR_WAPP_GREETING_REQUIRED: "A mensagem de saudação é obrigatório quando há mais de um Setor.",
         ERR_USER_CREATION_COUNT: "Limite de atendentes atingido, para alterar entre em contato com o suporte.",

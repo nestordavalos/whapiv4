@@ -217,18 +217,14 @@ class Whatsapp extends Model<Whatsapp> {
   @Column(DataType.TEXT)
   timeInactiveMessage: string;
 
-  // Webhook configuration
+  // Webhook configuration - Multiple webhooks support
   @AllowNull
   @Column(DataType.TEXT)
-  webhookUrl: string;
+  webhookUrls: string;
 
   @Default(false)
   @Column(DataType.BOOLEAN)
   webhookEnabled: boolean;
-
-  @AllowNull
-  @Column(DataType.TEXT)
-  webhookEvents: string;
 
   @HasMany(() => Ticket)
   tickets: Ticket[];

@@ -71,6 +71,16 @@ interface WhatsappData {
   EndDefineWorkHoursSunday?: string;
   StartDefineWorkHoursSundayLunch?: string;
   EndDefineWorkHoursSundayLunch?: string;
+
+  // Webhook configuration - Multiple webhooks support
+  webhookUrls?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    enabled: boolean;
+    events: string[];
+  }>;
+  webhookEnabled?: boolean;
 }
 
 export const index = async (req: Request, res: Response): Promise<Response> => {
@@ -142,7 +152,10 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     StartDefineWorkHoursSunday,
     EndDefineWorkHoursSunday,
     StartDefineWorkHoursSundayLunch,
-    EndDefineWorkHoursSundayLunch
+    EndDefineWorkHoursSundayLunch,
+
+    webhookUrls,
+    webhookEnabled
   }: WhatsappData = req.body;
 
   const { whatsapp, oldDefaultWhatsapp } = await CreateWhatsAppService({
@@ -201,7 +214,10 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     StartDefineWorkHoursSunday,
     EndDefineWorkHoursSunday,
     StartDefineWorkHoursSundayLunch,
-    EndDefineWorkHoursSundayLunch
+    EndDefineWorkHoursSundayLunch,
+
+    webhookUrls,
+    webhookEnabled
   });
 
   // Start WhatsApp session asynchronously without blocking the response

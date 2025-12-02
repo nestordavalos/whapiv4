@@ -15,6 +15,15 @@ export type WebhookEventType =
   | "contact_created"
   | "contact_updated";
 
+// Estructura de un webhook individual
+export interface WebhookConfig {
+  id: string;
+  name: string;
+  url: string;
+  enabled: boolean;
+  events: WebhookEventType[];
+}
+
 export interface WebhookPayload {
   event: WebhookEventType;
   timestamp: string;
@@ -33,16 +42,16 @@ interface SendWebhookParams {
 // Cache para configuraciones de webhook (evita consultas repetidas a la BD)
 const webhookConfigCache = new Map<
   number,
-  { url: string; enabled: boolean; events: string[]; expiresAt: number }
+  { webhooks: WebhookConfig[]; globalEnabled: boolean; expiresAt: number }
 >();
 const CACHE_TTL = 60000; // 1 minuto
 
 const getWebhookConfig = async (
   whatsappId: number
-): Promise<{ url: string; enabled: boolean; events: string[] } | null> => {
+): Promise<{ webhooks: WebhookConfig[]; globalEnabled: boolean } | null> => {
   const cached = webhookConfigCache.get(whatsappId);
   if (cached && cached.expiresAt > Date.now()) {
-    return { url: cached.url, enabled: cached.enabled, events: cached.events };
+    return { webhooks: cached.webhooks, globalEnabled: cached.globalEnabled };
   }
 
   try {
@@ -51,40 +60,27 @@ const getWebhookConfig = async (
         "id",
         "name",
         "number",
-        "webhookUrl",
-        "webhookEnabled",
-        "webhookEvents"
+        "webhookUrls",
+        "webhookEnabled"
       ]
     });
 
-    if (!whatsapp || !whatsapp.webhookEnabled || !whatsapp.webhookUrl) {
+    if (!whatsapp || !whatsapp.webhookEnabled) {
       return null;
     }
 
-    let events: string[] = [];
-    if (whatsapp.webhookEvents) {
+    let webhooks: WebhookConfig[] = [];
+    if (whatsapp.webhookUrls) {
       try {
-        events = JSON.parse(whatsapp.webhookEvents);
+        webhooks = JSON.parse(whatsapp.webhookUrls);
       } catch {
-        // Si no es JSON válido, asumir todos los eventos
-        events = [
-          "message_received",
-          "message_sent",
-          "message_ack",
-          "connection_update",
-          "ticket_created",
-          "ticket_updated",
-          "ticket_closed",
-          "contact_created",
-          "contact_updated"
-        ];
+        webhooks = [];
       }
     }
 
     const config = {
-      url: whatsapp.webhookUrl,
-      enabled: whatsapp.webhookEnabled,
-      events
+      webhooks,
+      globalEnabled: whatsapp.webhookEnabled
     };
 
     webhookConfigCache.set(whatsappId, {
@@ -116,12 +112,7 @@ const SendWebhookEvent = async ({
   try {
     const config = await getWebhookConfig(whatsappId);
 
-    if (!config || !config.enabled) {
-      return false;
-    }
-
-    // Verificar si el evento está en la lista de eventos permitidos
-    if (config.events.length > 0 && !config.events.includes(event)) {
+    if (!config || !config.globalEnabled || config.webhooks.length === 0) {
       return false;
     }
 
@@ -142,28 +133,43 @@ const SendWebhookEvent = async ({
       data
     };
 
-    // Enviar webhook de forma asíncrona sin bloquear
-    axios
-      .post(config.url, payload, {
-        headers: {
-          "Content-Type": "application/json",
-          "X-Webhook-Event": event,
-          "X-Connection-Id": whatsappId.toString()
-        },
-        timeout: 10000 // 10 segundos de timeout
-      })
-      .then(response => {
-        logger.info(
-          `Webhook sent successfully to ${config.url} for event ${event}: ${response.status}`
-        );
-      })
-      .catch(error => {
-        logger.error(
-          `Failed to send webhook to ${config.url} for event ${event}:`,
-          error.message
-        );
-        Sentry.captureException(error);
-      });
+    // Enviar a todos los webhooks habilitados que tengan el evento configurado
+    for (const webhook of config.webhooks) {
+      // Verificar si el webhook está habilitado
+      if (!webhook.enabled || !webhook.url) {
+        continue;
+      }
+
+      // Verificar si el evento está en la lista de eventos permitidos
+      // Si no hay eventos configurados, enviar todos
+      if (webhook.events && webhook.events.length > 0 && !webhook.events.includes(event)) {
+        continue;
+      }
+
+      // Enviar webhook de forma asíncrona sin bloquear
+      axios
+        .post(webhook.url, payload, {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Webhook-Event": event,
+            "X-Webhook-Name": webhook.name,
+            "X-Connection-Id": whatsappId.toString()
+          },
+          timeout: 10000 // 10 segundos de timeout
+        })
+        .then(response => {
+          logger.info(
+            `Webhook "${webhook.name}" sent successfully to ${webhook.url} for event ${event}: ${response.status}`
+          );
+        })
+        .catch(error => {
+          logger.error(
+            `Failed to send webhook "${webhook.name}" to ${webhook.url} for event ${event}:`,
+            error.message
+          );
+          Sentry.captureException(error);
+        });
+    }
 
     return true;
   } catch (err) {

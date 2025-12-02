@@ -28,7 +28,14 @@ import {
   Tabs,
   Tab,
   Chip,
+  IconButton,
+  Paper,
+  Collapse,
 } from "@material-ui/core";
+import DeleteIcon from "@material-ui/icons/Delete";
+import AddIcon from "@material-ui/icons/Add";
+import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import ExpandLessIcon from "@material-ui/icons/ExpandLess";
 
 import api from "../../services/api";
 import { i18n } from "../../translate/i18n";
@@ -290,12 +297,12 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     inactiveMessage: "",
     sendInactiveMessage: false,
     timeInactiveMessage: "",
-    webhookUrl: "",
     webhookEnabled: false,
   };
   const [whatsApp, setWhatsApp] = useState(initialState);
   const [selectedQueueIds, setSelectedQueueIds] = useState([]);
-  const [webhookEvents, setWebhookEvents] = useState([]);
+  const [webhooks, setWebhooks] = useState([]);
+  const [expandedWebhook, setExpandedWebhook] = useState(null);
 
   const [defineWorkHours, SetDefineWorkHours] = useState("");
   const [outOfWorkMessage, setOutOfWorkMessage] = useState("");
@@ -409,13 +416,13 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
         const whatsQueueIds = data.queues?.map(queue => queue.id);
         setSelectedQueueIds(whatsQueueIds);
 
-        // Load webhook events
-        if (data.webhookEvents) {
+        // Load webhooks (multiple webhooks support)
+        if (data.webhookUrls) {
           try {
-            const events = JSON.parse(data.webhookEvents);
-            setWebhookEvents(events);
+            const loadedWebhooks = JSON.parse(data.webhookUrls);
+            setWebhooks(loadedWebhooks);
           } catch {
-            setWebhookEvents([]);
+            setWebhooks([]);
           }
         }
       } catch (err) {
@@ -424,6 +431,48 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     };
     fetchSession();
   }, [whatsAppId]);
+
+  // Helper functions for managing webhooks
+  const generateWebhookId = () => {
+    return `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  const addWebhook = () => {
+    const newWebhook = {
+      id: generateWebhookId(),
+      name: `Webhook ${webhooks.length + 1}`,
+      url: "",
+      enabled: true,
+      events: ["message_received"],
+    };
+    setWebhooks([...webhooks, newWebhook]);
+    setExpandedWebhook(newWebhook.id);
+  };
+
+  const updateWebhook = (webhookId, field, value) => {
+    setWebhooks(webhooks.map(wh => 
+      wh.id === webhookId ? { ...wh, [field]: value } : wh
+    ));
+  };
+
+  const removeWebhook = (webhookId) => {
+    setWebhooks(webhooks.filter(wh => wh.id !== webhookId));
+    if (expandedWebhook === webhookId) {
+      setExpandedWebhook(null);
+    }
+  };
+
+  const toggleWebhookEvent = (webhookId, eventValue) => {
+    setWebhooks(webhooks.map(wh => {
+      if (wh.id !== webhookId) return wh;
+      const events = wh.events || [];
+      if (events.includes(eventValue)) {
+        return { ...wh, events: events.filter(e => e !== eventValue) };
+      } else {
+        return { ...wh, events: [...events, eventValue] };
+      }
+    }));
+  };
 
 
 
@@ -504,7 +553,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
       friday: sex,
       saturday: sab,
       sunday: dom,
-      webhookEvents: webhookEvents,
+      webhookUrls: webhooks,
     };
 
     try {
@@ -560,7 +609,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     setEndDefineWorkHoursSundayLunch();
 
     setSelectedQueueIds([]);
-    setWebhookEvents([]);
+    setWebhooks([]);
     // SetDefineWorkHours();
   };
 
@@ -1409,10 +1458,10 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                   <TabPanel value={activeTab} index={4} className={classes.tabPanel}>
                     <Box className={classes.tabContent}>
                       <Typography className={classes.sectionTitle}>
-                        <span role="img" aria-label="webhook">🔗</span> Webhook
+                        <span role="img" aria-label="webhook">🔗</span> {i18n.t("whatsappModal.form.webhooksTitle")}
                       </Typography>
                       <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
-                        {i18n.t("whatsappModal.form.webhookUrlHelper")}
+                        {i18n.t("whatsappModal.form.webhooksDescription")}
                       </Typography>
                       
                       <Box className={classes.switchControlBox}>
@@ -1431,57 +1480,135 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
 
                       {values.webhookEnabled && (
                         <>
-                          <div className={classes.messageField} style={{ marginTop: 16 }}>
-                            <Field
-                              as={TextField}
-                              label={i18n.t("whatsappModal.form.webhookUrl")}
-                              name="webhookUrl"
-                              fullWidth
+                          <Box style={{ marginTop: 16, marginBottom: 16 }}>
+                            <Button
                               variant="outlined"
-                              margin="dense"
-                              placeholder="https://your-server.com/webhook"
-                              helperText={i18n.t("whatsappModal.form.webhookUrlHelper")}
-                            />
-                          </div>
-
-                          <Typography variant="subtitle2" style={{ marginTop: 16, marginBottom: 8 }}>
-                            {i18n.t("whatsappModal.form.webhookEvents")}
-                          </Typography>
-                          <Typography variant="body2" color="textSecondary" style={{ marginBottom: 12 }}>
-                            {i18n.t("whatsappModal.form.webhookEventsHelper")}
-                          </Typography>
-
-                          <Box style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                            {[
-                              { value: 'message_received', label: i18n.t("whatsappModal.form.webhookEventMessageReceived") },
-                              { value: 'message_sent', label: i18n.t("whatsappModal.form.webhookEventMessageSent") },
-                              { value: 'message_ack', label: i18n.t("whatsappModal.form.webhookEventMessageAck") },
-                              { value: 'connection_update', label: i18n.t("whatsappModal.form.webhookEventConnectionUpdate") },
-                              { value: 'ticket_created', label: i18n.t("whatsappModal.form.webhookEventTicketCreated") },
-                              { value: 'ticket_updated', label: i18n.t("whatsappModal.form.webhookEventTicketUpdated") },
-                              { value: 'ticket_closed', label: i18n.t("whatsappModal.form.webhookEventTicketClosed") },
-                              { value: 'contact_created', label: i18n.t("whatsappModal.form.webhookEventContactCreated") },
-                              { value: 'contact_updated', label: i18n.t("whatsappModal.form.webhookEventContactUpdated") },
-                            ].map((event) => (
-                              <Chip
-                                key={event.value}
-                                label={event.label}
-                                clickable
-                                color={webhookEvents.includes(event.value) ? "primary" : "default"}
-                                onClick={() => {
-                                  if (webhookEvents.includes(event.value)) {
-                                    setWebhookEvents(webhookEvents.filter(e => e !== event.value));
-                                  } else {
-                                    setWebhookEvents([...webhookEvents, event.value]);
-                                  }
-                                }}
-                                style={{ marginBottom: 4 }}
-                              />
-                            ))}
+                              color="primary"
+                              startIcon={<AddIcon />}
+                              onClick={addWebhook}
+                            >
+                              {i18n.t("whatsappModal.form.addWebhook")}
+                            </Button>
                           </Box>
 
+                          {webhooks.length === 0 && (
+                            <Typography variant="body2" color="textSecondary" style={{ fontStyle: 'italic', textAlign: 'center', padding: 24 }}>
+                              {i18n.t("whatsappModal.form.noWebhooks")}
+                            </Typography>
+                          )}
+
+                          {webhooks.map((webhook, index) => (
+                            <Paper 
+                              key={webhook.id} 
+                              variant="outlined" 
+                              style={{ 
+                                marginBottom: 12, 
+                                borderRadius: 8,
+                                borderColor: webhook.enabled ? '#4caf50' : '#bdbdbd'
+                              }}
+                            >
+                              <Box 
+                                style={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  justifyContent: 'space-between',
+                                  padding: '8px 16px',
+                                  backgroundColor: 'rgba(0,0,0,0.02)',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => setExpandedWebhook(expandedWebhook === webhook.id ? null : webhook.id)}
+                              >
+                                <Box style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                  <Switch
+                                    size="small"
+                                    checked={webhook.enabled}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      updateWebhook(webhook.id, 'enabled', e.target.checked);
+                                    }}
+                                    color="primary"
+                                  />
+                                  <Typography variant="subtitle2">
+                                    {webhook.name || `Webhook ${index + 1}`}
+                                  </Typography>
+                                  <Typography variant="caption" color="textSecondary" style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {webhook.url || i18n.t("whatsappModal.form.noUrlConfigured")}
+                                  </Typography>
+                                </Box>
+                                <Box style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <IconButton 
+                                    size="small" 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeWebhook(webhook.id);
+                                    }}
+                                  >
+                                    <DeleteIcon fontSize="small" color="error" />
+                                  </IconButton>
+                                  {expandedWebhook === webhook.id ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                                </Box>
+                              </Box>
+
+                              <Collapse in={expandedWebhook === webhook.id}>
+                                <Box style={{ padding: 16 }}>
+                                  <Grid container spacing={2}>
+                                    <Grid item xs={12} sm={6}>
+                                      <TextField
+                                        label={i18n.t("whatsappModal.form.webhookName")}
+                                        value={webhook.name}
+                                        onChange={(e) => updateWebhook(webhook.id, 'name', e.target.value)}
+                                        fullWidth
+                                        variant="outlined"
+                                        size="small"
+                                        placeholder="Ej: n8n, Make, Zapier"
+                                      />
+                                    </Grid>
+                                    <Grid item xs={12} sm={6}>
+                                      <TextField
+                                        label={i18n.t("whatsappModal.form.webhookUrl")}
+                                        value={webhook.url}
+                                        onChange={(e) => updateWebhook(webhook.id, 'url', e.target.value)}
+                                        fullWidth
+                                        variant="outlined"
+                                        size="small"
+                                        placeholder="https://your-server.com/webhook"
+                                      />
+                                    </Grid>
+                                  </Grid>
+
+                                  <Typography variant="subtitle2" style={{ marginTop: 16, marginBottom: 8 }}>
+                                    {i18n.t("whatsappModal.form.webhookEvents")}
+                                  </Typography>
+
+                                  <Box style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                    {[
+                                      { value: 'message_received', label: i18n.t("whatsappModal.form.webhookEventMessageReceived") },
+                                      { value: 'message_sent', label: i18n.t("whatsappModal.form.webhookEventMessageSent") },
+                                      { value: 'message_ack', label: i18n.t("whatsappModal.form.webhookEventMessageAck") },
+                                      { value: 'connection_update', label: i18n.t("whatsappModal.form.webhookEventConnectionUpdate") },
+                                      { value: 'ticket_created', label: i18n.t("whatsappModal.form.webhookEventTicketCreated") },
+                                      { value: 'ticket_updated', label: i18n.t("whatsappModal.form.webhookEventTicketUpdated") },
+                                      { value: 'ticket_closed', label: i18n.t("whatsappModal.form.webhookEventTicketClosed") },
+                                      { value: 'contact_created', label: i18n.t("whatsappModal.form.webhookEventContactCreated") },
+                                      { value: 'contact_updated', label: i18n.t("whatsappModal.form.webhookEventContactUpdated") },
+                                    ].map((event) => (
+                                      <Chip
+                                        key={event.value}
+                                        label={event.label}
+                                        size="small"
+                                        clickable
+                                        color={(webhook.events || []).includes(event.value) ? "primary" : "default"}
+                                        onClick={() => toggleWebhookEvent(webhook.id, event.value)}
+                                      />
+                                    ))}
+                                  </Box>
+                                </Box>
+                              </Collapse>
+                            </Paper>
+                          ))}
+
                           <Typography variant="body2" color="textSecondary" style={{ marginTop: 16, padding: 12, backgroundColor: 'rgba(0,0,0,0.04)', borderRadius: 8 }}>
-                            <strong><span role="img" aria-label="nota">📝</span> Ejemplo de payload (mensaje con media):</strong><br/>
+                            <strong><span role="img" aria-label="nota">📝</span> {i18n.t("whatsappModal.form.webhookPayloadExample")}:</strong><br/>
                             <code style={{ fontSize: '0.85em', whiteSpace: 'pre-wrap' }}>
                               {`{
   "event": "message_received",
@@ -1500,7 +1627,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
       "number": "595991234567"
     },
     "media": {
-      "url": "http://localhost:8080/public/1701432600000.jpg",
+      "url": "http://localhost:8080/public/...",
       "mimeType": "image",
       "type": "image"
     }

@@ -2,7 +2,7 @@ import { join } from "path";
 import { promisify } from "util";
 import { writeFile } from "fs";
 import * as Sentry from "@sentry/node";
-import { isNull, isNil } from "lodash";
+import { isNull } from "lodash";
 import moment from "moment";
 
 import {
@@ -17,7 +17,6 @@ import Ticket from "../../models/Ticket";
 import Message from "../../models/Message";
 import Settings from "../../models/Setting";
 import Queue from "../../models/Queue";
-import QueueIntegrations from "../../models/QueueIntegrations";
 
 import { getIO } from "../../libs/socket";
 import CreateMessageService from "../MessageServices/CreateMessageService";
@@ -528,21 +527,49 @@ const verifyQueue = async (
     }
 
     if (queue.greetingMessage) {
-      const body = formatBody(`\u200e${queue.greetingMessage}`, ticket);
+      const body = formatBody(
+        `\u200e${queue.greetingMessage}\n\n*#* *Para volver al menu principal*`,
+        ticket
+      );
       const sentMessage = await wbot.sendMessage(remoteJid, body);
       await verifyMessage(sentMessage, ticket, contact);
     }
   };
 
   const assignQueue = async (queue: Queue) => {
-    await UpdateTicketService({
-      ticketData: { queueId: queue.id },
-      ticketId: ticket.id
-    });
+    // If queue has typebot integration, activate it
+    if (queue.integrationId && queue.integration) {
+      await UpdateTicketService({
+        ticketData: {
+          queueId: queue.id,
+          useIntegration: true,
+          integrationId: queue.integrationId
+        },
+        ticketId: ticket.id
+      });
 
-    // Don't send queue greeting if queue has typebot integration
-    // Typebot will handle the greeting
-    if (!queue.integrationId) {
+      // Load full integration data for typebot
+      if (queue.integration.type === "typebot") {
+        try {
+          const fullIntegration = await ShowQueueIntegrationService(
+            queue.integrationId
+          );
+          await typebotListener({
+            wbot,
+            msg,
+            ticket,
+            typebot: fullIntegration
+          });
+        } catch (error) {
+          logger.error("Error starting typebot from queue: ", error);
+        }
+      }
+    } else {
+      // No integration, just assign queue normally
+      await UpdateTicketService({
+        ticketData: { queueId: queue.id },
+        ticketId: ticket.id
+      });
       await sendQueueGreeting(queue);
     }
   };
@@ -880,6 +907,13 @@ const handleMessage = async (
       whatsapp.queues.length >= 1
     ) {
       await verifyQueue(wbot, msg, ticket, contact);
+      // Reload ticket to get updated status after queue assignment
+      await ticket.reload();
+      // If a queue was assigned during verifyQueue, stop processing
+      // to avoid triggering sayChatbot or other handlers
+      if (ticket.queueId) {
+        return;
+      }
     }
 
     // Atualiza o ticket se a ultima mensagem foi enviada por mim, para que possa ser finalizado. Se for grupo, nao finaliza
@@ -913,39 +947,6 @@ const handleMessage = async (
         }
       } catch (error) {
         logger.error("Error handling integration: ", error);
-      }
-    }
-
-    // Check if queue has an integration configured
-    if (
-      ticket.queue &&
-      ticket.queueId &&
-      !msg.fromMe &&
-      !chat.isGroup &&
-      !ticket.userId
-    ) {
-      try {
-        const queue = await Queue.findByPk(ticket.queueId, {
-          include: [{ model: QueueIntegrations, as: "integration" }]
-        });
-
-        if (queue && queue.integrationId && !isNil(queue.integration)) {
-          if (queue.integration.type === "typebot") {
-            await ticket.update({
-              useIntegration: true,
-              integrationId: queue.integrationId
-            });
-            await typebotListener({
-              wbot,
-              msg,
-              ticket,
-              typebot: queue.integration
-            });
-            return;
-          }
-        }
-      } catch (error) {
-        logger.error("Error checking queue integration: ", error);
       }
     }
 

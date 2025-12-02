@@ -1,5 +1,16 @@
 # Changelog
 
+### 02/12/2024
+
+- **[Storage Externo S3/S3-Compatible]**: Implementación de almacenamiento externo para archivos multimedia
+  - Soporte para AWS S3, MinIO, DigitalOcean Spaces, Cloudflare R2, Backblaze B2 y otros servicios S3-compatible
+  - Sistema de fallback automático a almacenamiento local cuando S3 no está disponible
+  - Servicio de sincronización automática para subir archivos pendientes
+  - API completa para migración de archivos entre storage local y S3
+  - Nuevo modelo `PendingUpload` para rastrear archivos pendientes de sincronización
+  - Variables de entorno para configuración flexible (`STORAGE_TYPE`, `STORAGE_S3_*`, etc.)
+  - Documentación completa en `docs/STORAGE_CONFIGURATION.md`
+
 ### 27/03/2023
 
 - [Função Copiar Token](https://github.com/rtenorioh/Press-Ticket/commit/40e9aa01ccec667bac1e63f03ba90c8b32287f92); e

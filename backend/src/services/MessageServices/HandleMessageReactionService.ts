@@ -101,7 +101,9 @@ const HandleMessageReactionService = async ({
     return null;
   }
 
-  logger.info(`[Reaction] Mensaje encontrado: ${message.id} para reacción de ${messageId}`);
+  logger.info(
+    `[Reaction] Mensaje encontrado: ${message.id} para reacción de ${messageId}`
+  );
 
   const io = getIO();
   const actualMessageId = message.id; // Usar el ID real del mensaje encontrado
@@ -116,7 +118,9 @@ const HandleMessageReactionService = async ({
     });
 
     if (deleted > 0) {
-      logger.info(`[Reaction] Reacción eliminada del mensaje ${actualMessageId}`);
+      logger.info(
+        `[Reaction] Reacción eliminada del mensaje ${actualMessageId}`
+      );
 
       // Emitir evento de reacción eliminada
       io.to(message.ticketId.toString())
@@ -149,7 +153,9 @@ const HandleMessageReactionService = async ({
       senderName: senderName || existingReaction.senderName
     });
     reaction = existingReaction;
-    logger.info(`[Reaction] Reacción actualizada: ${emoji} en mensaje ${actualMessageId}`);
+    logger.info(
+      `[Reaction] Reacción actualizada: ${emoji} en mensaje ${actualMessageId}`
+    );
   } else {
     // Crear nueva reacción
     reaction = await MessageReaction.create({
@@ -159,7 +165,9 @@ const HandleMessageReactionService = async ({
       senderName,
       fromMe
     });
-    logger.info(`[Reaction] Nueva reacción: ${emoji} en mensaje ${actualMessageId}`);
+    logger.info(
+      `[Reaction] Nueva reacción: ${emoji} en mensaje ${actualMessageId}`
+    );
   }
 
   // Emitir evento de nueva reacción o actualización

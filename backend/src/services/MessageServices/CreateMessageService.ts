@@ -71,7 +71,9 @@ const CreateMessageService = async ({
         contact: message.ticket.contact
       });
   } else {
-    logger.debug(`[CreateMessage] Mensaje ${message.id} ya existía, no se emite socket`);
+    logger.debug(
+      `[CreateMessage] Mensaje ${message.id} ya existía, no se emite socket`
+    );
   }
 
   return message;

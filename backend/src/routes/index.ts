@@ -17,6 +17,7 @@ import tagRoutes from "./tagRoutes";
 import dashboardRoutes from "./dashboardRoutes";
 import systemRoutes from "./systemRoutes";
 import queueIntegrationRoutes from "./queueIntegrationRoutes";
+import storageRoutes from "./storageRoutes";
 
 const routes = Router();
 
@@ -37,5 +38,6 @@ routes.use(tagRoutes);
 routes.use(dashboardRoutes);
 routes.use(systemRoutes);
 routes.use(queueIntegrationRoutes);
+routes.use(storageRoutes);
 
 export default routes;

@@ -161,13 +161,20 @@ export const update = async (
           const wbot = getWbot(ticket.whatsappId);
           const chatId = `${ticket.contact.number}@c.us`;
           await wbot.archiveChat(chatId);
-          logger.info(`[TicketController] Chat archived for ticket ${ticket.id}`);
+          logger.info(
+            `[TicketController] Chat archived for ticket ${ticket.id}`
+          );
         } else {
-          logger.warn(`[TicketController] Cannot archive chat - WhatsApp not connected (status: ${whatsapp.status})`);
+          logger.warn(
+            `[TicketController] Cannot archive chat - WhatsApp not connected (status: ${whatsapp.status})`
+          );
         }
       } catch (err: any) {
-        const errorMessage = err?.message || err?.toString() || JSON.stringify(err);
-        logger.warn(`[TicketController] Could not archive chat for ticket ${ticket.id}: ${errorMessage}`);
+        const errorMessage =
+          err?.message || err?.toString() || JSON.stringify(err);
+        logger.warn(
+          `[TicketController] Could not archive chat for ticket ${ticket.id}: ${errorMessage}`
+        );
       }
     }
   }
@@ -185,13 +192,20 @@ export const update = async (
           const wbot = getWbot(ticket.whatsappId);
           const chatId = `${ticket.contact.number}@c.us`;
           await wbot.archiveChat(chatId);
-          logger.info(`[TicketController] Chat archived for finished ticket ${ticket.id}`);
+          logger.info(
+            `[TicketController] Chat archived for finished ticket ${ticket.id}`
+          );
         } else {
-          logger.warn(`[TicketController] Cannot archive chat - WhatsApp not connected (status: ${whatsapp.status})`);
+          logger.warn(
+            `[TicketController] Cannot archive chat - WhatsApp not connected (status: ${whatsapp.status})`
+          );
         }
       } catch (err: any) {
-        const errorMessage = err?.message || err?.toString() || JSON.stringify(err);
-        logger.warn(`[TicketController] Could not archive chat for finished ticket ${ticket.id}: ${errorMessage}`);
+        const errorMessage =
+          err?.message || err?.toString() || JSON.stringify(err);
+        logger.warn(
+          `[TicketController] Could not archive chat for finished ticket ${ticket.id}: ${errorMessage}`
+        );
       }
     }
   }

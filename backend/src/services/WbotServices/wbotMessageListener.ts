@@ -1,6 +1,3 @@
-import { join } from "path";
-import { promisify } from "util";
-import { writeFile } from "fs";
 import * as Sentry from "@sentry/node";
 import { isNull } from "lodash";
 import moment from "moment";
@@ -51,12 +48,11 @@ import {
 } from "../WebhookService/SendWebhookEvent";
 import typebotListener from "../TypebotServices/typebotListener";
 import ShowQueueIntegrationService from "../QueueIntegrationServices/ShowQueueIntegrationService";
+import { getStorageService } from "../StorageServices/StorageService";
 
 interface Session extends Client {
   id?: number;
 }
-
-const writeFileAsync = promisify(writeFile);
 
 const verifyContact = async (msgContact: WbotContact): Promise<Contact> => {
   try {
@@ -170,14 +166,17 @@ const verifyMediaMessage = async (
   }
 
   try {
-    await writeFileAsync(
-      join(__dirname, "..", "..", "..", "public", media.filename),
+    // Use StorageService for file upload (supports S3, S3-compatible, and local with fallback)
+    const storageService = getStorageService();
+    await storageService.uploadBase64(
       media.data,
-      "base64"
+      media.filename,
+      media.mimetype
     );
+    logger.debug(`Media uploaded via StorageService: ${media.filename}`);
   } catch (err: any) {
     Sentry.captureException(err);
-    logger.error(err);
+    logger.error(`Failed to upload media via StorageService: ${err}`);
   }
 
   let $tipoArquivo: string;
@@ -673,17 +672,23 @@ const handleMessage = async (
   wbot: Session,
   isSync = false // Parámetro para indicar si es una sincronización
 ): Promise<void> => {
-  logger.debug(`[handleMessage] Inicio - msgId: ${msg.id.id}, fromMe: ${msg.fromMe}, type: ${msg.type}, isSync: ${isSync}`);
-  
+  logger.debug(
+    `[handleMessage] Inicio - msgId: ${msg.id.id}, fromMe: ${msg.fromMe}, type: ${msg.type}, isSync: ${isSync}`
+  );
+
   if (!isValidMsg(msg)) {
-    logger.debug(`[handleMessage] Mensaje ${msg.id.id} no es válido (isValidMsg=false)`);
+    logger.debug(
+      `[handleMessage] Mensaje ${msg.id.id} no es válido (isValidMsg=false)`
+    );
     return;
   }
   const showMessageGroupConnection = await ShowWhatsAppService(wbot.id!);
 
   const selfJid = `${showMessageGroupConnection.number}@c.us`;
   if (msg.from === selfJid && msg.to === selfJid) {
-    logger.debug(`[handleMessage] Mensaje ${msg.id.id} ignorado - es mensaje a sí mismo`);
+    logger.debug(
+      `[handleMessage] Mensaje ${msg.id.id} ignorado - es mensaje a sí mismo`
+    );
     return;
   }
 
@@ -697,10 +702,13 @@ const handleMessage = async (
     !showMessageGroupConnection.isGroup
   ) {
     const chat = await msg.getChat();
-    
+
     // Log detallado para debug
-    logger.debug(`[handleMessage] Verificando mensaje ${msg.id.id}: type=${msg.type}, from=${msg.from}, to=${msg.to}, author=${msg.author}, chat.id=${chat.id?._serialized}, chat.name=${chat.name}, chat.isGroup=${chat.isGroup}`);
-    
+    logger.debug(
+      // eslint-disable-next-line no-underscore-dangle
+      `[handleMessage] Verificando mensaje ${msg.id.id}: type=${msg.type}, from=${msg.from}, to=${msg.to}, author=${msg.author}, chat.id=${chat.id?._serialized}, chat.name=${chat.name}, chat.isGroup=${chat.isGroup}`
+    );
+
     if (
       // msg.type === "sticker" ||
       msg.type === "e2e_notification" ||
@@ -708,7 +716,9 @@ const handleMessage = async (
       msg.from === "status@broadcast" ||
       chat.isGroup
     ) {
-      logger.debug(`[handleMessage] Mensaje ${msg.id.id} ignorado - tipo no permitido o grupo (type=${msg.type}, from=${msg.from}, isGroup=${chat.isGroup})`);
+      logger.debug(
+        `[handleMessage] Mensaje ${msg.id.id} ignorado - tipo no permitido o grupo (type=${msg.type}, from=${msg.from}, isGroup=${chat.isGroup})`
+      );
       return;
     }
   }
@@ -856,14 +866,18 @@ const handleMessage = async (
 
     if (existingMessage) {
       // El mensaje ya existe, solo actualizar el ack si es necesario
-      logger.debug(`[handleMessage] Mensaje ${msg.id.id} ya existe en BD, ticketId: ${existingMessage.ticketId}`);
+      logger.debug(
+        `[handleMessage] Mensaje ${msg.id.id} ya existe en BD, ticketId: ${existingMessage.ticketId}`
+      );
       if (existingMessage.ack !== msg.ack) {
         await existingMessage.update({ ack: msg.ack });
       }
       return;
     }
 
-    logger.info(`[handleMessage] Creando mensaje nuevo: ${msg.id.id}, fromMe: ${msg.fromMe}, type: ${msg.type}`);
+    logger.info(
+      `[handleMessage] Creando mensaje nuevo: ${msg.id.id}, fromMe: ${msg.fromMe}, type: ${msg.type}`
+    );
 
     let createdMessage: Message | null = null;
 
@@ -989,10 +1003,7 @@ const handleMessage = async (
         options += `🔹 *${index + 1}* - ${queue.name}\n`;
       });
 
-      const body = formatBody(
-        `\u200e${greetingMessage}\n\n${options}`,
-        ticket
-      );
+      const body = formatBody(`\u200e${greetingMessage}\n\n${options}`, ticket);
       const sentMessage = await wbot.sendMessage(
         `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
         body
@@ -1199,15 +1210,21 @@ const getAckName = (ack: MessageAck): string => {
 
 const wbotMessageListener = async (wbot: Session): Promise<void> => {
   wbot.on("message_create", async msg => {
-    logger.debug(`[message_create] Mensaje recibido - id: ${msg.id?.id}, fromMe: ${msg.fromMe}, type: ${msg.type}, body: "${msg.body?.substring(0, 50)}..."`);
-    
+    logger.debug(
+      `[message_create] Mensaje recibido - id: ${msg.id?.id}, fromMe: ${
+        msg.fromMe
+      }, type: ${msg.type}, body: "${msg.body?.substring(0, 50)}..."`
+    );
+
     if (!msg.fromMe) {
-      logger.debug(`[message_create] Ignorando mensaje - no es fromMe`);
+      logger.debug("[message_create] Ignorando mensaje - no es fromMe");
       return;
     }
 
     try {
-      logger.debug(`[message_create] Procesando mensaje fromMe - id: ${msg.id?.id}`);
+      logger.debug(
+        `[message_create] Procesando mensaje fromMe - id: ${msg.id?.id}`
+      );
       await handleMessage(msg, wbot);
     } catch (err) {
       Sentry.captureException(err);
@@ -1271,7 +1288,8 @@ const wbotMessageListener = async (wbot: Session): Promise<void> => {
       const messageId =
         typeof msgIdRaw === "string"
           ? msgIdRaw
-          : msgIdRaw?.id || msgIdRaw?._serialized || reaction.id?.id;
+          : // eslint-disable-next-line no-underscore-dangle
+            msgIdRaw?.id || msgIdRaw?._serialized || reaction.id?.id;
 
       const emoji = reaction.reaction;
 
@@ -1281,7 +1299,8 @@ const wbotMessageListener = async (wbot: Session): Promise<void> => {
       const senderId =
         typeof senderIdRaw === "string"
           ? senderIdRaw
-          : senderIdRaw._serialized || String(senderIdRaw);
+          : // eslint-disable-next-line no-underscore-dangle
+            senderIdRaw._serialized || String(senderIdRaw);
 
       // fromMe indica si la reacción es nuestra
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

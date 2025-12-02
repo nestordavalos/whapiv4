@@ -49,13 +49,13 @@ const ForwardWhatsAppMessage = async ({
     );
 
     let sentMessage;
-    let forwardedBody = message.body || "";
+    const forwardedBody = message.body || "";
     let mediaUrl: string | undefined;
     let mediaType: string | undefined;
 
     // Check if the message has media
     const originalMediaUrl = message.getDataValue("mediaUrl");
-    
+
     if (originalMediaUrl && message.mediaType) {
       // Get the media file path
       const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
@@ -96,8 +96,8 @@ const ForwardWhatsAppMessage = async ({
         contactId: destinationContact.id,
         fromMe: true,
         read: true,
-        mediaType: mediaType,
-        mediaUrl: mediaUrl,
+        mediaType,
+        mediaUrl,
         createdAt: timestamp,
         updatedAt: timestamp
       }
@@ -105,7 +105,8 @@ const ForwardWhatsAppMessage = async ({
 
     // Update the destination ticket's last message
     await destinationTicket.update({
-      lastMessage: forwardedBody || (mediaType ? `[${mediaType}]` : "Forwarded message")
+      lastMessage:
+        forwardedBody || (mediaType ? `[${mediaType}]` : "Forwarded message")
     });
 
     logger.info(

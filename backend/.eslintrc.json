@@ -4,6 +4,7 @@
     "node": true,
     "jest": true
   },
+  "ignorePatterns": ["scripts/**"],
   "extends": [
     "airbnb-base",
     "plugin:@typescript-eslint/recommended",

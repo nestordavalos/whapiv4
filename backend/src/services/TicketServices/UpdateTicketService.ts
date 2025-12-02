@@ -3,6 +3,10 @@ import CheckContactOpenTickets from "../../helpers/CheckContactOpenTickets";
 import SetTicketMessagesAsRead from "../../helpers/SetTicketMessagesAsRead";
 import { getIO } from "../../libs/socket";
 import Ticket from "../../models/Ticket";
+import Contact from "../../models/Contact";
+import User from "../../models/User";
+import Queue from "../../models/Queue";
+import Whatsapp from "../../models/Whatsapp";
 import SendWhatsAppMessage from "../WbotServices/SendWhatsAppMessage";
 import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
 import ShowTicketService from "./ShowTicketService";
@@ -131,7 +135,32 @@ const UpdateTicketService = async ({
     });
   }
 
-  await ticket.reload();
+  // Reload with all necessary associations for socket emission
+  await ticket.reload({
+    include: [
+      {
+        model: Contact,
+        as: "contact",
+        attributes: ["id", "name", "number", "email", "profilePicUrl"],
+        include: ["extraInfo", "tags"]
+      },
+      {
+        model: User,
+        as: "user",
+        attributes: ["id", "name"]
+      },
+      {
+        model: Queue,
+        as: "queue",
+        attributes: ["id", "name", "color"]
+      },
+      {
+        model: Whatsapp,
+        as: "whatsapp",
+        attributes: ["name"]
+      }
+    ]
+  });
 
   if (status !== undefined && ["pending"].indexOf(status) > -1) {
     ticketTraking.update({

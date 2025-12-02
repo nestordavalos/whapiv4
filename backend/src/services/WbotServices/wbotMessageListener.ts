@@ -950,6 +950,40 @@ const handleMessage = async (
       }
     }
 
+    // Handle "#" to go back to main menu
+    // Allow returning to menu when ticket has queue but agent hasn't responded yet
+    if (
+      msg.body === "#" &&
+      !msg.fromMe &&
+      !chat.isGroup &&
+      ticket.queueId &&
+      !ticket.useIntegration
+    ) {
+      // Reset queue, userId and show main menu options
+      await UpdateTicketService({
+        ticketData: { queueId: null, userId: null, status: "pending" },
+        ticketId: ticket.id
+      });
+
+      // Show queue options again
+      const { queues, greetingMessage } = whatsapp;
+      let options = "";
+      queues.forEach((queue, index) => {
+        options += `🔹 *${index + 1}* - ${queue.name}\n`;
+      });
+
+      const body = formatBody(
+        `\u200e${greetingMessage}\n\n${options}`,
+        ticket
+      );
+      const sentMessage = await wbot.sendMessage(
+        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
+        body
+      );
+      await verifyMessage(sentMessage, ticket, contact);
+      return;
+    }
+
     // Only run internal chatbot if there's no active typebot integration
     if (ticket.queue && ticket.queueId && !ticket.useIntegration) {
       if (!ticket.user) {

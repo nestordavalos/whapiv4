@@ -250,12 +250,34 @@ const TicketsList = (props) => {
 					return selectedQueueIds.indexOf(ticket.queueId) > -1;
 				};
 
-				const shouldUpdateTicket = (ticket) =>
-					(!status || ticket.status === status) &&
-					(!ticket.userId || ticket.userId === user?.id || showAll) &&
-					matchesQueueFilter(ticket);
+				// Check if user is admin
+				const isAdmin = (profile || "").toUpperCase() === "ADMIN";
+
+				const shouldUpdateTicket = (ticket) => {
+					// Status must match if specified
+					if (status && ticket.status !== status) return false;
+					
+					// Queue filter
+					if (!matchesQueueFilter(ticket)) return false;
+					
+					// Admin or showAll can see all tickets
+					if (isAdmin || showAll) return true;
+					
+					// Non-admin users can only see their own tickets or unassigned
+					return !ticket.userId || ticket.userId === user?.id;
+				};
 
                 const handleTicket = (data) => {
+                        console.debug(`[TicketsList ${status}] Received ticket event:`, {
+                                action: data.action,
+                                ticketId: data.ticket?.id || data.ticketId,
+                                ticketStatus: data.ticket?.status,
+                                ticketUserId: data.ticket?.userId,
+                                shouldUpdate: data.ticket ? shouldUpdateTicket(data.ticket) : 'N/A',
+                                isAdmin,
+                                showAll
+                        });
+
                         if (data.action === "updateUnread") {
                                 dispatch({
                                         type: "RESET_UNREAD",

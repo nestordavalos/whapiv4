@@ -1,24 +1,25 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, { useState, useEffect, useRef, useContext, useMemo, useCallback } from "react";
 
 import { useHistory, useParams } from "react-router-dom";
 import { parseISO, format, isSameDay } from "date-fns";
 import clsx from "clsx";
 
 import { makeStyles, useTheme } from "@material-ui/core/styles";
-import { green } from "@material-ui/core/colors";
 import ListItem from "@material-ui/core/ListItem";
 import Typography from "@material-ui/core/Typography";
 import Avatar from "@material-ui/core/Avatar";
 import Divider from "@material-ui/core/Divider";
-import Badge from "@material-ui/core/Badge";
-import UndoRoundedIcon from '@material-ui/icons/UndoRounded';
+import Chip from "@material-ui/core/Chip";
+import { IconButton, Tooltip } from "@material-ui/core";
+import DoneIcon from "@material-ui/icons/Done";
+import UndoRoundedIcon from "@material-ui/icons/UndoRounded";
+import CancelIcon from "@material-ui/icons/Cancel";
+import WhatsAppIcon from "@material-ui/icons/WhatsApp";
+import BusinessCenterIcon from "@material-ui/icons/BusinessCenter";
+import PersonOutlineIcon from "@material-ui/icons/PersonOutline";
 import { i18n } from "../../translate/i18n";
-import DoneIcon from '@material-ui/icons/Done';
-import { IconButton } from "@material-ui/core";
 import api from "../../services/api";
-import CancelIcon from '@material-ui/icons/Cancel';
 import MarkdownWrapper from "../MarkdownWrapper";
-import { Tooltip } from "@material-ui/core";
 import { AuthContext } from "../../context/Auth/AuthContext";
 import toastError from "../../errors/toastError";
 import AcceptTicketWithouSelectQueue from "../AcceptTicketWithoutQueueModal";
@@ -30,210 +31,444 @@ const useStyles = makeStyles(theme => ({
 	ticket: {
 		position: "relative",
 		display: "flex",
-		padding: "10px 16px",
-		margin: "0",
-		borderRadius: "0",
-		transition: "background-color 0.1s ease",
+		padding: "8px 12px",
+		margin: "4px 10px 4px 6px",
+		borderRadius: 10,
+		border: `1px solid ${theme.palette.divider}`,
 		backgroundColor: theme.palette.background.paper,
-		borderLeft: "3px solid transparent",
+		alignItems: "flex-start",
+		gap: 8,
+		transition: "box-shadow 0.2s ease, transform 0.2s ease, background-color 0.2s ease",
+		overflow: "hidden",
 		"&:hover": {
-			backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : "#f7f7f7",
+			boxShadow: theme.palette.type === "dark"
+				? "0 8px 18px rgba(0,0,0,0.45)"
+				: "0 10px 24px rgba(15,23,42,0.12)",
+			transform: "translateY(-1px)",
 		},
 		"&.Mui-selected": {
-			backgroundColor: theme.palette.mode === 'dark' ? 'rgba(33,150,243,0.15)' : "#e8f4fd",
-			borderLeft: `3px solid ${theme.palette.primary.main}`,
+			backgroundColor: theme.palette.type === "dark" 
+				? "rgba(0, 113, 193, 0.15)" 
+				: "rgba(0, 113, 193, 0.08)",
+			borderColor: theme.palette.primary.main,
+			boxShadow: theme.palette.type === "dark"
+				? "0 4px 12px rgba(0, 113, 193, 0.3)"
+				: "0 4px 12px rgba(0, 113, 193, 0.15)",
+			"&:hover": {
+				backgroundColor: theme.palette.type === "dark" 
+					? "rgba(0, 113, 193, 0.2)" 
+					: "rgba(0, 113, 193, 0.12)",
+			},
+		},
+		[theme.breakpoints.down("xs")]: {
+			margin: "3px 6px 3px 4px",
+			padding: "6px 10px",
+			gap: 6,
 		},
 	},
-
 	pendingTicket: {
-		cursor: "pointer",
-		backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,193,7,0.08)' : "#fffef7",
-		"&:hover": {
-			backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255,193,7,0.12)' : "#fffaeb",
-		},
+		backgroundColor: theme.palette.type === "dark" ? "rgba(255,193,7,0.08)" : "#fffef7",
+		borderColor: theme.palette.type === "dark" ? "rgba(255,193,7,0.3)" : "#fde68a",
 	},
-
-	noTicketsDiv: {
-		display: "flex",
-		height: "100px",
-		margin: 40,
-		flexDirection: "column",
-		alignItems: "center",
-		justifyContent: "center",
-	},
-
-	noTicketsText: {
-		textAlign: "center",
-		color: "rgb(104, 121, 146)",
-		fontSize: "14px",
-		lineHeight: "1.4",
-	},
-
-	noTicketsTitle: {
-		textAlign: "center",
-		fontSize: "16px",
-		fontWeight: "600",
-		margin: "0px",
-	},
-
-	contactNameWrapper: {
-		display: "flex",
-		justifyContent: "space-between",
-		alignItems: "baseline",
-		marginBottom: "2px",
-		gap: "8px",
-	},
-
-	lastMessageTime: {
-		fontSize: "0.72rem",
-		color: theme.palette.text.secondary,
-		fontWeight: 400,
-		whiteSpace: "nowrap",
-		marginLeft: "auto",
-	},
-
-	closedBadge: {
-		alignSelf: "center",
-		justifySelf: "flex-end",
-		marginRight: 32,
-		marginLeft: "auto",
-	},
-
-	contactLastMessage: {
-		flexWrap: "wrap",
-	},
-
-	newMessagesCount: {
-		alignSelf: "center",
-		marginLeft: "4px",
-		display: "flex",
-		alignItems: "center",
-		"& .MuiBadge-badge": {
-			fontWeight: 700,
-			minWidth: "18px",
-			height: "18px",
-			padding: "0 5px",
-			fontSize: "0.7rem",
-		},
-	},
-
-	bottomButton: {
-		position: "relative",
-		borderRadius: "8px",
-		padding: "6px",
-		transition: "all 0.2s ease",
-		"&:hover": {
-			transform: "scale(1.1)",
-			backgroundColor: "rgba(0,0,0,0.08)",
-		},
-	},
-
-	badgeStyle: {
-		color: "white",
-		backgroundColor: green[500],
-	},
-
-	acceptButton: {
-		position: "absolute",
-		left: "50%",
-	},
-
 	ticketQueueColor: {
-		display: "none",
-	}, Tag: {
-		position: "absolute",
-		marginRight: 5,
-		right: 20,
-		bottom: 30,
-		backgroundColor: theme.palette.background.default,
-		color: theme.palette.primary.main,
-		border: "1px solid #CCC",
-		padding: 1,
-		paddingLeft: 5,
-		paddingRight: 5,
-		borderRadius: 10,
-		fontSize: "0.9em"
+		width: 3,
+		borderRadius: 3,
+		alignSelf: "stretch",
+		backgroundColor: theme.palette.primary.light,
 	},
-	Radiusdot: {
-		display: "inline-flex",
-		flexWrap: "wrap",
-		gap: "4px",
-		marginTop: "3px",
+	cardContent: {
+		width: "100%",
+		display: "flex",
+		flexDirection: "column",
+		gap: 6,
+	},
+	headerRow: {
+		display: "flex",
 		alignItems: "center",
-		"& .MuiBadge-badge": {
-			borderRadius: "3px",
-			position: "static",
-			height: "auto",
-			minHeight: "16px",
-			padding: "1px 5px",
-			whiteSpace: "nowrap",
-			fontSize: "0.68rem",
-			fontWeight: 500,
-			transform: "none",
-			border: "none",
-			boxShadow: "none",
-			opacity: 0.9,
+		justifyContent: "space-between",
+		gap: 8,
+		width: "100%",
+	},
+	nameInfo: {
+		display: "flex",
+		alignItems: "center",
+		gap: 4,
+		minWidth: 0,
+	},
+	metaChips: {
+		display: "flex",
+		flexWrap: "wrap",
+		gap: 4,
+		justifyContent: "flex-end",
+		alignItems: "center",
+		[theme.breakpoints.down("xs")]: {
+			gap: 2,
 		},
 	},
-}));
+	connectionChip: {
+		backgroundColor: theme.palette.type === "dark" ? "rgba(76,175,80,0.18)" : "#ecfdf5",
+		color: theme.palette.success.main,
+		[theme.breakpoints.down("xs")]: {
+			display: "none",
+		},
+	},
+	queueChip: {
+		backgroundColor: theme.palette.type === "dark" ? "rgba(33,150,243,0.2)" : "#e7f1ff",
+		color: theme.palette.primary.main,
+		[theme.breakpoints.down("xs")]: {
+			"& .MuiChip-label": {
+				padding: "0 4px",
+				fontSize: "0.6rem",
+			},
+			"& .MuiChip-icon": {
+				display: "none",
+			},
+		},
+	},
+	userChip: {
+		backgroundColor: theme.palette.type === "dark" ? "rgba(44,62,80,0.6)" : "#e5e7eb",
+		color: theme.palette.text.primary,
+		[theme.breakpoints.down("xs")]: {
+			display: "none",
+		},
+	},
+	statusPill: {
+		padding: "0 6px",
+		borderRadius: 999,
+		fontSize: "0.62rem",
+		fontWeight: 700,
+		letterSpacing: "0.06em",
+		textTransform: "uppercase",
+		[theme.breakpoints.down("xs")]: {
+			padding: "0 4px",
+			fontSize: "0.55rem",
+		},
+	},
+	ticketBody: {
+		display: "flex",
+		alignItems: "center",
+		gap: 8,
+	},
+	avatar: {
+		height: 34,
+		width: 34,
+		borderRadius: 8,
+		flexShrink: 0,
+		[theme.breakpoints.down("xs")]: {
+			height: 30,
+			width: 30,
+			borderRadius: 6,
+		},
+	},
+	contactRow: {
+		flex: 1,
+		minWidth: 0,
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "space-between",
+		gap: 8,
+	},
+	messageRow: {
+		display: "flex",
+		alignItems: "flex-start",
+		gap: 6,
+		width: "100%",
+	},
+	messageTime: {
+		fontSize: "0.78rem",
+		color: theme.palette.text.secondary,
+		fontWeight: 500,
+		whiteSpace: "nowrap",
+	},
+	lastMessagePreview: {
+		color: theme.palette.text.secondary,
+		fontSize: "0.78rem",
+		display: "-webkit-box",
+		WebkitLineClamp: 2,
+		WebkitBoxOrient: "vertical",
+		overflow: "hidden",
+		[theme.breakpoints.down("xs")]: {
+			fontSize: "0.72rem",
+			WebkitLineClamp: 1,
+		},
+	},
+	ticketFooter: {
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "space-between",
+		gap: 6,
+		flexWrap: "wrap",
+	},
+	tagContainer: {
+		display: "flex",
+		flexWrap: "wrap",
+		gap: 3,
+		flex: 1,
+		minWidth: 0,
+		maxHeight: 18,
+		overflow: "hidden",
+	},
+	tagChip: {
+		maxWidth: 80,
+		height: 16,
+		fontSize: "0.65rem",
+		textOverflow: "ellipsis",
+		overflow: "hidden",
+		"& .MuiChip-label": {
+			padding: "0 6px",
+		},
+	},
+	tagPlaceholder: {
+		flex: 1,
+		minHeight: 18,
+	},
+	actionsWrapper: {
+		display: "flex",
+		alignItems: "center",
+		gap: 6,
+		justifyContent: "flex-end",
+		flex: 1,
+	},
+	bottomButton: {
+		padding: 4,
+		borderRadius: 8,
+	},
+	timeAndBadge: {
+		display: "flex",
+		alignItems: "center",
+		gap: 6,
+		flexShrink: 0,
+	},
+	unreadIndicator: {
+		backgroundColor: theme.palette.success.main,
+		color: "#fff",
+		fontSize: "0.65rem",
+		fontWeight: 700,
+		borderRadius: 10,
+		padding: "2px 6px",
+		minWidth: 18,
+		textAlign: "center",
+		lineHeight: 1,
+	},
+	}));
 
-const TicketListItem = ({ handleChangeTab, ticket }) => {
-	const classes = useStyles();
-	const theme = useTheme();
-	const history = useHistory();
-	const [loading, setLoading] = useState(false);
-	const { ticketId } = useParams();
-	const isMounted = useRef(true);
-	const { user } = useContext(AuthContext);
-	const [acceptTicketWithouSelectQueueOpen, setAcceptTicketWithouSelectQueueOpen] = useState(false);
-	const [tag, setTag] = useState([]);
+	const TicketListItem = ({ handleChangeTab, ticket }) => {
+		const classes = useStyles();
+		const theme = useTheme();
+		const history = useHistory();
+		const { ticketId } = useParams();
+		const { user } = useContext(AuthContext);
+		const userQueues = user?.queues || [];
+		const [loading, setLoading] = useState(false);
+		const [acceptTicketWithouSelectQueueOpen, setAcceptTicketWithouSelectQueueOpen] = useState(false);
+		const [userName, setUserName] = useState(null);
+		const isMounted = useRef(true);
+		const tags = ticket?.contact?.tags || [];
 
-	useEffect(() => {
-		const delayDebounceFn = setTimeout(() => {
-			const fetchTicket = async () => {
-				try {
-					const { data } = await api.get("/tickets/" + ticket.id);
+		const safeHandleChangeTab = useCallback((event, nextTab) => {
+			if (typeof handleChangeTab === "function") {
+				handleChangeTab(event, nextTab);
+			}
+		}, [handleChangeTab]);
 
-					setTag(data?.contact?.tags);
-
-				} catch (err) {
-				}
+		useEffect(() => {
+			return () => {
+				isMounted.current = false;
 			};
-			fetchTicket();
-		}, 500);
-		return () => {
-			if (delayDebounceFn !== null) {
-				clearTimeout(delayDebounceFn);
+		}, []);
+
+		useEffect(() => {
+		if (ticket.status === "pending" || !ticket.userId) {
+			setUserName(null);
+			return;
+		}
+
+		let cancelled = false;
+		const fetchUserName = async () => {
+			try {
+				const { data } = await api.get(`/users/${ticket.userId}`);
+				if (!cancelled) {
+					setUserName(data?.name || null);
+				}
+			} catch (err) {
+				// Falha silenciosa
 			}
 		};
-	}, [ticket.id]);
 
-	useEffect(() => {
+		fetchUserName();
 		return () => {
-			isMounted.current = false;
+			cancelled = true;
 		};
-	}, []);
+	}, [ticket.status, ticket.userId]);
 
-	const ContactTag = ({ tag }) => {
-		return (
-			<span
-				style={{
-					backgroundColor: tag.color,
-					padding: "1px 5px",
-					borderRadius: "3px",
-					fontSize: "0.68rem",
-					fontWeight: 500,
-					color: "white",
-					display: "inline-flex",
-					alignItems: "center",
-					whiteSpace: "nowrap",
-					opacity: 0.9,
-				}}
-			>
-				{tag.name}
-			</span>
-		)
-	}
+	const queueName = useCallback((selectedTicket) => {
+		let name = null;
+		let color = null;
+		userQueues.forEach(queue => {
+			if (queue.id === selectedTicket.queueId) {
+				name = queue.name;
+				color = queue.color;
+			}
+		});
+		return { name, color };
+	}, [userQueues]);
+
+	const queueInfo = useMemo(() => queueName(ticket), [ticket, queueName]);
+	const queueColor = ticket.queue?.color || queueInfo.color || theme.palette.primary.light;
+	const queueLabel = ticket.queue?.name || queueInfo.name || i18n.t("ticketsList.items.queueless");
+
+	const statusDisplay = useMemo(() => {
+		const palette = theme.palette;
+		const config = {
+			pending: {
+				label: i18n.t("dashboard.messages.waiting.title"),
+				color: palette.warning.light || "#fbbf24",
+			},
+			open: {
+				label: i18n.t("dashboard.messages.inAttendance.title"),
+				color: palette.info?.light || palette.primary.light,
+			},
+			closed: {
+				label: i18n.t("dashboard.messages.closed.title"),
+				color: palette.success.light || "#10b981",
+			},
+		};
+
+		const fallback = { label: ticket.status, color: palette.grey[400] };
+		const chosen = config[ticket.status] || fallback;
+		const textColor = palette.getContrastText
+			? palette.getContrastText(chosen.color)
+			: palette.text.primary;
+
+		return { ...chosen, textColor };
+	}, [ticket.status, theme]);
+
+	const lastMessageTime = useMemo(() => {
+		if (!ticket.lastMessage || !ticket.updatedAt) return null;
+		const parsed = parseISO(ticket.updatedAt);
+		return isSameDay(parsed, new Date())
+			? format(parsed, "HH:mm")
+			: format(parsed, "dd/MM/yyyy");
+	}, [ticket.lastMessage, ticket.updatedAt]);
+
+	const directionMeta = useMemo(() => {
+		if (!ticket.lastMessage) return null;
+		if (ticket.lastMessage.includes("🢅")) {
+			return { icon: sendIcon, alt: "Msg Enviada" };
+		}
+		if (ticket.lastMessage.includes("🢇")) {
+			return { icon: receiveIcon, alt: "Msg Recebida" };
+		}
+		return null;
+	}, [ticket.lastMessage]);
+
+	const sanitizedMessage = useMemo(() => {
+		if (!ticket.lastMessage) return "";
+		return ticket.lastMessage.replace("🢇", "").replace("🢅", "");
+	}, [ticket.lastMessage]);
+
+	const renderActionButtons = () => {
+			const buttons = [];
+			const needsQueueSelection = ticket.queue === null || ticket.queue === undefined;
+
+			if (ticket.status === "pending") {
+				if (needsQueueSelection) {
+					buttons.push(
+						<Tooltip title={i18n.t("ticketsList.items.accept")} key="accept-without-queue">
+							<IconButton
+								className={classes.bottomButton}
+								color="primary"
+								size="small"
+								onClick={e => {
+									e.stopPropagation();
+									handleOpenAcceptTicketWithouSelectQueue();
+								}}
+								disabled={loading}
+							>
+								<DoneIcon fontSize="small" />
+							</IconButton>
+						</Tooltip>
+					);
+				} else {
+					buttons.push(
+						<Tooltip title={i18n.t("ticketsList.items.accept")} key="accept">
+							<IconButton
+								className={classes.bottomButton}
+								color="primary"
+								size="small"
+								onClick={e => {
+									e.stopPropagation();
+									handleAcepptTicket(ticket.id);
+								}}
+							>
+								<DoneIcon fontSize="small" />
+							</IconButton>
+						</Tooltip>
+					);
+				}
+			}
+
+			if (ticket.status === "open") {
+				buttons.push(
+					<Tooltip title={i18n.t("ticketsList.items.return")} key="return">
+						<IconButton
+							className={classes.bottomButton}
+							color="primary"
+							size="small"
+							onClick={e => {
+								e.stopPropagation();
+								handleViewTicket(ticket.id);
+							}}
+						>
+							<UndoRoundedIcon fontSize="small" />
+						</IconButton>
+					</Tooltip>
+				);
+				buttons.push(
+					<Tooltip title={i18n.t("ticketsList.items.close")} key="close">
+						<IconButton
+							className={classes.bottomButton}
+							color="primary"
+							size="small"
+							onClick={e => {
+								e.stopPropagation();
+								handleClosedTicket(ticket.id);
+							}}
+						>
+							<CancelIcon fontSize="small" />
+						</IconButton>
+					</Tooltip>
+				);
+			}
+
+			if (ticket.status === "closed") {
+				buttons.push(
+					<Tooltip title={i18n.t("ticketsList.items.reopen")} key="reopen">
+						<IconButton
+							className={classes.bottomButton}
+							color="primary"
+							size="small"
+							onClick={e => {
+								e.stopPropagation();
+								handleReopenTicket(ticket.id);
+							}}
+						>
+							<UndoRoundedIcon fontSize="small" />
+						</IconButton>
+					</Tooltip>
+				);
+			}
+
+			return buttons;
+		};
+
+	const handleSelectTicket = id => {
+		history.push(`/tickets/${id}`);
+	};
+
+	const handleOpenAcceptTicketWithouSelectQueue = () => {
+		setAcceptTicketWithouSelectQueueOpen(true);
+	};
 
 	const handleAcepptTicket = async id => {
 		setLoading(true);
@@ -242,31 +477,15 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 				status: "open",
 				userId: user?.id,
 			});
+			safeHandleChangeTab(null, "open");
+			history.push(`/tickets/${id}`);
 		} catch (err) {
-			setLoading(false);
 			toastError(err);
-		}
-		if (isMounted.current) {
-			setLoading(false);
-		}
-		handleChangeTab(null, "open");
-		history.push(`/tickets/${id}`);
-	}; const queueName = selectedTicket => {
-		let name = null;
-		let color = null;
-		user.queues.forEach(userQueue => {
-			if (userQueue.id === selectedTicket.queueId) {
-				name = userQueue.name;
-				color = userQueue.color;
+		} finally {
+			if (isMounted.current) {
+				setLoading(false);
 			}
-		});
-		return {
-			name,
-			color
-		};
-	}
-	const handleOpenAcceptTicketWithouSelectQueue = () => {
-		setAcceptTicketWithouSelectQueueOpen(true);
+		}
 	};
 
 	const handleReopenTicket = async id => {
@@ -276,14 +495,14 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 				status: "open",
 				userId: user?.id,
 			});
+			history.push(`/tickets/${id}`);
 		} catch (err) {
-			setLoading(false);
 			toastError(err);
+		} finally {
+			if (isMounted.current) {
+				setLoading(false);
+			}
 		}
-		if (isMounted.current) {
-			setLoading(false);
-		}
-		history.push(`/tickets/${id}`);
 	};
 
 	const handleViewTicket = async id => {
@@ -292,14 +511,14 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 			await api.put(`/tickets/${id}`, {
 				status: "pending",
 			});
+			history.push(`/tickets/${id}`);
 		} catch (err) {
-			setLoading(false);
 			toastError(err);
+		} finally {
+			if (isMounted.current) {
+				setLoading(false);
+			}
 		}
-		if (isMounted.current) {
-			setLoading(false);
-		}
-		history.push(`/tickets/${id}`);
 	};
 
 	const handleClosedTicket = async id => {
@@ -309,331 +528,163 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
 				status: "closed",
 				userId: user?.id,
 			});
+			history.push(`/tickets/${id}`);
 		} catch (err) {
-			setLoading(false);
 			toastError(err);
-		}
-		if (isMounted.current) {
-			setLoading(false);
-		}
-		history.push(`/tickets/${id}`);
-	};
-
-	const handleSelectTicket = id => {
-		history.push(`/tickets/${id}`);
-	};
-
-	// Nome do atendente
-	const [uName, setUserName] = useState(null);
-
-	// if (ticket.status === "pending" || ticket.status === "closed") {
-	if (ticket.status === "pending") {	
-
-	} else {
-
-		const fetchUserName = async () => {
-			try {
-				const { data } = await api.get("/users/" + ticket.userId, {
-				});
-				setUserName(data['name']);
-			} catch (err) {
-				// toastError(err);
+		} finally {
+			if (isMounted.current) {
+				setLoading(false);
 			}
-		};
-		fetchUserName();
+		}
 	};
 
-	const viewConection = user.viewConection === 'enabled';
-	const viewSector = user.viewSector === 'enabled';
-	const viewName = user.viewName === 'enabled';
-	const viewTags = user.viewTags === 'enabled';
+	const viewConection = user?.viewConection === "enabled";
+	const viewSector = user?.viewSector === "enabled";
+	const viewName = user?.viewName === "enabled";
+	const viewTags = user?.viewTags === "enabled";
 
 	return (
 		<React.Fragment key={ticket.id}>
 			<AcceptTicketWithouSelectQueue
 				modalOpen={acceptTicketWithouSelectQueueOpen}
-				onClose={(e) => setAcceptTicketWithouSelectQueueOpen(false)}
+				onClose={() => setAcceptTicketWithouSelectQueueOpen(false)}
 				ticketId={ticket.id}
 			/>
 			<ListItem
 				dense
 				button
-				onClick={e => {
-					// if (ticket.status === "pending") return;
-					handleSelectTicket(ticket.id);
-				}}
+				onClick={() => handleSelectTicket(ticket.id)}
 				selected={ticketId && +ticketId === ticket.id}
 				className={clsx(classes.ticket, {
-					[classes.pendingTicket]: (ticket.status === "pending"),
+					[classes.pendingTicket]: ticket.status === "pending",
 				})}
-				style={{
-					display: "flex",
-					alignItems: "flex-start",
-					gap: "8px",
-					padding: "8px 12px",
-				}}
 			>
-				<Tooltip
-					arrow
-					placement="right"
-					title={ticket.queue?.name || queueName(ticket)?.name || i18n.t("ticketsList.items.queueless")}
-				>
+				<Tooltip title={queueLabel} placement="left">
 					<span
-						style={{ backgroundColor: ticket.queue?.color || queueName(ticket)?.color || "#7C7C7C" }}
 						className={classes.ticketQueueColor}
-					></span>
+						style={{ backgroundColor: queueColor }}
+					/>
 				</Tooltip>
-				
-				<div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "2px" }}>
-					{/* LÍNEA 1: Conexión con icono (izq) + Sector y Agente badges (der) */}
-					<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-						{/* Izquierda: Conexión con icono WhatsApp */}
-						{viewConection && ticket.whatsappId && (
-						<div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-							<img src="https://cdn-icons-png.flaticon.com/512/124/124034.png" alt="WhatsApp" width="14px" height="14px" />
-							<Typography
-								component="span"
-								style={{
-									fontSize: "0.7rem",
-									color: theme.palette.text.secondary,
-									fontWeight: 400,
-								}}
-							>
-									{ticket.whatsapp?.name || i18n.t("userModal.form.user")}
-								</Typography>
-							</div>
-						)}
-
-						{/* Derecha: Badges Sector y Agente */}
-						<span className={classes.Radiusdot}>
+				<div className={classes.cardContent}>
+					{/* FILA 1: Conexión (izq) + Sector + Agente + Estado (der) */}
+					<div className={classes.headerRow}>
+						<div className={classes.nameInfo}>
+							{viewConection && ticket.whatsappId && (
+								<Chip
+									icon={<WhatsAppIcon fontSize="small" />}
+									label={ticket.whatsapp?.name || i18n.t("ticketsList.items.connection")}
+									size="small"
+									className={classes.connectionChip}
+								/>
+							)}
+						</div>
+						<div className={classes.metaChips}>
 							{viewSector && ticket.queueId && (
-								<Tooltip title={i18n.t("messageVariablesPicker.vars.queue")}>
-									<Badge
-										className={classes.Radiusdot}
-										overlap="rectangular"
-										style={{
-											backgroundColor: ticket.queue?.color || "#7C7C7C",
-											color: "white"
-										}}
-										badgeContent={ticket.queue?.name || "No sector"}
+								<Tooltip title={i18n.t("ticketsList.items.queue")}>
+									<Chip
+										icon={<BusinessCenterIcon style={{ fontSize: "1rem" }} />}
+										label={queueLabel}
+										size="small"
+										className={classes.queueChip}
 									/>
 								</Tooltip>
 							)}
-
 							{viewName && (
 								<Can
-									role={user.profile}
+									role={user?.profile}
 									perform="drawer-admin-items:view"
 									yes={() => (
-										<>
-											{uName && uName !== "" && (
-												<Tooltip title={i18n.t("messageVariablesPicker.vars.user")}>
-													<Badge
-														className={classes.Radiusdot}
-														overlap="rectangular"
-														style={{
-															backgroundColor: "#2c3e50",
-															color: "white",
-														}}
-														badgeContent={uName}
-													/>
-												</Tooltip>
-											)}
-										</>
+										userName ? (
+											<Tooltip title={i18n.t("ticketsList.items.user")}>
+												<Chip
+													icon={<PersonOutlineIcon style={{ fontSize: "1rem" }} />}
+													label={userName}
+													size="small"
+													className={classes.userChip}
+												/>
+											</Tooltip>
+										) : null
 									)}
 								/>
 							)}
-						</span>
+							<span
+								className={classes.statusPill}
+								style={{
+									backgroundColor: statusDisplay.color,
+									color: statusDisplay.textColor,
+								}}
+							>
+								{statusDisplay.label}
+							</span>
+						</div>
 					</div>
 
-					{/* LÍNEA 2: Avatar + Nombre/Número del contacto */}
-					<div style={{ display: "flex", alignItems: "flex-start", gap: "6px" }}>
-						<Avatar style={{
-							height: 36,
-							width: 36,
-							borderRadius: "4px",
-							flexShrink: 0,
-						}}
-							src={ticket?.contact?.profilePicUrl} />
-						
-						<div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "0px" }}>
-						<Typography
-							noWrap
-							component="span"
-							variant="body2"
-							style={{
-								fontWeight: 700,
-								color: theme.palette.text.primary,
-								fontSize: "0.9rem",
-							}}
-						>
-							{ticket.contact.name}
-						</Typography>
-						
-						{/* LÍNEA 3: Mensaje + Fecha/Hora */}
-							<div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "space-between" }}>
-								<Typography
-									noWrap
-									component="span"
-									variant="body2"
-									style={{
-										color: theme.palette.text.secondary,
-										fontSize: "0.82rem",
-										display: "flex",
-										alignItems: "center",
-										gap: "4px",
-										flex: 1,
-									}}
-								>
-									{(() => {
-										if (ticket.lastMessage) {
-											if (ticket.lastMessage.includes("🢅") === true) {
-												return (
-													<img src={sendIcon} alt="Msg Enviada" width="12px" />
-												)
-											} else if (ticket.lastMessage.includes("🢇") === true) {
-												return (
-													<img src={receiveIcon} alt="Msg Recebida" width="12px" />
-												)
-											}
-										}
-									})()}
-									{ticket.lastMessage ? (
-										<MarkdownWrapper>{ticket.lastMessage
-											.replace("🢇", "")
-											.replace("🢅", "")}</MarkdownWrapper>
-									) : (
-										<span></span>
-									)}
-								</Typography>
-
-								<div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-									{/* Fecha/Hora */}
-									{ticket.lastMessage && (
-										<Typography
-											className={classes.lastMessageTime}
-											component="span"
-											variant="body2"
-											style={{ whiteSpace: "nowrap" }}
-										>
-											{isSameDay(parseISO(ticket.updatedAt), new Date()) ? (
-												<>{format(parseISO(ticket.updatedAt), "HH:mm")}</>
-											) : (
-												<>{format(parseISO(ticket.updatedAt), "dd/MM/yyyy")}</>
-											)}
-										</Typography>
-									)}
-									
-									<Badge
-										className={classes.newMessagesCount}
-										badgeContent={ticket.unreadMessages}
-										overlap="rectangular"
-										classes={{
-											badge: classes.badgeStyle,
-										}} />
-								</div>
+					{/* FILA 2: Avatar + Nombre + Hora */}
+					<div className={classes.ticketBody}>
+						<Avatar
+							className={classes.avatar}
+							src={ticket?.contact?.profilePicUrl}
+							alt={ticket.contact?.name || "contact"}
+						/>
+						<div className={classes.contactRow}>
+							<Typography
+								noWrap
+								component="span"
+								variant="body2"
+								style={{ fontWeight: 700 }}
+							>
+								{ticket.contact?.name}
+							</Typography>
+							<div className={classes.timeAndBadge}>
+								{lastMessageTime && (
+									<Typography component="span" className={classes.messageTime}>
+										{lastMessageTime}
+									</Typography>
+								)}
+								{ticket.unreadMessages > 0 && (
+									<span className={classes.unreadIndicator}>{ticket.unreadMessages}</span>
+								)}
 							</div>
 						</div>
 					</div>
 
-					{/* LÍNEA 4: Etiquetas (izq) + Botones (der) */}
-					<div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
-						{/* Izquierda: Etiquetas */}
-						{viewTags && tag?.length > 0 ? (
-							<div style={{ 
-								display: "flex", 
-								flexWrap: "wrap", 
-								gap: "4px", 
-								alignItems: "center",
-								flex: 1,
-								minWidth: 0,
-							}}>
-								{tag.map((tag) => (
-									<ContactTag tag={tag} key={`ticket-contact-tag-${ticket.id}-${tag.id}`} />
+					{/* FILA 3: Mensaje */}
+					<div className={classes.messageRow}>
+						{directionMeta && (
+							<img src={directionMeta.icon} alt={directionMeta.alt} width="12" height="12" />
+						)}
+						<Typography component="span" className={classes.lastMessagePreview}>
+							{sanitizedMessage ? (
+								<MarkdownWrapper>{sanitizedMessage}</MarkdownWrapper>
+							) : (
+								<span></span>
+							)}
+						</Typography>
+					</div>
+
+					{/* FILA 4: Etiquetas (izq) + Botones (der) */}
+					<div className={classes.ticketFooter}>
+						{viewTags && tags.length > 0 ? (
+							<div className={classes.tagContainer}>
+								{tags.map(currentTag => (
+									<Chip
+										key={`ticket-contact-tag-${ticket.id}-${currentTag.id}`}
+										label={currentTag.name}
+										size="small"
+										className={classes.tagChip}
+										style={{ backgroundColor: currentTag.color, color: "#fff" }}
+									/>
 								))}
 							</div>
 						) : (
-							<div style={{ flex: 1 }}></div>
+							<div className={classes.tagPlaceholder} />
 						)}
-						
-						{/* Derecha: Botones lado a lado */}
-						<div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
-							{(ticket.status === "pending" && (ticket.queue === null || ticket.queue === undefined)) && (
-								<Tooltip title={i18n.t("ticketsList.items.accept")}>
-									<IconButton
-										className={classes.bottomButton}
-										color="primary"
-										size="small"
-										onClick={e => {
-											e.stopPropagation();
-											handleOpenAcceptTicketWithouSelectQueue();
-										}}
-										disabled={loading}>
-										<DoneIcon fontSize="small" />
-									</IconButton>
-								</Tooltip>
-							)}
-							{ticket.status === "pending" && ticket.queue !== null && (
-								<Tooltip title={i18n.t("ticketsList.items.accept")}>
-									<IconButton
-										className={classes.bottomButton}
-										color="primary"
-										size="small"
-										onClick={e => {
-											e.stopPropagation();
-											handleAcepptTicket(ticket.id);
-										}}>
-										<DoneIcon fontSize="small" />
-									</IconButton>
-								</Tooltip>
-							)}
-							{ticket.status === "open" && (
-								<>
-									<Tooltip title={i18n.t("ticketsList.items.return")}>
-										<IconButton
-											className={classes.bottomButton}
-											color="primary"
-											size="small"
-											onClick={e => {
-												e.stopPropagation();
-												handleViewTicket(ticket.id, handleChangeTab);
-											}}>
-											<UndoRoundedIcon fontSize="small" />
-										</IconButton>
-									</Tooltip>
-									<Tooltip title={i18n.t("ticketsList.items.close")}>
-										<IconButton
-											className={classes.bottomButton}
-											color="primary"
-											size="small"
-											onClick={e => {
-												e.stopPropagation();
-												handleClosedTicket(ticket.id);
-											}}>
-											<CancelIcon fontSize="small" />
-										</IconButton>
-									</Tooltip>
-								</>
-							)}
-							{ticket.status === "closed" && (
-								<Tooltip title={i18n.t("ticketsList.items.reopen")}>
-									<IconButton
-										className={classes.bottomButton}
-										color="primary"
-										size="small"
-										onClick={e => {
-											e.stopPropagation();
-											handleReopenTicket(ticket.id);
-										}}>
-										<UndoRoundedIcon fontSize="small" />
-									</IconButton>
-								</Tooltip>
-							)}
-						</div>
+
+						<div className={classes.actionsWrapper}>{renderActionButtons()}</div>
 					</div>
 				</div>
 			</ListItem>
-			<Divider component="li" style={{ margin: 0, borderColor: theme.palette.divider }} />
+			<Divider component="li" style={{ margin: "0 12px", borderColor: theme.palette.divider, opacity: 0.4 }} />
 		</React.Fragment>
 	);
 };

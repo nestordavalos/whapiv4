@@ -29,7 +29,6 @@ import {
 
 import MainContainer from "../../components/MainContainer";
 import MainHeader from "../../components/MainHeader";
-import MainHeaderButtonsWrapper from "../../components/MainHeaderButtonsWrapper";
 import Title from "../../components/Title";
 
 import api from "../../services/api";
@@ -91,13 +90,180 @@ const useStyles = makeStyles((theme) => ({
     flex: 1,
     padding: theme.spacing(2),
     margin: theme.spacing(1),
-    overflowY: "scroll",
+    overflowY: "auto",
+    borderRadius: 12,
+    border: `1px solid ${theme.palette.divider}`,
+    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
     ...theme.scrollbarStyles,
+    [theme.breakpoints.down("sm")]: {
+      padding: theme.spacing(1),
+      margin: theme.spacing(0.5),
+      borderRadius: 8,
+    },
   },
-  customTableCell: {
-    display: "flex",
+  csvbtn: {
+    textDecoration: 'none'
+  },
+  table: {
+    "& .MuiTableHead-root": {
+      "& .MuiTableCell-head": {
+        fontWeight: 600,
+        fontSize: "0.8rem",
+        color: theme.palette.text.secondary,
+        textTransform: "uppercase",
+        letterSpacing: "0.5px",
+        borderBottom: `2px solid ${theme.palette.divider}`,
+        padding: "12px 16px",
+        backgroundColor: theme.palette.background.default,
+        [theme.breakpoints.down("xs")]: {
+          padding: "8px 10px",
+          fontSize: "0.7rem",
+        },
+      },
+    },
+    "& .MuiTableBody-root": {
+      "& .MuiTableRow-root": {
+        transition: "background-color 0.2s ease",
+        "&:hover": {
+          backgroundColor: theme.palette.action.hover,
+        },
+      },
+      "& .MuiTableCell-body": {
+        fontSize: "0.875rem",
+        padding: "12px 16px",
+        borderBottom: `1px solid ${theme.palette.divider}`,
+        [theme.breakpoints.down("xs")]: {
+          padding: "8px 10px",
+          fontSize: "0.75rem",
+        },
+      },
+    },
+  },
+  tagName: {
+    fontWeight: 500,
+    color: theme.palette.text.primary,
+  },
+  colorCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: "50%",
+    display: "inline-block",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.15)",
+    border: "2px solid #fff",
+  },
+  contactsBadge: {
+    display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
+    minWidth: 28,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: theme.palette.primary.main + "18",
+    color: theme.palette.primary.main,
+    fontWeight: 600,
+    fontSize: "0.75rem",
+    padding: "0 8px",
+  },
+  actionButton: {
+    padding: 6,
+    marginLeft: 4,
+    borderRadius: 8,
+    transition: "all 0.2s ease",
+    "&:hover": {
+      backgroundColor: theme.palette.action.hover,
+      transform: "scale(1.1)",
+    },
+  },
+  editButton: {
+    color: theme.palette.primary.main,
+    "&:hover": {
+      backgroundColor: theme.palette.primary.main + "14",
+    },
+  },
+  deleteButton: {
+    color: theme.palette.secondary.main,
+    "&:hover": {
+      backgroundColor: theme.palette.secondary.main + "14",
+    },
+  },
+  searchField: {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 10,
+      backgroundColor: theme.palette.background.paper,
+      "& fieldset": {
+        borderColor: theme.palette.divider,
+      },
+      "&:hover fieldset": {
+        borderColor: theme.palette.primary.light,
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: theme.palette.primary.main,
+      },
+    },
+  },
+  headerButton: {
+    borderRadius: 8,
+    minWidth: 40,
+    height: 40,
+    boxShadow: "0 2px 8px rgba(25, 118, 210, 0.25)",
+    transition: "all 0.2s ease",
+    "&:hover": {
+      transform: "translateY(-2px)",
+      boxShadow: "0 4px 12px rgba(25, 118, 210, 0.35)",
+    },
+    [theme.breakpoints.down("xs")]: {
+      minWidth: 36,
+      height: 36,
+    },
+  },
+  headerTopRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    gap: 8,
+    [theme.breakpoints.down("xs")]: {
+      gap: 6,
+    },
+  },
+  headerButtons: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    [theme.breakpoints.down("xs")]: {
+      gap: 4,
+    },
+  },
+  searchRow: {
+    display: "none",
+    [theme.breakpoints.down("xs")]: {
+      display: "flex",
+      width: "100%",
+      justifyContent: "center",
+    },
+  },
+  searchFieldMobile: {
+    width: "100%",
+    maxWidth: 400,
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 10,
+      backgroundColor: theme.palette.background.paper,
+      "& fieldset": {
+        borderColor: theme.palette.divider,
+      },
+      "&:hover fieldset": {
+        borderColor: theme.palette.primary.main,
+      },
+    },
+    "& .MuiInputBase-input": {
+      padding: "10px 14px",
+      fontSize: "0.875rem",
+    },
+  },
+  hideOnMobileSearch: {
+    [theme.breakpoints.down("xs")]: {
+      display: "none",
+    },
   },
 }));
 
@@ -253,97 +419,111 @@ const Tags = () => {
         tagId={selectedTag && selectedTag.id}
       />
       <MainHeader>
-        <Title >{i18n.t("tags.title")} ({tags.length})</Title>
-        <MainHeaderButtonsWrapper>
+        <div className={classes.headerTopRow}>
+          <Title>{i18n.t("tags.title")} ({tags.length})</Title>
+          <div className={classes.headerButtons}>
+            <TextField
+              placeholder={i18n.t("contacts.searchPlaceholder")}
+              type="search"
+              value={searchParam}
+              onChange={handleSearch}
+              variant="outlined"
+              size="small"
+              className={`${classes.searchField} ${classes.hideOnMobileSearch}`}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search style={{ color: "inherit", opacity: 0.5 }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Tooltip title={i18n.t("tags.buttons.add")}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleOpenTagModal}
+                className={classes.headerButton}
+              >
+                <AddCircleOutline />
+              </Button>
+            </Tooltip>
+
+            <Can
+              role={user.profile}
+              perform="drawer-admin-items:view"
+              yes={() => (
+                <CSVLink
+                  className={classes.csvbtn}
+                  separator=";"
+                  filename="mkthub-contacts.csv"
+                  data={tags.flatMap((tag) => tag.contacts.map((contact) => ({
+                    tagName: tag.name,
+                    contactName: contact.name,
+                    contactNumber: contact.number
+                  })))}>
+                  <Tooltip title={i18n.t("tags.buttons.download")}>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      className={classes.headerButton}
+                    >
+                      <Archive />
+                    </Button>
+                  </Tooltip>
+                </CSVLink>
+              )}
+            />
+
+            <Can
+              role={user.profile}
+              perform="drawer-admin-items:view"
+              yes={() => (
+                <Tooltip title={i18n.t("tags.buttons.deleteAll")}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={(e) => {
+                      setConfirmModalOpen(true);
+                      setDeletingAllTags(tags);
+                    }}
+                    className={classes.headerButton}
+                  >
+                    <DeleteForever />
+                  </Button>
+                </Tooltip>
+              )}
+            />
+          </div>
+        </div>
+        <div className={classes.searchRow}>
           <TextField
             placeholder={i18n.t("contacts.searchPlaceholder")}
             type="search"
             value={searchParam}
             onChange={handleSearch}
+            variant="outlined"
+            size="small"
+            className={classes.searchFieldMobile}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search color="secondary" />
+                  <Search style={{ color: "inherit", opacity: 0.5 }} />
                 </InputAdornment>
               ),
             }}
           />
-          <Tooltip title={i18n.t("tags.buttons.add")}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleOpenTagModal}
-            >
-              <AddCircleOutline />
-            </Button>
-          </Tooltip>
-
-
-
-
-          <Can
-            role={user.profile}
-            perform="drawer-admin-items:view"
-            yes={() => (//Função que identifica o usuario e bloqueia a visão caso não seja admin
-
-              <CSVLink
-                className={classes.csvbtn}
-                separator=";"
-                filename="mkthub-contacts.csv"
-                data={tags.flatMap((tag) => tag.contacts.map((contact) => ({
-                  tagName: tag.name,
-                  contactName: contact.name,
-                  contactNumber: contact.number
-                })))}>
-
-
-                <Tooltip title={i18n.t("tags.buttons.download")}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                  >
-                    <Archive />
-                  </Button>
-                </Tooltip>
-              </CSVLink>
-
-            )}
-          />
-
-          <Can
-            role={user.profile}
-            perform="drawer-admin-items:view"
-            yes={() => (//Função que identifica o usuario e bloqueia a visão caso não seja admin
-
-              <Tooltip Tooltip title={i18n.t("tags.buttons.deleteAll")}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={(e) => {
-                    setConfirmModalOpen(true);
-                    setDeletingAllTags(tags);
-                  }}
-                >
-                  <DeleteForever />
-                </Button>
-              </Tooltip>
-
-            )}
-          />
-
-
-
-        </MainHeaderButtonsWrapper>
+        </div>
       </MainHeader>
       <Paper
         className={classes.mainPaper}
         variant="outlined"
         onScroll={handleScroll}
       >
-        <Table size="small">
+        <Table size="small" className={classes.table}>
           <TableHead>
             <TableRow>
-            <TableCell align="center">{i18n.t("tags.table.id")}</TableCell>
+              <TableCell align="center">{i18n.t("tags.table.id")}</TableCell>
               <TableCell align="center">{i18n.t("tags.table.name")}</TableCell>
               <TableCell align="center">{i18n.t("tags.table.color")}</TableCell>
               <TableCell align="center">{i18n.t("tags.table.contacts")}</TableCell>
@@ -358,48 +538,44 @@ const Tags = () => {
                     {tag.id}
                   </TableCell>
                   <TableCell align="center">
-                    {tag.name}
+                    <span className={classes.tagName}>{tag.name}</span>
                   </TableCell>
                   <TableCell align="center">
-                    <div className={classes.customTableCell}>
-                      <span
-                        style={{
-                          backgroundColor: tag.color,
-                          width: 20,
-                          height: 20,
-                          alignSelf: "center",
-                          borderRadius: 10
-                        }}
-                      />
-                    </div>
+                    <span
+                      className={classes.colorCircle}
+                      style={{ backgroundColor: tag.color }}
+                    />
                   </TableCell>
-                  <TableCell align="center">{tag.contacttag.length ? (<span>{tag.contacttag.length}</span>) : <span>0</span>}</TableCell>
+                  <TableCell align="center">
+                    <span className={classes.contactsBadge}>
+                      {tag.contacttag.length || 0}
+                    </span>
+                  </TableCell>
                   <TableCell align="center">
                     <IconButton
                       size="small"
                       onClick={() => handleEditTag(tag)}
+                      className={`${classes.actionButton} ${classes.editButton}`}
                     >
-                      <Edit color="secondary" />
+                      <Edit fontSize="small" />
                     </IconButton>
-
 
                     <Can
                       role={user.profile}
                       perform="drawer-admin-items:view"
-                      yes={() => (//Função que identifica o usuario e bloqueia a visão caso não seja admin
+                      yes={() => (
                         <IconButton
                           size="small"
                           onClick={(e) => {
                             setConfirmModalOpen(true);
                             setDeletingTag(tag);
                           }}
+                          className={`${classes.actionButton} ${classes.deleteButton}`}
                         >
-                          <DeleteOutline color="secondary" />
+                          <DeleteOutline fontSize="small" />
                         </IconButton>
-
                       )}
                     />
-
                   </TableCell>
                 </TableRow>
               ))}

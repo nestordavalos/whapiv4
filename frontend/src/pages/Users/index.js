@@ -5,7 +5,9 @@ import openSocket from "../../services/socket-io";
 import { makeStyles } from "@material-ui/core/styles";
 
 import {
+  Avatar,
   Button,
+  Chip,
   IconButton,
   InputAdornment,
   Paper,
@@ -22,12 +24,13 @@ import {
   AddCircleOutline,
   DeleteOutline,
   Edit,
-  Search
+  Search,
+  Schedule,
+  WhatsApp
 } from "@material-ui/icons";
 
 import MainContainer from "../../components/MainContainer";
 import MainHeader from "../../components/MainHeader";
-import MainHeaderButtonsWrapper from "../../components/MainHeaderButtonsWrapper";
 import Title from "../../components/Title";
 import TableRowSkeleton from "../../components/TableRowSkeleton";
 import UserModal from "../../components/UserModal";
@@ -86,8 +89,230 @@ const useStyles = makeStyles((theme) => ({
     flex: 1,
     padding: theme.spacing(2),
     margin: theme.spacing(1),
-    overflowY: "scroll",
+    overflowY: "auto",
+    borderRadius: 12,
+    border: `1px solid ${theme.palette.divider}`,
+    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
     ...theme.scrollbarStyles,
+    [theme.breakpoints.down("sm")]: {
+      padding: theme.spacing(1),
+      margin: theme.spacing(0.5),
+      borderRadius: 8,
+    },
+  },
+  table: {
+    "& .MuiTableHead-root": {
+      "& .MuiTableCell-head": {
+        fontWeight: 600,
+        fontSize: "0.8rem",
+        color: theme.palette.text.secondary,
+        textTransform: "uppercase",
+        letterSpacing: "0.5px",
+        borderBottom: `2px solid ${theme.palette.divider}`,
+        padding: "12px 16px",
+        backgroundColor: theme.palette.background.default,
+        [theme.breakpoints.down("xs")]: {
+          padding: "8px 10px",
+          fontSize: "0.7rem",
+        },
+      },
+    },
+    "& .MuiTableBody-root": {
+      "& .MuiTableRow-root": {
+        transition: "background-color 0.2s ease",
+        "&:hover": {
+          backgroundColor: theme.palette.action.hover,
+        },
+      },
+      "& .MuiTableCell-body": {
+        fontSize: "0.875rem",
+        padding: "12px 16px",
+        borderBottom: `1px solid ${theme.palette.divider}`,
+        [theme.breakpoints.down("xs")]: {
+          padding: "8px 10px",
+          fontSize: "0.75rem",
+        },
+      },
+    },
+  },
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 10,
+    backgroundColor: theme.palette.primary.main,
+    fontWeight: 600,
+    fontSize: "1rem",
+    [theme.breakpoints.down("xs")]: {
+      width: 32,
+      height: 32,
+      fontSize: "0.8rem",
+      borderRadius: 8,
+    },
+  },
+  userName: {
+    fontWeight: 600,
+    color: theme.palette.text.primary,
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+  },
+  userEmail: {
+    color: theme.palette.text.secondary,
+    fontSize: "0.85rem",
+  },
+  profileChip: {
+    height: 24,
+    fontSize: "0.72rem",
+    fontWeight: 600,
+    borderRadius: 6,
+    textTransform: "uppercase",
+    letterSpacing: "0.3px",
+  },
+  adminChip: {
+    backgroundColor: theme.palette.primary.main + "18",
+    color: theme.palette.primary.main,
+    border: `1px solid ${theme.palette.primary.main}40`,
+  },
+  userChip: {
+    backgroundColor: theme.palette.success.main + "18",
+    color: theme.palette.success.main,
+    border: `1px solid ${theme.palette.success.main}40`,
+  },
+  whatsappChip: {
+    height: 24,
+    fontSize: "0.72rem",
+    fontWeight: 500,
+    borderRadius: 6,
+    backgroundColor: "#25D36618",
+    color: "#25D366",
+    border: "1px solid #25D36640",
+    "& .MuiChip-icon": {
+      color: "#25D366",
+      fontSize: "0.9rem",
+    },
+  },
+  scheduleInfo: {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    color: theme.palette.text.secondary,
+    fontSize: "0.85rem",
+    "& .MuiSvgIcon-root": {
+      fontSize: "1rem",
+      opacity: 0.7,
+    },
+  },
+  actionButton: {
+    padding: 8,
+    marginLeft: 4,
+    borderRadius: 8,
+    transition: "all 0.2s ease",
+    "&:hover": {
+      transform: "scale(1.1)",
+    },
+  },
+  editButton: {
+    color: theme.palette.primary.main,
+    "&:hover": {
+      backgroundColor: theme.palette.primary.main + "14",
+    },
+  },
+  deleteButton: {
+    color: theme.palette.error.main,
+    "&:hover": {
+      backgroundColor: theme.palette.error.main + "14",
+    },
+  },
+  searchField: {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 10,
+      backgroundColor: theme.palette.background.paper,
+      "& fieldset": {
+        borderColor: theme.palette.divider,
+      },
+      "&:hover fieldset": {
+        borderColor: theme.palette.primary.main,
+      },
+    },
+    "& .MuiInputBase-input": {
+      padding: "10px 14px",
+      fontSize: "0.875rem",
+    },
+  },
+  headerButton: {
+    borderRadius: 10,
+    padding: "8px 12px",
+    minWidth: 44,
+    boxShadow: "none",
+    "&:hover": {
+      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+    },
+    [theme.breakpoints.down("xs")]: {
+      padding: "6px 10px",
+      minWidth: 38,
+    },
+  },
+  headerTopRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    gap: 8,
+    [theme.breakpoints.down("xs")]: {
+      gap: 6,
+    },
+  },
+  headerButtons: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    [theme.breakpoints.down("xs")]: {
+      gap: 4,
+    },
+  },
+  searchRow: {
+    display: "none",
+    [theme.breakpoints.down("xs")]: {
+      display: "flex",
+      width: "100%",
+      justifyContent: "center",
+    },
+  },
+  searchFieldMobile: {
+    width: "100%",
+    maxWidth: 400,
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 10,
+      backgroundColor: theme.palette.background.paper,
+      "& fieldset": {
+        borderColor: theme.palette.divider,
+      },
+      "&:hover fieldset": {
+        borderColor: theme.palette.primary.main,
+      },
+    },
+    "& .MuiInputBase-input": {
+      padding: "10px 14px",
+      fontSize: "0.875rem",
+    },
+  },
+  hideOnMobileSearch: {
+    [theme.breakpoints.down("xs")]: {
+      display: "none",
+    },
+  },
+  idCell: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 28,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: theme.palette.action.hover,
+    color: theme.palette.text.secondary,
+    fontSize: "0.75rem",
+    fontWeight: 600,
+    fontFamily: "monospace",
   },
 }));
 
@@ -211,44 +436,66 @@ const Users = () => {
         userId={selectedUser && selectedUser.id}
       />
       <MainHeader>
-        <Title>{i18n.t("users.title")} ({users.length})</Title>
-        <MainHeaderButtonsWrapper>
+        <div className={classes.headerTopRow}>
+          <Title>{i18n.t("users.title")} ({users.length})</Title>
+          <div className={classes.headerButtons}>
+            <TextField
+              placeholder={i18n.t("contacts.searchPlaceholder")}
+              type="search"
+              value={searchParam}
+              onChange={handleSearch}
+              variant="outlined"
+              size="small"
+              className={`${classes.searchField} ${classes.hideOnMobileSearch}`}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search style={{ color: "#999", fontSize: 20 }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Tooltip title={i18n.t("users.buttons.add")}>
+              <Button
+                variant="contained"
+                color="primary"
+                className={classes.headerButton}
+                onClick={handleOpenUserModal}
+              >
+                <AddCircleOutline style={{ fontSize: 20 }} />
+              </Button>
+            </Tooltip>
+          </div>
+        </div>
+        <div className={classes.searchRow}>
           <TextField
             placeholder={i18n.t("contacts.searchPlaceholder")}
             type="search"
             value={searchParam}
             onChange={handleSearch}
+            variant="outlined"
+            size="small"
+            className={classes.searchFieldMobile}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search color="secondary" />
+                  <Search style={{ color: "#999", fontSize: 20 }} />
                 </InputAdornment>
               ),
             }}
           />
-          <Tooltip title={i18n.t("users.buttons.add")}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleOpenUserModal}
-            >
-              <AddCircleOutline />
-            </Button>
-          </Tooltip>
-        </MainHeaderButtonsWrapper>
+        </div>
       </MainHeader>
       <Paper
         className={classes.mainPaper}
         variant="outlined"
         onScroll={handleScroll}
       >
-        <Table size="small">
+        <Table size="small" className={classes.table}>
           <TableHead>
             <TableRow>
-
-            <TableCell align="center">{i18n.t("users.table.id")}</TableCell>
-              <TableCell align="center">{i18n.t("users.table.name")}</TableCell>
-
+              <TableCell align="center">{i18n.t("users.table.id")}</TableCell>
+              <TableCell>{i18n.t("users.table.name")}</TableCell>
               <TableCell align="center">
                 {i18n.t("users.table.email")}
               </TableCell>
@@ -259,10 +506,7 @@ const Users = () => {
                 {i18n.t("users.table.whatsapp")}
               </TableCell>
               <TableCell align="center">
-                {i18n.t("users.table.startWork")}
-              </TableCell>
-              <TableCell align="center">
-                {i18n.t("users.table.endWork")}
+                {i18n.t("users.table.startWork")} / {i18n.t("users.table.endWork")}
               </TableCell>
               <TableCell align="center">
                 {i18n.t("users.table.actions")}
@@ -273,29 +517,68 @@ const Users = () => {
             <>
               {users.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell align="center">{user.id}</TableCell>
-                  <TableCell align="center">{user.name}</TableCell>
-                  <TableCell align="center">{user.email}</TableCell>
-                  <TableCell align="center">{user.profile}</TableCell>
-                  <TableCell align="center">{user.whatsapp?.name}</TableCell>
-                  <TableCell align="center">{user.startWork}</TableCell>
-                  <TableCell align="center">{user.endWork}</TableCell>
+                  <TableCell align="center">
+                    <span className={classes.idCell}>{user.id}</span>
+                  </TableCell>
+                  <TableCell>
+                    <div className={classes.userName}>
+                      <Avatar className={classes.avatar}>
+                        {user.name?.charAt(0).toUpperCase()}
+                      </Avatar>
+                      {user.name}
+                    </div>
+                  </TableCell>
+                  <TableCell align="center">
+                    <span className={classes.userEmail}>{user.email}</span>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Chip
+                      size="small"
+                      label={user.profile}
+                      className={`${classes.profileChip} ${
+                        user.profile === "admin" ? classes.adminChip : classes.userChip
+                      }`}
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    {user.whatsapp?.name ? (
+                      <Chip
+                        size="small"
+                        icon={<WhatsApp />}
+                        label={user.whatsapp.name}
+                        className={classes.whatsappChip}
+                      />
+                    ) : (
+                      <span style={{ color: "#999", fontSize: "0.8rem" }}>-</span>
+                    )}
+                  </TableCell>
+                  <TableCell align="center">
+                    {user.startWork || user.endWork ? (
+                      <div className={classes.scheduleInfo}>
+                        <Schedule />
+                        {user.startWork || "--:--"} - {user.endWork || "--:--"}
+                      </div>
+                    ) : (
+                      <span style={{ color: "#999", fontSize: "0.8rem" }}>-</span>
+                    )}
+                  </TableCell>
                   <TableCell align="center">
                     <IconButton
                       size="small"
+                      className={`${classes.actionButton} ${classes.editButton}`}
                       onClick={() => handleEditUser(user)}
                     >
-                      <Edit color="secondary" />
+                      <Edit style={{ fontSize: 20 }} />
                     </IconButton>
-
                     <IconButton
                       size="small"
+                      className={`${classes.actionButton} ${classes.deleteButton}`}
                       onClick={(e) => {
                         setConfirmModalOpen(true);
                         setDeletingUser(user);
                       }}
                     >
-                      <DeleteOutline color="secondary" />
+                      <DeleteOutline style={{ fontSize: 20 }} />
                     </IconButton>
                   </TableCell>
                 </TableRow>

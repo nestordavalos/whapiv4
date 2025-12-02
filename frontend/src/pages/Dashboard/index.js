@@ -22,7 +22,6 @@ import SentimentNeutralIcon from "@mui/icons-material/SentimentNeutral";
 import Score from "@material-ui/icons/Score";
 
 import { makeStyles } from "@material-ui/core/styles";
-import { grey } from "@material-ui/core/colors";
 import { toast } from "react-toastify";
 
 
@@ -43,82 +42,152 @@ import moment from "moment";
 
 const useStyles = makeStyles((theme) => ({
   tab: {
-    paddingTop: theme.spacing(8),
+    paddingTop: theme.spacing(4),
     display: "flex",
     alignItems: "center",
-    height: "111px",
+    height: "auto",
     width: "100%",
     backgroundColor: theme.palette.background.paper,
+    [theme.breakpoints.down("sm")]: {
+      paddingTop: theme.spacing(2),
+    },
   },
-    container: {
+  container: {
     paddingTop: theme.spacing(2),
     paddingBottom: theme.spacing(4),
     maxWidth: "1150px",
     minWidth: "xs",
+    [theme.breakpoints.down("sm")]: {
+      paddingTop: theme.spacing(1),
+      paddingBottom: theme.spacing(2),
+    },
   },
   cardContainer1: {
-    backgroundColor: "#eef1fdff",
-    width: "350px",
-    height: "111px",
+    backgroundColor: theme.palette.type === "dark" ? "rgba(85, 120, 235, 0.15)" : "#eef1fdff",
+    width: "100%",
+    height: "auto",
+    minHeight: 100,
     display: "flex",
     alignItems: "center",
-    padding: "0 8px",
-    minHeight: "48px",
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.type === "dark" ? `1px solid rgba(85, 120, 235, 0.3)` : "none",
+    [theme.breakpoints.down("xs")]: {
+      padding: "10px 12px",
+      minHeight: 80,
+    },
   },
   cardContainer2: {
-    backgroundColor: "#fff8e8ff",
-    width: "350px",
-    height: "111px",
+    backgroundColor: theme.palette.type === "dark" ? "rgba(255, 184, 34, 0.15)" : "#fff8e8ff",
+    width: "100%",
+    height: "auto",
+    minHeight: 100,
     display: "flex",
     alignItems: "center",
-    padding: "0 8px",
-    minHeight: "48px",
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.type === "dark" ? `1px solid rgba(255, 184, 34, 0.3)` : "none",
+    [theme.breakpoints.down("xs")]: {
+      padding: "10px 12px",
+      minHeight: 80,
+    },
   },
   cardContainer3: {
-    backgroundColor: "#e6f8f3ff",
-    width: "350px",
-    height: "111px",
+    backgroundColor: theme.palette.type === "dark" ? "rgba(10, 187, 135, 0.15)" : "#e6f8f3ff",
+    width: "100%",
+    height: "auto",
+    minHeight: 100,
     display: "flex",
     alignItems: "center",
-    padding: "0 8px",
-    minHeight: "48px",
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.type === "dark" ? `1px solid rgba(10, 187, 135, 0.3)` : "none",
+    [theme.breakpoints.down("xs")]: {
+      padding: "10px 12px",
+      minHeight: 80,
+    },
   },
   cardContainer4: {
-    backgroundColor: "#fbe7edff",
-    width: "350px",
-    height: "111px",
+    backgroundColor: theme.palette.type === "dark" ? "rgba(250, 112, 112, 0.15)" : "#fbe7edff",
+    width: "100%",
+    height: "auto",
+    minHeight: 100,
     display: "flex",
     alignItems: "center",
-    padding: "0 8px",
-    minHeight: "48px",
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.type === "dark" ? `1px solid rgba(250, 112, 112, 0.3)` : "none",
+    [theme.breakpoints.down("xs")]: {
+      padding: "10px 12px",
+      minHeight: 80,
+    },
   },
   cardContainer5: {
-    backgroundColor: "#e6f8f3ff",
-    width: "350px",
-    height: "111px",
+    backgroundColor: theme.palette.type === "dark" ? "rgba(10, 187, 135, 0.15)" : "#e6f8f3ff",
+    width: "100%",
+    height: "auto",
+    minHeight: 100,
     display: "flex",
     alignItems: "center",
-    padding: "0 8px",
-    minHeight: "48px",
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.type === "dark" ? `1px solid rgba(10, 187, 135, 0.3)` : "none",
+    [theme.breakpoints.down("xs")]: {
+      padding: "10px 12px",
+      minHeight: 80,
+    },
   },
   cardContainer6: {
-    backgroundColor: "#eef1fdff",
-    width: "350px",
-    height: "111px",
+    backgroundColor: theme.palette.type === "dark" ? "rgba(85, 120, 235, 0.15)" : "#eef1fdff",
+    width: "100%",
+    height: "auto",
+    minHeight: 100,
     display: "flex",
     alignItems: "center",
-    padding: "0 8px",
-    minHeight: "48px",
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.type === "dark" ? `1px solid rgba(85, 120, 235, 0.3)` : "none",
+    [theme.breakpoints.down("xs")]: {
+      padding: "10px 12px",
+      minHeight: 80,
+    },
   },
   cardContainer7: {
-    backgroundColor: "#eef1fdff",
-    //width: "350px",
-    height: "111px",
+    backgroundColor: theme.palette.type === "dark" ? "rgba(85, 120, 235, 0.15)" : "#eef1fdff",
+    width: "100%",
+    height: "auto",
+    minHeight: 100,
     display: "flex",
     alignItems: "center",
-    padding: "0 8px",
-    minHeight: "48px",
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.type === "dark" ? `1px solid rgba(85, 120, 235, 0.3)` : "none",
     justifyItems: "center",
+    [theme.breakpoints.down("xs")]: {
+      padding: "10px 12px",
+      minHeight: 80,
+    },
   },
   fixedHeightPaper: {
     padding: theme.spacing(2),
@@ -127,74 +196,128 @@ const useStyles = makeStyles((theme) => ({
     height: 340,
     overflowY: "hidden",
     ...theme.scrollbarStyles,
-    border: "1px solid #dce4ec",
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: 12,
+    backgroundColor: theme.palette.background.paper,
+    [theme.breakpoints.down("sm")]: {
+      height: "auto",
+      minHeight: 200,
+    },
   },
   cardAvatar: {
-    paddingLeft: "17px",
+    paddingLeft: "12px",
+    marginLeft: "auto",
+    [theme.breakpoints.down("xs")]: {
+      paddingLeft: "8px",
+    },
   },
   cardAvatar1: {
     color: "#5578eb",
-    width: "93px",
-    height: "100px",
+    width: "70px",
+    height: "70px",
     display: "flex",
-    fontSize: "71px",
-    backgroundColor: "#eef1fdff",
+    fontSize: "48px",
+    backgroundColor: theme.palette.type === "dark" ? "rgba(85, 120, 235, 0.25)" : "#eef1fdff",
+    borderRadius: 12,
+    [theme.breakpoints.down("xs")]: {
+      width: 50,
+      height: 50,
+      fontSize: "32px",
+    },
   },
   cardAvatar2: {
     color: "#ffb822ff",
-    backgroundColor: "#fff8e8ff",
-    width: "93px",
-    height: "100px",
+    backgroundColor: theme.palette.type === "dark" ? "rgba(255, 184, 34, 0.25)" : "#fff8e8ff",
+    width: "70px",
+    height: "70px",
     display: "flex",
-    fontSize: "71px",
+    fontSize: "48px",
+    borderRadius: 12,
+    [theme.breakpoints.down("xs")]: {
+      width: 50,
+      height: 50,
+      fontSize: "32px",
+    },
   },
   cardAvatar3: {
     color: "#0abb87ff",
-    backgroundColor: "#e6f8f3ff",
-    width: "93px",
-    height: "100px",
+    backgroundColor: theme.palette.type === "dark" ? "rgba(10, 187, 135, 0.25)" : "#e6f8f3ff",
+    width: "70px",
+    height: "70px",
     display: "flex",
-    fontSize: "71px",
+    fontSize: "48px",
+    borderRadius: 12,
+    [theme.breakpoints.down("xs")]: {
+      width: 50,
+      height: 50,
+      fontSize: "32px",
+    },
   },
   cardAvatar4: {
     color: "#fa7070ff",
-    backgroundColor: "#fbe7edff",
-    width: "93px",
-    height: "100px",
+    backgroundColor: theme.palette.type === "dark" ? "rgba(250, 112, 112, 0.25)" : "#fbe7edff",
+    width: "70px",
+    height: "70px",
     display: "flex",
-    fontSize: "71px",
+    fontSize: "48px",
+    borderRadius: 12,
+    [theme.breakpoints.down("xs")]: {
+      width: 50,
+      height: 50,
+      fontSize: "32px",
+    },
   },
   cardAvatar5: {
     color: "#0abb87ff",
-    backgroundColor: "#e6f8f3ff",
-    width: "93px",
-    height: "100px",
+    backgroundColor: theme.palette.type === "dark" ? "rgba(10, 187, 135, 0.25)" : "#e6f8f3ff",
+    width: "70px",
+    height: "70px",
     display: "flex",
-    fontSize: "71px",
+    fontSize: "48px",
+    borderRadius: 12,
+    [theme.breakpoints.down("xs")]: {
+      width: 50,
+      height: 50,
+      fontSize: "32px",
+    },
   },
   cardAvatar6: {
     color: "#5578eb",
-    backgroundColor: "#eef1fdff",
-    width: "93px",
-    height: "100px",
+    backgroundColor: theme.palette.type === "dark" ? "rgba(85, 120, 235, 0.25)" : "#eef1fdff",
+    width: "70px",
+    height: "70px",
     display: "flex",
-    fontSize: "71px",
+    fontSize: "48px",
+    borderRadius: 12,
+    [theme.breakpoints.down("xs")]: {
+      width: 50,
+      height: 50,
+      fontSize: "32px",
+    },
   },
   cardTitle: {
     color: theme.palette.text.primary,
-    fontSize: "13px",
-    width: "220px",
-    paddingLeft: "16px",
+    fontSize: "0.85rem",
+    fontWeight: 500,
+    [theme.breakpoints.down("xs")]: {
+      fontSize: "0.75rem",
+    },
   },
   cardSubtitle2: {
-    color: grey[600],
-    fontSize: "1.75rem",
-    paddingLeft: "16px",
+    color: theme.palette.text.primary,
+    fontSize: "1.5rem",
+    fontWeight: 600,
+    [theme.breakpoints.down("xs")]: {
+      fontSize: "1.2rem",
+    },
   },
   cardSubtitle: {
-    color: grey[600],
-    fontSize: "1.75rem",
-    paddingLeft: "16px",
+    color: theme.palette.text.primary,
+    fontSize: "1.5rem",
+    fontWeight: 600,
+    [theme.breakpoints.down("xs")]: {
+      fontSize: "1.2rem",
+    },
   },
   alignRight: {
     textAlign: "right",
@@ -211,7 +334,75 @@ const useStyles = makeStyles((theme) => ({
   },
   attendants: {
     backgroundColor: "#4287f5"
-  }
+  },
+  filterContainer: {
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: 12,
+    padding: theme.spacing(2),
+    marginBottom: theme.spacing(2),
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    [theme.breakpoints.down("sm")]: {
+      padding: theme.spacing(1.5),
+    },
+  },
+  tabsAppBar: {
+    borderRadius: 10,
+    overflow: "hidden",
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.4)" 
+      : "0 2px 8px rgba(0,0,0,0.1)",
+    backgroundColor: theme.palette.background.paper,
+    border: theme.palette.type === "dark" ? `1px solid ${theme.palette.divider}` : "none",
+    "& .MuiTabs-root": {
+      minHeight: 48,
+    },
+    "& .MuiTab-root": {
+      minHeight: 48,
+      fontSize: "0.85rem",
+      fontWeight: 500,
+      textTransform: "none",
+      color: theme.palette.text.secondary,
+      "&.Mui-selected": {
+        color: theme.palette.primary.main,
+      },
+      [theme.breakpoints.down("xs")]: {
+        fontSize: "0.75rem",
+        minWidth: 80,
+      },
+    },
+    "& .MuiTabs-indicator": {
+      backgroundColor: theme.palette.primary.main,
+    },
+  },
+  tableContainer: {
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: 12,
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.type === "dark" ? `1px solid ${theme.palette.divider}` : "none",
+    "& .MuiTableHead-root": {
+      backgroundColor: theme.palette.type === "dark" 
+        ? "rgba(0, 113, 193, 0.1)" 
+        : "rgba(0, 113, 193, 0.05)",
+    },
+    "& .MuiTableCell-head": {
+      color: theme.palette.text.primary,
+      fontWeight: 600,
+      borderBottom: `1px solid ${theme.palette.divider}`,
+    },
+    "& .MuiTableCell-body": {
+      color: theme.palette.text.primary,
+      borderBottom: `1px solid ${theme.palette.divider}`,
+    },
+    "& .MuiTableRow-root:hover": {
+      backgroundColor: theme.palette.type === "dark" 
+        ? "rgba(255, 255, 255, 0.05)" 
+        : "rgba(0, 0, 0, 0.02)",
+    },
+  },
 }));
 
 const Dashboard = () => {
@@ -435,13 +626,15 @@ const Dashboard = () => {
             </ButtonWithSpinner>
           </Grid>
 
-          <AppBar position="static">
+          <AppBar position="static" className={classes.tabsAppBar} elevation={0}>
             <Grid container width="100%" >
               <Tabs
                 value={tab}
                 onChange={handleChangeTab}                
                 aria-label="primary tabs example"
                 variant="fullWidth"
+                indicatorColor="primary"
+                textColor="primary"
               >
                 <Tab value="Indicadores" label="Indicadores" />
                 <Tab value="NPS" label="NPS" />

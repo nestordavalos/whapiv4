@@ -23,9 +23,10 @@ import {
   InputLabel,
   Select,
   Checkbox,
-  Divider,
   Typography,
   Box,
+  Tabs,
+  Tab,
 } from "@material-ui/core";
 
 import api from "../../services/api";
@@ -39,6 +40,40 @@ const useStyles = makeStyles(theme => ({
     flexWrap: "wrap",
   },
 
+  dialog: {
+    "& .MuiDialog-paper": {
+      borderRadius: 16,
+      boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+      [theme.breakpoints.down("xs")]: {
+        borderRadius: 12,
+        margin: 12,
+        maxHeight: "calc(100% - 24px)",
+      },
+    },
+  },
+
+  dialogTitle: {
+    padding: "20px 24px 16px",
+    "& .MuiTypography-root": {
+      fontWeight: 600,
+      fontSize: "1.25rem",
+      color: "#212529",
+    },
+    [theme.breakpoints.down("xs")]: {
+      padding: "16px 16px 12px",
+      "& .MuiTypography-root": {
+        fontSize: "1.1rem",
+      },
+    },
+  },
+
+  dialogContent: {
+    padding: "16px 24px",
+    [theme.breakpoints.down("xs")]: {
+      padding: "12px 16px",
+    },
+  },
+
   multFieldLine: {
     display: "flex",
     gap: theme.spacing(1.5),
@@ -46,9 +81,27 @@ const useStyles = makeStyles(theme => ({
     flexWrap: "wrap",
     marginBottom: theme.spacing(2),
     padding: theme.spacing(2),
-    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)',
-    borderRadius: 8,
+    backgroundColor: theme.palette.type === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)',
+    borderRadius: 10,
     border: `1px solid ${theme.palette.divider}`,
+  },
+
+  textField: {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 10,
+      transition: "all 0.2s ease",
+      "&:hover": {
+        "& .MuiOutlinedInput-notchedOutline": {
+          borderColor: theme.palette.primary.main,
+        },
+      },
+      "&.Mui-focused": {
+        boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
+      },
+    },
+    "& .MuiInputLabel-root": {
+      fontWeight: 500,
+    },
   },
 
   btnWrapper: {
@@ -77,22 +130,82 @@ const useStyles = makeStyles(theme => ({
 
   messageField: {
     marginBottom: theme.spacing(2),
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 10,
+    },
   },
 
   switchControlBox: {
     padding: theme.spacing(1.5),
-    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(33, 150, 243, 0.08)' : 'rgba(33, 150, 243, 0.04)',
-    borderRadius: 8,
+    backgroundColor: theme.palette.type === 'dark' ? 'rgba(33, 150, 243, 0.08)' : 'rgba(33, 150, 243, 0.04)',
+    borderRadius: 10,
     border: `1px solid ${theme.palette.primary.main}33`,
     marginBottom: theme.spacing(2),
   },
 
   workHoursBox: {
-    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#fafafa',
-    borderRadius: 8,
+    backgroundColor: theme.palette.type === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#fafafa',
+    borderRadius: 10,
     padding: theme.spacing(2),
     marginTop: theme.spacing(1),
     border: `1px solid ${theme.palette.divider}`,
+  },
+
+  tabsContainer: {
+    marginTop: theme.spacing(2),
+    marginBottom: theme.spacing(2),
+  },
+
+  tabs: {
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    "& .MuiTabs-indicator": {
+      backgroundColor: theme.palette.primary.main,
+      height: 3,
+      borderRadius: "3px 3px 0 0",
+    },
+  },
+
+  tab: {
+    textTransform: "none",
+    fontWeight: 500,
+    fontSize: "0.9rem",
+    minHeight: 48,
+    "&.Mui-selected": {
+      color: theme.palette.primary.main,
+      fontWeight: 600,
+    },
+    [theme.breakpoints.down("xs")]: {
+      fontSize: "0.8rem",
+      minHeight: 42,
+      padding: "6px 12px",
+    },
+  },
+
+  tabPanel: {
+    padding: theme.spacing(2, 0),
+  },
+
+  dialogActions: {
+    padding: "16px 24px",
+    gap: 12,
+  },
+
+  cancelButton: {
+    borderRadius: 10,
+    textTransform: "none",
+    fontWeight: 500,
+    padding: "8px 20px",
+  },
+
+  submitButton: {
+    borderRadius: 10,
+    textTransform: "none",
+    fontWeight: 500,
+    padding: "8px 20px",
+    boxShadow: "0 2px 8px rgba(25, 118, 210, 0.25)",
+    "&:hover": {
+      boxShadow: "0 4px 12px rgba(25, 118, 210, 0.35)",
+    },
   },
 
   expediente: {
@@ -126,6 +239,9 @@ const useStyles = makeStyles(theme => ({
     marginTop: theme.spacing(1),
     marginBottom: theme.spacing(1),
     width: 170,
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 8,
+    },
   },
   textoExpediente: {
     marginTop: theme.spacing(2),
@@ -142,8 +258,25 @@ const SessionSchema = Yup.object().shape({
     .required("Required"),
 });
 
+// TabPanel component
+function TabPanel(props) {
+  const { children, value, index, ...other } = props;
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`whatsapp-tabpanel-${index}`}
+      aria-labelledby={`whatsapp-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box>{children}</Box>}
+    </div>
+  );
+}
+
 const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   const classes = useStyles();
+  const [activeTab, setActiveTab] = useState(0);
   const initialState = {
     name: "",
     greetingMessage: "",
@@ -411,6 +544,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     setStartDefineWorkHoursSundayLunch();
     setEndDefineWorkHoursSundayLunch();
 
+    setSelectedQueueIds([]);
     // SetDefineWorkHours();
   };
 
@@ -422,8 +556,9 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
         maxWidth="md"
         fullWidth
         scroll="paper"
+        className={classes.dialog}
       >
-        <DialogTitle>
+        <DialogTitle className={classes.dialogTitle}>
           <Box display="flex" alignItems="center" gap={1}>
             <span role="img" aria-label="chat" style={{ fontSize: 24 }}>💬</span>
             <span>
@@ -446,156 +581,194 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
         >
           {({ values, touched, errors, isSubmitting }) => (
             <Form>
-              <DialogContent dividers>
-                <Typography className={classes.sectionTitle}>
-                  <span role="img" aria-label="settings">⚙️</span> Configuración Básica
-                </Typography>
-                <Field
-                  as={TextField}
-                  label={i18n.t("whatsappModal.form.name")}
-                  autoFocus
-                  name="name"
-                  error={touched.name && Boolean(errors.name)}
-                  helperText={touched.name && errors.name}
-                  variant="outlined"
-                  margin="dense"
-                  fullWidth
-                  style={{ marginBottom: 16 }}
-                />
-                <div className={classes.multFieldLine} style={{ padding: '12px 16px' }}>
-                  <FormControlLabel
-                    control={
-                      <Field
-                        as={Switch}
-                        color="primary"
-                        name="isDefault"
-                        checked={values.isDefault}
-                      />
-                    }
-                    label={i18n.t("whatsappModal.form.default")}
+              <DialogContent dividers className={classes.dialogContent}>
+                {/* Tabs principales */}
+                <Tabs
+                  value={activeTab}
+                  onChange={(e, newValue) => setActiveTab(newValue)}
+                  className={classes.tabs}
+                  indicatorColor="primary"
+                  textColor="primary"
+                  variant="scrollable"
+                  scrollButtons="auto"
+                >
+                  <Tab 
+                    label={
+                      <Box display="flex" alignItems="center" gap={0.5}>
+                        <span role="img" aria-label="settings">⚙️</span> Configuración
+                      </Box>
+                    } 
+                    className={classes.tab}
                   />
-                  <FormControlLabel
-                    control={
-                      <Field
-                        as={Switch}
-                        color="primary"
-                        name="isDisplay"
-                        checked={values.isDisplay}
-                      />
-                    }
-                    label={i18n.t("whatsappModal.form.display")}
+                  <Tab 
+                    label={
+                      <Box display="flex" alignItems="center" gap={0.5}>
+                        <span role="img" aria-label="timer">⏱️</span> Inactividad
+                      </Box>
+                    } 
+                    className={classes.tab}
                   />
-                  <FormControlLabel
-                    control={
-                      <Field
-                        as={Switch}
-                        color="primary"
-                        name="isGroup"
-                        checked={values.isGroup}
-                      />
-                    }
-                    label={i18n.t("whatsappModal.form.group")}
+                  <Tab 
+                    label={
+                      <Box display="flex" alignItems="center" gap={0.5}>
+                        <span role="img" aria-label="clock">🕐</span> Horarios
+                      </Box>
+                    } 
+                    className={classes.tab}
                   />
-                </div>
+                  <Tab 
+                    label={
+                      <Box display="flex" alignItems="center" gap={0.5}>
+                        <span role="img" aria-label="clipboard">📋</span> Colas
+                      </Box>
+                    } 
+                    className={classes.tab}
+                  />
+                </Tabs>
 
-                <Divider style={{ margin: '24px 0 16px 0' }} />
-                <Typography className={classes.sectionTitle}>
-                  <span role="img" aria-label="messages">💬</span> Mensajes Automáticos
-                </Typography>
-                <div className={classes.messageField}>
+                {/* Tab 0: Configuración Básica */}
+                <TabPanel value={activeTab} index={0} className={classes.tabPanel}>
                   <Field
                     as={TextField}
-                    label={i18n.t("queueModal.form.greetingMessage")}
-                    type="greetingMessage"
-                    multiline
-                    rows={4}
-                    fullWidth
-                    name="greetingMessage"
-                    error={
-                      touched.greetingMessage && Boolean(errors.greetingMessage)
-                    }
-                    helperText={
-                      touched.greetingMessage && errors.greetingMessage
-                    }
+                    label={i18n.t("whatsappModal.form.name")}
+                    autoFocus
+                    name="name"
+                    error={touched.name && Boolean(errors.name)}
+                    helperText={touched.name && errors.name}
                     variant="outlined"
                     margin="dense"
-                  />
-                </div>
-                <div className={classes.messageField}>
-                  <Field
-                    as={TextField}
-                    label={i18n.t("whatsappModal.form.farewellMessage")}
-                    type="farewellMessage"
-                    multiline
-                    rows={4}
                     fullWidth
-                    name="farewellMessage"
-                    error={
-                      touched.farewellMessage && Boolean(errors.farewellMessage)
-                    }
-                    helperText={
-                      touched.farewellMessage && errors.farewellMessage
-                    }
-                    variant="outlined"
-                    margin="dense"
+                    className={classes.textField}
+                    style={{ marginBottom: 16 }}
                   />
-                </div>
-                <div className={classes.messageField}>
-									<Field
-										as={TextField}
-										label={i18n.t("whatsappModal.form.ratingMessage")}
-										type="ratingMessage"
-										multiline
-										rows={4}
-										fullWidth
-										name="ratingMessage"
-										helperText={i18n.t("whatsappModal.form.instructionRatingMessage")}
-										error={
-											touched.instructionRatingMessage && Boolean(errors.instructionRatingMessage)
-										}
-										variant="outlined"
-										margin="dense"
-									/>
-								</div>
+                  <div className={classes.multFieldLine} style={{ padding: '12px 16px' }}>
+                    <FormControlLabel
+                      control={
+                        <Field
+                          as={Switch}
+                          color="primary"
+                          name="isDefault"
+                          checked={values.isDefault}
+                        />
+                      }
+                      label={i18n.t("whatsappModal.form.default")}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Field
+                          as={Switch}
+                          color="primary"
+                          name="isDisplay"
+                          checked={values.isDisplay}
+                        />
+                      }
+                      label={i18n.t("whatsappModal.form.display")}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Field
+                          as={Switch}
+                          color="primary"
+                          name="isGroup"
+                          checked={values.isGroup}
+                        />
+                      }
+                      label={i18n.t("whatsappModal.form.group")}
+                    />
+                  </div>
+                  <div className={classes.messageField} style={{ marginTop: 16 }}>
+                    <Field
+                      as={TextField}
+                      label={i18n.t("queueModal.form.greetingMessage")}
+                      type="greetingMessage"
+                      multiline
+                      rows={4}
+                      fullWidth
+                      name="greetingMessage"
+                      error={
+                        touched.greetingMessage && Boolean(errors.greetingMessage)
+                      }
+                      helperText={
+                        touched.greetingMessage && errors.greetingMessage
+                      }
+                      variant="outlined"
+                      margin="dense"
+                    />
+                  </div>
+                  <div className={classes.messageField}>
+                    <Field
+                      as={TextField}
+                      label={i18n.t("whatsappModal.form.farewellMessage")}
+                      type="farewellMessage"
+                      multiline
+                      rows={4}
+                      fullWidth
+                      name="farewellMessage"
+                      error={
+                        touched.farewellMessage && Boolean(errors.farewellMessage)
+                      }
+                      helperText={
+                        touched.farewellMessage && errors.farewellMessage
+                      }
+                      variant="outlined"
+                      margin="dense"
+                    />
+                  </div>
+                  <div className={classes.messageField}>
+                    <Field
+                      as={TextField}
+                      label={i18n.t("whatsappModal.form.ratingMessage")}
+                      type="ratingMessage"
+                      multiline
+                      rows={4}
+                      fullWidth
+                      name="ratingMessage"
+                      helperText={i18n.t("whatsappModal.form.instructionRatingMessage")}
+                      error={
+                        touched.instructionRatingMessage && Boolean(errors.instructionRatingMessage)
+                      }
+                      variant="outlined"
+                      margin="dense"
+                    />
+                  </div>
+                </TabPanel>
 
-                <Divider style={{ margin: '24px 0 16px 0' }} />
-                <Typography className={classes.sectionTitle}>
-                  <span role="img" aria-label="timer">⏱️</span> Mensajes de Inactividad
-                </Typography>
-                <Box className={classes.switchControlBox}>
-                  <FormControlLabel
-                    control={
-                      <Field
-                        as={Switch}
-                        color="primary"
-                        name="sendInactiveMessage"
-                        checked={values.sendInactiveMessage}
-                      />
-                    }
+                {/* Tab 1: Mensajes de Inactividad */}
+                <TabPanel value={activeTab} index={1} className={classes.tabPanel}>
+                  <Box className={classes.switchControlBox}>
+                    <FormControlLabel
+                      control={
+                        <Field
+                          as={Switch}
+                          color="primary"
+                          name="sendInactiveMessage"
+                          checked={values.sendInactiveMessage}
+                        />
+                      }
                       label={i18n.t("whatsappModal.form.sendInactiveMessage")}
-                   />
-                </Box>
-                
-                <div className={classes.messageField}>
-                  <Field
-                    as={TextField}
-                    label={i18n.t("whatsappModal.form.inactiveMessage")}
-                    type="inactiveMessage"
-                    multiline
-                    rows={4}
-                    fullWidth
-                    name="inactiveMessage"
-                    error={
-                      touched.inactiveMessage && Boolean(errors.inactiveMessage)
-                    }
-                    helperText={
-                      touched.inactiveMessage && errors.inactiveMessage
-                    }
-                    variant="outlined"
-                    margin="dense"
-                  />
-                </div>
-                <Grid xs={12} md={12} item>
+                    />
+                  </Box>
+                  
+                  <div className={classes.messageField}>
+                    <Field
+                      as={TextField}
+                      label={i18n.t("whatsappModal.form.inactiveMessage")}
+                      type="inactiveMessage"
+                      multiline
+                      rows={4}
+                      fullWidth
+                      name="inactiveMessage"
+                      error={
+                        touched.inactiveMessage && Boolean(errors.inactiveMessage)
+                      }
+                      helperText={
+                        touched.inactiveMessage && errors.inactiveMessage
+                      }
+                      variant="outlined"
+                      margin="dense"
+                    />
+                  </div>
+                  <Grid xs={12} md={12} item>
                     <FormControl
                       variant="outlined"
                       margin="dense"
@@ -629,46 +802,11 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       </Field>
                     </FormControl>
                   </Grid>
+                </TabPanel>
 
-                <Divider style={{ margin: '24px 0 16px 0' }} />
-                <Typography className={classes.sectionTitle}>
-                  <span role="img" aria-label="clock">🕐</span> Horarios de Atención
-                </Typography>
-
-                <div>
-                  {/* Expediente */}
-
-                  {defineWorkHours === true ? (
-
-
-                    <Box className={classes.workHoursBox}>
-                      <TextField
-                        label={i18n.t("whatsappModal.form.outOfWorkMessage")}
-                        rows={3}
-                        multiline
-                        fullWidth
-                        name="outOfWorkMessage"
-                        value={outOfWorkMessage}
-                        error={
-                          touched.outOfWorkMessage &&
-                          Boolean(errors.outOfWorkMessage)
-                        }
-                        helperText={
-                          touched.outOfWorkMessage &&
-                          errors.outOfWorkMessage
-                        }
-                        variant="outlined"
-                        margin="dense"
-
-                        onChange={(e) => setOutOfWorkMessage(e.target.value)}
-                      />
-
-                    </Box>
-                  ) : (
-                    ""
-                  )}
-                  <div></div>
-                  <Box className={classes.switchControlBox} style={{ marginTop: 16 }}>
+                {/* Tab 2: Horarios de Atención */}
+                <TabPanel value={activeTab} index={2} className={classes.tabPanel}>
+                  <Box className={classes.switchControlBox}>
                     <FormControlLabel
                       control={
                         <Field
@@ -680,13 +818,34 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                           onChange={handleChange}
                         />
                       }
-                      label="Definir horário de Atención"
+                      label="Definir horario de Atención"
                       labelPlacement="end"
                     />
                   </Box>
-                  {defineWorkHours === true ? (
+
+                  {defineWorkHours === true && (
                     <>
-                      <Grid item xs={12} sm={12} className={classes.diasSemana} >
+                      <Box className={classes.workHoursBox}>
+                        <TextField
+                          label={i18n.t("whatsappModal.form.outOfWorkMessage")}
+                          rows={3}
+                          multiline
+                          fullWidth
+                          name="outOfWorkMessage"
+                          value={outOfWorkMessage}
+                          error={
+                            touched.outOfWorkMessage &&
+                            Boolean(errors.outOfWorkMessage)
+                          }
+                          helperText={
+                            touched.outOfWorkMessage &&
+                            errors.outOfWorkMessage
+                          }
+                          variant="outlined"
+                          margin="dense"
+                          onChange={(e) => setOutOfWorkMessage(e.target.value)}
+                        />
+                      </Box>
                         <FormControl component="fieldset" sx={{ display: "flex", justifyContent: "center" }}>
                           <FormGroup
                             aria-label="position"
@@ -1202,31 +1361,33 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             {/* ____________________________________________________________________________________________________________ */}
                           </FormGroup>
                         </FormControl>
-                      </Grid>
+                      </>
+                    )}
+                  </TabPanel>
 
-                    </>
-                  ) : (
-                    ""
-                  )}
-                </div>
-
-
-                <Divider style={{ margin: '24px 0 16px 0' }} />
-                <Typography className={classes.sectionTitle}>
-                  <span role="img" aria-label="clipboard">📋</span> Colas
-                </Typography>
-                <QueueSelect
-                  selectedQueueIds={selectedQueueIds}
-                  onChange={selectedIds => setSelectedQueueIds(selectedIds)}
-                />
+                  {/* Tab 3: Colas */}
+                  <TabPanel value={activeTab} index={3} className={classes.tabPanel}>
+                    <Box className={classes.tabContent}>
+                      <Typography className={classes.sectionTitle}>
+                        <span role="img" aria-label="clipboard">📋</span> {i18n.t("whatsappModal.form.queues")}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
+                        {i18n.t("whatsappModal.form.queuesDescription")}
+                      </Typography>
+                      <QueueSelect
+                        selectedQueueIds={selectedQueueIds}
+                        onChange={selectedIds => setSelectedQueueIds(selectedIds)}
+                      />
+                    </Box>
+                  </TabPanel>
               </DialogContent>
-              <DialogActions style={{ padding: '16px 24px', gap: '12px' }}>
+              <DialogActions className={classes.dialogActions}>
                 <Button
                   onClick={handleClose}
                   color="secondary"
                   disabled={isSubmitting}
                   variant="outlined"
-                  size="large"
+                  className={classes.cancelButton}
                 >
                   {i18n.t("whatsappModal.buttons.cancel")}
                 </Button>
@@ -1235,8 +1396,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                   color="primary"
                   disabled={isSubmitting}
                   variant="contained"
-                  size="large"
-                  className={classes.btnWrapper}
+                  className={`${classes.btnWrapper} ${classes.submitButton}`}
                 >
                   {whatsAppId
                     ? i18n.t("whatsappModal.buttons.okEdit")

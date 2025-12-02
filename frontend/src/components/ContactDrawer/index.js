@@ -7,9 +7,10 @@ import CloseIcon from "@material-ui/icons/Close";
 import Drawer from "@material-ui/core/Drawer";
 import Link from "@material-ui/core/Link";
 import InputLabel from "@material-ui/core/InputLabel";
-//import Avatar from "@material-ui/core/Avatar";
 import Button from "@material-ui/core/Button";
 import Paper from "@material-ui/core/Paper";
+import PhoneIcon from "@material-ui/icons/Phone";
+import EmailIcon from "@material-ui/icons/Email";
 
 import { i18n } from "../../translate/i18n";
 
@@ -30,58 +31,161 @@ const useStyles = makeStyles(theme => ({
 	drawerPaper: {
 		width: drawerWidth,
 		display: "flex",
-		borderTop: "1px solid rgba(0, 0, 0, 0.12)",
-		borderRight: "1px solid rgba(0, 0, 0, 0.12)",
-		borderBottom: "1px solid rgba(0, 0, 0, 0.12)",
-		borderTopRightRadius: 4,
-		borderBottomRightRadius: 4,
+		borderLeft: `1px solid ${theme.palette.divider}`,
+		backgroundColor: theme.palette.background.paper,
+		boxShadow: "-4px 0 15px rgba(0,0,0,0.05)",
 	},
 	header: {
 		display: "flex",
-		borderBottom: "1px solid rgba(0, 0, 0, 0.12)",
-		backgroundColor: theme.palette.background.default,
+		borderBottom: `1px solid ${theme.palette.divider}`,
+		backgroundColor: theme.palette.background.paper,
 		alignItems: "center",
-		padding: theme.spacing(0, 1),
-		minHeight: "73px",
+		padding: "12px 16px",
+		minHeight: "56px",
 		justifyContent: "flex-start",
+		gap: 12,
+	},
+	closeButton: {
+		padding: 6,
+		borderRadius: 8,
+		"&:hover": {
+			backgroundColor: theme.palette.action.hover,
+		},
+	},
+	headerTitle: {
+		fontWeight: 700,
+		fontSize: "1rem",
+		color: theme.palette.text.primary,
 	},
 	content: {
 		display: "flex",
-		backgroundColor: theme.palette.background.paper,
+		backgroundColor: theme.palette.background.default,
 		flexDirection: "column",
-		padding: "8px 0px 8px 8px",
+		padding: "16px",
 		height: "100%",
-		overflowY: "scroll",
+		overflowY: "auto",
+		gap: 16,
 		...theme.scrollbarStyles,
-	},
-
-	contactAvatar: {
-		margin: 15,
-		width: 160,
-		height: 160,
-		borderRadius: 10,
 	},
 
 	contactHeader: {
 		display: "flex",
-		padding: 8,
+		padding: "20px 16px",
 		flexDirection: "column",
 		alignItems: "center",
 		justifyContent: "center",
-		"& > *": {
-			margin: 4,
+		gap: 12,
+		borderRadius: 12,
+		backgroundColor: theme.palette.background.paper,
+		border: `1px solid ${theme.palette.divider}`,
+	},
+
+	avatarWrapper: {
+		position: "relative",
+		"& img": {
+			width: 120,
+			height: 120,
+			borderRadius: 16,
+			objectFit: "cover",
+			border: `3px solid ${theme.palette.primary.main}`,
+			boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
 		},
 	},
 
-	contactDetails: {
-		marginTop: 8,
-		padding: 8,
+	contactName: {
+		fontWeight: 700,
+		fontSize: "1.1rem",
+		color: theme.palette.text.primary,
+		display: "flex",
+		alignItems: "center",
+		gap: 6,
+		textAlign: "center",
+	},
+
+	contactInfoRow: {
+		display: "flex",
+		alignItems: "center",
+		gap: 8,
+		padding: "8px 12px",
+		borderRadius: 8,
+		backgroundColor: theme.palette.background.default,
+		width: "100%",
+		justifyContent: "center",
+	},
+
+	contactInfoIcon: {
+		color: theme.palette.primary.main,
+		fontSize: "1.1rem",
+	},
+
+	contactInfoText: {
+		fontSize: "0.9rem",
+		color: theme.palette.primary.main,
+		fontWeight: 500,
+		"& a": {
+			color: theme.palette.primary.main,
+			textDecoration: "none",
+			"&:hover": {
+				textDecoration: "underline",
+			},
+		},
+	},
+
+	editButton: {
+		marginTop: 4,
+		borderRadius: 8,
+		textTransform: "none",
+		fontWeight: 600,
+		padding: "8px 24px",
+	},
+
+	sectionCard: {
+		padding: 16,
 		display: "flex",
 		flexDirection: "column",
+		gap: 12,
+		borderRadius: 12,
+		backgroundColor: theme.palette.background.paper,
+		border: `1px solid ${theme.palette.divider}`,
 	},
-	contactExtraInfo: {
-		marginTop: 4,
-		padding: 6,
+	
+	sectionTitle: {
+		fontWeight: 600,
+		fontSize: "0.85rem",
+		color: theme.palette.text.secondary,
+		textTransform: "uppercase",
+		letterSpacing: "0.5px",
+	},
+
+	extraInfoItem: {
+		padding: 12,
+		borderRadius: 8,
+		border: `1px solid ${theme.palette.divider}`,
+		backgroundColor: theme.palette.background.default,
+	},
+
+	extraInfoLabel: {
+		fontSize: "0.7rem",
+		color: theme.palette.text.secondary,
+		fontWeight: 600,
+		textTransform: "uppercase",
+		letterSpacing: "0.3px",
+		display: "flex",
+		alignItems: "center",
+		gap: 4,
+		marginBottom: 4,
+	},
+
+	extraInfoValue: {
+		fontSize: "0.9rem",
+		color: theme.palette.text.primary,
+	},
+
+	tagsSection: {
+		borderRadius: 12,
+		backgroundColor: theme.palette.background.paper,
+		border: `1px solid ${theme.palette.divider}`,
+		overflow: "hidden",
 	},
 }));
 
@@ -108,11 +212,13 @@ const ContactDrawer = ({ open, handleDrawerClose, contact, loading }) => {
 		>
 			<div className={classes.header}>
 				<IconButton
-					color="primary"
-					onClick={handleDrawerClose}>
-					<CloseIcon />
+					className={classes.closeButton}
+					size="small"
+					onClick={handleDrawerClose}
+				>
+					<CloseIcon fontSize="small" />
 				</IconButton>
-				<Typography style={{ justifySelf: "center" }}>
+				<Typography className={classes.headerTitle}>
 					{i18n.t("contactDrawer.header")}
 				</Typography>
 			</div>
@@ -120,57 +226,77 @@ const ContactDrawer = ({ open, handleDrawerClose, contact, loading }) => {
 				<ContactDrawerSkeleton classes={classes} />
 			) : (
 				<div className={classes.content}>
-					<Paper square variant="outlined" className={classes.contactHeader}>
-						<ModalImageContatc imageUrl={contact.profilePicUrl} />
-						<Typography>
+					{/* Card principal del contacto */}
+					<Paper elevation={0} className={classes.contactHeader}>
+						<div className={classes.avatarWrapper}>
+							<ModalImageContatc imageUrl={contact.profilePicUrl} />
+						</div>
+						<Typography className={classes.contactName}>
 							{contact.name}
-							<CopyToClipboard content={contact.name} color="secondary" />
-							</Typography>
-						<Typography>
-							<Link href={`tel:${contact.number}`}>{contact.number}</Link>
-							<CopyToClipboard content={contact.number} color="secondary" />
+							<CopyToClipboard content={contact.name} color="primary" />
 						</Typography>
-						{contact.email && (
-							<Typography>
-								<Link href={`mailto:${contact.email}`}>{contact.email}</Link>
-								<CopyToClipboard content={contact.email} color="secondary" />
+						
+						{/* Teléfono */}
+						<div className={classes.contactInfoRow}>
+							<PhoneIcon className={classes.contactInfoIcon} />
+							<Typography className={classes.contactInfoText}>
+								<Link href={`tel:${contact.number}`}>{contact.number}</Link>
 							</Typography>
+							<CopyToClipboard content={contact.number} color="primary" />
+						</div>
+
+						{/* Email */}
+						{contact.email && (
+							<div className={classes.contactInfoRow}>
+								<EmailIcon className={classes.contactInfoIcon} />
+								<Typography className={classes.contactInfoText}>
+									<Link href={`mailto:${contact.email}`}>{contact.email}</Link>
+								</Typography>
+								<CopyToClipboard content={contact.email} color="primary" />
+							</div>
 						)}
+
 						<Button
 							variant="outlined"
 							color="primary"
+							size="small"
+							className={classes.editButton}
 							onClick={() => setModalOpen(true)}
 						>
 							{i18n.t("contactDrawer.buttons.edit")}
 						</Button>
 					</Paper>
-					<TagsContainer contact={contact} className={classes.contactTags} />
-					<Paper square variant="outlined" className={classes.contactDetails}>
-						<ContactModal
-							open={modalOpen}
-							onClose={() => setModalOpen(false)}
-							contactId={contact.id}
-						></ContactModal>
-						<Typography variant="subtitle1">
-							{i18n.t("contactDrawer.extraInfo")}
-						</Typography>
-						{contact?.extraInfo?.map(info => (
-							<Paper
-								key={info.id}
-								square
-								variant="outlined"
-								className={classes.contactExtraInfo}
-							>
-								<InputLabel>
-									{info.name}
-									<CopyToClipboard content={info.value} color="secondary" />
-								</InputLabel>
-								<Typography component="div" noWrap style={{ paddingTop: 2 }}>
-									<MarkdownWrapper>{info.value}</MarkdownWrapper>
-								</Typography>
-							</Paper>
-						))}
-					</Paper>
+
+					{/* Tags */}
+					<div className={classes.tagsSection}>
+						<TagsContainer contact={contact} />
+					</div>
+
+					{/* Información extra */}
+					{contact?.extraInfo?.length > 0 && (
+						<Paper elevation={0} className={classes.sectionCard}>
+							<Typography className={classes.sectionTitle}>
+								{i18n.t("contactDrawer.extraInfo")}
+							</Typography>
+							{contact.extraInfo.map(info => (
+								<div key={info.id} className={classes.extraInfoItem}>
+									<InputLabel className={classes.extraInfoLabel}>
+										{info.name}
+										<CopyToClipboard content={info.value} color="primary" />
+									</InputLabel>
+									<Typography component="div" className={classes.extraInfoValue}>
+										<MarkdownWrapper>{info.value}</MarkdownWrapper>
+									</Typography>
+								</div>
+							))}
+						</Paper>
+					)}
+
+					<ContactModal
+						open={modalOpen}
+						onClose={() => setModalOpen(false)}
+						contactId={contact.id}
+					/>
 				</div>
 			)}
 		</Drawer>

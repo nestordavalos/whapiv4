@@ -146,7 +146,9 @@ const messages = {
           defineHourExpedient: "Definir horário de expediente",
           longText: "Marque esta opção para definir um horário de expediente para os atendimentos.",
           token: "Token",
-          checkHourExpedient: "Checar Horário de Expediente"
+          checkHourExpedient: "Checar Horário de Expediente",
+          queues: "Filas",
+          queuesDescription: "Selecione as filas às quais os tickets desta conexão serão atribuídos.",
         },
         buttons: {
           okAdd: "Adicionar",

@@ -27,17 +27,68 @@ const useStyles = makeStyles(theme => ({
 		color: red[600],
 		fontSize: '20px'
 	},
-    pointer: {
-        cursor: "pointer"
-    }
+	pointer: {
+		cursor: "pointer"
+	},
+	tableContainer: {
+		backgroundColor: theme.palette.background.paper,
+		borderRadius: 12,
+		boxShadow: theme.palette.type === "dark" 
+			? "0 2px 8px rgba(0,0,0,0.3)" 
+			: "0 2px 8px rgba(0,0,0,0.06)",
+		border: theme.palette.type === "dark" ? `1px solid ${theme.palette.divider}` : "none",
+		overflow: "hidden",
+	},
+	tableHead: {
+		backgroundColor: theme.palette.type === "dark" 
+			? "rgba(0, 113, 193, 0.1)" 
+			: "rgba(0, 113, 193, 0.05)",
+		"& .MuiTableCell-head": {
+			color: theme.palette.text.primary,
+			fontWeight: 600,
+			borderBottom: `1px solid ${theme.palette.divider}`,
+			whiteSpace: "nowrap",
+		},
+	},
+	tableBody: {
+		"& .MuiTableCell-body": {
+			color: theme.palette.text.primary,
+			borderBottom: `1px solid ${theme.palette.divider}`,
+		},
+		"& .MuiTableRow-root:hover": {
+			backgroundColor: theme.palette.type === "dark" 
+				? "rgba(255, 255, 255, 0.05)" 
+				: "rgba(0, 0, 0, 0.02)",
+		},
+		"& .MuiTableRow-root:last-child .MuiTableCell-body": {
+			borderBottom: "none",
+		},
+	},
+	rating: {
+		"& .MuiRating-iconFilled": {
+			color: "#ffb822",
+		},
+		"& .MuiRating-iconEmpty": {
+			color: theme.palette.type === "dark" 
+				? "rgba(255, 255, 255, 0.2)" 
+				: "rgba(0, 0, 0, 0.2)",
+		},
+	},
+	skeleton: {
+		borderRadius: 12,
+		backgroundColor: theme.palette.type === "dark" 
+			? "rgba(255, 255, 255, 0.1)" 
+			: "rgba(0, 0, 0, 0.1)",
+	},
 }));
 
-export function RatingBox ({ rating }) {
+export function RatingBox ({ rating, className }) {
     const ratingTrunc = rating === null ? 0 : Math.trunc(rating);
     return <Rating
         defaultValue={ratingTrunc}
         max={10}
         readOnly
+        className={className}
     />
 }
 
@@ -50,7 +101,7 @@ export default function TableAttendantsStatus(props) {
             <TableRow key={k}>
                 <TableCell>{a.name}</TableCell>
                 <TableCell align="center" title={a.rating} className={classes.pointer}>
-                    <RatingBox rating={a.rating} />
+                    <RatingBox rating={a.rating} className={classes.rating} />
                 </TableCell>
                 <TableCell align="center">{a.countRating}</TableCell>
                 <TableCell align="center">{formatTime(a.avgSupportTime, 2)}</TableCell>
@@ -72,10 +123,11 @@ export default function TableAttendantsStatus(props) {
     return ( !loading ?
         <TableContainer 
             component={Paper}
-            width="100%"
+            className={classes.tableContainer}
+            elevation={0}
             >
             <Table>
-                <TableHead>
+                <TableHead className={classes.tableHead}>
                     <TableRow>
                         <TableCell>Nombre</TableCell>
                         <TableCell align="center">Evaluaciones</TableCell>
@@ -85,7 +137,7 @@ export default function TableAttendantsStatus(props) {
                         <TableCell align="center">Estado (Atual)</TableCell>
                     </TableRow>
                 </TableHead>
-                <TableBody>
+                <TableBody className={classes.tableBody}>
                     { renderList() }
                     {/* <TableRow>
                         <TableCell>Nome 4</TableCell>
@@ -106,6 +158,6 @@ export default function TableAttendantsStatus(props) {
                 </TableBody>
             </Table>
         </TableContainer>
-        : <Skeleton variant="rect" height={150} />
+        : <Skeleton variant="rect" height={150} className={classes.skeleton} />
     )
 }

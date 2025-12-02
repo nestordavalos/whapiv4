@@ -29,7 +29,6 @@ import { i18n } from "../../translate/i18n";
 
 import MainContainer from "../../components/MainContainer";
 import MainHeader from "../../components/MainHeader";
-import MainHeaderButtonsWrapper from "../../components/MainHeaderButtonsWrapper";
 import Title from "../../components/Title";
 import TableRowSkeleton from "../../components/TableRowSkeleton";
 import QuickAnswersModal from "../../components/QuickAnswersModal";
@@ -89,8 +88,167 @@ const useStyles = makeStyles((theme) => ({
     flex: 1,
     padding: theme.spacing(2),
     margin: theme.spacing(1),
-    overflowY: "scroll",
+    overflowY: "auto",
+    borderRadius: 12,
+    border: `1px solid ${theme.palette.divider}`,
+    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
     ...theme.scrollbarStyles,
+    [theme.breakpoints.down("sm")]: {
+      padding: theme.spacing(1),
+      margin: theme.spacing(0.5),
+      borderRadius: 8,
+    },
+  },
+  table: {
+    "& .MuiTableHead-root": {
+      "& .MuiTableCell-head": {
+        fontWeight: 600,
+        fontSize: "0.8rem",
+        color: theme.palette.text.secondary,
+        textTransform: "uppercase",
+        letterSpacing: "0.5px",
+        borderBottom: `2px solid ${theme.palette.divider}`,
+        padding: "12px 16px",
+        backgroundColor: theme.palette.background.default,
+        [theme.breakpoints.down("xs")]: {
+          padding: "8px 10px",
+          fontSize: "0.7rem",
+        },
+      },
+    },
+    "& .MuiTableBody-root": {
+      "& .MuiTableRow-root": {
+        transition: "background-color 0.2s ease",
+        "&:hover": {
+          backgroundColor: theme.palette.action.hover,
+        },
+      },
+      "& .MuiTableCell-body": {
+        fontSize: "0.875rem",
+        padding: "12px 16px",
+        borderBottom: `1px solid ${theme.palette.divider}`,
+        [theme.breakpoints.down("xs")]: {
+          padding: "8px 10px",
+          fontSize: "0.75rem",
+        },
+      },
+    },
+  },
+  shortcutCell: {
+    fontWeight: 600,
+    color: theme.palette.primary.main,
+    fontFamily: "monospace",
+    fontSize: "0.9rem",
+    backgroundColor: theme.palette.primary.main + "0A",
+    padding: "4px 10px",
+    borderRadius: 6,
+    display: "inline-block",
+  },
+  messageCell: {
+    color: theme.palette.text.secondary,
+    maxWidth: 400,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  actionButton: {
+    padding: 8,
+    marginLeft: 4,
+    borderRadius: 8,
+    transition: "all 0.2s ease",
+    "&:hover": {
+      transform: "scale(1.1)",
+    },
+  },
+  editButton: {
+    color: theme.palette.primary.main,
+    "&:hover": {
+      backgroundColor: theme.palette.primary.main + "14",
+    },
+  },
+  deleteButton: {
+    color: theme.palette.error.main,
+    "&:hover": {
+      backgroundColor: theme.palette.error.main + "14",
+    },
+  },
+  searchField: {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 10,
+      backgroundColor: theme.palette.background.paper,
+      "& fieldset": {
+        borderColor: theme.palette.divider,
+      },
+      "&:hover fieldset": {
+        borderColor: theme.palette.primary.main,
+      },
+    },
+    "& .MuiInputBase-input": {
+      padding: "10px 14px",
+      fontSize: "0.875rem",
+    },
+  },
+  headerButton: {
+    borderRadius: 10,
+    padding: "8px 12px",
+    minWidth: 44,
+    boxShadow: "none",
+    "&:hover": {
+      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+    },
+    [theme.breakpoints.down("xs")]: {
+      padding: "6px 10px",
+      minWidth: 38,
+    },
+  },
+  headerTopRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    gap: 8,
+    [theme.breakpoints.down("xs")]: {
+      gap: 6,
+    },
+  },
+  headerButtons: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    [theme.breakpoints.down("xs")]: {
+      gap: 4,
+    },
+  },
+  searchRow: {
+    display: "none",
+    [theme.breakpoints.down("xs")]: {
+      display: "flex",
+      width: "100%",
+      justifyContent: "center",
+    },
+  },
+  searchFieldMobile: {
+    width: "100%",
+    maxWidth: 400,
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 10,
+      backgroundColor: theme.palette.background.paper,
+      "& fieldset": {
+        borderColor: theme.palette.divider,
+      },
+      "&:hover fieldset": {
+        borderColor: theme.palette.primary.main,
+      },
+    },
+    "& .MuiInputBase-input": {
+      padding: "10px 14px",
+      fontSize: "0.875rem",
+    },
+  },
+  hideOnMobileSearch: {
+    [theme.breakpoints.down("xs")]: {
+      display: "none",
+    },
   },
 }));
 
@@ -238,65 +396,88 @@ const QuickAnswers = () => {
         quickAnswerId={selectedQuickAnswers && selectedQuickAnswers.id}
       ></QuickAnswersModal>
       <MainHeader>
-        <Title>{i18n.t("quickAnswers.title")} ({quickAnswers.length})</Title>
-        <MainHeaderButtonsWrapper>
+        <div className={classes.headerTopRow}>
+          <Title>{i18n.t("quickAnswers.title")} ({quickAnswers.length})</Title>
+          <div className={classes.headerButtons}>
+            <TextField
+              placeholder={i18n.t("quickAnswers.searchPlaceholder")}
+              type="search"
+              value={searchParam}
+              onChange={handleSearch}
+              variant="outlined"
+              size="small"
+              className={`${classes.searchField} ${classes.hideOnMobileSearch}`}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search style={{ color: "inherit", opacity: 0.5, fontSize: 20 }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Tooltip title={i18n.t("quickAnswers.buttons.add")}>
+              <Button
+                variant="contained"
+                color="primary"
+                className={classes.headerButton}
+                onClick={handleOpenQuickAnswersModal}
+              >
+                <AddCircleOutline style={{ fontSize: 20 }} />
+              </Button>
+            </Tooltip>
+
+            <Can
+              role={user.profile}
+              perform="drawer-admin-items:view"
+              yes={() => (
+                <Tooltip title={i18n.t("quickAnswers.buttons.deleteAll")}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    className={classes.headerButton}
+                    onClick={(e) => {
+                      setConfirmModalOpen(true);
+                      setDeletingAllQuickAnswers(quickAnswers);
+                    }}
+                  >
+                    <DeleteForever style={{ fontSize: 20 }} />
+                  </Button>
+                </Tooltip>
+              )}
+            />
+          </div>
+        </div>
+        <div className={classes.searchRow}>
           <TextField
             placeholder={i18n.t("quickAnswers.searchPlaceholder")}
             type="search"
             value={searchParam}
             onChange={handleSearch}
+            variant="outlined"
+            size="small"
+            className={classes.searchFieldMobile}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search color="secondary" />
+                  <Search style={{ color: "inherit", opacity: 0.5, fontSize: 20 }} />
                 </InputAdornment>
               ),
             }}
           />
-          <Tooltip title={i18n.t("quickAnswers.buttons.add")}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleOpenQuickAnswersModal}
-            >
-              <AddCircleOutline />
-            </Button>
-          </Tooltip>
-
-          <Can
-            role={user.profile}
-            perform="drawer-admin-items:view"
-            yes={() => (//Função que identifica o usuario e bloqueia a visão caso não seja admin
-
-              <Tooltip title={i18n.t("quickAnswers.buttons.deleteAll")}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={(e) => {
-                    setConfirmModalOpen(true);
-                    setDeletingAllQuickAnswers(quickAnswers);
-                  }}
-                >
-                  <DeleteForever />
-                </Button>
-              </Tooltip>
-            )}
-          />
-
-        </MainHeaderButtonsWrapper>
+        </div>
       </MainHeader>
       <Paper
         className={classes.mainPaper}
         variant="outlined"
         onScroll={handleScroll}
       >
-        <Table size="small">
+        <Table size="small" className={classes.table}>
           <TableHead>
             <TableRow>
-              <TableCell align="center">
+              <TableCell align="left">
                 {i18n.t("quickAnswers.table.shortcut")}
               </TableCell>
-              <TableCell align="center">
+              <TableCell align="left">
                 {i18n.t("quickAnswers.table.message")}
               </TableCell>
               <TableCell align="center">
@@ -308,28 +489,34 @@ const QuickAnswers = () => {
             <>
               {quickAnswers.map((quickAnswer) => (
                 <TableRow key={quickAnswer.id}>
-                  <TableCell align="center">{quickAnswer.shortcut}</TableCell>
-                  <TableCell align="center">{quickAnswer.message}</TableCell>
+                  <TableCell align="left">
+                    <span className={classes.shortcutCell}>{quickAnswer.shortcut}</span>
+                  </TableCell>
+                  <TableCell align="left">
+                    <span className={classes.messageCell}>{quickAnswer.message}</span>
+                  </TableCell>
                   <TableCell align="center">
                     <IconButton
                       size="small"
+                      className={`${classes.actionButton} ${classes.editButton}`}
                       onClick={() => handleEditQuickAnswers(quickAnswer)}
                     >
-                      <Edit color="secondary" />
+                      <Edit style={{ fontSize: 20 }} />
                     </IconButton>
 
                     <Can
                       role={user.profile}
                       perform="drawer-admin-items:view"
-                      yes={() => ( //Função que identifica o usuario e bloqueia a visão caso não seja admin
+                      yes={() => (
                         <IconButton
                           size="small"
+                          className={`${classes.actionButton} ${classes.deleteButton}`}
                           onClick={(e) => {
                             setConfirmModalOpen(true);
                             setDeletingQuickAnswers(quickAnswer);
                           }}
                         >
-                          <DeleteOutline color="secondary" />
+                          <DeleteOutline style={{ fontSize: 20 }} />
                         </IconButton>
                       )}
                     />

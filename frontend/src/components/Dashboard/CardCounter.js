@@ -4,30 +4,48 @@ import { Avatar, Card, CardHeader, Typography } from "@material-ui/core";
 import Skeleton from "@material-ui/lab/Skeleton";
 
 import { makeStyles } from "@material-ui/core/styles";
-import { grey } from '@material-ui/core/colors';
 
 const useStyles = makeStyles(theme => ({
+	card: {
+		backgroundColor: theme.palette.background.paper,
+		borderRadius: 12,
+		boxShadow: theme.palette.type === "dark" 
+			? "0 2px 8px rgba(0,0,0,0.3)" 
+			: "0 2px 8px rgba(0,0,0,0.06)",
+		border: theme.palette.type === "dark" ? `1px solid ${theme.palette.divider}` : "none",
+	},
 	cardAvatar: {
 		fontSize: '55px',
-		color: grey[500],
-		backgroundColor: '#ffffff',
+		color: theme.palette.primary.main,
+		backgroundColor: theme.palette.type === "dark" 
+			? "rgba(0, 113, 193, 0.15)" 
+			: "rgba(0, 113, 193, 0.1)",
 		width: theme.spacing(7),
-		height: theme.spacing(7)
+		height: theme.spacing(7),
+		borderRadius: 12,
 	},
 	cardTitle: {
 		fontSize: '18px',
+		color: theme.palette.text.primary,
+		fontWeight: 600,
 	},
 	cardSubtitle: {
-		color: grey[600],
+		color: theme.palette.text.secondary,
 		fontSize: '14px',
-	}
+	},
+	skeleton: {
+		borderRadius: 12,
+		backgroundColor: theme.palette.type === "dark" 
+			? "rgba(255, 255, 255, 0.1)" 
+			: "rgba(0, 0, 0, 0.1)",
+	},
 }));
 
 export default function CardCounter(props) {
     const { icon, title, value, loading } = props
 	const classes = useStyles();
     return ( !loading ? 
-        <Card>
+        <Card className={classes.card} elevation={0}>
             <CardHeader
                 avatar={
                     <Avatar className={classes.cardAvatar}>
@@ -46,7 +64,7 @@ export default function CardCounter(props) {
                 }
             />
         </Card>
-        : <Skeleton variant="rect" height={80} />
+        : <Skeleton variant="rect" height={80} className={classes.skeleton} />
     )
     
 }

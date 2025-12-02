@@ -145,7 +145,9 @@ const messages = {
           defineHourExpedient: "Set office hours",
           longText: "Check this option to set office hours for appointments.",
           token: "Token",
-          checkHourExpedient: "Check Office Hours"
+          checkHourExpedient: "Check Office Hours",
+          queues: "Queues",
+          queuesDescription: "Select the queues to which tickets from this connection will be assigned.",
         },
         buttons: {
           okAdd: "Add",

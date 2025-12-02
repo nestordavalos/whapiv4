@@ -26,9 +26,11 @@ const useStyles = makeStyles(theme => ({
   root: {
     width: "100vw",
     height: "100vh",
-    backgroundImage: "url(https://nydcompany.com/ok/black-background.jpg)",
+    background: theme.palette.type === "dark" 
+      ? "linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%)"
+      : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
     backgroundRepeat: "no-repeat",
-    backgroundSize: "100% 100%",
+    backgroundSize: "cover",
     backgroundPosition: "center",
     display: "flex",
     flexDirection: "column",
@@ -37,12 +39,18 @@ const useStyles = makeStyles(theme => ({
     textAlign: "center",
   },
   paper: {
-    backgroundColor: "white",
+    backgroundColor: theme.palette.background.paper,
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     padding: "55px 30px",
     borderRadius: "12.5px",
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 8px 32px rgba(0, 0, 0, 0.5)"
+      : "0 8px 32px rgba(0, 0, 0, 0.15)",
+    border: theme.palette.type === "dark" 
+      ? `1px solid ${theme.palette.divider}`
+      : "none",
   },
   avatar: {
     margin: theme.spacing(1),
@@ -54,10 +62,17 @@ const useStyles = makeStyles(theme => ({
   },
   submit: {
     margin: theme.spacing(3, 0, 2),
+    fontWeight: 600,
+    padding: "10px 24px",
+    borderRadius: 8,
   },
   powered: {
-    color: "white"
-  }
+    color: theme.palette.type === "dark" ? theme.palette.text.secondary : "white"
+  },
+  loginTitle: {
+    color: theme.palette.text.primary,
+    fontWeight: 600,
+  },
 }));
 
 
@@ -88,7 +103,7 @@ const Login = () => {
           <div>
             <img style={{ margin: "0 auto", height: "70px", width: "100%" }} src={logo} alt="Whats" />
           </div>
-          <Typography component="h1" variant="h5">
+          <Typography component="h1" variant="h5" className={classes.loginTitle}>
             Login
           </Typography>
           <form className={classes.form} noValidate onSubmit={handlSubmit}>

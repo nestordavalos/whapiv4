@@ -15,16 +15,17 @@ import logo from "../../assets/Logo_circle.png";
 const useStyles = makeStyles((theme) => ({
   chatContainer: {
     flex: 1,
-    // backgroundColor: "#eee",
-    // padding: theme.spacing(4),
-    height: `calc(100vh - 72px)`,
+    height: `calc(100% - 8px)`,
     minHeight: 0,
     overflowY: "hidden",
     margin: theme.spacing(1),
+    [theme.breakpoints.down("sm")]: {
+      margin: 0,
+      height: "100%",
+    },
   },
 
   chatPapper: {
-    // backgroundColor: "red",
     display: "flex",
     height: "100%",
     minHeight: 0,
@@ -60,6 +61,10 @@ const useStyles = makeStyles((theme) => ({
     alignItems: "center",
     height: "100%",
     textAlign: "center",
+    borderRadius: 12,
+    [theme.breakpoints.down("sm")]: {
+      borderRadius: 8,
+    },
   },
   ticketsManager: {},
   ticketsManagerClosed: {

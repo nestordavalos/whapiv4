@@ -36,17 +36,49 @@ const useStyles = makeStyles(theme => ({
         display: "flex",
         flexWrap: "wrap",
     },
+    dialog: {
+        "& .MuiDialog-paper": {
+            borderRadius: 16,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+        },
+    },
+    dialogTitle: {
+        padding: "20px 24px 16px",
+        "& .MuiTypography-root": {
+            fontWeight: 600,
+            fontSize: "1.25rem",
+            color: "#212529",
+        },
+    },
+    dialogContent: {
+        padding: "16px 24px",
+    },
     multFieldLine: {
         display: "flex",
         "& > *:not(:last-child)": {
             marginRight: theme.spacing(1),
         },
     },
-
+    textField: {
+        "& .MuiOutlinedInput-root": {
+            borderRadius: 10,
+            transition: "all 0.2s ease",
+            "&:hover": {
+                "& .MuiOutlinedInput-notchedOutline": {
+                    borderColor: theme.palette.primary.main,
+                },
+            },
+            "&.Mui-focused": {
+                boxShadow: "0 0 0 3px rgba(25, 118, 210, 0.1)",
+            },
+        },
+        "& .MuiInputLabel-root": {
+            fontWeight: 500,
+        },
+    },
     btnWrapper: {
         position: "relative",
     },
-
     buttonProgress: {
         color: green[500],
         position: "absolute",
@@ -62,6 +94,46 @@ const useStyles = makeStyles(theme => ({
     colorAdorment: {
         width: 20,
         height: 20,
+        borderRadius: "50%",
+        boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+        border: "1px solid #fff",
+    },
+    colorPickerContainer: {
+        marginTop: 16,
+        padding: 16,
+        borderRadius: 12,
+        backgroundColor: "#f8f9fa",
+        display: "flex",
+        justifyContent: "center",
+    },
+    dialogActions: {
+        padding: "16px 24px",
+        gap: 8,
+    },
+    cancelButton: {
+        borderRadius: 10,
+        textTransform: "none",
+        fontWeight: 500,
+        padding: "8px 20px",
+    },
+    submitButton: {
+        borderRadius: 10,
+        textTransform: "none",
+        fontWeight: 500,
+        padding: "8px 20px",
+        boxShadow: "0 2px 8px rgba(25, 118, 210, 0.25)",
+        "&:hover": {
+            boxShadow: "0 4px 12px rgba(25, 118, 210, 0.35)",
+        },
+    },
+    colorPickerButton: {
+        borderRadius: 8,
+        padding: 8,
+        transition: "all 0.2s ease",
+        "&:hover": {
+            backgroundColor: "rgba(25, 118, 210, 0.1)",
+            transform: "scale(1.1)",
+        },
     },
 }));
 
@@ -130,8 +202,9 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                 maxWidth="xs"
                 fullWidth
                 scroll="paper"
+                className={classes.dialog}
             >
-                <DialogTitle id="form-dialog-title">
+                <DialogTitle id="form-dialog-title" className={classes.dialogTitle}>
                     {(tagId ? `${i18n.t("tagModal.title.edit")}` : `${i18n.t("tagModal.title.add")}`)}
                 </DialogTitle>
                 <Formik
@@ -147,7 +220,7 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                 >
                     {({ touched, errors, isSubmitting, values }) => (
                         <Form>
-                            <DialogContent dividers>
+                            <DialogContent dividers className={classes.dialogContent}>
                                 <div className={classes.multFieldLine}>
                                     <Field
                                         as={TextField}
@@ -159,6 +232,7 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                                         margin="dense"
                                         onChange={(e) => setTag(prev => ({ ...prev, name: e.target.value }))}
                                         fullWidth
+                                        className={classes.textField}
                                     />
                                 </div>
                                 <br />
@@ -171,6 +245,7 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                                         id="color"
                                         error={touched.color && Boolean(errors.color)}
                                         helperText={touched.color && errors.color}
+                                        className={classes.textField}
                                         InputProps={{
                                             startAdornment: (
                                                 <InputAdornment position="start">
@@ -183,8 +258,9 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                                             endAdornment: (
                                                 <IconButton
                                                     size="small"
-                                                    color="secondary"
+                                                    color="primary"
                                                     onClick={() => setColorPickerModalOpen(!colorPickerModalOpen)}
+                                                    className={classes.colorPickerButton}
                                                 >
                                                     <Colorize />
                                                 </IconButton>
@@ -196,11 +272,10 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                                 </div>
 
                                 {colorPickerModalOpen && (
-                                    <div>
+                                    <div className={classes.colorPickerContainer}>
                                         <ColorBox
                                             disableAlpha={true}
                                             hslGradient={false}
-                                            style={{ margin: '20px auto 0' }}
                                             value={tag.color}
                                             onChange={val => {
                                                 setTag(prev => ({ ...prev, color: `#${val.hex}` }));
@@ -209,12 +284,13 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                                     </div>
                                 )}
                             </DialogContent>
-                            <DialogActions>
+                            <DialogActions className={classes.dialogActions}>
                                 <Button
                                     onClick={handleClose}
                                     color="secondary"
                                     disabled={isSubmitting}
                                     variant="outlined"
+                                    className={classes.cancelButton}
                                 >
                                     {i18n.t("tagModal.buttons.cancel")}
                                 </Button>
@@ -223,7 +299,7 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                                     color="primary"
                                     disabled={isSubmitting}
                                     variant="contained"
-                                    className={classes.btnWrapper}
+                                    className={`${classes.btnWrapper} ${classes.submitButton}`}
                                 >
                                     {tagId
                                         ? `${i18n.t("tagModal.buttons.okEdit")}`

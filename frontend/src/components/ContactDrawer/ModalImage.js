@@ -1,16 +1,40 @@
 import React, { useState, useEffect } from "react";
 import { makeStyles } from "@material-ui/core/styles";
 import axios from "axios";
+import Avatar from "@material-ui/core/Avatar";
+import PersonIcon from "@material-ui/icons/Person";
 
 import ModalImage from "react-modal-image";
 
 const useStyles = makeStyles(theme => ({
 	messageMedia: {
 		objectFit: "cover",
-		margin: 15,
-		width: 160,
-		height: 160,
-		borderRadius: 10,
+		width: 120,
+		height: 120,
+		borderRadius: 16,
+		border: `3px solid ${theme.palette.primary.main}`,
+		boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+		cursor: "pointer",
+		transition: "transform 0.2s ease, box-shadow 0.2s ease",
+		"&:hover": {
+			transform: "scale(1.02)",
+			boxShadow: "0 6px 16px rgba(0,0,0,0.15)",
+		},
+	},
+	fallbackAvatar: {
+		width: 120,
+		height: 120,
+		borderRadius: 16,
+		border: `3px solid ${theme.palette.primary.main}`,
+		boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+		backgroundColor: theme.palette.grey[300],
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	fallbackIcon: {
+		fontSize: 60,
+		color: theme.palette.grey[500],
 	},
 }));
  
@@ -21,7 +45,11 @@ const ModalImageContatc = ({ imageUrl }) => {
 	const [imageError, setImageError] = useState(false);
 
 	useEffect(() => {
-		if (!imageUrl) return;
+		if (!imageUrl) {
+			setImageError(true);
+			setFetching(false);
+			return;
+		}
 		const fetchImage = async () => {
 			try {
 				const { data, headers } = await axios.get(imageUrl, {
@@ -34,7 +62,6 @@ const ModalImageContatc = ({ imageUrl }) => {
 				setFetching(false);
 				setImageError(false);
 			} catch (err) {
-				// Si es 404, marcar como error y no mostrar nada
 				if (err.response && err.response.status === 404) {
 					setImageError(true);
 				}
@@ -44,9 +71,13 @@ const ModalImageContatc = ({ imageUrl }) => {
 		fetchImage();
 	}, [imageUrl]);
 
-	// No renderizar nada si la imagen no existe
-	if (imageError) {
-		return null;
+	// Mostrar avatar placeholder si no hay imagen
+	if (imageError || !imageUrl) {
+		return (
+			<Avatar className={classes.fallbackAvatar} variant="rounded">
+				<PersonIcon className={classes.fallbackIcon} />
+			</Avatar>
+		);
 	}
 
 	return (

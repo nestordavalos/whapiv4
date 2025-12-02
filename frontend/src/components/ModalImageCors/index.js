@@ -9,10 +9,13 @@ const useStyles = makeStyles(theme => ({
 		objectFit: "cover",
 		width: 250,
 		height: 200,
-		borderTopLeftRadius: 8,
-		borderTopRightRadius: 8,
-		borderBottomLeftRadius: 8,
-		borderBottomRightRadius: 8,
+		borderRadius: 12,
+		display: "block",
+		cursor: "pointer",
+		transition: "transform 0.2s ease",
+		"&:hover": {
+			transform: "scale(1.02)",
+		},
 	},
 }));
 

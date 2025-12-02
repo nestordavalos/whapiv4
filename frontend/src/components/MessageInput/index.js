@@ -46,11 +46,11 @@ const Mp3Recorder = new MicRecorder({ bitRate: 128 });
 
 const useStyles = makeStyles((theme) => ({
   mainWrapper: {
-    background: "#eee",
+    background: theme.palette.background.paper,
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    borderTop: "1px solid rgba(0, 0, 0, 0.12)",
+    borderTop: `1px solid ${theme.palette.divider}`,
     [theme.breakpoints.down("sm")]: {
       position: "fixed",
       bottom: 0,
@@ -63,7 +63,7 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: "25%"
   },
   dropInfo: {
-    background: "#eee",
+    background: theme.palette.background.default,
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -78,7 +78,7 @@ const useStyles = makeStyles((theme) => ({
   mediaThumb: {
     width: 64,
     height: 64,
-    borderRadius: 4,
+    borderRadius: 8,
     objectFit: "cover",
   },
   mediaThumbWrapper: {
@@ -98,28 +98,51 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   newMessageBox: {
-    background: theme.palette.background.default,
+    background: theme.palette.background.paper,
     width: "100%",
     display: "flex",
-    padding: "7px",
+    padding: "10px 12px",
     alignItems: "center",
+    gap: 4,
   },
   messageInputWrapper: {
-    padding: 6,
-    marginRight: 7,
-    background: theme.palette.background.paper,
+    padding: "8px 12px",
+    marginRight: 4,
+    marginLeft: 4,
+    background: theme.palette.background.default,
     display: "flex",
-    borderRadius: 20,
+    borderRadius: 24,
     flex: 1,
     position: "relative",
+    border: `1px solid ${theme.palette.divider}`,
+    transition: "all 0.2s ease",
+    "&:focus-within": {
+      borderColor: theme.palette.primary.light,
+      boxShadow: `0 0 0 2px ${theme.palette.primary.light}15`,
+    },
   },
   messageInput: {
-    paddingLeft: 10,
+    paddingLeft: 8,
     flex: 1,
-    border: "none"
+    border: "none",
+    fontSize: "0.9rem",
+    "&::placeholder": {
+      color: theme.palette.text.secondary,
+    },
   },
   sendMessageIcons: {
-    color: theme.palette.text.primary,
+    color: theme.palette.text.secondary,
+    fontSize: "1.4rem",
+    transition: "color 0.2s ease",
+  },
+  iconButton: {
+    padding: 8,
+    "&:hover": {
+      backgroundColor: theme.palette.action.hover,
+    },
+    "&:hover $sendMessageIcons": {
+      color: theme.palette.primary.main,
+    },
   },
   uploadInput: {
     display: "none",
@@ -128,7 +151,7 @@ const useStyles = makeStyles((theme) => ({
     position: "absolute",
     bottom: 63,
     width: 40,
-    borderTop: "1px solid #e8e8e8",
+    borderTop: `1px solid ${theme.palette.divider}`,
   },
   circleLoading: {
     color: green[500],
@@ -146,12 +169,15 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     alignItems: "center",
     alignContent: "middle",
+    gap: 4,
   },
   cancelAudioIcon: {
-    color: "red",
+    color: theme.palette.error.main,
+    fontSize: "1.5rem",
   },
   sendAudioIcon: {
-    color: "green",
+    color: theme.palette.success.main,
+    fontSize: "1.5rem",
   },
   replyginMsgWrapper: {
     display: "flex",
@@ -166,8 +192,8 @@ const useStyles = makeStyles((theme) => ({
     flex: 1,
     marginRight: 5,
     overflowY: "hidden",
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
-    borderRadius: "7.5px",
+    backgroundColor: theme.palette.action.hover,
+    borderRadius: 10,
     display: "flex",
     position: "relative",
   },
@@ -177,46 +203,61 @@ const useStyles = makeStyles((theme) => ({
     display: "block",
     whiteSpace: "pre-wrap",
     overflow: "hidden",
+    fontSize: "0.85rem",
   },
   replyginContactMsgSideColor: {
     flex: "none",
     width: "4px",
-    backgroundColor: "#35cd96",
+    backgroundColor: theme.palette.success.main,
+    borderRadius: "4px 0 0 4px",
   },
   replyginSelfMsgSideColor: {
     flex: "none",
     width: "4px",
-    backgroundColor: "#6bcbef",
+    backgroundColor: theme.palette.primary.main,
+    borderRadius: "4px 0 0 4px",
   },
   messageContactName: {
     display: "flex",
-    color: "#6bcbef",
-    fontWeight: 500,
+    color: theme.palette.primary.main,
+    fontWeight: 600,
+    fontSize: "0.8rem",
   },
   messageQuickAnswersWrapper: {
     margin: 0,
     position: "absolute",
     bottom: "50px",
-    background: theme.palette.background.default,
+    background: theme.palette.background.paper,
     padding: 0,
-    border: "none",
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: 10,
     left: 0,
     width: "100%",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
     "& li": {
       listStyle: "none",
       "& a": {
         display: "block",
-        padding: "8px",
+        padding: "10px 12px",
         textOverflow: "ellipsis",
         overflow: "hidden",
-        maxHeight: "30px",
+        maxHeight: "36px",
+        fontSize: "0.85rem",
+        borderRadius: 8,
+        margin: 4,
         "&:hover": {
-          background: theme.palette.background.paper,
+          background: theme.palette.action.hover,
           cursor: "pointer",
         },
       },
     },
-  }
+  },
+  signSwitch: {
+    "& .MuiFormControlLabel-label": {
+      fontSize: "0.75rem",
+      color: theme.palette.text.secondary,
+    },
+  },
 }));
 
 const MessageInput = ({ ticketStatus }) => {
@@ -634,7 +675,7 @@ const MessageInput = ({ ticketStatus }) => {
               </MenuItem>
               <MenuItem onClick={handleMenuItemClick}>
                 <FormControlLabel
-                  style={{ marginRight: 7, color: "gray" }}
+                  style={{ marginRight: 7 }}
                   label={i18n.t("messagesInput.signMessage")}
                   labelPlacement="start"
                   control={
@@ -803,7 +844,7 @@ const MessageInput = ({ ticketStatus }) => {
               </MenuItem>
               <MenuItem onClick={handleMenuItemClick}>
                 <FormControlLabel
-                  style={{ marginRight: 7, color: "gray" }}
+                  style={{ marginRight: 7 }}
                   label={i18n.t("messagesInput.signMessage")}
                   labelPlacement="start"
                   control={

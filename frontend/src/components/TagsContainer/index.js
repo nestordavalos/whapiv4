@@ -1,5 +1,7 @@
-import { Chip, Paper, TextField } from "@material-ui/core";
+import { Chip, Paper, TextField, Typography } from "@material-ui/core";
+import { makeStyles } from "@material-ui/core/styles";
 import Autocomplete from "@material-ui/lab/Autocomplete";
+import LocalOfferIcon from "@material-ui/icons/LocalOffer";
 import React, { useContext, useEffect, useState } from "react";
 import { isArray, isString } from "lodash";
 import toastError from "../../errors/toastError";
@@ -7,9 +9,67 @@ import api from "../../services/api";
 
 import { AuthContext } from "../../context/Auth/AuthContext";
 
+const useStyles = makeStyles((theme) => ({
+    container: {
+        padding: 16,
+        backgroundColor: theme.palette.background.paper,
+    },
+    header: {
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 12,
+    },
+    headerIcon: {
+        fontSize: "1rem",
+        color: theme.palette.text.secondary,
+    },
+    headerTitle: {
+        fontWeight: 600,
+        fontSize: "0.85rem",
+        color: theme.palette.text.secondary,
+        textTransform: "uppercase",
+        letterSpacing: "0.5px",
+    },
+    tagChip: {
+        height: 24,
+        fontSize: "0.75rem",
+        fontWeight: 600,
+        borderRadius: 6,
+        margin: 2,
+        "& .MuiChip-label": {
+            padding: "0 10px",
+        },
+        "& .MuiChip-deleteIcon": {
+            fontSize: "1rem",
+            color: "rgba(255,255,255,0.7)",
+            "&:hover": {
+                color: "rgba(255,255,255,1)",
+            },
+        },
+    },
+    autocomplete: {
+        "& .MuiOutlinedInput-root": {
+            borderRadius: 8,
+            backgroundColor: theme.palette.background.default,
+            "& fieldset": {
+                borderColor: theme.palette.divider,
+            },
+            "&:hover fieldset": {
+                borderColor: theme.palette.primary.light,
+            },
+            "&.Mui-focused fieldset": {
+                borderColor: theme.palette.primary.main,
+            },
+        },
+        "& .MuiInputBase-input::placeholder": {
+            fontSize: "0.85rem",
+        },
+    },
+}));
 
 export function TagsContainer({ contact }) {
-
+    const classes = useStyles();
     const [tags, setTags] = useState([]);
     const [selecteds, setSelecteds] = useState([]);
     const { user } = useContext(AuthContext);
@@ -75,10 +135,13 @@ export function TagsContainer({ contact }) {
     }
     const isRemoveTags = user.isRemoveTags === 'enabled';
     return (
-        <Paper style={{ padding: 12 }}>
-
+        <Paper elevation={0} className={classes.container}>
+            <div className={classes.header}>
+                <LocalOfferIcon className={classes.headerIcon} />
+                <Typography className={classes.headerTitle}>Tags</Typography>
+            </div>
             <Autocomplete
-                //clearOnBlur={false}
+                className={classes.autocomplete}
                 disableClearable={true}
                 multiple
                 size="small"
@@ -89,10 +152,13 @@ export function TagsContainer({ contact }) {
                 getOptionLabel={(option) => option.name}
                 renderTags={(value, getTagProps) =>
                     value.map((option, index) => (
-
                         <Chip
-                            variant="outlined"
-                            style={{ backgroundColor: option.color || '#eee', textShadow: '1px 1px 1px #000', color: 'white', padding: 5 }}
+                            key={option.id || index}
+                            className={classes.tagChip}
+                            style={{ 
+                                backgroundColor: option.color || '#3b82f6', 
+                                color: 'white',
+                            }}
                             label={option.name}
                             {...(isRemoveTags && getTagProps({ index }))}
                             size="small"
@@ -100,10 +166,14 @@ export function TagsContainer({ contact }) {
                     ))
                 }
                 renderInput={(params) => (
-                    <TextField {...params} variant="outlined" placeholder="Tags" />//clearOnBlur={false} />
+                    <TextField 
+                        {...params} 
+                        variant="outlined" 
+                        placeholder="Agregar tags..." 
+                    />
                 )}
                 PaperComponent={({ children }) => (
-                    <Paper style={{ width: 400, marginLeft: 12 }}>
+                    <Paper style={{ width: 280, marginTop: 4, borderRadius: 8 }}>
                         {children}
                     </Paper>
                 )}

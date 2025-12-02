@@ -37,6 +37,10 @@ const useStyles = makeStyles((theme) => ({
     minHeight: 0,
     borderTopRightRadius: 0,
     borderBottomRightRadius: 0,
+    backgroundColor: theme.palette.background.default,
+    [theme.breakpoints.down("sm")]: {
+      borderRadius: 0,
+    },
   },
 
   tabPanels: {
@@ -66,7 +70,8 @@ const useStyles = makeStyles((theme) => ({
 
   tabsHeader: {
     flex: "none",
-    backgroundColor: theme.palette.background.default,
+    backgroundColor: theme.palette.background.paper,
+    borderBottom: `1px solid ${theme.palette.divider}`,
   },
 
   settingsIcon: {
@@ -76,8 +81,32 @@ const useStyles = makeStyles((theme) => ({
   },
 
   tab: {
-    minWidth: 120,
-    width: 120,
+    minWidth: 100,
+    width: "auto",
+    flex: 1,
+    textTransform: "uppercase",
+    fontSize: "0.75rem",
+    fontWeight: 600,
+    letterSpacing: "0.5px",
+    padding: "8px 12px",
+    minHeight: 64,
+    "& .MuiTab-wrapper": {
+      flexDirection: "column",
+      gap: 4,
+    },
+    "& .MuiSvgIcon-root": {
+      fontSize: "1.3rem",
+      marginBottom: "2px !important",
+    },
+    [theme.breakpoints.down("xs")]: {
+      minWidth: 70,
+      padding: "6px 8px",
+      fontSize: "0.65rem",
+      minHeight: 56,
+      "& .MuiSvgIcon-root": {
+        fontSize: "1.1rem",
+      },
+    },
   },
 
   ticketOptionsBox: {
@@ -85,7 +114,15 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: theme.palette.background.paper,
-    padding: theme.spacing(1),
+    padding: "8px 12px",
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    position: "relative",
+    [theme.breakpoints.down("xs")]: {
+      display: "grid",
+      gridTemplateColumns: "1fr 1fr 1fr",
+      gap: 4,
+      padding: "8px 8px",
+    },
   },
 
   serachInputWrapper: {
@@ -98,22 +135,36 @@ const useStyles = makeStyles((theme) => ({
   },
 
   searchIcon: {
-    color: theme.palette.primary.main,
-    marginLeft: 6,
-    marginRight: 6,
+    color: theme.palette.text.secondary,
+    marginLeft: 12,
+    marginRight: 8,
     alignSelf: "center",
+    fontSize: "1.3rem",
   },
 
   searchInput: {
     flex: 1,
     border: "none",
-    borderRadius: 25,
-    padding: "10px",
+    borderRadius: 8,
+    padding: "10px 12px",
     outline: "none",
+    fontSize: "0.9rem",
+    backgroundColor: "transparent",
+    color: theme.palette.text.primary,
+    "&::placeholder": {
+      color: theme.palette.text.secondary,
+      opacity: 0.7,
+    },
   },
 
   badge: {
     right: 0,
+    "& .MuiBadge-badge": {
+      fontSize: "0.65rem",
+      height: 16,
+      minWidth: 16,
+      padding: "0 4px",
+    },
   },
   show: {
     display: "block",
@@ -123,8 +174,66 @@ const useStyles = makeStyles((theme) => ({
   },
   searchContainer: {
     display: "flex",
-    padding: "10px",
-    borderBottom: "2px solid rgba(0, 0, 0, .12)",
+    alignItems: "center",
+    padding: "8px 12px",
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.background.paper,
+  },
+  searchInputWrapper: {
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    backgroundColor: theme.palette.background.default,
+    borderRadius: 10,
+    border: `1px solid ${theme.palette.divider}`,
+    transition: "all 0.2s ease",
+    "&:focus-within": {
+      borderColor: theme.palette.primary.main,
+      boxShadow: `0 0 0 2px ${theme.palette.primary.light}20`,
+    },
+  },
+  newTicketButton: {
+    textTransform: "none",
+    fontWeight: 600,
+    fontSize: "0.8rem",
+    borderRadius: 8,
+    padding: "6px 16px",
+    borderWidth: 1.5,
+    "&:hover": {
+      borderWidth: 1.5,
+      backgroundColor: theme.palette.primary.main,
+      color: "#fff",
+    },
+    [theme.breakpoints.down("xs")]: {
+      padding: "5px 10px",
+      fontSize: "0.7rem",
+      justifySelf: "start",
+    },
+  },
+  showAllSwitch: {
+    display: "flex",
+    alignItems: "center",
+    marginLeft: "auto",
+    "& .MuiFormControlLabel-label": {
+      fontSize: "0.8rem",
+      fontWeight: 500,
+      color: theme.palette.text.secondary,
+    },
+    "& .MuiSwitch-root": {
+      marginLeft: 4,
+    },
+    [theme.breakpoints.down("xs")]: {
+      marginLeft: 0,
+      justifySelf: "center",
+      "& .MuiFormControlLabel-label": {
+        fontSize: "0.7rem",
+      },
+    },
+  },
+  newTicketButtonMobile: {
+    [theme.breakpoints.down("xs")]: {
+      order: 1,
+    },
   },
 }));
 
@@ -191,14 +300,16 @@ const TicketsManager = () => {
         onClose={(e) => setNewTicketModalOpen(false)}
       />
       <Paper elevation={0} square className={classes.searchContainer}>
-        <Search className={classes.searchIcon} />
-        <input
-          type="text"
-          placeholder={i18n.t("tickets.search.placeholder")}
-          className={classes.searchInput}
-          value={searchParam}
-          onChange={handleSearch}
-        />
+        <div className={classes.searchInputWrapper}>
+          <Search className={classes.searchIcon} />
+          <input
+            type="text"
+            placeholder={i18n.t("tickets.search.placeholder")}
+            className={classes.searchInput}
+            value={searchParam}
+            onChange={handleSearch}
+          />
+        </div>
       </Paper>
       <Paper elevation={0} square className={classes.tabsHeader}>
         <Tabs
@@ -252,6 +363,7 @@ const TicketsManager = () => {
           variant="outlined"
           color="primary"
           onClick={() => setNewTicketModalOpen(true)}
+          className={classes.newTicketButton}
         >
           {i18n.t("ticketsManager.buttons.newTicket")}
         </Button>
@@ -259,7 +371,7 @@ const TicketsManager = () => {
           role={user.profile}
           perform="tickets-manager:showall"
           yes={() => (
-            <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
+            <div className={classes.showAllSwitch}>
               <FormControlLabel
                 label={i18n.t("tickets.buttons.showAll")}
                 labelPlacement="start"

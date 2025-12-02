@@ -155,6 +155,8 @@ const messages = {
           token: "Token",
           checkHourExpedient: "Consultar Horario de Oficina",
           group: "Recibir Mensaje de Grupo",
+          queues: "Colas",
+          queuesDescription: "Selecciona las colas a las que se asignarán los tickets de esta conexión.",
         },
         buttons: {
           okAdd: "Agregar",
@@ -275,7 +277,7 @@ const messages = {
       },
       queueModal: {
         title: {
-          add: "Agregar Sector",
+          add: "Crear Sector",
           edit: "Editar Sector",
         },
         notification: {
@@ -290,15 +292,15 @@ const messages = {
           absenceMessage: "Mensaje de ausencia",
         },
         buttons: {
-          okAdd: "Agregar",
+          okAdd: "Crear",
           okEdit: "Guardar",
           cancel: "Cancelar",
         },
       },
       userModal: {
         title: {
-          add: "Agregar asistente",
-          edit: "Editar asistente",
+          add: "Crear Asistente",
+          edit: "Editar Asistente",
         },
         form: {
           name: "Nombre",
@@ -340,11 +342,11 @@ const messages = {
           allTicketDesabled: "Desactivado",
         },
         buttons: {
-          okAdd: "Agregar",
+          okAdd: "Crear",
           okEdit: "Guardar",
           cancel: "Cancelar",
         },
-        success: "El asistente guardó con éxito.",
+        success: "Asistente guardado con éxito.",
       },
       chat: {
         noTicketMessage: "Seleccione un ticket para comenzar a chatear.",
@@ -509,9 +511,10 @@ const messages = {
           actions: "Acciones",
           startWork: "Apertura",
           endWork: "Cierre",
+          schedule: "Horario",
         },
         buttons: {
-          add: "Agregar sector",
+          add: "Crear Sector",
         },
         confirmationModal: {
           deleteTitle: "Eliminar",
@@ -557,15 +560,15 @@ const messages = {
           actions: "Acciónes"
         },
         buttons: {
-          add: "Agregar asistente",
+          add: "Crear Asistente",
         },
         toasts: {
-          deleted: "asistente eliminado con éxito.",
+          deleted: "Asistente eliminado con éxito.",
           updated: "Asistente actualizado con éxito."
         },
         confirmationModal: {
-          deleteTitle: "Eliminar",
-          deleteMessage: "Se perderán todos los datos del asistente. Los tickets abiertos para este asistente se moverán a espera.",
+          deleteTitle: "Eliminar Asistente",
+          deleteMessage: "¿Está seguro? Se perderán todos los datos del asistente. Los tickets abiertos se moverán a espera.",
         },
       },
       settings: {

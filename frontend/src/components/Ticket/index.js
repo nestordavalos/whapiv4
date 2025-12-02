@@ -30,23 +30,15 @@ const useStyles = makeStyles((theme) => ({
 
   ticketInfo: {
     backgroundColor: theme.palette.background.default,
-    maxWidth: "50%",
-    flexBasis: "50%",
-    [theme.breakpoints.down("sm")]: {
-      maxWidth: "80%",
-      flexBasis: "80%",
-    },
+    flex: 1,
+    minWidth: 0,
+    overflow: "hidden",
   },
   ticketActionButtons: {
     backgroundColor: theme.palette.background.default,
-    maxWidth: "50%",
-    flexBasis: "50%",
     display: "flex",
-    [theme.breakpoints.down("sm")]: {
-      maxWidth: "100%",
-      flexBasis: "100%",
-      marginBottom: "5px",
-    },
+    justifyContent: "flex-end",
+    flexShrink: 0,
   },
 
   mainWrapper: {

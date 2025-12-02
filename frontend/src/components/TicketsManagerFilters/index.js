@@ -12,49 +12,129 @@ import {
 import Autocomplete from "@material-ui/lab/Autocomplete";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import ClearIcon from "@material-ui/icons/Clear";
+import FilterListIcon from "@material-ui/icons/FilterList";
 import api from "../../services/api";
 
 const useStyles = makeStyles((theme) => ({
   filterAccordion: {
-    margin: "0",
+    margin: "8px 12px",
     boxShadow: "none",
-    border: "1px solid rgba(0, 0, 0, 0.12)",
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: "10px !important",
+    overflow: "hidden",
     "&:before": {
       display: "none",
     },
+    "&.Mui-expanded": {
+      margin: "8px 12px",
+    },
+    [theme.breakpoints.down("xs")]: {
+      margin: "6px 8px",
+      "&.Mui-expanded": {
+        margin: "6px 8px",
+      },
+    },
   },
   accordionSummary: {
-    minHeight: "48px",
+    minHeight: "44px",
     padding: "0 16px",
+    backgroundColor: theme.palette.background.paper,
     "&.Mui-expanded": {
-      minHeight: "48px",
+      minHeight: "44px",
+      borderBottom: `1px solid ${theme.palette.divider}`,
     },
     "& .MuiAccordionSummary-content": {
-      margin: "12px 0",
+      margin: "10px 0",
+      "&.Mui-expanded": {
+        margin: "10px 0",
+      },
+    },
+    "& .MuiAccordionSummary-expandIcon": {
+      color: theme.palette.text.secondary,
+      padding: 8,
+    },
+    [theme.breakpoints.down("xs")]: {
+      padding: "0 12px",
+      minHeight: "40px",
+      "&.Mui-expanded": {
+        minHeight: "40px",
+      },
     },
   },
   accordionDetails: {
     display: "flex",
     flexDirection: "column",
     gap: theme.spacing(1.5),
-    padding: theme.spacing(1.5),
+    padding: theme.spacing(2),
     backgroundColor: theme.palette.background.default,
   },
   filterTitle: {
-    fontSize: "0.875rem",
-    fontWeight: 500,
+    fontSize: "0.85rem",
+    fontWeight: 600,
     color: theme.palette.text.primary,
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    [theme.breakpoints.down("xs")]: {
+      fontSize: "0.78rem",
+      gap: 6,
+    },
+  },
+  activeCount: {
+    marginLeft: 8,
+    color: theme.palette.primary.main,
+    fontSize: "0.75rem",
+    fontWeight: 500,
+    backgroundColor: theme.palette.primary.light + "20",
+    padding: "2px 8px",
+    borderRadius: 12,
+  },
+  clearButton: {
+    textTransform: "none",
+    fontSize: "0.75rem",
+    color: theme.palette.error.main,
+    padding: "4px 12px",
+    borderRadius: 8,
+    "&:hover": {
+      backgroundColor: theme.palette.error.light + "15",
+    },
   },
   autocomplete: {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 8,
+      backgroundColor: theme.palette.background.paper,
+      fontSize: "0.85rem",
+      "& fieldset": {
+        borderColor: theme.palette.divider,
+      },
+      "&:hover fieldset": {
+        borderColor: theme.palette.primary.light,
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: theme.palette.primary.main,
+        borderWidth: 1,
+      },
+    },
     "& .MuiAutocomplete-inputRoot": {
-      padding: "2px",
+      padding: "4px 8px",
     },
     "& .MuiInputLabel-outlined": {
-      transform: "translate(14px, 12px) scale(1)",
+      fontSize: "0.85rem",
+      transform: "translate(14px, 10px) scale(1)",
     },
     "& .MuiInputLabel-outlined.MuiInputLabel-shrink": {
       transform: "translate(14px, -6px) scale(0.75)",
+      fontWeight: 500,
     },
+    "& .MuiAutocomplete-tag": {
+      margin: 2,
+    },
+  },
+  filterChip: {
+    height: 24,
+    fontSize: "0.75rem",
+    fontWeight: 500,
+    borderRadius: 6,
   },
 }));
 
@@ -164,22 +244,23 @@ const TicketsManagerFilters = ({
         className={classes.accordionSummary}
       >
         <Typography className={classes.filterTitle}>
+          <FilterListIcon style={{ fontSize: 18 }} />
           Filtros Avanzados
           {hasActiveFilters && (
-            <span style={{ marginLeft: "8px", color: "#2196f3", fontSize: "0.75rem" }}>
-              ({selectedQueueIds.length + selectedTagIds.length + selectedWhatsappIds.length + selectedUserIds.length} activos)
+            <span className={classes.activeCount}>
+              {selectedQueueIds.length + selectedTagIds.length + selectedWhatsappIds.length + selectedUserIds.length} activos
             </span>
           )}
         </Typography>
       </AccordionSummary>
       <AccordionDetails className={classes.accordionDetails}>
         {hasActiveFilters && (
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "8px" }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
             <Button
               size="small"
-              startIcon={<ClearIcon />}
+              startIcon={<ClearIcon style={{ fontSize: 16 }} />}
               onClick={handleClearFilters}
-              style={{ textTransform: "none" }}
+              className={classes.clearButton}
             >
               Limpiar filtros
             </Button>
@@ -199,15 +280,17 @@ const TicketsManagerFilters = ({
               {...params}
               variant="outlined"
               label="Sectores"
-              placeholder="Seleccionar sectores"
+              placeholder="Seleccionar..."
             />
           )}
           renderTags={(value, getTagProps) =>
             value.map((option, index) => (
               <Chip
+                key={option.id}
                 size="small"
                 label={option.name}
                 {...getTagProps({ index })}
+                className={classes.filterChip}
                 style={{ backgroundColor: option.color, color: "#fff" }}
               />
             ))
@@ -228,15 +311,17 @@ const TicketsManagerFilters = ({
               {...params}
               variant="outlined"
               label="Etiquetas"
-              placeholder="Seleccionar etiquetas"
+              placeholder="Seleccionar..."
             />
           )}
           renderTags={(value, getTagProps) =>
             value.map((option, index) => (
               <Chip
+                key={option.id}
                 size="small"
                 label={option.name}
                 {...getTagProps({ index })}
+                className={classes.filterChip}
                 style={{ backgroundColor: option.color, color: "#fff" }}
               />
             ))
@@ -257,15 +342,18 @@ const TicketsManagerFilters = ({
               {...params}
               variant="outlined"
               label="Conexiones"
-              placeholder="Seleccionar conexiones"
+              placeholder="Seleccionar..."
             />
           )}
           renderTags={(value, getTagProps) =>
             value.map((option, index) => (
               <Chip
+                key={option.id}
                 size="small"
                 label={option.name}
                 {...getTagProps({ index })}
+                className={classes.filterChip}
+                style={{ backgroundColor: "#25D366", color: "#fff" }}
               />
             ))
           }
@@ -285,15 +373,18 @@ const TicketsManagerFilters = ({
               {...params}
               variant="outlined"
               label="Agentes Atribuidos"
-              placeholder="Seleccionar agentes"
+              placeholder="Seleccionar..."
             />
           )}
           renderTags={(value, getTagProps) =>
             value.map((option, index) => (
               <Chip
+                key={option.id}
                 size="small"
                 label={option.name}
                 {...getTagProps({ index })}
+                className={classes.filterChip}
+                style={{ backgroundColor: "#607d8b", color: "#fff" }}
               />
             ))
           }

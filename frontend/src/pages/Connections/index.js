@@ -59,17 +59,21 @@ const useStyles = makeStyles(theme => ({
 	},
 	connectionCard: {
 		padding: theme.spacing(2.5),
-		border: "1px solid rgba(0, 0, 0, 0.12)",
+		border: `1px solid ${theme.palette.divider}`,
 		borderRadius: 12,
-		backgroundColor: "#fff",
-		boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+		backgroundColor: theme.palette.background.paper,
+		boxShadow: theme.palette.type === "dark" 
+			? "0 2px 4px rgba(0,0,0,0.3)" 
+			: "0 2px 4px rgba(0,0,0,0.05)",
 		display: "flex",
 		flexDirection: "column",
 		gap: theme.spacing(2),
 		transition: "all 0.3s ease",
 		position: "relative",
 		"&:hover": {
-			boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+			boxShadow: theme.palette.type === "dark" 
+				? "0 4px 12px rgba(0,0,0,0.5)" 
+				: "0 4px 12px rgba(0,0,0,0.1)",
 			transform: "translateY(-2px)",
 		},
 	},
@@ -112,7 +116,7 @@ const useStyles = makeStyles(theme => ({
 		flexDirection: "column",
 		gap: theme.spacing(1),
 		paddingTop: theme.spacing(1),
-		borderTop: "1px solid rgba(0, 0, 0, 0.08)",
+		borderTop: `1px solid ${theme.palette.divider}`,
 	},
 	detailItem: {
 		display: "flex",
@@ -145,20 +149,28 @@ const useStyles = makeStyles(theme => ({
 		letterSpacing: "0.5px",
 	},
 	statusConnected: {
-		backgroundColor: "rgba(76, 175, 80, 0.1)",
-		color: green[700],
+		backgroundColor: theme.palette.type === "dark" 
+			? "rgba(76, 175, 80, 0.2)" 
+			: "rgba(76, 175, 80, 0.1)",
+		color: green[theme.palette.type === "dark" ? 400 : 700],
 	},
 	statusDisconnected: {
-		backgroundColor: "rgba(244, 67, 54, 0.1)",
-		color: "#d32f2f",
+		backgroundColor: theme.palette.type === "dark" 
+			? "rgba(244, 67, 54, 0.2)" 
+			: "rgba(244, 67, 54, 0.1)",
+		color: theme.palette.type === "dark" ? "#ef5350" : "#d32f2f",
 	},
 	statusOpening: {
-		backgroundColor: "rgba(33, 150, 243, 0.1)",
-		color: "#1976d2",
+		backgroundColor: theme.palette.type === "dark" 
+			? "rgba(33, 150, 243, 0.2)" 
+			: "rgba(33, 150, 243, 0.1)",
+		color: theme.palette.type === "dark" ? "#42a5f5" : "#1976d2",
 	},
 	statusQrcode: {
-		backgroundColor: "rgba(255, 152, 0, 0.1)",
-		color: "#f57c00",
+		backgroundColor: theme.palette.type === "dark" 
+			? "rgba(255, 152, 0, 0.2)" 
+			: "rgba(255, 152, 0, 0.1)",
+		color: theme.palette.type === "dark" ? "#ffb74d" : "#f57c00",
 	},
 	connectionActions: {
 		display: "flex",
@@ -207,10 +219,10 @@ const useStyles = makeStyles(theme => ({
 		justifyContent: "center",
 	},
 	tooltip: {
-		backgroundColor: "#f5f5f9",
-		color: "rgba(0, 0, 0, 0.87)",
+		backgroundColor: theme.palette.background.paper,
+		color: theme.palette.text.primary,
 		fontSize: theme.typography.pxToRem(14),
-		border: "1px solid #dadde9",
+		border: `1px solid ${theme.palette.divider}`,
 		maxWidth: 450,
 	},
 	tooltipPopper: {
@@ -226,6 +238,21 @@ const useStyles = makeStyles(theme => ({
 		justifyContent: "center",
 		padding: theme.spacing(8, 2),
 		color: theme.palette.text.secondary,
+	},
+	headerButton: {
+		borderRadius: 8,
+		minWidth: 40,
+		height: 40,
+		boxShadow: theme.palette.type === "dark" 
+			? "0 2px 8px rgba(0, 113, 193, 0.4)" 
+			: "0 2px 8px rgba(25, 118, 210, 0.25)",
+		transition: "all 0.2s ease",
+		"&:hover": {
+			transform: "translateY(-2px)",
+			boxShadow: theme.palette.type === "dark" 
+				? "0 4px 12px rgba(0, 113, 193, 0.5)" 
+				: "0 4px 12px rgba(25, 118, 210, 0.35)",
+		},
 	},
 }));
 
@@ -527,6 +554,7 @@ const Connections = () => {
 							variant="contained"
 							color="primary"
 							onClick={restartpm2}
+							className={classes.headerButton}
 						>
 							<SyncOutlined />
 						</Button>
@@ -536,6 +564,7 @@ const Connections = () => {
 							variant="contained"
 							color="primary"
 							onClick={handleOpenWhatsAppModal}
+							className={classes.headerButton}
 						>
 							<WhatsApp />
 						</Button>

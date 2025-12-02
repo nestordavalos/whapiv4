@@ -30,8 +30,6 @@ import {
 	VisibilityOff
 } from '@material-ui/icons';
 
-import { green } from "@material-ui/core/colors";
-
 import { i18n } from "../../translate/i18n";
 
 import api from "../../services/api";
@@ -43,21 +41,57 @@ import useWhatsApps from "../../hooks/useWhatsApps";
 
 const useStyles = makeStyles(theme => ({
 	root: {
-		backgroundColor: theme.palette.background.paper,
 		display: "flex",
 		flexWrap: "wrap",
 	},
+	dialog: {
+		"& .MuiDialog-paper": {
+			borderRadius: 12,
+			[theme.breakpoints.down("xs")]: {
+				borderRadius: 10,
+				margin: 12,
+				maxHeight: "calc(100% - 24px)",
+			},
+		},
+	},
+	dialogTitle: {
+		padding: "20px 24px 12px",
+		"& .MuiTypography-root": {
+			fontSize: "1.1rem",
+			fontWeight: 600,
+			color: theme.palette.text.primary,
+		},
+		[theme.breakpoints.down("xs")]: {
+			padding: "16px 16px 10px",
+			"& .MuiTypography-root": {
+				fontSize: "1rem",
+			},
+		},
+	},
+	dialogContent: {
+		padding: "16px 24px",
+		backgroundColor: theme.palette.background.paper,
+		[theme.breakpoints.down("xs")]: {
+			padding: "12px 16px",
+		},
+	},
+	dialogActions: {
+		padding: "12px 24px 20px",
+		gap: 8,
+		[theme.breakpoints.down("xs")]: {
+			padding: "10px 16px 16px",
+		},
+	},
 	multFieldLine: {
 		display: "flex",
-		"& > *:not(:last-child)": {
-			marginRight: theme.spacing(1),
-		},
+		gap: theme.spacing(1.5),
+		marginBottom: theme.spacing(1),
 	},
 	btnWrapper: {
 		position: "relative",
 	},
 	buttonProgress: {
-		color: green[500],
+		color: theme.palette.primary.main,
 		position: "absolute",
 		top: "50%",
 		left: "50%",
@@ -65,37 +99,79 @@ const useStyles = makeStyles(theme => ({
 		marginLeft: -12,
 	},
 	formControl: {
-		margin: theme.spacing(1),
 		minWidth: 120,
 	},
 	textField: {
-		marginRight: theme.spacing(1),
 		flex: 1,
 	},
 	container: {
 		display: 'flex',
-		flexWrap: 'wrap',
+		gap: theme.spacing(1.5),
+		marginTop: theme.spacing(1),
 	},
 	formWrapper: {
 		display: 'flex',
+		gap: theme.spacing(1.5),
+		marginTop: theme.spacing(1),
 	},
 	formWrapperChild: {
 		width: '50%',
-		marginRight: '16px',
 	},
 	divider: {
-		borderBottom: `1px solid ${theme.palette.divider}`,
 		display: "flex",
 		justifyContent: "center",
 		alignItems: "center",
-		marginBottom: theme.spacing(2),
-		marginTop: '20px'
+		margin: theme.spacing(2, 0, 1),
+		"&::before, &::after": {
+			content: '""',
+			flex: 1,
+			borderBottom: `1px solid ${theme.palette.divider}`,
+		},
 	},
 	dividerText: {
-		backgroundColor: theme.palette.background.paper,
+		fontSize: "0.75rem",
+		fontWeight: 600,
 		color: theme.palette.text.secondary,
-		padding: theme.spacing(0, 1),
-		zIndex: 1,
+		textTransform: "uppercase",
+		letterSpacing: "0.5px",
+		padding: theme.spacing(0, 2),
+	},
+	inputField: {
+		"& .MuiOutlinedInput-root": {
+			borderRadius: 10,
+			"& fieldset": {
+				borderColor: theme.palette.divider,
+			},
+			"&:hover fieldset": {
+				borderColor: theme.palette.primary.light,
+			},
+			"&.Mui-focused fieldset": {
+				borderColor: theme.palette.primary.main,
+				borderWidth: 1,
+			},
+		},
+		"& .MuiInputLabel-outlined": {
+			fontSize: "0.9rem",
+		},
+	},
+	cancelButton: {
+		textTransform: "none",
+		fontWeight: 500,
+		borderRadius: 8,
+		padding: "8px 20px",
+	},
+	saveButton: {
+		textTransform: "none",
+		fontWeight: 600,
+		borderRadius: 8,
+		padding: "8px 24px",
+		boxShadow: "none",
+		"&:hover": {
+			boxShadow: "0 2px 8px rgba(25, 118, 210, 0.3)",
+		},
+	},
+	maxWidth: {
+		width: "100%",
 	},
 }));
 
@@ -197,11 +273,12 @@ const UserModal = ({ open, onClose, userId }) => {
 			<Dialog
 				open={open}
 				onClose={handleClose}
-				maxWidth="xs"
+				maxWidth="sm"
 				fullWidth
 				scroll="paper"
+				className={classes.dialog}
 			>
-				<DialogTitle id="form-dialog-title">
+				<DialogTitle id="form-dialog-title" className={classes.dialogTitle}>
 					{userId
 						? `${i18n.t("userModal.title.edit")}`
 						: `${i18n.t("userModal.title.add")}`}
@@ -219,7 +296,7 @@ const UserModal = ({ open, onClose, userId }) => {
 				>
 					{({ touched, errors, isSubmitting }) => (
 						<Form>
-							<DialogContent dividers>
+							<DialogContent dividers className={classes.dialogContent}>
 								<div className={classes.multFieldLine}>
 									<Field
 										as={TextField}
@@ -231,6 +308,7 @@ const UserModal = ({ open, onClose, userId }) => {
 										variant="outlined"
 										margin="dense"
 										fullWidth
+										className={classes.inputField}
 									/>
 									<Field
 										as={TextField}
@@ -248,12 +326,13 @@ const UserModal = ({ open, onClose, userId }) => {
 														aria-label="toggle password visibility"
 														onClick={() => setShowPassword((e) => !e)}
 													>
-														{showPassword ? <VisibilityOff color="secondary" /> : <Visibility color="secondary" />}
+														{showPassword ? <VisibilityOff color="primary" /> : <Visibility color="primary" />}
 													</IconButton>
 												</InputAdornment>
 											)
 										}}
 										fullWidth
+										className={classes.inputField}
 									/>
 								</div>
 								<div className={classes.multFieldLine}>
@@ -266,10 +345,11 @@ const UserModal = ({ open, onClose, userId }) => {
 										variant="outlined"
 										margin="dense"
 										fullWidth
+										className={classes.inputField}
 									/>
 									<FormControl
 										variant="outlined"
-										className={classes.formControl}
+										className={`${classes.formControl} ${classes.inputField}`}
 										margin="dense"
 									>
 										<Can
@@ -311,7 +391,7 @@ const UserModal = ({ open, onClose, userId }) => {
 									role={loggedInUser.profile}
 									perform="user-modal:editQueues"
 									yes={() => (!loading &&
-										<FormControl variant="outlined" margin="dense" className={classes.maxWidth} fullWidth>
+										<FormControl variant="outlined" margin="dense" className={`${classes.maxWidth} ${classes.inputField}`} fullWidth>
 											<InputLabel>{i18n.t("userModal.form.whatsapp")}</InputLabel>
 											<Field
 												as={Select}
@@ -601,12 +681,13 @@ const UserModal = ({ open, onClose, userId }) => {
 								</div>
 
 							</DialogContent>
-							<DialogActions>
+							<DialogActions className={classes.dialogActions}>
 								<Button
 									onClick={handleClose}
 									color="secondary"
 									disabled={isSubmitting}
 									variant="outlined"
+									className={classes.cancelButton}
 								>
 									{i18n.t("userModal.buttons.cancel")}
 								</Button>
@@ -615,7 +696,7 @@ const UserModal = ({ open, onClose, userId }) => {
 									color="primary"
 									disabled={isSubmitting}
 									variant="contained"
-									className={classes.btnWrapper}
+									className={`${classes.btnWrapper} ${classes.saveButton}`}
 								>
 									{userId
 										? `${i18n.t("userModal.buttons.okEdit")}`

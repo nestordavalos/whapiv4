@@ -40,17 +40,40 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   toolbar: {
-    paddingRight: 24, // keep right padding when drawer closed
+    paddingRight: 24,
     color: "#ffffff",
-    background: theme.palette.toolbar.main
+    background: theme.palette.toolbar.main,
+    [theme.breakpoints.down("xs")]: {
+      paddingRight: 8,
+      paddingLeft: 8,
+    },
   },
   toolbarIcon: {
     display: "flex",
     alignItems: "center",
-    justifyContent: "flex-end",
-    padding: "0 8px",
-    minHeight: "48px",
-    backgroundColor: theme.palette.toolbarIcon.main
+    justifyContent: "space-between",
+    padding: "12px 16px",
+    minHeight: "64px",
+    backgroundColor: theme.palette.toolbarIcon.main,
+    borderBottom: `1px solid ${theme.palette.divider}`,
+  },
+  toolbarIconClosed: {
+    justifyContent: "center",
+    padding: "12px 8px",
+  },
+  logoContainer: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    overflow: "hidden",
+    "& img": {
+      height: 40,
+      width: "auto",
+      borderRadius: 8,
+    }
+  },
+  logoContainerClosed: {
+    display: "none",
   },
   appBar: {
     zIndex: theme.zIndex.drawer + 1,
@@ -58,6 +81,7 @@ const useStyles = makeStyles((theme) => ({
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
     }),
+    boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
   },
   appBarShift: {
     marginLeft: drawerWidth,
@@ -66,6 +90,10 @@ const useStyles = makeStyles((theme) => ({
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.enteringScreen,
     }),
+    [theme.breakpoints.down("sm")]: {
+      marginLeft: 0,
+      width: "100%",
+    },
   },
   menuButton: {
     marginRight: 36,
@@ -75,6 +103,18 @@ const useStyles = makeStyles((theme) => ({
   },
   title: {
     flexGrow: 1,
+    fontSize: "0.9rem",
+    [theme.breakpoints.down("xs")]: {
+      display: "none",
+    },
+  },
+  titleMobile: {
+    display: "none",
+    [theme.breakpoints.down("xs")]: {
+      display: "block",
+      flexGrow: 1,
+      fontSize: "0.8rem",
+    },
   },
   drawerPaper: {
     position: "relative",
@@ -84,6 +124,13 @@ const useStyles = makeStyles((theme) => ({
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.enteringScreen,
     }),
+    backgroundColor: theme.palette.background.paper,
+    borderRight: `1px solid ${theme.palette.divider}`,
+    boxShadow: "2px 0 8px rgba(0,0,0,0.04)",
+    [theme.breakpoints.down("sm")]: {
+      position: "fixed",
+      zIndex: theme.zIndex.drawer + 2,
+    },
   },
   drawerPaperClose: {
     overflowX: "hidden",
@@ -91,17 +138,33 @@ const useStyles = makeStyles((theme) => ({
       easing: theme.transitions.easing.sharp,
       duration: theme.transitions.duration.leavingScreen,
     }),
-    width: theme.spacing(7),
+    width: 60,
     [theme.breakpoints.up("sm")]: {
-      width: theme.spacing(9),
+      width: 60,
     },
+  },
+  drawerList: {
+    padding: "8px 12px",
+  },
+  drawerListClosed: {
+    padding: "8px 6px",
+  },
+  drawerDivider: {
+    margin: "8px 16px",
+    backgroundColor: theme.palette.divider,
   },
   appBarSpacer: {
     minHeight: "48px",
+    [theme.breakpoints.down("sm")]: {
+      minHeight: "48px",
+    },
   },
   content: {
     flex: 1,
-    overflow: "auto",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+    backgroundColor: theme.palette.background.default,
   },
   container: {
     paddingTop: theme.spacing(4),
@@ -118,6 +181,13 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: "center",
     opacity: 0.2,
     fontSize: 12
+  },
+  collapseButton: {
+    borderRadius: 8,
+    padding: 6,
+    "&:hover": {
+      backgroundColor: theme.palette.action.hover,
+    }
   }
 }));
 
@@ -211,17 +281,21 @@ const LoggedInLayout = ({ children }) => {
         }}
         open={drawerOpen}
       >
-        <div className={classes.toolbarIcon}>
-          <img src={logodash} style={{width:"60%"}} alt="logo" />
-          <IconButton color="secondary" onClick={() => setDrawerOpen(!drawerOpen)}>
-            <ChevronLeftIcon />
+        <div className={clsx(classes.toolbarIcon, !drawerOpen && classes.toolbarIconClosed)}>
+          <div className={clsx(classes.logoContainer, !drawerOpen && classes.logoContainerClosed)}>
+            <img src={logodash} alt="logo" />
+          </div>
+          <IconButton 
+            className={classes.collapseButton}
+            color="secondary" 
+            onClick={() => setDrawerOpen(!drawerOpen)}
+          >
+            {drawerOpen ? <ChevronLeftIcon /> : <MenuIcon />}
           </IconButton>
         </div>
-        <Divider />
-        <List>
-          <MainListItems drawerClose={drawerClose} />
+        <List className={clsx(classes.drawerList, !drawerOpen && classes.drawerListClosed)}>
+          <MainListItems drawerClose={drawerClose} drawerOpen={drawerOpen} />
         </List>
-        <Divider />
       </Drawer>
       <UserModal
         open={userModalOpen}
@@ -252,8 +326,10 @@ const LoggedInLayout = ({ children }) => {
             color="inherit"
             className={classes.title}
           >
-
             {i18n.t("mainDrawer.appBar.message.hi")} <b>{user.name}</b>, {i18n.t("mainDrawer.appBar.message.text")} <b>{system.name || "T-Chateo"}</b>
+          </span>
+          <span className={classes.titleMobile}>
+            <b>{system.name || "T-Chateo"}</b>
           </span>
           {user.id && <NotificationsPopOver />}
 

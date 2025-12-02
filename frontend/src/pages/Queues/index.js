@@ -5,11 +5,13 @@ import openSocket from "../../services/socket-io";
 import { 
   AddCircleOutline, 
   DeleteOutline, 
-  Edit 
+  Edit,
+  Schedule 
 } from "@material-ui/icons";
 
 import {
   Button,
+  Chip,
   IconButton,
   makeStyles,
   Paper,
@@ -40,13 +42,132 @@ const useStyles = makeStyles((theme) => ({
     flex: 1,
     padding: theme.spacing(2),
     margin: theme.spacing(1),
-    overflowY: "scroll",
+    overflowY: "auto",
+    borderRadius: 12,
+    border: `1px solid ${theme.palette.divider}`,
+    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
     ...theme.scrollbarStyles,
+    [theme.breakpoints.down("sm")]: {
+      padding: theme.spacing(1),
+      margin: theme.spacing(0.5),
+      borderRadius: 8,
+    },
   },
-  customTableCell: {
+  table: {
+    "& .MuiTableHead-root": {
+      "& .MuiTableCell-head": {
+        fontWeight: 600,
+        fontSize: "0.8rem",
+        color: theme.palette.text.secondary,
+        textTransform: "uppercase",
+        letterSpacing: "0.5px",
+        borderBottom: `2px solid ${theme.palette.divider}`,
+        padding: "12px 16px",
+        backgroundColor: theme.palette.background.default,
+        [theme.breakpoints.down("xs")]: {
+          padding: "8px 10px",
+          fontSize: "0.7rem",
+        },
+      },
+    },
+    "& .MuiTableBody-root": {
+      "& .MuiTableRow-root": {
+        transition: "background-color 0.2s ease",
+        "&:hover": {
+          backgroundColor: theme.palette.action.hover,
+        },
+      },
+      "& .MuiTableCell-body": {
+        fontSize: "0.875rem",
+        padding: "12px 16px",
+        borderBottom: `1px solid ${theme.palette.divider}`,
+        [theme.breakpoints.down("xs")]: {
+          padding: "8px 10px",
+          fontSize: "0.75rem",
+        },
+      },
+    },
+  },
+  idCell: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 28,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: theme.palette.action.hover,
+    color: theme.palette.text.secondary,
+    fontSize: "0.75rem",
+    fontWeight: 600,
+    fontFamily: "monospace",
+  },
+  queueName: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    fontWeight: 600,
+    color: theme.palette.text.primary,
+  },
+  colorDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    boxShadow: "0 2px 4px rgba(0,0,0,0.15)",
+    border: "2px solid rgba(255,255,255,0.8)",
+  },
+  greetingMessage: {
+    maxWidth: 280,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    color: theme.palette.text.secondary,
+    fontSize: "0.85rem",
+  },
+  scheduleInfo: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    gap: 4,
+    color: theme.palette.text.secondary,
+    fontSize: "0.85rem",
+    "& .MuiSvgIcon-root": {
+      fontSize: "1rem",
+      opacity: 0.7,
+    },
+  },
+  actionButton: {
+    padding: 8,
+    marginLeft: 4,
+    borderRadius: 8,
+    transition: "all 0.2s ease",
+    "&:hover": {
+      transform: "scale(1.1)",
+    },
+  },
+  editButton: {
+    color: theme.palette.primary.main,
+    "&:hover": {
+      backgroundColor: theme.palette.primary.main + "14",
+    },
+  },
+  deleteButton: {
+    color: theme.palette.error.main,
+    "&:hover": {
+      backgroundColor: theme.palette.error.main + "14",
+    },
+  },
+  headerButton: {
+    borderRadius: 10,
+    padding: "8px 12px",
+    minWidth: 44,
+    boxShadow: "none",
+    "&:hover": {
+      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+    },
+  },
+  noSchedule: {
+    color: theme.palette.text.disabled,
+    fontSize: "0.8rem",
   },
 }));
 
@@ -189,11 +310,12 @@ const Queues = () => {
       <MainHeader>
         <Title>{i18n.t("queues.title")} ({queues.length})</Title>
         <MainHeaderButtonsWrapper>
-        <Tooltip title={i18n.t("queues.buttons.add")}>
+          <Tooltip title={i18n.t("queues.buttons.add")}>
             <Button
               variant="contained"
               color="primary"
               onClick={handleOpenQueueModal}
+              className={classes.headerButton}
             >
               <AddCircleOutline />
             </Button>
@@ -201,86 +323,88 @@ const Queues = () => {
         </MainHeaderButtonsWrapper>
       </MainHeader>
       <Paper className={classes.mainPaper} variant="outlined">
-        <Table size="small">
+        <Table size="small" className={classes.table}>
           <TableHead>
             <TableRow>
-            <TableCell align="center">
-                {i18n.t("queues.table.id")}
-              </TableCell>
-              <TableCell align="center">
-                {i18n.t("queues.table.name")}
-              </TableCell>
-              <TableCell align="center">
-                {i18n.t("queues.table.color")}
-              </TableCell>
-              <TableCell align="center">
-                {i18n.t("queues.table.greeting")}
-              </TableCell>
-              <TableCell align="center">
-                {i18n.t("queues.table.startWork")}
-              </TableCell>
-              <TableCell align="center">
-                {i18n.t("queues.table.endWork")}
-              </TableCell>
-              <TableCell align="center">
-                {i18n.t("queues.table.actions")}
-              </TableCell>
+              <TableCell align="center">ID</TableCell>
+              <TableCell>{i18n.t("queues.table.name")}</TableCell>
+              <TableCell align="center">{i18n.t("queues.table.color")}</TableCell>
+              <TableCell>{i18n.t("queues.table.greeting")}</TableCell>
+              <TableCell align="center">{i18n.t("queues.table.schedule")}</TableCell>
+              <TableCell align="center">{i18n.t("queues.table.actions")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            <>
-              {queues.map((queue) => (
+            {loading ? (
+              <TableRowSkeleton columns={6} />
+            ) : (
+              queues.map((queue) => (
                 <TableRow key={queue.id}>
-                  <TableCell align="center">{queue.id}</TableCell>
-                  <TableCell align="center">{queue.name}</TableCell>
                   <TableCell align="center">
-                    <div className={classes.customTableCell}>
+                    <span className={classes.idCell}>{queue.id}</span>
+                  </TableCell>
+                  <TableCell>
+                    <div className={classes.queueName}>
                       <span
-                        style={{
-                          backgroundColor: queue.color,
-                          width: 20,
-                          height: 20,
-                          alignSelf: "center",
-                          borderRadius: 10
-                        }}
+                        className={classes.colorDot}
+                        style={{ backgroundColor: queue.color }}
                       />
+                      {queue.name}
                     </div>
                   </TableCell>
                   <TableCell align="center">
-                    <div className={classes.customTableCell}>
-                      <Typography
-                        style={{ width: 300, align: "center" }}
-                        noWrap
-                        variant="body2"
-                      >
-                        {queue.greetingMessage}
-                      </Typography>
-                    </div>
+                    <Chip
+                      label={queue.color}
+                      size="small"
+                      style={{ 
+                        backgroundColor: queue.color,
+                        color: "#fff",
+                        fontWeight: 500,
+                        fontSize: "0.7rem",
+                        textShadow: "0 1px 2px rgba(0,0,0,0.3)"
+                      }}
+                    />
                   </TableCell>
-                  <TableCell align="center">{queue.startWork}</TableCell>
-                  <TableCell align="center">{queue.endWork}</TableCell>
+                  <TableCell>
+                    <Tooltip title={queue.greetingMessage || "-"} placement="top-start">
+                      <Typography className={classes.greetingMessage}>
+                        {queue.greetingMessage || "-"}
+                      </Typography>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell align="center">
+                    {queue.startWork && queue.endWork ? (
+                      <div className={classes.scheduleInfo}>
+                        <Schedule />
+                        <span>{queue.startWork} - {queue.endWork}</span>
+                      </div>
+                    ) : (
+                      <span className={classes.noSchedule}>Sin horario</span>
+                    )}
+                  </TableCell>
                   <TableCell align="center">
                     <IconButton
                       size="small"
+                      className={`${classes.actionButton} ${classes.editButton}`}
                       onClick={() => handleEditQueue(queue)}
                     >
-                      <Edit color="secondary" />
+                      <Edit fontSize="small" />
                     </IconButton>
 
                     <IconButton
                       size="small"
+                      className={`${classes.actionButton} ${classes.deleteButton}`}
                       onClick={() => {
                         setSelectedQueue(queue);
                         setConfirmModalOpen(true);
                       }}
                     >
-                      <DeleteOutline color="secondary" />
+                      <DeleteOutline fontSize="small" />
                     </IconButton>
                   </TableCell>
                 </TableRow>
-              ))}
-              {loading && <TableRowSkeleton columns={4} />}
-            </>
+              ))
+            )}
           </TableBody>
         </Table>
       </Paper>

@@ -11,6 +11,7 @@ import Autocomplete, {
 	createFilterOptions,
 } from "@material-ui/lab/Autocomplete";
 import CircularProgress from "@material-ui/core/CircularProgress";
+import { makeStyles } from "@material-ui/core/styles";
 
 import { i18n } from "../../translate/i18n";
 import api from "../../services/api";
@@ -18,15 +19,106 @@ import ButtonWithSpinner from "../ButtonWithSpinner";
 import ContactModal from "../ContactModal";
 import toastError from "../../errors/toastError";
 import { AuthContext } from "../../context/Auth/AuthContext";
-import { Grid, ListItemText, MenuItem, Select } from "@material-ui/core";
+import { Grid, ListItemText, MenuItem, Select, Typography } from "@material-ui/core";
 import { toast } from "react-toastify";
+
+const useStyles = makeStyles((theme) => ({
+	root: {
+		"& .MuiDialog-paper": {
+			borderRadius: 16,
+			boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+			minWidth: 380,
+		},
+	},
+	title: {
+		padding: "20px 24px 16px",
+		borderBottom: `1px solid ${theme.palette.divider}`,
+		"& .MuiTypography-root": {
+			fontSize: "1.15rem",
+			fontWeight: 600,
+		},
+	},
+	content: {
+		padding: "20px 24px",
+	},
+	actions: {
+		padding: "16px 24px 20px",
+		borderTop: `1px solid ${theme.palette.divider}`,
+		gap: 8,
+	},
+	fieldLabel: {
+		fontSize: "0.8rem",
+		fontWeight: 600,
+		color: theme.palette.text.secondary,
+		marginBottom: 8,
+		display: "block",
+	},
+	autocomplete: {
+		"& .MuiOutlinedInput-root": {
+			borderRadius: 10,
+			backgroundColor: theme.palette.background.paper,
+			"& fieldset": {
+				borderColor: theme.palette.divider,
+			},
+			"&:hover fieldset": {
+				borderColor: theme.palette.primary.main,
+			},
+			"&.Mui-focused fieldset": {
+				borderColor: theme.palette.primary.main,
+				borderWidth: 1,
+			},
+		},
+	},
+	select: {
+		borderRadius: 10,
+		backgroundColor: theme.palette.background.paper,
+		"& .MuiOutlinedInput-notchedOutline": {
+			borderColor: theme.palette.divider,
+		},
+		"&:hover .MuiOutlinedInput-notchedOutline": {
+			borderColor: theme.palette.primary.main,
+		},
+		"&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+			borderColor: theme.palette.primary.main,
+			borderWidth: 1,
+		},
+	},
+	cancelButton: {
+		borderRadius: 10,
+		padding: "10px 24px",
+		textTransform: "none",
+		fontWeight: 500,
+		fontSize: "0.9rem",
+	},
+	submitButton: {
+		borderRadius: 10,
+		padding: "10px 24px",
+		textTransform: "none",
+		fontWeight: 500,
+		fontSize: "0.9rem",
+		boxShadow: "none",
+		"&:hover": {
+			boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+		},
+	},
+	menuItem: {
+		borderRadius: 8,
+		margin: "2px 8px",
+		"&:hover": {
+			backgroundColor: theme.palette.action.hover,
+		},
+		"&.Mui-selected": {
+			backgroundColor: theme.palette.primary.main + "14",
+		},
+	},
+}));
 
 const filter = createFilterOptions({
 	trim: true,
 });
 
 const NewTicketModalPageContact = ({ modalOpen, onClose, initialContact }) => {
-
+	const classes = useStyles();
 	const [options, setOptions] = useState([]);
 	const [loading, setLoading] = useState(false);
 	const [searchParam, setSearchParam] = useState("");
@@ -145,6 +237,9 @@ const NewTicketModalPageContact = ({ modalOpen, onClose, initialContact }) => {
 		if (initialContact === undefined || initialContact.id === undefined) {
 			return (
 				<Grid xs={12} item>
+					<Typography className={classes.fieldLabel}>
+						{i18n.t("newTicketModal.fieldLabel")}
+					</Typography>
 					<Autocomplete
 						fullWidth
 						options={options}
@@ -157,11 +252,13 @@ const NewTicketModalPageContact = ({ modalOpen, onClose, initialContact }) => {
 						renderOption={renderOption}
 						filterOptions={createAddContactOption}
 						onChange={(e, newValue) => handleSelectOption(e, newValue)}
+						className={classes.autocomplete}
 						renderInput={params => (
 							<TextField
 								{...params}
-								label={i18n.t("newTicketModal.fieldLabel")}
+								placeholder="Buscar contacto..."
 								variant="outlined"
+								size="small"
 								autoFocus
 								onChange={e => setSearchParam(e.target.value)}
 								onKeyPress={e => {
@@ -198,19 +295,23 @@ const NewTicketModalPageContact = ({ modalOpen, onClose, initialContact }) => {
 				onClose={handleCloseContactModal}
 				onSave={handleAddNewContactTicket}
 			></ContactModal>
-			<Dialog open={modalOpen} onClose={handleClose}>
-				<DialogTitle id="form-dialog-title">
+			<Dialog open={modalOpen} onClose={handleClose} className={classes.root}>
+				<DialogTitle id="form-dialog-title" className={classes.title}>
 					{i18n.t("newTicketModal.title")}
 				</DialogTitle>
-				<DialogContent dividers>
-					<Grid style={{ width: 300 }} container spacing={2}>
+				<DialogContent dividers className={classes.content}>
+					<Grid container spacing={2}>
 						{renderContactAutocomplete()}
 						<Grid xs={12} item>
+							<Typography className={classes.fieldLabel}>
+								Sector
+							</Typography>
 							<Select
 								fullWidth
 								displayEmpty
 								variant="outlined"
 								value={selectedQueue}
+								className={classes.select}
 								onChange={(e) => {
 									setSelectedQueue(e.target.value)
 								}}
@@ -224,10 +325,17 @@ const NewTicketModalPageContact = ({ modalOpen, onClose, initialContact }) => {
 										horizontal: "left",
 									},
 									getContentAnchorEl: null,
+									PaperProps: {
+										style: {
+											borderRadius: 12,
+											marginTop: 4,
+											boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+										},
+									},
 								}}
 								renderValue={() => {
 									if (selectedQueue === "") {
-										return "Selecione un Sector"
+										return <span style={{ color: "#999" }}>Seleccione un sector</span>
 									}
 									const queue = user.queues.find(q => q.id === selectedQueue)
 									return queue.name
@@ -235,7 +343,7 @@ const NewTicketModalPageContact = ({ modalOpen, onClose, initialContact }) => {
 							>
 								{user.queues?.length > 0 &&
 									user.queues.map((queue, key) => (
-										<MenuItem dense key={key} value={queue.id}>
+										<MenuItem dense key={key} value={queue.id} className={classes.menuItem}>
 											<ListItemText primary={queue.name} />
 										</MenuItem>
 									))}
@@ -243,12 +351,13 @@ const NewTicketModalPageContact = ({ modalOpen, onClose, initialContact }) => {
 						</Grid>
 					</Grid>
 				</DialogContent>
-				<DialogActions>
+				<DialogActions className={classes.actions}>
 					<Button
 						onClick={handleClose}
 						color="secondary"
 						disabled={loading}
 						variant="outlined"
+						className={classes.cancelButton}
 					>
 						{i18n.t("newTicketModal.buttons.cancel")}
 					</Button>
@@ -259,6 +368,7 @@ const NewTicketModalPageContact = ({ modalOpen, onClose, initialContact }) => {
 						onClick={() => handleSaveTicket(selectedContact.id)}
 						color="primary"
 						loading={loading}
+						className={classes.submitButton}
 					>
 						{i18n.t("newTicketModal.buttons.ok")}
 					</ButtonWithSpinner>

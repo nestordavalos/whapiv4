@@ -22,26 +22,26 @@ const useStyles = makeStyles((theme) => ({
 		flexDirection: "column",
 		overflow: "hidden",
 		borderTopRightRadius: 0,
-		marginRight: -8,
 		borderBottomRightRadius: 0,
-		backgroundColor: "#fff",
+		backgroundColor: theme.palette.background.default,
 	},
 
 	ticketsList: {
 		flex: 1,
-		overflowY: "scroll",
+		overflowY: "auto",
+		overflowX: "hidden",
 		minHeight: 0,
 		height: "100%",
 		...theme.scrollbarStyles,
-		borderTop: "1px solid #e8e8e8",
-		padding: 0,
+		borderTop: `1px solid ${theme.palette.divider}`,
+		padding: "4px 8px 4px 0",
 	},
 
 	ticketsListHeader: {
-		color: "rgb(67, 83, 105)",
+		color: theme.palette.text.primary,
 		zIndex: 2,
-		backgroundColor: "white",
-		borderBottom: "1px solid rgba(0, 0, 0, 0.12)",
+		backgroundColor: theme.palette.background.paper,
+		borderBottom: `1px solid ${theme.palette.divider}`,
 		display: "flex",
 		alignItems: "center",
 		justifyContent: "space-between",
@@ -49,14 +49,14 @@ const useStyles = makeStyles((theme) => ({
 
 	ticketsCount: {
 		fontWeight: "normal",
-		color: "rgb(104, 121, 146)",
+		color: theme.palette.text.secondary,
 		marginLeft: "8px",
 		fontSize: "14px",
 	},
 
 	noTicketsText: {
 		textAlign: "center",
-		color: "rgb(104, 121, 146)",
+		color: theme.palette.text.secondary,
 		fontSize: "14px",
 		lineHeight: "1.4",
 	},
@@ -66,6 +66,7 @@ const useStyles = makeStyles((theme) => ({
 		fontSize: "16px",
 		fontWeight: "600",
 		margin: "0px",
+		color: theme.palette.text.primary,
 	},
 
 	noTicketsDiv: {

@@ -26,22 +26,68 @@ const useStyles = makeStyles(theme => ({
 	root: {
 		display: "flex",
 		flexWrap: "wrap",
+		"& .MuiDialog-paper": {
+			borderRadius: 16,
+			boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+			minWidth: 450,
+		},
+		"& .MuiDialogTitle-root": {
+			padding: "20px 24px 16px",
+			borderBottom: `1px solid ${theme.palette.divider}`,
+			"& .MuiTypography-root": {
+				fontSize: "1.15rem",
+				fontWeight: 600,
+			},
+		},
+		"& .MuiDialogContent-root": {
+			padding: "20px 24px",
+		},
+		"& .MuiDialogContent-dividers": {
+			borderTop: "none",
+			borderBottom: "none",
+		},
+		"& .MuiDialogActions-root": {
+			padding: "16px 24px 20px",
+			borderTop: `1px solid ${theme.palette.divider}`,
+		},
+	},
+	formRow: {
+		display: "flex",
+		gap: 12,
+		marginBottom: 12,
 	},
 	textField: {
-		marginRight: theme.spacing(1),
 		flex: 1,
+		"& .MuiOutlinedInput-root": {
+			borderRadius: 10,
+			backgroundColor: theme.palette.background.paper,
+			"& fieldset": {
+				borderColor: theme.palette.divider,
+			},
+			"&:hover fieldset": {
+				borderColor: theme.palette.primary.main,
+			},
+			"&.Mui-focused fieldset": {
+				borderColor: theme.palette.primary.main,
+				borderWidth: 1,
+			},
+		},
+		"& .MuiInputLabel-root": {
+			fontSize: "0.9rem",
+		},
+		"& .MuiOutlinedInput-input": {
+			padding: "12px 14px",
+		},
 	},
-
 	extraAttr: {
 		display: "flex",
-		justifyContent: "center",
 		alignItems: "center",
+		gap: 8,
+		marginBottom: 8,
 	},
-
 	btnWrapper: {
 		position: "relative",
 	},
-
 	buttonProgress: {
 		color: green[500],
 		position: "absolute",
@@ -49,6 +95,49 @@ const useStyles = makeStyles(theme => ({
 		left: "50%",
 		marginTop: -12,
 		marginLeft: -12,
+	},
+	cancelButton: {
+		borderRadius: 10,
+		padding: "10px 24px",
+		textTransform: "none",
+		fontWeight: 500,
+		fontSize: "0.9rem",
+	},
+	submitButton: {
+		borderRadius: 10,
+		padding: "10px 24px",
+		textTransform: "none",
+		fontWeight: 500,
+		fontSize: "0.9rem",
+		boxShadow: "none",
+		"&:hover": {
+			boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+		},
+	},
+	sectionTitle: {
+		fontSize: "0.8rem",
+		fontWeight: 600,
+		color: theme.palette.text.secondary,
+		textTransform: "uppercase",
+		letterSpacing: "0.5px",
+		marginBottom: 12,
+		marginTop: 8,
+	},
+	addExtraButton: {
+		flex: 1,
+		marginTop: 8,
+		borderRadius: 10,
+		textTransform: "none",
+		fontWeight: 500,
+		padding: "10px 16px",
+		borderStyle: "dashed",
+	},
+	deleteButton: {
+		color: theme.palette.error.main,
+		padding: 8,
+		"&:hover": {
+			backgroundColor: theme.palette.error.main + "14",
+		},
 	},
 }));
 
@@ -147,50 +236,49 @@ const ContactModal = ({ open, onClose, contactId, initialValues, onSave }) => {
 					{({ values, errors, touched, isSubmitting }) => (
 						<Form>
 							<DialogContent dividers>
-								<Typography variant="subtitle1" gutterBottom>
+								<Typography variant="subtitle1" className={classes.sectionTitle}>
 									{i18n.t("contactModal.form.mainInfo")}
 								</Typography>
-								<Field
-									as={TextField}
-									label={i18n.t("contactModal.form.name")}
-									name="name"
-									autoFocus
-									error={touched.name && Boolean(errors.name)}
-									helperText={touched.name && errors.name}
-									variant="outlined"
-									margin="dense"
-									className={classes.textField}
-								/>
-								<Field
-									as={TextField}
-									label={i18n.t("contactModal.form.number")}
-									name="number"
-									error={touched.number && Boolean(errors.number)}
-									helperText={touched.number && errors.number}
-									placeholder="5513912344321"
-									variant="outlined"
-									margin="dense"
-								/>
-								<div>
+								<div className={classes.formRow}>
 									<Field
 										as={TextField}
-										label={i18n.t("contactModal.form.email")}
-										name="email"
-										error={touched.email && Boolean(errors.email)}
-										helperText={touched.email && errors.email}
-										placeholder="Email address"
-										fullWidth
-										margin="dense"
+										label={i18n.t("contactModal.form.name")}
+										name="name"
+										autoFocus
+										error={touched.name && Boolean(errors.name)}
+										helperText={touched.name && errors.name}
 										variant="outlined"
+										size="small"
+										className={classes.textField}
+									/>
+									<Field
+										as={TextField}
+										label={i18n.t("contactModal.form.number")}
+										name="number"
+										error={touched.number && Boolean(errors.number)}
+										helperText={touched.number && errors.number}
+										placeholder="5513912344321"
+										variant="outlined"
+										size="small"
+										className={classes.textField}
 									/>
 								</div>
-								<Typography
-									style={{ marginBottom: 8, marginTop: 12 }}
-									variant="subtitle1"
-								>
+								<Field
+									as={TextField}
+									label={i18n.t("contactModal.form.email")}
+									name="email"
+									error={touched.email && Boolean(errors.email)}
+									helperText={touched.email && errors.email}
+									placeholder="correo@ejemplo.com"
+									fullWidth
+									size="small"
+									variant="outlined"
+									className={classes.textField}
+								/>
+								
+								<Typography variant="subtitle1" className={classes.sectionTitle} style={{ marginTop: 20 }}>
 									{i18n.t("contactModal.form.extraInfo")}
 								</Typography>
-
 								<FieldArray name="extraInfo">
 									{({ push, remove }) => (
 										<>
@@ -206,7 +294,7 @@ const ContactModal = ({ open, onClose, contactId, initialValues, onSave }) => {
 															label={i18n.t("contactModal.form.extraName")}
 															name={`extraInfo[${index}].name`}
 															variant="outlined"
-															margin="dense"
+															size="small"
 															className={classes.textField}
 														/>
 														<Field
@@ -214,27 +302,26 @@ const ContactModal = ({ open, onClose, contactId, initialValues, onSave }) => {
 															label={i18n.t("contactModal.form.extraValue")}
 															name={`extraInfo[${index}].value`}
 															variant="outlined"
-															margin="dense"
+															size="small"
 															className={classes.textField}
 														/>
 														<IconButton
 															size="small"
+															className={classes.deleteButton}
 															onClick={() => remove(index)}
 														>
-															<DeleteOutlineIcon />
+															<DeleteOutlineIcon fontSize="small" />
 														</IconButton>
 													</div>
 												))}
-											<div className={classes.extraAttr}>
-												<Button
-													style={{ flex: 1, marginTop: 8 }}
-													variant="outlined"
-													color="primary"
-													onClick={() => push({ name: "", value: "" })}
-												>
-													{`+ ${i18n.t("contactModal.buttons.addExtraInfo")}`}
-												</Button>
-											</div>
+											<Button
+												className={classes.addExtraButton}
+												variant="outlined"
+												color="primary"
+												onClick={() => push({ name: "", value: "" })}
+											>
+												{`+ ${i18n.t("contactModal.buttons.addExtraInfo")}`}
+											</Button>
 										</>
 									)}
 								</FieldArray>
@@ -245,6 +332,7 @@ const ContactModal = ({ open, onClose, contactId, initialValues, onSave }) => {
 									color="secondary"
 									disabled={isSubmitting}
 									variant="outlined"
+									className={classes.cancelButton}
 								>
 									{i18n.t("contactModal.buttons.cancel")}
 								</Button>
@@ -253,7 +341,7 @@ const ContactModal = ({ open, onClose, contactId, initialValues, onSave }) => {
 									color="primary"
 									disabled={isSubmitting}
 									variant="contained"
-									className={classes.btnWrapper}
+									className={`${classes.btnWrapper} ${classes.submitButton}`}
 								>
 									{contactId
 										? `${i18n.t("contactModal.buttons.okEdit")}`

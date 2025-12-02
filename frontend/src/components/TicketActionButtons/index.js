@@ -1,7 +1,7 @@
 import React, { useContext, useState } from "react";
 import { useHistory } from "react-router-dom";
 
-import { makeStyles, createTheme, ThemeProvider } from "@material-ui/core/styles";
+import { makeStyles } from "@material-ui/core/styles";
 import { IconButton } from "@material-ui/core";
 import { MoreVert, Replay } from "@material-ui/icons";
 
@@ -13,7 +13,6 @@ import { AuthContext } from "../../context/Auth/AuthContext";
 import UndoRoundedIcon from '@material-ui/icons/UndoRounded';
 import CancelIcon from '@material-ui/icons/Cancel';
 import Tooltip from '@material-ui/core/Tooltip';
-import { green, red } from '@material-ui/core/colors';
 
 const useStyles = makeStyles(theme => ({
 	actionButtons: {
@@ -21,9 +20,29 @@ const useStyles = makeStyles(theme => ({
 		flex: "none",
 		alignSelf: "center",
 		marginLeft: "auto",
-		"& > *": {
-			margin: theme.spacing(1),
+		display: "flex",
+		alignItems: "center",
+		gap: 4,
+	},
+	actionButton: {
+		padding: 6,
+		borderRadius: 8,
+		transition: "all 0.2s ease",
+		"&:hover": {
+			transform: "scale(1.05)",
 		},
+	},
+	returnButton: {
+		color: theme.palette.primary.main,
+	},
+	closeButton: {
+		color: theme.palette.error.main,
+	},
+	reopenButton: {
+		color: theme.palette.success.main,
+	},
+	moreButton: {
+		color: theme.palette.text.secondary,
 	},
 }));
 
@@ -31,16 +50,9 @@ const TicketActionButtons = ({ ticket }) => {
 	const classes = useStyles();
 	const history = useHistory();
 	const [anchorEl, setAnchorEl] = useState(null);
-	const [loading, setLoading] = useState("false");
+	const [loading, setLoading] = useState(false);
 	const ticketOptionsMenuOpen = Boolean(anchorEl);
 	const { user } = useContext(AuthContext);
-
-	const customTheme = createTheme({
-		palette: {
-			primary: green,
-			secondary: red,
-		}
-	});
 
 	const handleOpenTicketOptionsMenu = e => {
 		setAnchorEl(e.currentTarget);
@@ -51,7 +63,7 @@ const TicketActionButtons = ({ ticket }) => {
 	};
 
 	const handleUpdateTicketStatus = async (e, status, userId, isFinished) => {
-		setLoading("true");
+		setLoading(true);
 		try {
 			await api.put(`/tickets/${ticket.id}`, {
 				status: status,
@@ -61,14 +73,14 @@ const TicketActionButtons = ({ ticket }) => {
 
 			});
 
-			setLoading("false");
+			setLoading(false);
 			if (status === "open") {
 				history.push(`/tickets/${ticket.id}`);
 			} else {
 				history.push("/tickets");
 			}
 		} catch (err) {
-			setLoading("false");
+			setLoading(false);
 			toastError(err);
 		}
 	};
@@ -77,30 +89,45 @@ const TicketActionButtons = ({ ticket }) => {
 		<div className={classes.actionButtons}>
 			{ticket.status === "closed" && (
 				<Tooltip title={i18n.t("messagesList.header.buttons.reopen")}>
-					<IconButton loading={loading} style={{ marginRight: 20 }} onClick={e => handleUpdateTicketStatus(e, "open", user?.id,false)} color="primary">
-						<Replay />
+					<IconButton 
+						disabled={loading} 
+						className={`${classes.actionButton} ${classes.reopenButton}`}
+						onClick={e => handleUpdateTicketStatus(e, "open", user?.id, false)}
+						size="small"
+					>
+						<Replay fontSize="small" />
 					</IconButton>
 				</Tooltip>
 			)}
 			{ticket.status === "open" && (
 				<>
 					<Tooltip title={i18n.t("messagesList.header.buttons.return")}>
-						<IconButton loading={loading} onClick={e => handleUpdateTicketStatus(e, "pending", null, false)}>
-							<UndoRoundedIcon />
+						<IconButton 
+							disabled={loading} 
+							className={`${classes.actionButton} ${classes.returnButton}`}
+							onClick={e => handleUpdateTicketStatus(e, "pending", null, false)}
+							size="small"
+						>
+							<UndoRoundedIcon fontSize="small" />
 						</IconButton>
 					</Tooltip>
-					<ThemeProvider theme={customTheme}>
-						<Tooltip title={i18n.t("messagesList.header.buttons.resolve")}>
-							<IconButton 
-							loading={loading} 
-							onClick={e => handleUpdateTicketStatus(e, "closed", user?.id, false)} 
-							color="secondary">
-								<CancelIcon />
-							</IconButton>
-						</Tooltip>
-					</ThemeProvider>
-					<IconButton loading={loading} onClick={handleOpenTicketOptionsMenu}>
-						<MoreVert />
+					<Tooltip title={i18n.t("messagesList.header.buttons.resolve")}>
+						<IconButton 
+							disabled={loading} 
+							className={`${classes.actionButton} ${classes.closeButton}`}
+							onClick={e => handleUpdateTicketStatus(e, "closed", user?.id, false)}
+							size="small"
+						>
+							<CancelIcon fontSize="small" />
+						</IconButton>
+					</Tooltip>
+					<IconButton 
+						disabled={loading} 
+						className={`${classes.actionButton} ${classes.moreButton}`}
+						onClick={handleOpenTicketOptionsMenu}
+						size="small"
+					>
+						<MoreVert fontSize="small" />
 					</IconButton>
 					<TicketOptionsMenu
 						ticket={ticket}

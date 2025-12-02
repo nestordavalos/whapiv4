@@ -1,10 +1,52 @@
 import { Box, Chip, TextField } from "@material-ui/core";
 import Autocomplete from "@material-ui/lab/Autocomplete";
 import React, { useEffect, useState } from "react";
+import { makeStyles } from "@material-ui/core/styles";
 import toastError from "../../errors/toastError";
 import api from "../../services/api";
 
+const useStyles = makeStyles((theme) => ({
+  autocomplete: {
+    "& .MuiOutlinedInput-root": {
+      backgroundColor: theme.palette.background.paper,
+      borderRadius: 8,
+      "& fieldset": {
+        borderColor: theme.palette.divider,
+      },
+      "&:hover fieldset": {
+        borderColor: theme.palette.primary.main,
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: theme.palette.primary.main,
+      },
+    },
+    "& .MuiInputBase-input": {
+      color: theme.palette.text.primary,
+    },
+    "& .MuiAutocomplete-popupIndicator": {
+      color: theme.palette.text.secondary,
+    },
+    "& .MuiAutocomplete-clearIndicator": {
+      color: theme.palette.text.secondary,
+    },
+  },
+  chip: {
+    backgroundColor: theme.palette.type === "dark" 
+      ? "rgba(0, 113, 193, 0.3)" 
+      : "rgba(0, 113, 193, 0.15)",
+    color: theme.palette.text.primary,
+    border: `1px solid ${theme.palette.primary.main}`,
+    "& .MuiChip-deleteIcon": {
+      color: theme.palette.text.secondary,
+      "&:hover": {
+        color: theme.palette.error.main,
+      },
+    },
+  },
+}));
+
 export function UsersFilter({ onFiltered, initialUsers }) {
+  const classes = useStyles();
   const [users, setUsers] = useState([]);
   const [selecteds, setSelecteds] = useState([]);
 
@@ -58,15 +100,12 @@ export function UsersFilter({ onFiltered, initialUsers }) {
             option?.name.toLowerCase() === value?.name.toLowerCase()
           );
         }}
+        className={classes.autocomplete}
         renderTags={(value, getUserProps) =>
           value.map((option, index) => (
             <Chip
               variant="outlined"
-              style={{
-                backgroundColor: "#bfbfbf",
-                textShadow: "1px 1px 1px #000",
-                color: "white",
-              }}
+              className={classes.chip}
               label={option.name}
               {...getUserProps({ index })}
               size="small"

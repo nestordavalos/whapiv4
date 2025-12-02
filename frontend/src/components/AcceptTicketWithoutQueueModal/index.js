@@ -27,8 +27,7 @@ import toastError from "../../errors/toastError";
 
 const useStyles = makeStyles((theme) => ({
 	autoComplete: { 
-		width: 300,
-		// marginBottom: 20 
+		width: "100%",
 	},
 	maxWidth: {
 		width: "100%",
@@ -36,6 +35,60 @@ const useStyles = makeStyles((theme) => ({
 	buttonColorError: {
 		color: theme.palette.error.main,
 		borderColor: theme.palette.error.main,
+		textTransform: "none",
+		fontWeight: 500,
+		borderRadius: 8,
+		padding: "8px 20px",
+	},
+	dialog: {
+		"& .MuiDialog-paper": {
+			borderRadius: 12,
+			minWidth: 340,
+		},
+	},
+	dialogTitle: {
+		padding: "20px 24px 12px",
+		"& .MuiTypography-root": {
+			fontSize: "1.1rem",
+			fontWeight: 600,
+			color: theme.palette.text.primary,
+		},
+	},
+	dialogContent: {
+		padding: "16px 24px",
+	},
+	dialogActions: {
+		padding: "12px 24px 20px",
+		gap: 8,
+	},
+	formControl: {
+		width: "100%",
+		"& .MuiOutlinedInput-root": {
+			borderRadius: 10,
+			"& fieldset": {
+				borderColor: theme.palette.divider,
+			},
+			"&:hover fieldset": {
+				borderColor: theme.palette.primary.light,
+			},
+			"&.Mui-focused fieldset": {
+				borderColor: theme.palette.primary.main,
+				borderWidth: 1,
+			},
+		},
+		"& .MuiInputLabel-outlined": {
+			fontSize: "0.9rem",
+		},
+	},
+	saveButton: {
+		textTransform: "none",
+		fontWeight: 600,
+		borderRadius: 8,
+		padding: "8px 24px",
+		boxShadow: "none",
+		"&:hover": {
+			boxShadow: "0 2px 8px rgba(25, 118, 210, 0.3)",
+		},
 	},
 }));
 
@@ -71,16 +124,15 @@ const handleUpdateTicketStatus = async (queueId) => {
 
 return (
 	<>
-		<Dialog open={modalOpen} onClose={handleClose}>
-			<DialogTitle id="form-dialog-title">
+		<Dialog open={modalOpen} onClose={handleClose} className={classes.dialog}>
+			<DialogTitle id="form-dialog-title" className={classes.dialogTitle}>
 				{i18n.t("ticketsList.acceptModal.title")}
 			</DialogTitle>
-			<DialogContent dividers>
-				<FormControl variant="outlined" className={classes.maxWidth}>
+			<DialogContent className={classes.dialogContent}>
+				<FormControl variant="outlined" className={classes.formControl}>
 					<InputLabel>{i18n.t("ticketsList.acceptModal.queue")}</InputLabel>
 					<Select
 						value={selectedQueue}
-						className={classes.autoComplete}
 						onChange={(e) => setSelectedQueue(e.target.value)}
 						label={i18n.t("ticketsList.acceptModal.queue")}
 					>
@@ -91,7 +143,7 @@ return (
 					</Select>
 				</FormControl>
 			</DialogContent>
-			<DialogActions>
+			<DialogActions className={classes.dialogActions}>
 				<Button
 					onClick={handleClose}
 					className={classes.buttonColorError}
@@ -107,6 +159,7 @@ return (
 					onClick={() => handleUpdateTicketStatus(selectedQueue)}
 					color="primary"
 					loading={loading}
+					className={classes.saveButton}
 				>
 					{i18n.t("ticketsList.buttons.start")}
 				</ButtonWithSpinner>

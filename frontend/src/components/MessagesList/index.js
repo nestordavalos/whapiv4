@@ -10,12 +10,11 @@ import { isSameDay, parseISO, format } from "date-fns";
 import openSocket from "../../services/socket-io";
 import clsx from "clsx";
 
-import { blue, red } from "@material-ui/core/colors";
+import { red } from "@material-ui/core/colors";
 // import { AuthContext } from "../../context/Auth/AuthContext";
 import {
   Button,
   CircularProgress,
-  Divider,
   IconButton,
   makeStyles,
 } from "@material-ui/core";
@@ -41,7 +40,6 @@ import Audio from "../Audio";
 import api from "../../services/api";
 import toastError from "../../errors/toastError";
 import { toast } from "react-toastify";
-import { system } from "../../config.json";
 // import { Viewer } from "@react-pdf-viewer/core";
 //import { PDFViewer, Document, Page } from "@react-pdf/renderer";
 
@@ -73,7 +71,7 @@ const useStyles = makeStyles((theme) => ({
   },
 
   circleLoading: {
-    color: blue[500],
+    color: theme.palette.primary.main,
     position: "absolute",
     opacity: "70%",
     top: 0,
@@ -97,25 +95,27 @@ const useStyles = makeStyles((theme) => ({
     },
 
     whiteSpace: "pre-wrap",
-    backgroundColor: "#ffffff",
-    color: "#303030",
+    backgroundColor: theme.palette.type === "dark" ? "#1e2428" : "#ffffff",
+    color: theme.palette.text.primary,
     alignSelf: "flex-start",
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 8,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 12,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
     paddingLeft: 5,
     paddingRight: 5,
     paddingTop: 5,
     paddingBottom: 0,
-    boxShadow: "0 1px 1px #b3b3b3",
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 1px 2px rgba(0,0,0,0.3)" 
+      : "0 1px 2px rgba(0,0,0,0.1)",
   },
 
   quotedContainerLeft: {
     margin: "-3px -80px 6px -6px",
     overflow: "hidden",
-    backgroundColor: "#f0f0f0",
-    borderRadius: "7.5px",
+    backgroundColor: theme.palette.type === "dark" ? "#2d3436" : "#f5f5f5",
+    borderRadius: 8,
     display: "flex",
     position: "relative",
     cursor: "pointer",
@@ -128,12 +128,15 @@ const useStyles = makeStyles((theme) => ({
     display: "block",
     whiteSpace: "pre-wrap",
     overflow: "hidden",
+    fontSize: "0.85rem",
+    color: theme.palette.text.primary,
   },
 
   quotedSideColorLeft: {
     flex: "none",
     width: "4px",
-    backgroundColor: "#6bcbef",
+    backgroundColor: theme.palette.primary.main,
+    borderRadius: "4px 0 0 4px",
   },
 
   messageRight: {
@@ -152,25 +155,27 @@ const useStyles = makeStyles((theme) => ({
     },
 
     whiteSpace: "pre-wrap",
-    backgroundColor: "#dcf8c6",
-    color: "#303030",
+    backgroundColor: theme.palette.type === "dark" ? "#0b4f30" : "#dcf8c6",
+    color: theme.palette.type === "dark" ? "#F2F0E4" : "#303030",
     alignSelf: "flex-end",
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 0,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 4,
     paddingLeft: 5,
     paddingRight: 5,
     paddingTop: 5,
     paddingBottom: 0,
-    boxShadow: "0 1px 1px #b3b3b3",
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 1px 2px rgba(0,0,0,0.3)" 
+      : "0 1px 2px rgba(0,0,0,0.1)",
   },
 
   quotedContainerRight: {
     margin: "-3px -80px 6px -6px",
     overflowY: "hidden",
-    backgroundColor: "#cfe9ba",
-    borderRadius: "7.5px",
+    backgroundColor: theme.palette.type === "dark" ? "#0d6940" : "#c5e8b7",
+    borderRadius: 8,
     display: "flex",
     position: "relative",
     cursor: "pointer",
@@ -181,12 +186,15 @@ const useStyles = makeStyles((theme) => ({
     maxWidth: 300,
     height: "auto",
     whiteSpace: "pre-wrap",
+    fontSize: "0.85rem",
+    color: theme.palette.type === "dark" ? "#F2F0E4" : "#303030",
   },
 
   quotedSideColorRight: {
     flex: "none",
     width: "4px",
-    backgroundColor: "#35cd96",
+    backgroundColor: "#25D366",
+    borderRadius: "4px 0 0 4px",
   },
 
   messageHighlight: {
@@ -196,15 +204,15 @@ const useStyles = makeStyles((theme) => ({
   },
 
   "@keyframes highlightFade": {
-    "0%": { backgroundColor: "#fff59d" },
+    "0%": { backgroundColor: theme.palette.type === "dark" ? "#5c4b1f" : "#fff59d" },
     "50%": { backgroundColor: "inherit" },
-    "100%": { backgroundColor: "#fff59d" },
+    "100%": { backgroundColor: theme.palette.type === "dark" ? "#5c4b1f" : "#fff59d" },
   },
 
   messageActionsButton: {
     display: "none",
     position: "relative",
-    color: "#999",
+    color: theme.palette.text.secondary,
     zIndex: 1,
     backgroundColor: "inherit",
     opacity: "90%",
@@ -213,18 +221,22 @@ const useStyles = makeStyles((theme) => ({
 
   messageContactName: {
     display: "flex",
-    color: "#6bcbef",
-    fontWeight: 500,
+    color: theme.palette.primary.main,
+    fontWeight: 600,
+    fontSize: "0.8rem",
+    marginBottom: 2,
   },
 
   textContentItem: {
     overflowWrap: "break-word",
     padding: "3px 80px 6px 6px",
+    fontSize: "0.9rem",
+    lineHeight: 1.4,
   },
 
   textContentItemDeleted: {
     fontStyle: "italic",
-    color: "rgba(0, 0, 0, 0.36)",
+    color: theme.palette.type === "dark" ? "rgba(255, 255, 255, 0.36)" : "rgba(0, 0, 0, 0.36)",
     overflowWrap: "break-word",
     padding: "3px 80px 6px 6px",
   },
@@ -233,42 +245,57 @@ const useStyles = makeStyles((theme) => ({
     objectFit: "cover",
     width: 250,
     height: 200,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
+    borderRadius: 12,
+    border: "none",
+    display: "block",
+  },
+
+  audioWrapper: {
+    display: "flex",
+    flexDirection: "column",
+    "& audio": {
+      borderRadius: 20,
+      height: 40,
+    },
   },
 
   timestamp: {
     fontSize: 11,
     position: "absolute",
-    bottom: 0,
-    right: 5,
-    color: "#999",
+    bottom: 2,
+    right: 8,
+    color: theme.palette.type === "dark" ? "#a0aec0" : "#667781",
+    display: "flex",
+    alignItems: "center",
+    gap: 2,
   },
 
   dailyTimestamp: {
     alignItems: "center",
     textAlign: "center",
     alignSelf: "center",
-    width: "110px",
-    backgroundColor: "#e1f3fb",
+    width: "auto",
+    backgroundColor: theme.palette.type === "dark" ? "#1e3a5f" : "#e1f3fb",
     margin: "10px",
-    borderRadius: "10px",
-    boxShadow: "0 1px 1px #b3b3b3",
+    padding: "4px 12px",
+    borderRadius: 8,
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 1px 2px rgba(0,0,0,0.3)" 
+      : "0 1px 2px rgba(0,0,0,0.1)",
   },
 
   dailyTimestampText: {
-    color: "#808888",
-    padding: 8,
+    color: theme.palette.type === "dark" ? "#a0aec0" : "#667781",
+    fontSize: "0.75rem",
+    fontWeight: 500,
     alignSelf: "center",
     marginLeft: "0px",
   },
 
   ackIcons: {
-    fontSize: 18,
+    fontSize: 16,
     verticalAlign: "middle",
-    marginLeft: 4,
+    marginLeft: 2,
   },
 
   deletedIcon: {
@@ -283,18 +310,33 @@ const useStyles = makeStyles((theme) => ({
   },
 
   ackDoneAllIcon: {
-    color: blue[500],
-    fontSize: 18,
+    color: "#53bdeb",
+    fontSize: 16,
     verticalAlign: "middle",
-    marginLeft: 4,
+    marginLeft: 2,
   },
 
   downloadMedia: {
     display: "flex",
-    alignItems: "center",
+    flexDirection: "column",
+    alignItems: "flex-start",
     justifyContent: "center",
     backgroundColor: "inherit",
-    padding: 10,
+    padding: "8px 4px",
+    gap: 6,
+    "& .MuiButton-root": {
+      textTransform: "none",
+      fontWeight: 600,
+      fontSize: "0.8rem",
+      borderRadius: 8,
+      padding: "6px 16px",
+    },
+  },
+  fileName: {
+    fontSize: "0.75rem",
+    color: theme.palette.text.secondary,
+    marginTop: 4,
+    wordBreak: "break-word",
   },
 
   messageCenter: {
@@ -302,39 +344,42 @@ const useStyles = makeStyles((theme) => ({
     alignItems: "center",
     verticalAlign: "center",
     alignContent: "center",
-    backgroundColor: "#E1F5FEEB",
+    backgroundColor: theme.palette.type === "dark" ? "#1e3a5f" : "#E1F5FEEB",
     fontSize: "12px",
     minWidth: 100,
     maxWidth: 270,
-    color: "#272727",
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 8,
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
+    color: theme.palette.text.primary,
+    borderRadius: 10,
     paddingLeft: 5,
     paddingRight: 5,
     paddingTop: 5,
     paddingBottom: 0,
-    boxShadow: "0 1px 1px #b3b3b3",
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 1px 2px rgba(0,0,0,0.3)" 
+      : "0 1px 2px rgba(0,0,0,0.1)",
   },
 
   currentTick: {
     alignItems: "center",
     textAlign: "center",
     alignSelf: "center",
-    width: "95%",
-    backgroundColor: system.color.lightTheme.palette.primary,
-    margin: "10px",
-    borderRadius: "10px",
-    boxShadow: "1px 5px 10px #b3b3b3",
+    width: "auto",
+    maxWidth: "80%",
+    backgroundColor: theme.palette.primary.main,
+    margin: "16px auto",
+    padding: "10px 24px",
+    borderRadius: 20,
+    boxShadow: theme.palette.type === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.4)" 
+      : "0 2px 8px rgba(0,0,0,0.12)",
   },
 
   currentTicktText: {
-    color: system.color.lightTheme.palette.secondary,
-    fontWeight: "bold",
-    padding: 8,
+    color: "#ffffff",
+    fontWeight: 600,
+    fontSize: "0.8rem",
     alignSelf: "center",
-    marginLeft: "0px",
+    margin: 0,
   },
 }));
 
@@ -579,9 +624,13 @@ const MessagesList = ({ ticketId, isGroup }) => {
         )
       } else return (<></>)
     }*/
-      return <ModalImageCors imageUrl={message.mediaUrl} />;
+      return <ModalImageCors imageUrl={message.mediaUrl} />
     } else if (message.mediaType === "audio") {
-      return <Audio url={message.mediaUrl} />;
+      return (
+        <div className={classes.audioWrapper}>
+          <Audio url={message.mediaUrl} />
+        </div>
+      );
     } else if (message.mediaType === "video") {
       return (
         <video
@@ -591,21 +640,21 @@ const MessagesList = ({ ticketId, isGroup }) => {
         />
       );
     } else {
+      // Extraer nombre del archivo de la URL
+      const fileName = message.mediaUrl ? message.mediaUrl.split('/').pop() : message.body || 'archivo';
       return (
-        <>
-          <div className={classes.downloadMedia}>
-            <Button
-              startIcon={<GetApp />}
-              color="primary"
-              variant="outlined"
-              target="_blank"
-              href={message.mediaUrl}
-            >
-              Download
-            </Button>
-          </div>
-          <Divider />
-        </>
+        <div className={classes.downloadMedia}>
+          <Button
+            startIcon={<GetApp />}
+            color="primary"
+            variant="outlined"
+            target="_blank"
+            href={message.mediaUrl}
+          >
+            Descargar
+          </Button>
+          <span className={classes.fileName}>{fileName}</span>
+        </div>
       );
     }
   };
@@ -781,8 +830,9 @@ const MessagesList = ({ ticketId, isGroup }) => {
                 variant="outlined"
                 target="_blank"
                 href={message.quotedMsg.mediaUrl}
+                size="small"
               >
-                Download
+                Descargar
               </Button>
             </div>
           )}

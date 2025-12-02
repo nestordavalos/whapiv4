@@ -6,7 +6,14 @@ const useStyles = makeStyles(theme => ({
 	contactsHeader: {
 		display: "flex",
 		alignItems: "center",
-		padding: "0px 6px 6px 6px",
+		justifyContent: "space-between",
+		padding: "16px 8px",
+		flexWrap: "wrap",
+		gap: 12,
+		[theme.breakpoints.down("xs")]: {
+			padding: "12px 8px",
+			gap: 10,
+		},
 	},
 }));
 

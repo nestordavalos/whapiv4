@@ -25,10 +25,71 @@ const useStyles = makeStyles(theme => ({
   root: {
     display: "flex",
     flexWrap: "wrap",
-    "& > *:not(:last-child)": {
-      marginRight: theme.spacing(1)
-    }
-  }
+    "& .MuiDialog-paper": {
+      borderRadius: 16,
+      boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+    },
+  },
+  title: {
+    padding: "20px 24px 16px",
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    "& .MuiTypography-root": {
+      fontSize: "1.15rem",
+      fontWeight: 600,
+    },
+  },
+  content: {
+    padding: "20px 24px",
+  },
+  fieldLabel: {
+    fontSize: "0.8rem",
+    fontWeight: 600,
+    color: theme.palette.text.secondary,
+    marginBottom: 8,
+    display: "block",
+  },
+  textField: {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 10,
+      backgroundColor: theme.palette.background.paper,
+      "& fieldset": {
+        borderColor: theme.palette.divider,
+      },
+      "&:hover fieldset": {
+        borderColor: theme.palette.primary.main,
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: theme.palette.primary.main,
+        borderWidth: 1,
+      },
+    },
+  },
+  actions: {
+    padding: "16px 24px 20px",
+    borderTop: `1px solid ${theme.palette.divider}`,
+    gap: 8,
+  },
+  cancelButton: {
+    borderRadius: 10,
+    padding: "10px 24px",
+    textTransform: "none",
+    fontWeight: 500,
+    fontSize: "0.9rem",
+  },
+  submitButton: {
+    borderRadius: 10,
+    padding: "10px 24px",
+    textTransform: "none",
+    fontWeight: 500,
+    fontSize: "0.9rem",
+    boxShadow: "none",
+    "&:hover": {
+      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+    },
+  },
+  variablesPicker: {
+    marginTop: 12,
+  },
 }));
 
 const QuickAnswerSchema = Yup.object().shape({
@@ -135,7 +196,7 @@ const QuickAnswersModal = ({
         onClose={onClose}
         scroll="paper"
       >
-        <DialogTitle>
+        <DialogTitle className={classes.title}>
           {quickAnswerId
             ? i18n.t("quickAnswersModal.title.edit")
             : i18n.t("quickAnswersModal.title.add")}
@@ -148,7 +209,7 @@ const QuickAnswersModal = ({
         >
           {({ touched, errors, isSubmitting, setFieldValue }) => (
             <Form>
-              <DialogContent dividers>
+              <DialogContent dividers className={classes.content}>
                 <WithSkeleton loading={loading}>
                   <FormikTextField
                     label={i18n.t("quickAnswersModal.form.shortcut")}
@@ -157,8 +218,9 @@ const QuickAnswersModal = ({
                     touched={touched}
                     errors={errors}
                     variant="outlined"
-                    margin="dense"
+                    size="small"
                     disabled={isSubmitting}
+                    className={classes.textField}
                   />
                 </WithSkeleton>
                 <WithSkeleton fullWidth loading={loading}>
@@ -172,21 +234,28 @@ const QuickAnswersModal = ({
                     touched={touched}
                     errors={errors}
                     variant="outlined"
-                    margin="dense"
+                    size="small"
                     disabled={isSubmitting}
+                    className={classes.textField}
+                    style={{ marginTop: 16 }}
                   />
                 </WithSkeleton>
-                <WithSkeleton loading={loading}>
-                  <MessageVariablesPicker
-                    disabled={isSubmitting}
-                    onClick={value => handleClickMsgVar(value, setFieldValue)}
-                  />
-                </WithSkeleton>
+                <div className={classes.variablesPicker}>
+                  <WithSkeleton loading={loading}>
+                    <MessageVariablesPicker
+                      disabled={isSubmitting}
+                      onClick={value => handleClickMsgVar(value, setFieldValue)}
+                    />
+                  </WithSkeleton>
+                </div>
               </DialogContent>
-              <DialogActions>
+              <DialogActions className={classes.actions}>
                 <Button
-                onClick={onClose}
-                disabled={isSubmitting}
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                  variant="outlined"
+                  color="secondary"
+                  className={classes.cancelButton}
                 >
                   {i18n.t("quickAnswersModal.buttons.cancel")}
                 </Button>
@@ -196,6 +265,7 @@ const QuickAnswersModal = ({
                   disabled={loading || isSubmitting}
                   loading={isSubmitting}
                   variant="contained"
+                  className={classes.submitButton}
                 >
                   {quickAnswerId
                     ? i18n.t("quickAnswersModal.buttons.okEdit")

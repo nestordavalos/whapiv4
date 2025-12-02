@@ -32,8 +32,7 @@ import {
 
 const useStyles = makeStyles((theme) => ({
 	autoComplete: {
-		width: 300,
-		// marginBottom: 20 
+		width: "100%",
 	},
 	maxWidth: {
 		width: "100%",
@@ -41,6 +40,64 @@ const useStyles = makeStyles((theme) => ({
 	buttonColorError: {
 		color: theme.palette.error.main,
 		borderColor: theme.palette.error.main,
+	},
+	dialog: {
+		"& .MuiDialog-paper": {
+			borderRadius: 12,
+			minWidth: 380,
+		},
+	},
+	dialogTitle: {
+		padding: "20px 24px 12px",
+		"& .MuiTypography-root": {
+			fontSize: "1.1rem",
+			fontWeight: 600,
+			color: theme.palette.text.primary,
+		},
+	},
+	dialogContent: {
+		padding: "16px 24px",
+		display: "flex",
+		flexDirection: "column",
+		gap: 16,
+	},
+	dialogActions: {
+		padding: "12px 24px 20px",
+		gap: 8,
+	},
+	input: {
+		"& .MuiOutlinedInput-root": {
+			borderRadius: 10,
+			"& fieldset": {
+				borderColor: theme.palette.divider,
+			},
+			"&:hover fieldset": {
+				borderColor: theme.palette.primary.light,
+			},
+			"&.Mui-focused fieldset": {
+				borderColor: theme.palette.primary.main,
+				borderWidth: 1,
+			},
+		},
+		"& .MuiInputLabel-outlined": {
+			fontSize: "0.9rem",
+		},
+	},
+	cancelButton: {
+		textTransform: "none",
+		fontWeight: 500,
+		borderRadius: 8,
+		padding: "8px 20px",
+	},
+	saveButton: {
+		textTransform: "none",
+		fontWeight: 600,
+		borderRadius: 8,
+		padding: "8px 24px",
+		boxShadow: "none",
+		"&:hover": {
+			boxShadow: "0 2px 8px rgba(25, 118, 210, 0.3)",
+		},
 	},
 }));
 
@@ -163,84 +220,76 @@ const NewTicketModal = ({ modalOpen, onClose }) => {
 				onClose={handleCloseContactModal}
 				onSave={handleAddNewContactTicket}
 			></ContactModal>
-			<Dialog open={modalOpen} onClose={handleClose}>
-				<DialogTitle id="form-dialog-title">
+			<Dialog open={modalOpen} onClose={handleClose} className={classes.dialog}>
+				<DialogTitle id="form-dialog-title" className={classes.dialogTitle}>
 					{i18n.t("newTicketModal.title")}
 				</DialogTitle>
-				<FormControl>
-					<DialogContent dividers>
-
-
-
-
-						<Autocomplete
-							options={options}
-							loading={loading}
-							style={{ width: 300 }}
-							clearOnBlur
-							autoHighlight
-							freeSolo
-							clearOnEscape
-							getOptionLabel={renderOptionLabel}
-							renderOption={renderOption}
-							filterOptions={createAddContactOption}
-							onChange={(e, newValue) => handleSelectOption(e, newValue)}
-							renderInput={params => (
-								<TextField
-									{...params}
-									label={i18n.t("newTicketModal.fieldLabel")}
-									variant="outlined"
-									autoFocus
-									required
-									onChange={e => setSearchParam(e.target.value)}
-									onKeyPress={e => {
-										if (loading || !selectedContact) return;
-										else if (e.key === "Enter") {
-											handleSaveTicket(selectedContact.id);
-										}
-									}}
-									InputProps={{
-										...params.InputProps,
-										endAdornment: (
-											<React.Fragment>
-												{loading ? (
-													<CircularProgress color="inherit" size={20} />
-												) : null}
-												{params.InputProps.endAdornment}
-											</React.Fragment>
-										),
-									}}
-								/>
-							)}
-						/>
-						<DialogContent />
-
-						<FormControl variant="outlined" className={classes.maxWidth}>
-							<InputLabel>{i18n.t("ticketsList.acceptModal.queue")}</InputLabel>
-							<Select
-								autoHighlight
+				<DialogContent className={classes.dialogContent}>
+					<Autocomplete
+						options={options}
+						loading={loading}
+						fullWidth
+						clearOnBlur
+						autoHighlight
+						freeSolo
+						clearOnEscape
+						getOptionLabel={renderOptionLabel}
+						renderOption={renderOption}
+						filterOptions={createAddContactOption}
+						onChange={(e, newValue) => handleSelectOption(e, newValue)}
+						className={classes.input}
+						renderInput={params => (
+							<TextField
+								{...params}
+								label={i18n.t("newTicketModal.fieldLabel")}
+								variant="outlined"
+								autoFocus
 								required
-								value={selectedQueue}
-								className={classes.autoComplete}
-								onChange={(e) => setSelectedQueue(e.target.value)}
-								label={i18n.t("ticketsList.acceptModal.queue")}
-							>
-								<MenuItem value={''}>&nbsp;</MenuItem>
-								{user.queues.map((queue) => (
-									<MenuItem key={queue.id} value={queue.id}>{queue.name}</MenuItem>
-								))}
-							</Select>
-						</FormControl>
+								onChange={e => setSearchParam(e.target.value)}
+								onKeyPress={e => {
+									if (loading || !selectedContact) return;
+									else if (e.key === "Enter") {
+										handleSaveTicket(selectedContact.id);
+									}
+								}}
+								InputProps={{
+									...params.InputProps,
+									endAdornment: (
+										<React.Fragment>
+											{loading ? (
+												<CircularProgress color="inherit" size={20} />
+											) : null}
+											{params.InputProps.endAdornment}
+										</React.Fragment>
+									),
+								}}
+							/>
+						)}
+					/>
 
-
-					</DialogContent>
-				</FormControl>
-				<DialogActions>
+					<FormControl variant="outlined" className={`${classes.maxWidth} ${classes.input}`}>
+						<InputLabel>{i18n.t("ticketsList.acceptModal.queue")}</InputLabel>
+						<Select
+							autoHighlight
+							required
+							value={selectedQueue}
+							onChange={(e) => setSelectedQueue(e.target.value)}
+							label={i18n.t("ticketsList.acceptModal.queue")}
+						>
+							<MenuItem value={''}>&nbsp;</MenuItem>
+							{user.queues.map((queue) => (
+								<MenuItem key={queue.id} value={queue.id}>{queue.name}</MenuItem>
+							))}
+						</Select>
+					</FormControl>
+				</DialogContent>
+				<DialogActions className={classes.dialogActions}>
 					<Button
 						onClick={handleClose}
 						color="secondary"
 						disabled={loading}
 						variant="outlined"
+						className={classes.cancelButton}
 					>
 						{i18n.t("newTicketModal.buttons.cancel")}
 					</Button>
@@ -251,6 +300,7 @@ const NewTicketModal = ({ modalOpen, onClose }) => {
 						onClick={() => handleSaveTicket(selectedContact.id)}
 						color="primary"
 						loading={loading}
+						className={classes.saveButton}
 					>
 						{i18n.t("newTicketModal.buttons.ok")}
 					</ButtonWithSpinner>

@@ -5,7 +5,6 @@ import { useHistory } from "react-router-dom";
 import { makeStyles, withStyles } from "@material-ui/core/styles";
 import Paper from "@material-ui/core/Paper";
 import Typography from "@material-ui/core/Typography";
-import Container from "@material-ui/core/Container";
 import Select from "@material-ui/core/Select";
 import { toast } from "react-toastify";
 
@@ -22,24 +21,97 @@ const useStyles = makeStyles(theme => ({
 		backgroundColor: theme.palette.background.default,
 		display: "flex",
 		alignItems: "center",
-		justifyContent: "center", // Adicionado para centralizar a div principal
-		flexDirection: "column", // Adicionado para empilhar os elementos
+		justifyContent: "center",
+		flexDirection: "column",
 		padding: theme.spacing(4),
+		minHeight: "100%",
 	},
-
+	titlePaper: {
+		padding: theme.spacing(2, 4),
+		marginBottom: theme.spacing(3),
+		borderRadius: 12,
+		border: `1px solid ${theme.palette.divider}`,
+		boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+		backgroundColor: theme.palette.background.paper,
+	},
+	titleText: {
+		fontWeight: 600,
+		color: theme.palette.text.primary,
+		fontSize: "1.5rem",
+	},
+	settingsContainer: {
+		maxWidth: 700,
+		width: "100%",
+		[theme.breakpoints.down("sm")]: {
+			maxWidth: "100%",
+			padding: theme.spacing(0, 1),
+		},
+	},
+	columnsWrapper: {
+		display: "flex",
+		gap: theme.spacing(3),
+		[theme.breakpoints.down('sm')]: {
+			flexDirection: "column",
+			gap: theme.spacing(2),
+		},
+	},
+	column: {
+		flex: 1,
+		display: "flex",
+		flexDirection: "column",
+		gap: theme.spacing(2),
+	},
 	paper: {
-		padding: theme.spacing(2),
+		padding: theme.spacing(2, 2.5),
 		display: "flex",
 		alignItems: "center",
+		borderRadius: 10,
+		border: `1px solid ${theme.palette.divider}`,
+		boxShadow: "0 1px 4px rgba(0,0,0,0.03)",
+		transition: "all 0.2s ease",
+		"&:hover": {
+			boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+			borderColor: theme.palette.primary.light,
+		},
 	},
-
+	settingLabel: {
+		fontSize: "0.9rem",
+		fontWeight: 500,
+		color: theme.palette.text.primary,
+	},
 	settingOption: {
 		marginLeft: "auto",
 	},
-	margin: {
-		margin: theme.spacing(1),
-	}
-
+	selectPaper: {
+		padding: theme.spacing(2, 2.5),
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "space-between",
+		borderRadius: 10,
+		border: `1px solid ${theme.palette.divider}`,
+		boxShadow: "0 1px 4px rgba(0,0,0,0.03)",
+		transition: "all 0.2s ease",
+		"&:hover": {
+			boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+			borderColor: theme.palette.primary.light,
+		},
+	},
+	selectLabel: {
+		fontSize: "0.9rem",
+		fontWeight: 500,
+		color: theme.palette.text.primary,
+		maxWidth: 140,
+	},
+	select: {
+		borderRadius: 8,
+		fontSize: "0.85rem",
+		"& .MuiOutlinedInput-notchedOutline": {
+			borderColor: theme.palette.divider,
+		},
+		"&:hover .MuiOutlinedInput-notchedOutline": {
+			borderColor: theme.palette.primary.main,
+		},
+	},
 }));
 
 const IOSSwitch = withStyles((theme) => ({
@@ -55,13 +127,13 @@ const IOSSwitch = withStyles((theme) => ({
 			transform: 'translateX(16px)',
 			color: theme.palette.common.white,
 			'& + $track': {
-				backgroundColor: '#52d869',
+				backgroundColor: theme.palette.success.main,
 				opacity: 1,
 				border: 'none',
 			},
 		},
 		'&$focusVisible $thumb': {
-			color: '#52d869',
+			color: theme.palette.success.main,
 			border: '6px solid #fff',
 		},
 	},
@@ -71,8 +143,8 @@ const IOSSwitch = withStyles((theme) => ({
 	},
 	track: {
 		borderRadius: 26 / 2,
-		border: `1px solid ${theme.palette.grey[400]}`,
-		backgroundColor: theme.palette.grey[50],
+		border: `1px solid ${theme.palette.divider}`,
+		backgroundColor: theme.palette.action.disabledBackground,
 		opacity: 1,
 		transition: theme.transitions.create(['background-color', 'border']),
 	},
@@ -168,207 +240,157 @@ const Settings = () => {
 	};
 
 	return (
-		// <div className={classes.root}>
-		// 	<Typography variant="h2">Configurações Gerais</Typography>
-		// 	<Container maxWidth="sm">
-		// 		{/* Seu conteúdo aqui */}
-		// 	</Container>
-		// </div>
-
 		<div className={classes.root}>
-			<Paper className={classes.paper} style={{ margin: '10px' }}>
-				<Typography variant="h4"><b>Configuración general</b></Typography>
+			<Paper className={classes.titlePaper} variant="outlined">
+				<Typography className={classes.titleText}>
+					{i18n.t("settings.title")}
+				</Typography>
 			</Paper>
-			<div style={{ maxWidth: '600px' }}>
-				<div style={{ display: 'flex' }}>
-					<div style={{ width: '50%', paddingRight: '10px' }}>
-						<Container className={classes.container} maxWidth="xs">
-
-							<Paper className={classes.paper}>
-								<Tooltip title={i18n.t("settings.settings.userCreation.note")}>
-									<FormControlLabel
-										control={
-											<IOSSwitch
-												checked={settings && settings.length > 0 && getSettingValue("userCreation") === "enabled"}
-												onChange={handleChangeBooleanSetting} name="userCreation"
-											/>
-										}
-										label={i18n.t("settings.settings.userCreation.name")}
-									/>
-								</Tooltip>
-							</Paper>
-
-							<Typography variant="body2" gutterBottom></Typography>
-							<Paper className={classes.paper}>
-								<Tooltip title={i18n.t("settings.settings.closeTicketApi.note")}>
-									<FormControlLabel
-										control={
-											<IOSSwitch
-												checked={settings && settings.length > 0 && getSettingValue("closeTicketApi") === "enabled"}
-												onChange={handleChangeBooleanSetting} name="closeTicketApi"
-											/>}
-										label={i18n.t("settings.settings.closeTicketApi.name")}
-									/>
-								</Tooltip>
-							</Paper>
-
-							{/* <Typography variant="body2" gutterBottom></Typography>
-
-							<Paper className={classes.paper}>
-								<Tooltip title={i18n.t("settings.settings.CheckMsgIsGroup.note")}>
-									<FormControlLabel
-										control={
-											<IOSSwitch
-												checked={settings && settings.length > 0 && getSettingValue("CheckMsgIsGroup") === "enabled"}
-												onChange={handleChangeBooleanSetting} name="CheckMsgIsGroup"
-											/>
-										} label={i18n.t("settings.settings.CheckMsgIsGroup.name")}
-									/>
-								</Tooltip>
-							</Paper> */}
-
-							<Typography variant="body2" gutterBottom></Typography>
-							<Paper className={classes.paper}>
-								<Tooltip title={i18n.t("settings.settings.call.note")}>
-									<FormControlLabel
-										control={
-											<IOSSwitch
-												checked={settings && settings.length > 0 && getSettingValue("call") === "enabled"}
-												onChange={handleChangeBooleanSetting} name="call"
-											/>}
-										label={i18n.t("settings.settings.call.name")}
-									/>
-								</Tooltip>
-							</Paper>
-
-							<Typography variant="body2" gutterBottom></Typography>
-							<Paper className={classes.paper}>
-								<Tooltip title={i18n.t("settings.settings.sideMenu.note")}>
-									<FormControlLabel
-										control={
-											<IOSSwitch
-												checked={settings && settings.length > 0 && getSettingValue("sideMenu") === "enabled"}
-												onChange={handleChangeBooleanSetting} name="sideMenu"
-											/>}
-										label={i18n.t("settings.settings.sideMenu.name")}
-									/>
-								</Tooltip>
-							</Paper>
-
-						</Container>
-					</div>
-					<div style={{ width: '50%', paddingLeft: '10px' }}>
-						<Container className={classes.container} maxWidth="xs">
-
-							
-
-							<Typography variant="body2" gutterBottom></Typography>
-							<Paper className={classes.paper}>
-								<Tooltip title={i18n.t("settings.settings.darkMode.note")}>
-									<FormControlLabel
-										control={
-											<IOSSwitch
-												checked={settings && settings.length > 0 && getSettingValue("darkMode") === "enabled"}
-												onChange={handleChangeBooleanSetting} name="darkMode"
-											/>}
-										label={i18n.t("settings.settings.darkMode.name")}
-									/>
-								</Tooltip>
-							</Paper>
-
-							<Typography variant="body2" gutterBottom></Typography>
-							<Paper className={classes.paper}>
-
-								<Tooltip title={i18n.t("settings.settings.ASC.note")}>
-									<FormControlLabel
-										control={
-											<IOSSwitch
-												checked={settings && settings.length > 0 && getSettingValue("ASC") === "enabled"}
-												onChange={handleChangeBooleanSetting} name="ASC"
-											/>}
-										label={i18n.t("settings.settings.ASC.name")}
-									/>
-								</Tooltip>
-							</Paper>
-
-							<Typography variant="body2" gutterBottom></Typography>
-							<Paper className={classes.paper}>
-								<Tooltip title={i18n.t("settings.settings.created.note")}>
-									<FormControlLabel
-										control={
-											<IOSSwitch
-												checked={settings && settings.length > 0 && getSettingValue("created") === "enabled"}
-												onChange={handleChangeBooleanSetting} name="created"
-											/>}
-										label={i18n.t("settings.settings.created.name")}
-									/>
-								</Tooltip>
-							</Paper>
-
-							<Typography variant="body2" gutterBottom></Typography>
-							<Tooltip title={i18n.t("settings.settings.timeCreateNewTicket.note")}>
-								<Paper className={classes.paper} elevation={3}>
-									<Typography variant="body1">
-										{i18n.t("settings.settings.timeCreateNewTicket.name")}
-									</Typography>
-									<Select
-										margin="dense"
-										variant="outlined"
-										native
-										id="timeCreateNewTicket-setting"
-										name="timeCreateNewTicket"
-										value={
-											settings && settings.length > 0 && getSettingValue("timeCreateNewTicket")
-										}
-										className={classes.settingOption}
-										onChange={handleChangeSetting}
-									>
-										<option value="5">
-											{i18n.t("settings.settings.timeCreateNewTicket.options.5")}
-										</option>
-										<option value="10">
-											{i18n.t("settings.settings.timeCreateNewTicket.options.10")}
-										</option>
-										<option value="30">
-											{i18n.t("settings.settings.timeCreateNewTicket.options.30")}
-										</option>
-										<option value="60">
-											{i18n.t("settings.settings.timeCreateNewTicket.options.60")}
-										</option>
-										<option value="300">
-											{i18n.t("settings.settings.timeCreateNewTicket.options.300")}
-										</option>
-										<option value="1800">
-											{i18n.t("settings.settings.timeCreateNewTicket.options.1800")}
-										</option>
-										<option value="3600">
-											{i18n.t("settings.settings.timeCreateNewTicket.options.3600")}
-										</option>
-										<option value="7200">
-											{i18n.t("settings.settings.timeCreateNewTicket.options.7200")}
-										</option>
-										<option value="21600">
-											{i18n.t("settings.settings.timeCreateNewTicket.options.21600")}
-										</option>
-										<option value="43200">
-											{i18n.t("settings.settings.timeCreateNewTicket.options.43200")}
-										</option>
-										<option value="86400">
-											{i18n.t("settings.settings.timeCreateNewTicket.options.86400")}
-										</option>
-										<option value="604800">
-											{i18n.t("settings.settings.timeCreateNewTicket.options.604800")}
-										</option>
-										<option value="1296000">
-											{i18n.t("settings.settings.timeCreateNewTicket.options.1296000")}
-										</option>
-										<option value="2592000">
-											{i18n.t("settings.settings.timeCreateNewTicket.options.2592000")}
-										</option>
-									</Select>
-								</Paper>
+			
+			<div className={classes.settingsContainer}>
+				<div className={classes.columnsWrapper}>
+					{/* Columna izquierda */}
+					<div className={classes.column}>
+						<Paper className={classes.paper} variant="outlined">
+							<Tooltip title={i18n.t("settings.settings.userCreation.note")}>
+								<FormControlLabel
+									control={
+										<IOSSwitch
+											checked={settings && settings.length > 0 && getSettingValue("userCreation") === "enabled"}
+											onChange={handleChangeBooleanSetting}
+											name="userCreation"
+										/>
+									}
+									label={<span className={classes.settingLabel}>{i18n.t("settings.settings.userCreation.name")}</span>}
+								/>
 							</Tooltip>
-						</Container>
+						</Paper>
+
+						<Paper className={classes.paper} variant="outlined">
+							<Tooltip title={i18n.t("settings.settings.closeTicketApi.note")}>
+								<FormControlLabel
+									control={
+										<IOSSwitch
+											checked={settings && settings.length > 0 && getSettingValue("closeTicketApi") === "enabled"}
+											onChange={handleChangeBooleanSetting}
+											name="closeTicketApi"
+										/>
+									}
+									label={<span className={classes.settingLabel}>{i18n.t("settings.settings.closeTicketApi.name")}</span>}
+								/>
+							</Tooltip>
+						</Paper>
+
+						<Paper className={classes.paper} variant="outlined">
+							<Tooltip title={i18n.t("settings.settings.call.note")}>
+								<FormControlLabel
+									control={
+										<IOSSwitch
+											checked={settings && settings.length > 0 && getSettingValue("call") === "enabled"}
+											onChange={handleChangeBooleanSetting}
+											name="call"
+										/>
+									}
+									label={<span className={classes.settingLabel}>{i18n.t("settings.settings.call.name")}</span>}
+								/>
+							</Tooltip>
+						</Paper>
+
+						<Paper className={classes.paper} variant="outlined">
+							<Tooltip title={i18n.t("settings.settings.sideMenu.note")}>
+								<FormControlLabel
+									control={
+										<IOSSwitch
+											checked={settings && settings.length > 0 && getSettingValue("sideMenu") === "enabled"}
+											onChange={handleChangeBooleanSetting}
+											name="sideMenu"
+										/>
+									}
+									label={<span className={classes.settingLabel}>{i18n.t("settings.settings.sideMenu.name")}</span>}
+								/>
+							</Tooltip>
+						</Paper>
+					</div>
+
+					{/* Columna derecha */}
+					<div className={classes.column}>
+						<Paper className={classes.paper} variant="outlined">
+							<Tooltip title={i18n.t("settings.settings.darkMode.note")}>
+								<FormControlLabel
+									control={
+										<IOSSwitch
+											checked={settings && settings.length > 0 && getSettingValue("darkMode") === "enabled"}
+											onChange={handleChangeBooleanSetting}
+											name="darkMode"
+										/>
+									}
+									label={<span className={classes.settingLabel}>{i18n.t("settings.settings.darkMode.name")}</span>}
+								/>
+							</Tooltip>
+						</Paper>
+
+						<Paper className={classes.paper} variant="outlined">
+							<Tooltip title={i18n.t("settings.settings.ASC.note")}>
+								<FormControlLabel
+									control={
+										<IOSSwitch
+											checked={settings && settings.length > 0 && getSettingValue("ASC") === "enabled"}
+											onChange={handleChangeBooleanSetting}
+											name="ASC"
+										/>
+									}
+									label={<span className={classes.settingLabel}>{i18n.t("settings.settings.ASC.name")}</span>}
+								/>
+							</Tooltip>
+						</Paper>
+
+						<Paper className={classes.paper} variant="outlined">
+							<Tooltip title={i18n.t("settings.settings.created.note")}>
+								<FormControlLabel
+									control={
+										<IOSSwitch
+											checked={settings && settings.length > 0 && getSettingValue("created") === "enabled"}
+											onChange={handleChangeBooleanSetting}
+											name="created"
+										/>
+									}
+									label={<span className={classes.settingLabel}>{i18n.t("settings.settings.created.name")}</span>}
+								/>
+							</Tooltip>
+						</Paper>
+
+						<Tooltip title={i18n.t("settings.settings.timeCreateNewTicket.note")}>
+							<Paper className={classes.selectPaper} variant="outlined">
+								<Typography className={classes.selectLabel}>
+									{i18n.t("settings.settings.timeCreateNewTicket.name")}
+								</Typography>
+								<Select
+									margin="dense"
+									variant="outlined"
+									native
+									id="timeCreateNewTicket-setting"
+									name="timeCreateNewTicket"
+									value={settings && settings.length > 0 && getSettingValue("timeCreateNewTicket")}
+									className={classes.select}
+									onChange={handleChangeSetting}
+								>
+									<option value="5">{i18n.t("settings.settings.timeCreateNewTicket.options.5")}</option>
+									<option value="10">{i18n.t("settings.settings.timeCreateNewTicket.options.10")}</option>
+									<option value="30">{i18n.t("settings.settings.timeCreateNewTicket.options.30")}</option>
+									<option value="60">{i18n.t("settings.settings.timeCreateNewTicket.options.60")}</option>
+									<option value="300">{i18n.t("settings.settings.timeCreateNewTicket.options.300")}</option>
+									<option value="1800">{i18n.t("settings.settings.timeCreateNewTicket.options.1800")}</option>
+									<option value="3600">{i18n.t("settings.settings.timeCreateNewTicket.options.3600")}</option>
+									<option value="7200">{i18n.t("settings.settings.timeCreateNewTicket.options.7200")}</option>
+									<option value="21600">{i18n.t("settings.settings.timeCreateNewTicket.options.21600")}</option>
+									<option value="43200">{i18n.t("settings.settings.timeCreateNewTicket.options.43200")}</option>
+									<option value="86400">{i18n.t("settings.settings.timeCreateNewTicket.options.86400")}</option>
+									<option value="604800">{i18n.t("settings.settings.timeCreateNewTicket.options.604800")}</option>
+									<option value="1296000">{i18n.t("settings.settings.timeCreateNewTicket.options.1296000")}</option>
+									<option value="2592000">{i18n.t("settings.settings.timeCreateNewTicket.options.2592000")}</option>
+								</Select>
+							</Paper>
+						</Tooltip>
 					</div>
 				</div>
 			</div>

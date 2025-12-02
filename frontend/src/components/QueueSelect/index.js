@@ -16,6 +16,32 @@ const useStyles = makeStyles(theme => ({
 	},
 	chip: {
 		margin: 2,
+		color: theme.palette.type === "dark" ? "#fff" : undefined,
+		fontWeight: 500,
+		"& .MuiChip-label": {
+			textShadow: theme.palette.type === "dark" ? "0 1px 2px rgba(0,0,0,0.5)" : "none",
+		},
+	},
+	formControl: {
+		"& .MuiOutlinedInput-root": {
+			backgroundColor: theme.palette.background.paper,
+			borderRadius: 8,
+			"& fieldset": {
+				borderColor: theme.palette.divider,
+			},
+			"&:hover fieldset": {
+				borderColor: theme.palette.primary.main,
+			},
+			"&.Mui-focused fieldset": {
+				borderColor: theme.palette.primary.main,
+			},
+		},
+		"& .MuiSelect-icon": {
+			color: theme.palette.text.secondary,
+		},
+		"& .MuiInputLabel-root": {
+			color: theme.palette.text.secondary,
+		},
 	},
 }));
 
@@ -40,7 +66,7 @@ const QueueSelect = ({ selectedQueueIds, onChange }) => {
 
 	return (
 		<div style={{ marginTop: 6 }}>
-			<FormControl fullWidth margin="dense" variant="outlined">
+			<FormControl fullWidth margin="dense" variant="outlined" className={classes.formControl}>
 				<InputLabel>{i18n.t("queueSelect.inputLabel")}</InputLabel>
 				<Select
 					multiple

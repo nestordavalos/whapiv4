@@ -908,7 +908,12 @@ const handleMessage = async (
 
     let createdMessage: Message | null = null;
 
-    if (msg.hasMedia) {
+    const shouldDownloadMedia =
+      msg.hasMedia &&
+      msg.type !== "interactive" && // interactive genera error de webMediaType al descargar
+      !(isSync && msg.fromMe); // en sync histórico desde “fromMe” el media suele no estar disponible
+
+    if (shouldDownloadMedia) {
       createdMessage = await verifyMediaMessage(msg, ticket, contact);
     } else {
       createdMessage = await verifyMessage(msg, ticket, contact);

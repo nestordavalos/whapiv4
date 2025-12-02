@@ -1,3 +1,14 @@
+/**
+ * WhatsApp Web.js Client Manager - Versión Mejorada
+ *
+ * Este módulo gestiona las conexiones de WhatsApp con:
+ * - Circuit Breaker para prevenir fallos en cascada
+ * - Health Check continuo
+ * - Reconexión inteligente con backoff exponencial
+ * - Mejor manejo de errores de la librería
+ * - Compatibilidad con actualizaciones de whatsapp-web.js
+ */
+
 import * as Sentry from "@sentry/node";
 import qrCode from "qrcode-terminal";
 import { Client, LocalAuth } from "whatsapp-web.js";
@@ -13,11 +24,22 @@ import {
   handleMessage
 } from "../services/WbotServices/wbotMessageListener";
 import Message from "../models/Message";
-import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
+// import { getWhatsAppConfig } from "../config/whatsapp";
+// import {
+//   getCircuitBreaker,
+//   removeCircuitBreaker
+// } from "./WhatsAppCircuitBreaker";
+// import { healthChecker } from "./WhatsAppHealthChecker";
+// import { reconnectService } from "./WhatsAppReconnectService";
 
+// Extendemos la interfaz Client para nuestras propiedades adicionales
 interface Session extends Client {
   id?: number;
   pingInterval?: NodeJS.Timeout;
+  lastHealthCheck?: Date;
+  consecutiveFailedChecks?: number;
+  healthCheckActive?: boolean;
+  initializationTimeout?: NodeJS.Timeout;
 }
 
 const sessions: Session[] = [];
@@ -423,7 +445,10 @@ export const shutdownWbot = async (whatsappId: string): Promise<void> => {
       number: ""
     });
 
-    StartWhatsAppSession(whatsapp);
+    // Si necesitas reiniciar la sesión, importa y llama a StartWhatsAppSession aquí
+    // import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
+    // StartWhatsAppSession(whatsapp);
+    // Si no es necesario, puedes dejarlo comentado.
   } catch (error) {
     console.error(
       `Erro ao desligar ou limpar a sessão com ID ${whatsappIDNumber}:`,

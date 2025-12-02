@@ -18,81 +18,71 @@ interface Request {
   reactionData: ReactionData;
 }
 
-/**
- * Crea o actualiza una reacción de mensaje.
- * Si el emoji está vacío, elimina la reacción existente del usuario.
- * Si ya existe una reacción del mismo usuario, la actualiza.
- */
+// Construye variantes del ID para tolerar formatos distintos (id puro, _serialized, sin sufijos)
+const buildIdCandidates = (rawId: string): string[] => {
+  const candidates = new Set<string>();
+  candidates.add(rawId);
+
+  // Si viene como remote_id o remote_id@server, probar cada parte
+  rawId.split("_").forEach(part => candidates.add(part));
+  rawId.split("@").forEach(part => candidates.add(part));
+
+  return Array.from(candidates).filter(Boolean);
+};
+
+const messageInclude = [
+  {
+    model: Ticket,
+    as: "ticket",
+    include: [
+      {
+        model: Contact,
+        as: "contact",
+        attributes: ["id", "name", "number", "profilePicUrl"]
+      }
+    ]
+  }
+];
+
 const HandleMessageReactionService = async ({
   reactionData
 }: Request): Promise<MessageReaction | null> => {
   const { messageId, emoji, senderId, senderName, fromMe } = reactionData;
 
-  // Buscar el mensaje original - intentar búsqueda exacta y parcial
-  let message = await Message.findByPk(messageId, {
-    include: [
-      {
-        model: Ticket,
-        as: "ticket",
-        include: [
-          {
-            model: Contact,
-            as: "contact",
-            attributes: ["id", "name", "number", "profilePicUrl"]
-          }
-        ]
-      }
-    ]
-  });
+  // Busqueda tolerante a formatos de ID
+  const tryFindMessage = async (id: string) =>
+    Message.findByPk(id, { include: messageInclude });
 
-  // Si no se encuentra, buscar por coincidencia parcial (el ID puede tener diferentes formatos)
-  if (!message) {
-    message = await Message.findOne({
-      where: {
-        id: {
-          [Op.like]: `%${messageId}%`
-        }
-      },
-      include: [
-        {
-          model: Ticket,
-          as: "ticket",
-          include: [
-            {
-              model: Contact,
-              as: "contact",
-              attributes: ["id", "name", "number", "profilePicUrl"]
-            }
-          ]
-        }
-      ]
+  const tryFindMessageLike = async (id: string) =>
+    Message.findOne({
+      where: { id: { [Op.like]: `%${id}%` } },
+      include: messageInclude
     });
+
+  const idCandidates = buildIdCandidates(messageId);
+  let message: Message | null = null;
+
+  // Intento exacto con cada candidato
+  // eslint-disable-next-line no-restricted-syntax
+  for (const candidate of idCandidates) {
+    // eslint-disable-next-line no-await-in-loop
+    const found = await tryFindMessage(candidate);
+    if (found) {
+      message = found;
+      break;
+    }
   }
 
-  // También intentar buscar si messageId contiene el ID del mensaje
-  if (!message && messageId.includes("_")) {
-    const possibleId = messageId.split("_").pop();
-    if (possibleId) {
-      message = await Message.findOne({
-        where: {
-          id: {
-            [Op.like]: `%${possibleId}%`
-          }
-        },
-        include: [
-          {
-            model: Ticket,
-            as: "ticket",
-            include: [
-              {
-                model: Contact,
-                as: "contact",
-                attributes: ["id", "name", "number", "profilePicUrl"]
-              }
-            ]
-          }
-        ]
-      });
+  // Si no se encuentra, probar con coincidencia parcial
+  if (!message) {
+    // eslint-disable-next-line no-restricted-syntax
+    for (const candidate of idCandidates) {
+      // eslint-disable-next-line no-await-in-loop
+      const found = await tryFindMessageLike(candidate);
+      if (found) {
+        message = found;
+        break;
+      }
     }
   }
 
@@ -102,13 +92,13 @@ const HandleMessageReactionService = async ({
   }
 
   logger.info(
-    `[Reaction] Mensaje encontrado: ${message.id} para reacción de ${messageId}`
+    `[Reaction] Mensaje encontrado: ${message.id} para reaccion de ${messageId}`
   );
 
   const io = getIO();
   const actualMessageId = message.id; // Usar el ID real del mensaje encontrado
 
-  // Si el emoji está vacío, significa que se quitó la reacción
+  // Si el emoji esta vacio, significa que se quito la reaccion
   if (!emoji) {
     const deleted = await MessageReaction.destroy({
       where: {
@@ -119,10 +109,10 @@ const HandleMessageReactionService = async ({
 
     if (deleted > 0) {
       logger.info(
-        `[Reaction] Reacción eliminada del mensaje ${actualMessageId}`
+        `[Reaction] Reaccion eliminada del mensaje ${actualMessageId}`
       );
 
-      // Emitir evento de reacción eliminada
+      // Emitir evento de reaccion eliminada
       io.to(message.ticketId.toString())
         .to(message.ticket.status)
         .emit("appMessage", {
@@ -136,7 +126,7 @@ const HandleMessageReactionService = async ({
     return null;
   }
 
-  // Buscar si ya existe una reacción de este usuario para este mensaje
+  // Buscar si ya existe una reaccion de este usuario para este mensaje
   const existingReaction = await MessageReaction.findOne({
     where: {
       messageId: actualMessageId,
@@ -147,17 +137,17 @@ const HandleMessageReactionService = async ({
   let reaction: MessageReaction;
 
   if (existingReaction) {
-    // Actualizar la reacción existente
+    // Actualizar la reaccion existente
     await existingReaction.update({
       emoji,
       senderName: senderName || existingReaction.senderName
     });
     reaction = existingReaction;
     logger.info(
-      `[Reaction] Reacción actualizada: ${emoji} en mensaje ${actualMessageId}`
+      `[Reaction] Reaccion actualizada: ${emoji} en mensaje ${actualMessageId}`
     );
   } else {
-    // Crear nueva reacción
+    // Crear nueva reaccion
     reaction = await MessageReaction.create({
       messageId: actualMessageId,
       emoji,
@@ -166,11 +156,11 @@ const HandleMessageReactionService = async ({
       fromMe
     });
     logger.info(
-      `[Reaction] Nueva reacción: ${emoji} en mensaje ${actualMessageId}`
+      `[Reaction] Nueva reaccion: ${emoji} en mensaje ${actualMessageId}`
     );
   }
 
-  // Emitir evento de nueva reacción o actualización
+  // Emitir evento de nueva reaccion o actualizacion
   io.to(message.ticketId.toString())
     .to(message.ticket.status)
     .to("notification")

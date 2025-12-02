@@ -107,6 +107,9 @@ const remove = async (req: Request, res: Response): Promise<Response> => {
       qrcode: ""
     });
     logger.info("[WhatsAppSession] Estado actualizado en BD");
+    // Emitir evento por WebSocket para actualizar el frontend
+    const io = require("../libs/socket").getIO();
+    io.emit("whatsappSession", { action: "update", session: whatsapp });
   } catch (updateError) {
     logger.error(`[WhatsAppSession] Error actualizando BD: ${updateError}`);
   }

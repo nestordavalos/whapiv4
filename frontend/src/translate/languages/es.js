@@ -88,7 +88,7 @@ const messages = {
           disconnect: "desconectar",
           tryAgain: "Intentar de nuevo",
           qrcode: "CÓDIGO QR",
-          newQr: "Nuevo CÓDIGO QR",
+          newQr: "CÓDIGO QR",
           connecting: "Conectando",
           restart: "Reiniciar",
           edit: "Editar",

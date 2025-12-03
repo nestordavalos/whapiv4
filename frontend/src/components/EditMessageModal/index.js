@@ -130,7 +130,7 @@ const EditMessageModal = ({ open, onClose, message }) => {
         <TextField
           autoFocus
           multiline
-          rows={4}
+          minRows={4}
           variant="outlined"
           fullWidth
           value={newBody}

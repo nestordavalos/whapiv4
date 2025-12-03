@@ -323,7 +323,7 @@ const QueueIntegrationModal = ({ open, onClose, integrationId, reload }) => {
                       margin="dense"
                       fullWidth
                       multiline
-                      rows={2}
+                      minRows={2}
                       className={classes.textField}
                     />
                   </Grid>
@@ -338,7 +338,7 @@ const QueueIntegrationModal = ({ open, onClose, integrationId, reload }) => {
                       margin="dense"
                       fullWidth
                       multiline
-                      rows={2}
+                      minRows={2}
                       className={classes.textField}
                     />
                   </Grid>

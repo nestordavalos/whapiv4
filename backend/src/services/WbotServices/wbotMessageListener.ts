@@ -811,6 +811,7 @@ const handleMessage = async (
       isSync &&
       isAlreadyRead &&
       process.env.SYNC_CREATE_CLOSED_FOR_READ !== "false";
+    const skipAutomations = isSync && isAlreadyRead;
 
     // console.log("OUTRO TESTE " + unreadMessages)
     const ticket = await FindOrCreateTicketService(
@@ -973,6 +974,7 @@ const handleMessage = async (
     const hasQueueSelected = Boolean(ticket.queueId);
 
     if (
+      !skipAutomations &&
       !hasQueueSelected &&
       !ticket.useIntegration &&
       !chat.isGroup &&
@@ -1006,6 +1008,7 @@ const handleMessage = async (
     // Handle integration with Typebot, n8n or webhooks
     // Check if ticket already has an active integration
     if (
+      !skipAutomations &&
       !msg.fromMe &&
       !chat.isGroup &&
       ticket.useIntegration &&
@@ -1027,6 +1030,7 @@ const handleMessage = async (
     // Handle "#" to go back to main menu
     // Allow returning to menu when ticket has queue but agent hasn't responded yet
     if (
+      !skipAutomations &&
       msg.body === "#" &&
       !msg.fromMe &&
       !chat.isGroup &&
@@ -1056,7 +1060,12 @@ const handleMessage = async (
     }
 
     // Only run internal chatbot if there's no active typebot integration
-    if (ticket.queue && ticket.queueId && !ticket.useIntegration) {
+    if (
+      !skipAutomations &&
+      ticket.queue &&
+      ticket.queueId &&
+      !ticket.useIntegration
+    ) {
       if (!ticket.user) {
         await sayChatbot(ticket.queueId, wbot, ticket, contact, msg);
       }

@@ -182,27 +182,30 @@ const useStyles = makeStyles(theme => ({
 	connectionActions: {
 		display: "flex",
 		gap: theme.spacing(1),
-		flexWrap: "wrap",
 		alignItems: "center",
 		justifyContent: "space-between",
 		marginTop: theme.spacing(1),
+		flexWrap: "nowrap",
 	},
 	actionButtons: {
 		display: "flex",
 		gap: theme.spacing(1),
 		flex: 1,
+		minWidth: 0,
 	},
 	actionButton: {
-		minWidth: "auto",
+		minWidth: 0,
 		padding: "6px 12px",
 		textTransform: "none",
 		fontSize: "0.75rem",
 		borderRadius: 8,
-		flex: 1,
+		flex: "1 1 0",
+		whiteSpace: "nowrap",
 	},
 	iconButtons: {
 		display: "flex",
 		gap: theme.spacing(0.5),
+		flexShrink: 0,
 	},
 	iconButton: {
 		padding: 6,

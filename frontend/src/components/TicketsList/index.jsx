@@ -1,9 +1,18 @@
-import React, { useState, useEffect, useReducer, useContext } from "react";
+import React, {
+	useState,
+	useEffect,
+	useReducer,
+	useContext,
+	useRef,
+	useLayoutEffect,
+	useCallback,
+} from "react";
 import openSocket from "../../services/socket-io";
 
 import makeStyles from '@mui/styles/makeStyles';
-import List from "@mui/material/List";
 import Paper from "@mui/material/Paper";
+import List from "@mui/material/List";
+import { VariableSizeList as VirtualList } from "react-window";
 
 import TicketListItem from "../TicketListItem";
 import TicketsListSkeleton from "../TicketsListSkeleton";
@@ -179,7 +188,35 @@ const TicketsList = (props) => {
 	const [ticketsList, dispatch] = useReducer(reducer, []);
 	const { user } = useContext(AuthContext);
 	const { profile, queues } = user;
+	const listRef = useRef(null);
+	const wrapperRef = useRef(null);
+	const itemSizeMap = useRef({});
+	const [listHeight, setListHeight] = useState(0);
 
+	const getItemSize = useCallback((index) => {
+		return itemSizeMap.current[index] || 148;
+	}, []);
+
+	const setItemSize = useCallback((index, size) => {
+		if (itemSizeMap.current[index] !== size) {
+			itemSizeMap.current[index] = size;
+			// resetAfterIndex fuerza a recalcular alturas siguientes
+			listRef.current?.resetAfterIndex(index);
+		}
+	}, []);
+
+	useLayoutEffect(() => {
+		const node = wrapperRef.current;
+		if (!node) return;
+		const updateHeight = () => {
+			const measured = node.clientHeight || node.parentElement?.clientHeight || 0;
+			setListHeight(measured > 0 ? measured : 480);
+		};
+		updateHeight();
+		const resizeObserver = new ResizeObserver(updateHeight);
+		resizeObserver.observe(node);
+		return () => resizeObserver.disconnect();
+	}, []);
 
 	useEffect(() => {
 		dispatch({ type: "RESET" });
@@ -208,14 +245,16 @@ const TicketsList = (props) => {
 	useEffect(() => {
 
 		const queueIds = queues.map((q) => q.id);
-		const filteredTickets = tickets.filter((t) => queueIds.indexOf(t.queueId) > -1);
-		const allticket = user.allTicket === 'enabled';
+		const filteredTickets = tickets.filter((t) => queueIds.indexOf(t.queueId) > -1 || t.queueId === null || typeof t.queueId === "undefined");
+		const allticket = user.allTicket === "enabled";
+		const isAdmin = (profile || "").toUpperCase() === "ADMIN";
+		const shouldShowAll = showAll || isAdmin || allticket;
 
 
 
 
 		// Função para identificação liberação da settings 
-		if ((profile || "").toUpperCase() === "ADMIN" || allticket) {
+		if (shouldShowAll) {
 			dispatch({ type: "LOAD_TICKETS", payload: tickets });
 		} else {
 			dispatch({ type: "LOAD_TICKETS", payload: filteredTickets });
@@ -224,7 +263,7 @@ const TicketsList = (props) => {
 
 
 
-	}, [tickets, status, searchParam, queues, profile, user.allTicket]);
+	}, [tickets, status, searchParam, queues, profile, user.allTicket, showAll]);
 
         useEffect(() => {
                 const socket = openSocket();
@@ -355,49 +394,120 @@ const TicketsList = (props) => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ticketsList]);
 
+	// Reiniciar cache de alturas cuando cambian filtros relevantes
+	useEffect(() => {
+		itemSizeMap.current = {};
+		listRef.current?.resetAfterIndex(0, true);
+	}, [status, searchParam, showAll, selectedQueueIds, selectedTagIds, selectedWhatsappIds, selectedUserIds, tags]);
+
 	const loadMore = () => {
 		setPageNumber((prevState) => prevState + 1);
 	};
 
-	const handleScroll = (e) => {
-		if (!hasMore || loading) return;
+	const handleItemsRendered = useCallback(
+		({ visibleStopIndex }) => {
+			if (!hasMore || loading) return;
+			if (visibleStopIndex >= ticketsList.length - 5) {
+				loadMore();
+			}
+		},
+		[hasMore, loading, ticketsList.length]
+	);
 
-		const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+	const Row = ({ index, style, data }) => {
+		const { ticketsList: list, handleChangeTab: onChangeTab, setItemSize: setSize } = data;
+		const ticket = list[index];
+		const rowRef = useRef(null);
 
-		if (scrollHeight - (scrollTop + 100) < clientHeight) {
-			loadMore();
-		}
+		useLayoutEffect(() => {
+			const node = rowRef.current;
+			if (!node) return;
+
+			const measure = () => {
+				const size = node.getBoundingClientRect().height;
+				if (size) setSize(index, size);
+			};
+
+			measure();
+
+			if (typeof ResizeObserver !== "undefined") {
+				const resizeObserver = new ResizeObserver(measure);
+				resizeObserver.observe(node);
+				return () => resizeObserver.disconnect();
+			}
+		}, [index, setSize, ticket]);
+
+		return (
+			<div style={style}>
+				<div ref={rowRef}>
+					<TicketListItem handleChangeTab={onChangeTab} ticket={ticket} key={ticket.id} />
+				</div>
+			</div>
+		);
 	};
 
-	return (
-		<Paper className={classes.ticketsListWrapper} style={style}>
-			<Paper
-				square
-				name="closed"
-				elevation={0}
+	const InnerElement = React.forwardRef(function TicketsListInner(innerProps, innerRef) {
+		const { style, ...rest } = innerProps;
+		return (
+			<List
+				ref={innerRef}
+				disablePadding
+				style={style}
+				{...rest}
+			/>
+		);
+	});
+
+	const OuterElement = React.forwardRef(function TicketsListOuter(outerProps, outerRef) {
+		const { style, ...rest } = outerProps;
+		return (
+			<div
+				ref={outerRef}
+				{...rest}
 				className={classes.ticketsList}
-				onScroll={handleScroll}
-			>
-				<List style={{ paddingTop: 0 }}>
-					{ticketsList.length === 0 && !loading ? (
-						<div className={classes.noTicketsDiv}>
-							<span className={classes.noTicketsTitle}>
-								{i18n.t("ticketsList.noTicketsTitle")}
-							</span>
-							<p className={classes.noTicketsText}>
-								{i18n.t("ticketsList.noTicketsMessage")}
-							</p>
-						</div>
-					) : (
-						<>
-							{ticketsList.map((ticket) => (
-								<TicketListItem handleChangeTab={handleChangeTab} ticket={ticket} key={ticket.id} />
-							))}
-						</>
-					)}
-					{loading && <TicketsListSkeleton />}
-				</List>
-			</Paper>
+				style={{ ...style }}
+			/>
+		);
+	});
+
+	return (
+		<Paper className={classes.ticketsListWrapper} style={style} ref={wrapperRef}>
+			{ticketsList.length === 0 && !loading ? (
+				<div className={classes.noTicketsDiv}>
+					<span className={classes.noTicketsTitle}>
+						{i18n.t("ticketsList.noTicketsTitle")}
+					</span>
+					<p className={classes.noTicketsText}>
+						{i18n.t("ticketsList.noTicketsMessage")}
+					</p>
+				</div>
+			) : (
+				listHeight > 0 && (
+					<VirtualList
+						height={listHeight}
+						width="100%"
+						itemCount={ticketsList.length}
+						itemSize={getItemSize}
+						itemData={{
+							ticketsList,
+							handleChangeTab,
+							setItemSize,
+						}}
+						itemKey={(index) => ticketsList[index]?.id ?? index}
+						onItemsRendered={handleItemsRendered}
+						ref={listRef}
+						outerElementType={OuterElement}
+						innerElementType={InnerElement}
+					>
+						{Row}
+					</VirtualList>
+				)
+			)}
+			{loading && (
+				<div style={{ position: "absolute", inset: 0, pointerEvents: "none", display: "flex", alignItems: "flex-end" }}>
+					<TicketsListSkeleton />
+				</div>
+			)}
 		</Paper>
 	);
 };

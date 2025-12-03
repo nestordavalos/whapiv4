@@ -257,7 +257,7 @@ const useStyles = makeStyles(theme => ({
 		padding: 4,
 		borderRadius: 8,
 	},
-	timeWrapper: {
+	timeAndBadge: {
 		display: "flex",
 		flexDirection: "column",
 		alignItems: "flex-end",
@@ -674,7 +674,7 @@ return (
                         >
                             {ticket.contact?.name}
                         </Typography>
-                        <div className={classes.timeWrapper}>
+                        <div className={classes.timeAndBadge}>
                             <div className={classes.timeRow}>
                                 {lastMessageTime && (
                                     <Typography component="span" className={classes.messageTime}>

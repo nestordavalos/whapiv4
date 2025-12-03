@@ -139,7 +139,6 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
   const [activeStep, setActiveStep] = React.useState(null);
   const [selectedQueue, setSelectedQueue] = useState(null);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
-  const [isStepContent, setIsStepContent] = React.useState(true);
   const [isNameEdit, setIsNamedEdit] = React.useState(null);
   const [isGreetingMessageEdit, setGreetingMessageEdit] = React.useState(null);
 
@@ -184,12 +183,6 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
   useEffect(() => {
     console.log(activeStep);
     console.log(isNameEdit);
-
-    if (activeStep === isNameEdit) {
-      setIsStepContent(false);
-    } else {
-      setIsStepContent(true);
-    }
   }, [isNameEdit, activeStep]);
 
   const handleClose = () => {
@@ -506,8 +499,8 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
                                       <IconButton
                                         size="small"
                                         onClick={() => {
+                                          setActiveStep(index);
                                           setIsNamedEdit(index);
-                                          setIsStepContent(false);
                                         }}
                                       >
                                         <EditIcon />
@@ -572,7 +565,7 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
                                   )}
                                 </StepLabel>
 
-                                {isStepContent && queue.chatbots[index] && (
+                                {activeStep === index && queue.chatbots[index] && (
                                   <StepContent>
                                     <>
                                       {isGreetingMessageEdit !== index ? (

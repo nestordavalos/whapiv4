@@ -179,6 +179,8 @@ const useStyles = makeStyles(theme => ({
     fontWeight: 500,
     fontSize: "0.9rem",
     minHeight: 48,
+    minWidth: 0,
+    padding: "8px 12px",
     "&.Mui-selected": {
       color: theme.palette.primary.main,
       fontWeight: 600,
@@ -186,7 +188,7 @@ const useStyles = makeStyles(theme => ({
     [theme.breakpoints.down("xs")]: {
       fontSize: "0.8rem",
       minHeight: 42,
-      padding: "6px 12px",
+      padding: "6px 10px",
     },
   },
 

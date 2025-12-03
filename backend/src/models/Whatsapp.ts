@@ -38,6 +38,10 @@ class Whatsapp extends Model<Whatsapp> {
   @Column
   status: string;
 
+  @AllowNull(true)
+  @Column(DataType.TEXT)
+  type: string;
+
   @Column
   number: string;
 

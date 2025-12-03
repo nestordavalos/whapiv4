@@ -67,6 +67,29 @@ const messages = {
           }
         }
       },
+      integrations: {
+        success: "Integraci\u00f3n guardada con \u00e9xito.",
+        title: "Integraciones",
+        integrations: {
+          openai: {
+            title: "OpenAI",
+            organization: "ID de Organizaci\u00f3n",
+            apikey: "KEY"
+          },
+          n8n: {
+            title: "N8N",
+            urlApiN8N: "URL API N8N"
+          },
+          hub: {
+            title: "Notificame Hub",
+            hubToken: "Token"
+          },
+          maps: {
+            title: "Api Google Maps",
+            apiMaps: "Api Key"
+          }
+        },
+      },
       connections: {
         title: "Conexiones",
         toasts: {
@@ -167,6 +190,14 @@ const messages = {
           checkHourExpedient: "Consultar Horario de Oficina",
           group: "Recibir Mensaje de Grupo",
           archiveOnClose: "Archivar chat",
+          enableHubChannels: "Activar canales (Notificame Hub)",
+          hubChannelTitle: "Selecciona un canal de Notificame",
+          hubChannelPlaceholder: "Selecciona un canal",
+          hubChannelHelper: "Crea tu cuenta en Notificame, adquiere el canal y coloca el token en Integraciones para habilitarlo aqu\u00ed.",
+          hubSignup: "Ir a Notificame",
+          copy: "Copiar",
+          copied: "Copiado",
+          hubChannelRequired: "Selecciona un canal para continuar.",
           queues: "Colas",
           queuesDescription: "Selecciona las colas a las que se asignarán los tickets de esta conexión.",
           // Webhook configuration

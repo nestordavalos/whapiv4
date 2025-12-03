@@ -37,6 +37,7 @@ import DeleteIcon from "@material-ui/icons/Delete";
 import AddIcon from "@material-ui/icons/Add";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import ExpandLessIcon from "@material-ui/icons/ExpandLess";
+import { InfoOutlined } from "@material-ui/icons";
 
 import api from "../../services/api";
 import { i18n } from "../../translate/i18n";
@@ -293,6 +294,26 @@ const useStyles = makeStyles(theme => ({
       ? "rgba(33, 150, 243, 0.3)" 
       : "rgba(33, 150, 243, 0.2)"}`,
   },
+  integrationBox: {
+    display: "flex",
+    flexDirection: "column",
+    gap: theme.spacing(1.5),
+    marginTop: theme.spacing(2),
+    padding: theme.spacing(2),
+    borderRadius: 12,
+    border: `1px solid ${theme.palette.divider}`,
+    backgroundColor:
+      theme.palette.type === "dark"
+        ? "rgba(255,255,255,0.03)"
+        : "rgba(0,0,0,0.02)"
+  },
+  integrationHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: theme.spacing(1),
+    color: theme.palette.primary.main,
+    fontWeight: 600
+  },
 }));
 
 const SessionSchema = Yup.object().shape({
@@ -347,6 +368,9 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   const [selectedQueueIds, setSelectedQueueIds] = useState([]);
   const [webhooks, setWebhooks] = useState([]);
   const [expandedWebhook, setExpandedWebhook] = useState(null);
+  const [isHubSelected, setIsHubSelected] = useState(false);
+  const [availableChannels, setAvailableChannels] = useState([]);
+  const [selectedChannel, setSelectedChannel] = useState("");
 
   const [defineWorkHours, SetDefineWorkHours] = useState("");
   const [outOfWorkMessage, setOutOfWorkMessage] = useState("");
@@ -405,6 +429,11 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
       try {
         const { data } = await api.get(`whatsapp/${whatsAppId}`);
         setWhatsApp(data);
+        setIsHubSelected(!!data.type);
+        if (data.type) {
+          setSelectedChannel(data.qrcode || "");
+          fetchChannels();
+        }
 
         setSeg(data.monday);
         setTer(data.tuesday);
@@ -518,6 +547,15 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     }));
   };
 
+  const fetchChannels = async () => {
+    try {
+      const { data } = await api.get("/hub-channel/");
+      setAvailableChannels(data);
+    } catch (err) {
+      toastError(err);
+    }
+  };
+
 
 
 
@@ -601,10 +639,29 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     };
 
     try {
-      if (whatsAppId) {
-        await api.put(`/whatsapp/${whatsAppId}`, whatsappData);
+      if (isHubSelected) {
+        if (!selectedChannel) {
+          toast.error(i18n.t("whatsappModal.form.hubChannelRequired"));
+          return;
+        }
+        const selectedChannelObj = availableChannels.find(
+          channel => String(channel.id) === String(selectedChannel)
+        );
+        if (selectedChannelObj) {
+          await api.post("/hub-channel/", {
+            ...whatsappData,
+            channels: [selectedChannelObj]
+          });
+          setTimeout(() => {
+            window.location.reload();
+          }, 200);
+        }
       } else {
-        await api.post("/whatsapp", whatsappData);
+        if (whatsAppId) {
+          await api.put(`/whatsapp/${whatsAppId}`, whatsappData);
+        } else {
+          await api.post("/whatsapp", whatsappData);
+        }
       }
       toast.success(i18n.t("whatsappModal.success"));
       handleClose();
@@ -616,6 +673,9 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   const handleClose = () => {
     onClose();
     setWhatsApp(initialState);
+    setIsHubSelected(false);
+    setAvailableChannels([]);
+    setSelectedChannel("");
 
     setStartDefineWorkHoursMonday();
     setEndDefineWorkHoursMonday();
@@ -762,111 +822,158 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     helperText={touched.name && errors.name}
                     variant="outlined"
                     margin="dense"
-                    fullWidth
-                    className={classes.textField}
-                    style={{ marginBottom: 16 }}
+                  fullWidth
+                  className={classes.textField}
+                  style={{ marginBottom: 16 }}
+                />
+                <div className={classes.multFieldLine} style={{ padding: '12px 16px' }}>
+                  <FormControlLabel
+                    control={
+                      <Field
+                        as={Switch}
+                        color="primary"
+                        name="isDefault"
+                        checked={values.isDefault}
+                        disabled={isHubSelected}
+                      />
+                    }
+                    label={i18n.t("whatsappModal.form.default")}
                   />
-                  <div className={classes.multFieldLine} style={{ padding: '12px 16px' }}>
-                    <FormControlLabel
-                      control={
+                  <FormControlLabel
+                    control={
+                      <Field
+                        as={Switch}
+                        color="primary"
+                        name="isDisplay"
+                        checked={values.isDisplay}
+                        disabled={isHubSelected}
+                      />
+                    }
+                    label={i18n.t("whatsappModal.form.display")}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Field
+                        as={Switch}
+                        color="primary"
+                        name="isGroup"
+                        checked={values.isGroup}
+                        disabled={isHubSelected}
+                      />
+                    }
+                    label={i18n.t("whatsappModal.form.group")}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Field
+                        as={Switch}
+                        color="primary"
+                        name="archiveOnClose"
+                        checked={values.archiveOnClose}
+                        disabled={isHubSelected}
+                      />
+                    }
+                    label={i18n.t("whatsappModal.form.archiveOnClose")}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        color="primary"
+                        checked={isHubSelected}
+                        onChange={() => {
+                          const next = !isHubSelected;
+                          setIsHubSelected(next);
+                          if (next) {
+                            fetchChannels();
+                          }
+                        }}
+                      />
+                    }
+                    label={i18n.t("whatsappModal.form.enableHubChannels")}
+                  />
+                </div>
+                  {isHubSelected ? (
+                    <Box className={classes.integrationBox}>
+                      <Typography className={classes.integrationHeader}>
+                        <InfoOutlined fontSize="small" />
+                        {i18n.t("whatsappModal.form.hubChannelTitle")}
+                      </Typography>
+                      <Select
+                        fullWidth
+                        value={selectedChannel || ""}
+                        onChange={e => setSelectedChannel(String(e.target.value))}
+                        displayEmpty
+                        variant="outlined"
+                      >
+                        <MenuItem value="" disabled>
+                          {i18n.t("whatsappModal.form.hubChannelPlaceholder")}
+                        </MenuItem>
+                        {availableChannels.map(channel => (
+                          <MenuItem key={channel.id} value={String(channel.id)}>
+                            {channel.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </Box>
+                  ) : (
+                    <>
+                      <div className={classes.messageField} style={{ marginTop: 16 }}>
                         <Field
-                          as={Switch}
-                          color="primary"
-                          name="isDefault"
-                          checked={values.isDefault}
+                          as={TextField}
+                          label={i18n.t("queueModal.form.greetingMessage")}
+                          type="greetingMessage"
+                          multiline
+                          minRows={4}
+                          fullWidth
+                          name="greetingMessage"
+                          error={
+                            touched.greetingMessage && Boolean(errors.greetingMessage)
+                          }
+                          helperText={
+                            touched.greetingMessage && errors.greetingMessage
+                          }
+                          variant="outlined"
+                          margin="dense"
                         />
-                      }
-                      label={i18n.t("whatsappModal.form.default")}
-                    />
-                    <FormControlLabel
-                      control={
+                      </div>
+                      <div className={classes.messageField}>
                         <Field
-                          as={Switch}
-                          color="primary"
-                          name="isDisplay"
-                          checked={values.isDisplay}
+                          as={TextField}
+                          label={i18n.t("whatsappModal.form.farewellMessage")}
+                          type="farewellMessage"
+                          multiline
+                          minRows={4}
+                          fullWidth
+                          name="farewellMessage"
+                          error={
+                            touched.farewellMessage && Boolean(errors.farewellMessage)
+                          }
+                          helperText={
+                            touched.farewellMessage && errors.farewellMessage
+                          }
+                          variant="outlined"
+                          margin="dense"
                         />
-                      }
-                      label={i18n.t("whatsappModal.form.display")}
-                    />
-                    <FormControlLabel
-                      control={
+                      </div>
+                      <div className={classes.messageField}>
                         <Field
-                          as={Switch}
-                          color="primary"
-                          name="isGroup"
-                          checked={values.isGroup}
+                          as={TextField}
+                          label={i18n.t("whatsappModal.form.ratingMessage")}
+                          type="ratingMessage"
+                          multiline
+                          minRows={4}
+                          fullWidth
+                          name="ratingMessage"
+                          helperText={i18n.t("whatsappModal.form.instructionRatingMessage")}
+                          error={
+                            touched.instructionRatingMessage && Boolean(errors.instructionRatingMessage)
+                          }
+                          variant="outlined"
+                          margin="dense"
                         />
-                      }
-                      label={i18n.t("whatsappModal.form.group")}
-                    />
-                    <FormControlLabel
-                      control={
-                        <Field
-                          as={Switch}
-                          color="primary"
-                          name="archiveOnClose"
-                          checked={values.archiveOnClose}
-                        />
-                      }
-                      label={i18n.t("whatsappModal.form.archiveOnClose")}
-                    />
-                  </div>
-                  <div className={classes.messageField} style={{ marginTop: 16 }}>
-                    <Field
-                      as={TextField}
-                      label={i18n.t("queueModal.form.greetingMessage")}
-                      type="greetingMessage"
-                      multiline
-                      minRows={4}
-                      fullWidth
-                      name="greetingMessage"
-                      error={
-                        touched.greetingMessage && Boolean(errors.greetingMessage)
-                      }
-                      helperText={
-                        touched.greetingMessage && errors.greetingMessage
-                      }
-                      variant="outlined"
-                      margin="dense"
-                    />
-                  </div>
-                  <div className={classes.messageField}>
-                    <Field
-                      as={TextField}
-                      label={i18n.t("whatsappModal.form.farewellMessage")}
-                      type="farewellMessage"
-                      multiline
-                      minRows={4}
-                      fullWidth
-                      name="farewellMessage"
-                      error={
-                        touched.farewellMessage && Boolean(errors.farewellMessage)
-                      }
-                      helperText={
-                        touched.farewellMessage && errors.farewellMessage
-                      }
-                      variant="outlined"
-                      margin="dense"
-                    />
-                  </div>
-                  <div className={classes.messageField}>
-                    <Field
-                      as={TextField}
-                      label={i18n.t("whatsappModal.form.ratingMessage")}
-                      type="ratingMessage"
-                      multiline
-                      minRows={4}
-                      fullWidth
-                      name="ratingMessage"
-                      helperText={i18n.t("whatsappModal.form.instructionRatingMessage")}
-                      error={
-                        touched.instructionRatingMessage && Boolean(errors.instructionRatingMessage)
-                      }
-                      variant="outlined"
-                      margin="dense"
-                    />
-                  </div>
+                      </div>
+                    </>
+                  )}
                 </TabPanel>
 
                 {/* Tab 1: Mensajes de Inactividad */}

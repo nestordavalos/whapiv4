@@ -27,15 +27,20 @@ class Contact extends Model<Contact> {
   @Column
   name: string;
 
-  @AllowNull(false)
+  @AllowNull(true)
   @Unique
   @Column
   number: string;
 
-  @AllowNull(false)
+  @AllowNull(true)
   @Default("")
   @Column
   email: string;
+
+  @AllowNull(true)
+  @Default("")
+  @Column
+  address: string;
 
   @Column
   profilePicUrl: string;
@@ -61,6 +66,18 @@ class Contact extends Model<Contact> {
 
   @BelongsToMany(() => Tag, () => ContactTag)
   tags: Tag[];
+
+  @Column
+  messengerId: string;
+
+  @Column
+  instagramId: string;
+
+  @Column
+  telegramId: string;
+
+  @Column
+  webchatId: string;
 }
 
 export default Contact;

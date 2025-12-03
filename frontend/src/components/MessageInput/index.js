@@ -277,10 +277,24 @@ const MessageInput = ({ ticketStatus }) => {
   const { setReplyingMessage, replyingMessage } = useContext(ReplyMessageContext);
   const { user } = useContext(AuthContext);
   const [signMessage, setSignMessage] = useLocalStorage("signOption", true);
+  const [channelType, setChannelType] = useState(null);
 
   useEffect(() => {
     inputRef.current.focus();
   }, [replyingMessage]);
+
+  useEffect(() => {
+    const fetchChannelType = async () => {
+      try {
+        const { data } = await api.get(`/tickets/${ticketId}`);
+        setChannelType(data?.whatsapp?.type || null);
+      } catch (err) {
+        toastError(err);
+      }
+    };
+
+    fetchChannelType();
+  }, [ticketId]);
 
   useEffect(() => {
     inputRef.current.focus();
@@ -372,7 +386,8 @@ const MessageInput = ({ ticketStatus }) => {
       formData.append("quotedMsg", JSON.stringify(replyingMessage));
     }
     try {
-      await api.post(`/messages/${ticketId}`, formData);
+      const endpoint = channelType ? `/hub-message/${ticketId}` : `/messages/${ticketId}`;
+      await api.post(endpoint, formData);
     } catch (err) {
       toastError(err);
     }
@@ -396,7 +411,8 @@ const MessageInput = ({ ticketStatus }) => {
       quotedMsg: replyingMessage,
     };
     try {
-      await api.post(`/messages/${ticketId}`, message);
+      const endpoint = channelType ? `/hub-message/${ticketId}` : `/messages/${ticketId}`;
+      await api.post(endpoint, message);
     } catch (err) {
       toastError(err);
     }
@@ -455,7 +471,8 @@ const MessageInput = ({ ticketStatus }) => {
       formData.append("body", filename);
       formData.append("fromMe", true);
 
-      await api.post(`/messages/${ticketId}`, formData);
+      const endpoint = channelType ? `/hub-message/${ticketId}` : `/messages/${ticketId}`;
+      await api.post(endpoint, formData);
     } catch (err) {
       toastError(err);
     }

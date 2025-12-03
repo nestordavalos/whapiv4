@@ -67,6 +67,29 @@ const messages = {
           }
         }
       },
+      integrations: {
+        success: "Integra\u00e7\u00e3o salva com sucesso.",
+        title: "Integra\u00e7\u00f5es",
+        integrations: {
+          openai: {
+            title: "OpenAI",
+            organization: "ID da Organiza\u00e7\u00e3o",
+            apikey: "API Key"
+          },
+          n8n: {
+            title: "N8N",
+            urlApiN8N: "URL da API do N8N"
+          },
+          hub: {
+            title: "Notificame Hub",
+            hubToken: "Token"
+          },
+          maps: {
+            title: "API do Google Maps",
+            apiMaps: "API Key"
+          }
+        },
+      },
       connections: {
         title: "Conexões",
         toasts: {
@@ -148,6 +171,14 @@ const messages = {
           token: "Token",
           checkHourExpedient: "Checar Horário de Expediente",
           archiveOnClose: "Arquivar chat ao fechar ticket",
+          enableHubChannels: "Ativar canais (Notificame Hub)",
+          hubChannelTitle: "Selecione um canal do Notificame",
+          hubChannelPlaceholder: "Selecione um canal",
+          hubChannelHelper: "Crie sua conta no Notificame, adquira o canal e informe o token em Integrações para habilitá-lo aqui.",
+          hubSignup: "Ir para o Notificame",
+          copy: "Copiar",
+          copied: "Copiado",
+          hubChannelRequired: "Selecione um canal para continuar.",
           queues: "Filas",
           queuesDescription: "Selecione as filas às quais os tickets desta conexão serão atribuídos.",
         },
@@ -433,6 +464,7 @@ const messages = {
           quickAnswers: "Respostas Rápidas",
           tags: "Tags",
           queues: "Setores",
+          integrations: "Integrações",
           administration: "Administração",
           users: "Atendentes",
           settings: "Configurações",

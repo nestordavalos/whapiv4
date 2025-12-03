@@ -18,6 +18,10 @@ import dashboardRoutes from "./dashboardRoutes";
 import systemRoutes from "./systemRoutes";
 import queueIntegrationRoutes from "./queueIntegrationRoutes";
 import storageRoutes from "./storageRoutes";
+import integrationRoutes from "./integrationRoutes";
+import hubChannelRoutes from "./hubChannelRoutes";
+import hubMessageRoutes from "./hubMessageRoutes";
+import hubWebhookRoutes from "./hubWebhookRoutes";
 
 const routes = Router();
 
@@ -39,5 +43,9 @@ routes.use(dashboardRoutes);
 routes.use(systemRoutes);
 routes.use(queueIntegrationRoutes);
 routes.use(storageRoutes);
+routes.use(integrationRoutes);
+routes.use(hubChannelRoutes);
+routes.use(hubMessageRoutes);
+routes.use(hubWebhookRoutes);
 
 export default routes;

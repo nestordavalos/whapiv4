@@ -66,6 +66,29 @@ const messages = {
           }
         }
       },
+      integrations: {
+        success: "Integration saved successfully.",
+        title: "Integrations",
+        integrations: {
+          openai: {
+            title: "OpenAI",
+            organization: "Organization ID",
+            apikey: "API Key"
+          },
+          n8n: {
+            title: "N8N",
+            urlApiN8N: "N8N API URL"
+          },
+          hub: {
+            title: "Notificame Hub",
+            hubToken: "Token"
+          },
+          maps: {
+            title: "Google Maps API",
+            apiMaps: "API Key"
+          }
+        },
+      },
       connections: {
         title: "Connections",
         toasts: {
@@ -147,6 +170,14 @@ const messages = {
           token: "Token",
           checkHourExpedient: "Check Office Hours",
           archiveOnClose: "Archive chat on ticket close",
+          enableHubChannels: "Enable channels (Notificame Hub)",
+          hubChannelTitle: "Choose a Notificame channel",
+          hubChannelPlaceholder: "Select a channel",
+          hubChannelHelper: "Create your Notificame account, purchase the channel and paste the token in Integrations to enable it here.",
+          hubSignup: "Go to Notificame",
+          copy: "Copy",
+          copied: "Copied",
+          hubChannelRequired: "Select a channel to continue.",
           queues: "Queues",
           queuesDescription: "Select the queues to which tickets from this connection will be assigned.",
         },
@@ -431,6 +462,7 @@ const messages = {
           quickAnswers: "Quick Answers",
           tags: "Tags",
           queues: "Sectors",
+          integrations: "Integrations",
           administration: "Administration",
           users: "Attendants",
           settings: "Settings",

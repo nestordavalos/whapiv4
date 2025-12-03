@@ -19,6 +19,7 @@ import UserRating from "../models/UserRating";
 import QueueIntegrations from "../models/QueueIntegrations";
 import MessageReaction from "../models/MessageReaction";
 import PendingUpload from "../models/PendingUpload";
+import Integration from "../models/Integration";
 
 // eslint-disable-next-line
 const dbConfig = require("../config/database");
@@ -46,7 +47,8 @@ const models = [
   UserRating,
   TicketTraking,
   QueueIntegrations,
-  PendingUpload
+  PendingUpload,
+  Integration
 ];
 
 sequelize.addModels(models);

@@ -2,7 +2,9 @@ import React from "react";
 
 import TextField from "@mui/material/TextField";
 
-const InputComponent = ({ inputRef, ...other }) => <div {...other} />;
+const InputComponent = React.forwardRef(function InputComponent(props, ref) {
+  return <div ref={ref} {...props} />;
+});
 
 const OutlinedDiv = ({
   InputProps,

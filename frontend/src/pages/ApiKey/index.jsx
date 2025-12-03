@@ -95,7 +95,7 @@ const Settings = () => {
                 <Paper className={classes.paper}>
 					<TextField
 						id="api-token-setting"
-						readonly
+						InputProps={{ readOnly: true }}
 						label="Api Key"
 						margin="dense"
 						variant="outlined"

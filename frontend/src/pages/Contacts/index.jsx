@@ -524,18 +524,18 @@ const Contacts = () => {
               perform="drawer-admin-items:view"
               yes={() => (
                 <>
-                  <Tooltip title={i18n.t("contacts.buttons.export")}>
-                    <CSVLink
-                      className={classes.csvbtn}
-                      separator=";"
-                      filename={'contacts.csv'}
-                      data={
-                        contacts.map((contact) => ({
-                          name: contact.name,
-                          number: contact.number,
-                          email: contact.email
-                        }))
-                      }>
+                  <CSVLink
+                    className={classes.csvbtn}
+                    separator=";"
+                    filename={'contacts.csv'}
+                    data={
+                      contacts.map((contact) => ({
+                        name: contact.name,
+                        number: contact.number,
+                        email: contact.email
+                      }))
+                    }>
+                    <Tooltip title={i18n.t("contacts.buttons.export")}>
                       <Button
                         variant="contained"
                         color="primary"
@@ -543,8 +543,8 @@ const Contacts = () => {
                       >
                         <Archive style={{ fontSize: 20 }} />
                       </Button>
-                    </CSVLink>
-                  </Tooltip>
+                    </Tooltip>
+                  </CSVLink>
 
                   <Tooltip title={i18n.t("contacts.buttons.delete")}>
                     <Button

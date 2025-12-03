@@ -9,7 +9,7 @@ import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
 import FormHelperText from "@mui/material/FormHelperText";
-import { Typography, Avatar, Tab, Tabs } from "@mui/material";
+import { Typography, Avatar, Tab, Tabs, Table, TableHead, TableRow, TableCell, TableBody } from "@mui/material";
 
 import SpeedIcon from "@mui/icons-material/Speed";
 import GroupIcon from "@mui/icons-material/Group";
@@ -30,9 +30,9 @@ import ButtonWithSpinner from "../../components/ButtonWithSpinner";
 import TabPanel from "../../components/TabPanel";
 import { UsersFilter } from "../../components/UsersFilter";
 import QueueSelect from "../../components/QueueSelect";
+import TableAttendantsStatus from "../../components/Dashboard/TableAttendantsStatus";
 
 //import CardCounter from "../../components/Dashboard/CardCounter";
-import TableAttendantsStatus from "../../components/Dashboard/TableAttendantsStatus";
 import { isArray } from "lodash";
 
 import useDashboard from "../../hooks/useDashboard";
@@ -41,6 +41,16 @@ import { isEmpty } from "lodash";
 import moment from "moment";
 
 const useStyles = makeStyles((theme) => ({
+  page: {
+    maxHeight: "calc(100vh - 72px)",
+    overflowY: "auto",
+    paddingBottom: theme.spacing(4),
+    paddingTop: theme.spacing(1),
+    [theme.breakpoints.down('md')]: {
+      maxHeight: "none",
+      overflowY: "visible",
+    },
+  },
   tab: {
     paddingTop: theme.spacing(4),
     display: "flex",
@@ -338,14 +348,47 @@ const useStyles = makeStyles((theme) => ({
   filterContainer: {
     backgroundColor: theme.palette.background.paper,
     borderRadius: 12,
-    padding: theme.spacing(2),
-    marginBottom: theme.spacing(2),
+    padding: theme.spacing(2.5, 2.75),
+    marginBottom: theme.spacing(3),
+    border: `1px solid ${theme.palette.divider}`,
     boxShadow: theme.palette.mode === "dark" 
       ? "0 2px 8px rgba(0,0,0,0.3)" 
       : "0 2px 8px rgba(0,0,0,0.06)",
     [theme.breakpoints.down('md')]: {
-      padding: theme.spacing(1.5),
+      padding: theme.spacing(1.75),
     },
+  },
+  filterGrid: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: theme.spacing(1.5),
+    alignItems: "flex-start",
+  },
+  filterActions: {
+    display: "flex",
+    justifyContent: "flex-end",
+    marginTop: theme.spacing(1.5),
+    width: "100%",
+  },
+  filterControl: {
+    flex: "1 1 240px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    minHeight: 86,
+    height: "100%",
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 12,
+      minHeight: 54,
+    },
+    "& .MuiFormHelperText-root": {
+      marginTop: theme.spacing(0.5),
+    },
+  },
+  queueControl: {
+    paddingTop: 0,
+    alignSelf: "flex-start",
+    marginTop: theme.spacing(-1.7),
   },
   tabsAppBar: {
     borderRadius: 10,
@@ -403,6 +446,44 @@ const useStyles = makeStyles((theme) => ({
         : "rgba(0, 0, 0, 0.02)",
     },
   },
+  tableCard: {
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: 12,
+    padding: theme.spacing(2),
+    boxShadow: theme.palette.mode === "dark"
+      ? "0 2px 8px rgba(0,0,0,0.3)"
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.mode === "dark" ? `1px solid ${theme.palette.divider}` : "none",
+    marginTop: theme.spacing(2),
+  },
+  summaryRow: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+    gap: theme.spacing(1.5),
+    marginBottom: theme.spacing(2),
+  },
+  summaryCard: {
+    borderRadius: 12,
+    padding: theme.spacing(1.75, 2),
+    border: `1px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.background.paper,
+    display: "flex",
+    flexDirection: "column",
+    gap: 2,
+    boxShadow: theme.palette.mode === "dark"
+      ? "0 2px 8px rgba(0,0,0,0.18)"
+      : "0 2px 8px rgba(0,0,0,0.05)",
+  },
+  summaryLabel: {
+    fontSize: "0.8rem",
+    color: theme.palette.text.secondary,
+    fontWeight: 600,
+  },
+  summaryValue: {
+    fontSize: "1.2rem",
+    fontWeight: 700,
+    color: theme.palette.text.primary,
+  },
 }));
 
 const Dashboard = () => {
@@ -410,16 +491,25 @@ const Dashboard = () => {
   const classes = useStyles();
   const [counters, setCounters] = useState({});
   const [attendants, setAttendants] = useState([]);
-  const [filterType, setFilterType] = useState(1);
+  const [filterType, setFilterType] = useState(2);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [selectedQueues, setSelectedQueues] = useState([]);
-  const [period, setPeriod] = useState(0);
+  const [period, setPeriod] = useState(7);
   const [dateFrom, setDateFrom] = useState(
-    moment("1", "D").format("YYYY-MM-DD")
+    moment().subtract(7, "days").format("YYYY-MM-DD")
   );
   const [dateTo, setDateTo] = useState(moment().format("YYYY-MM-DD"));
   const [loading, setLoading] = useState(false);
   const { find } = useDashboard();
+  const totalTickets = (Number(counters.supportPending) || 0) + (Number(counters.supportHappening) || 0) + (Number(counters.supportFinished) || 0);
+  const resolvedRate = totalTickets > 0 ? Math.round((Number(counters.supportFinished) || 0) / totalTickets * 100) : 0;
+  const openRate = totalTickets > 0 ? Math.round((Number(counters.supportPending) || 0) / totalTickets * 100) : 0;
+  const ticketsByAgent = (attendants || []).map((att) => ({
+    name: att.name,
+    tickets: att.tickets || 0,
+    avgWait: formatTime(att.avgWaitTime || 0),
+    online: att.online,
+  }));
   useEffect(() => {
     async function firstLoad() {
       await fetchData();
@@ -457,26 +547,26 @@ const Dashboard = () => {
   async function fetchData() {
     setLoading(true);
 
-    let params = {};
+    let params = { filterType };
 
-    if (period > 0) {
-      params = {
-        days: period,
-      };
+    if (filterType === 2 && period > 0) {
+      params = { days: period };
     }
 
-    if (!isEmpty(dateFrom) && moment(dateFrom).isValid()) {
-      params = {
-        ...params,
-        date_from: moment(dateFrom).format("YYYY-MM-DD"),
-      };
-    }
+    if (filterType === 1) {
+      if (!isEmpty(dateFrom) && moment(dateFrom).isValid()) {
+        params = {
+          ...params,
+          date_from: moment(dateFrom).format("YYYY-MM-DD"),
+        };
+      }
 
-    if (!isEmpty(dateTo) && moment(dateTo).isValid()) {
-      params = {
-        ...params,
-        date_to: moment(dateTo).format("YYYY-MM-DD"),
-      };
+      if (!isEmpty(dateTo) && moment(dateTo).isValid()) {
+        params = {
+          ...params,
+          date_to: moment(dateTo).format("YYYY-MM-DD"),
+        };
+      }
     }
 
     if (!isEmpty(selectedUsers)) {
@@ -501,12 +591,63 @@ const Dashboard = () => {
     }
 
     const data = await find(params);
+    console.log("dashboard/find params", params, "response", data);
 
-    const counters = JSON.parse(data.counters);
-    const attendants = JSON.parse(data.attendants);
-    setCounters(counters);
-    if (isArray(attendants)) {
-      setAttendants(attendants);
+    let parsedCounters = {};
+    try {
+      parsedCounters = typeof data.counters === "string" ? JSON.parse(data.counters) : (data.counters || {});
+    } catch (err) {
+      parsedCounters = data.counters || {};
+    }
+
+    let parsedAttendants = [];
+    try {
+      parsedAttendants = typeof data.attendants === "string" ? JSON.parse(data.attendants) : (data.attendants || []);
+    } catch (err) {
+      parsedAttendants = data.attendants || [];
+    }
+
+    const toNumber = (value) => {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : 0;
+    };
+
+    const pickNumber = (obj, aliases) => {
+      const lowerKeys = Object.keys(obj || {}).reduce((acc, key) => {
+        acc[key.toLowerCase()] = obj[key];
+        return acc;
+      }, {});
+
+      for (const alias of aliases) {
+        const direct = obj?.[alias];
+        if (direct !== undefined && direct !== null) return toNumber(direct);
+        const lower = lowerKeys[alias.toLowerCase()];
+        if (lower !== undefined && lower !== null) return toNumber(lower);
+      }
+
+      // fallback: try first numeric value in object
+      const numericCandidate = Object.values(obj || {}).find((v) => Number.isFinite(Number(v)));
+      return toNumber(numericCandidate);
+    };
+
+    const sourceCounters = { ...(data || {}), ...(parsedCounters || {}) };
+
+    const normalizedCounters = {
+      supportPending: pickNumber(sourceCounters, ["supportPending", "pending", "waiting", "aguardando", "ticketsPending", "tickets_awaiting", "open"]),
+      supportHappening: pickNumber(sourceCounters, ["supportHappening", "happening", "inProgress", "enConversacion", "ticketsHappening", "ticketsInProgress", "working"]),
+      supportFinished: pickNumber(sourceCounters, ["supportFinished", "finished", "resolved", "resueltos", "resolvidos", "closed", "ticketsResolved", "ticketsFinished", "supportResolved", "resolvedCount"]),
+      leads: pickNumber(sourceCounters, ["leads", "lead", "totalLeads", "leadsCount", "leadCount", "total_leads"]),
+      avgSupportTime: pickNumber(sourceCounters, ["avgSupportTime", "averageSupportTime", "avgServiceTime", "avgAttendanceTime", "avgSupportDuration", "serviceTime"]),
+      avgWaitTime: pickNumber(sourceCounters, ["avgWaitTime", "averageWaitTime", "avgWaitingTime", "waitTime", "waitingTime"]),
+      npsPromotersPerc: toNumber(sourceCounters.npsPromotersPerc),
+      npsPassivePerc: toNumber(sourceCounters.npsPassivePerc),
+      npsDetractorsPerc: toNumber(sourceCounters.npsDetractorsPerc),
+      npsScore: toNumber(sourceCounters.npsScore),
+    };
+
+    setCounters(normalizedCounters);
+    if (isArray(parsedAttendants)) {
+      setAttendants(parsedAttendants);
     } else {
       setAttendants([]);
     }
@@ -515,10 +656,9 @@ const Dashboard = () => {
   }
 
   useEffect(() => {
-    async function fetchData() {
-    }
     fetchData();
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   function formatTime(minutes) {
     return moment()
@@ -530,65 +670,59 @@ const Dashboard = () => {
   function renderFilters() {
     if (filterType === 1) {
       return (
-        <>
-          <Grid item xs={12} sm={6} md={4}>
-            <TextField
-              label="Fecha Inicial"
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className={classes.fullWidth}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <TextField
-              label="Fecha Final"
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className={classes.fullWidth}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-          </Grid>
-        </>
+        <React.Fragment>
+          <TextField
+            label="Fecha Inicial"
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className={classes.filterControl}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          <TextField
+            label="Fecha Final"
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className={classes.filterControl}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+        </React.Fragment>
       );
     } else {
       return (
-        <Grid item xs={12} sm={6} md={4}>
-          <FormControl className={classes.selectContainer}>
-            <InputLabel id="period-selector-label">Período</InputLabel>
-            <Select
-              labelId="period-selector-label"
-              id="period-selector"
-              value={period}
-              onChange={(e) => handleChangePeriod(e.target.value)}
-            >
-              <MenuItem value={0}>Ninguna seleccionada</MenuItem>
-              <MenuItem value={3}>Últimos 3 dias</MenuItem>
-              <MenuItem value={7}>Últimos 7 dias</MenuItem>
-              <MenuItem value={15}>Últimos 15 dias</MenuItem>
-              <MenuItem value={30}>Últimos 30 dias</MenuItem>
-              <MenuItem value={60}>Últimos 60 dias</MenuItem>
-              <MenuItem value={90}>Últimos 90 dias</MenuItem>
-            </Select>
-            <FormHelperText>Seleccione el período deseado</FormHelperText>
-          </FormControl>
-        </Grid>
+        <FormControl className={classes.filterControl}>
+          <InputLabel id="period-selector-label">Período</InputLabel>
+          <Select
+            labelId="period-selector-label"
+            id="period-selector"
+            value={period}
+            onChange={(e) => handleChangePeriod(e.target.value)}
+          >
+            <MenuItem value={0}>Ninguna seleccionada</MenuItem>
+            <MenuItem value={3}>Últimos 3 dias</MenuItem>
+            <MenuItem value={7}>Últimos 7 dias</MenuItem>
+            <MenuItem value={15}>Últimos 15 dias</MenuItem>
+            <MenuItem value={30}>Últimos 30 dias</MenuItem>
+            <MenuItem value={60}>Últimos 60 dias</MenuItem>
+            <MenuItem value={90}>Últimos 90 dias</MenuItem>
+          </Select>
+          <FormHelperText>Seleccione el período deseado</FormHelperText>
+        </FormControl>
       );
     }
   }
 
   return (
-    <div>
+    <div className={classes.page}>
       <Container maxWidth="lg" className={classes.container}>
-        <Grid container spacing={3} className={classes.container}>
-          <Grid item xs={12} sm={6} md={4}>
-            <FormControl className={classes.selectContainer}>
+        <Paper className={classes.filterContainer} elevation={0}>
+          <div className={classes.filterGrid}>
+            <FormControl className={classes.filterControl}>
               <InputLabel id="period-selector-label">Tipo de Filtro</InputLabel>
               <Select
                 labelId="period-selector-label"
@@ -600,22 +734,24 @@ const Dashboard = () => {
               </Select>
               <FormHelperText>Seleccione el período deseado</FormHelperText>
             </FormControl>
-          </Grid>
 
-          {renderFilters()}
+            {renderFilters()}
 
-          <Grid item xs={12}  md={4} style={{ marginLeft: '-10px' }}>
-            <UsersFilter onFiltered={handleSelectedUsers} />
-          </Grid>
+            <FormControl className={`${classes.filterControl} ${classes.queueControl}`}>
+              <QueueSelect 
+                selectedQueueIds={selectedQueues} 
+                onChange={values => setSelectedQueues(values)} 
+              />
+              <FormHelperText>Seleccione el período deseado</FormHelperText>
+            </FormControl>
 
-          <Grid item xs={6}  md={4} style={{ marginTop: '-15px' }}>
-            <QueueSelect 
-              selectedQueueIds={selectedQueues} 
-              onChange={values => setSelectedQueues(values)} 
-            />          
-          </Grid>
+            <FormControl className={classes.filterControl}>
+              <UsersFilter onFiltered={handleSelectedUsers} />
+              <FormHelperText>Seleccione el período deseado</FormHelperText>
+            </FormControl>
+          </div>
 
-          <Grid item xs={12} className={classes.alignRight}>
+          <div className={classes.filterActions}>
             <ButtonWithSpinner
               loading={loading}
               onClick={() => fetchData()}
@@ -624,24 +760,46 @@ const Dashboard = () => {
             >
               Filtrar
             </ButtonWithSpinner>
-          </Grid>
+          </div>
+        </Paper>
 
-          <AppBar position="static" className={classes.tabsAppBar} elevation={0}>
-            <Grid container width="100%" >
-              <Tabs
-                value={tab}
-                onChange={handleChangeTab}                
-                aria-label="primary tabs example"
-                variant="fullWidth"
-                indicatorColor="primary"
-                textColor="primary"
-              >
-                <Tab value="Indicadores" label="Indicadores" />
-                <Tab value="NPS" label="NPS" />
-                <Tab value="Atendentes" label="Atendentes" />
-              </Tabs>
-            </Grid>
-          </AppBar>
+        <div className={classes.summaryRow}>
+          <div className={classes.summaryCard}>
+            <span className={classes.summaryLabel}>Conversaciones totales</span>
+            <span className={classes.summaryValue}>{totalTickets}</span>
+          </div>
+          <div className={classes.summaryCard}>
+            <span className={classes.summaryLabel}>Resueltos (%)</span>
+            <span className={classes.summaryValue}>{resolvedRate}%</span>
+          </div>
+          <div className={classes.summaryCard}>
+            <span className={classes.summaryLabel}>Pendientes (%)</span>
+            <span className={classes.summaryValue}>{openRate}%</span>
+          </div>
+          <div className={classes.summaryCard}>
+            <span className={classes.summaryLabel}>T.M. Atención / Espera</span>
+            <span className={classes.summaryValue}>
+              {formatTime(counters.avgSupportTime)} / {formatTime(counters.avgWaitTime)}
+            </span>
+          </div>
+        </div>
+
+        <AppBar position="static" className={classes.tabsAppBar} elevation={0}>
+          <Grid container width="100%" >
+            <Tabs
+              value={tab}
+              onChange={handleChangeTab}                
+              aria-label="primary tabs example"
+              variant="fullWidth"
+              indicatorColor="primary"
+              textColor="primary"
+            >
+              <Tab value="Indicadores" label="Indicadores" />
+              <Tab value="NPS" label="NPS" />
+              <Tab value="Atendentes" label="Atendentes" />
+            </Tabs>
+          </Grid>
+        </AppBar>
 
           <TabPanel
             className={classes.container}
@@ -806,6 +964,67 @@ const Dashboard = () => {
                 </Paper>
               </Grid>
               </Grid>
+
+              <Grid item xs={12}>
+                <Paper className={classes.tableCard} elevation={0}>
+                  <Typography variant="h6" style={{ marginBottom: 12, fontWeight: 600 }}>
+                    Tickets por Agente
+                  </Typography>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Agente</TableCell>
+                        <TableCell align="center">Tickets</TableCell>
+                        <TableCell align="center">T.M. Espera</TableCell>
+                        <TableCell align="center">Estado</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {ticketsByAgent.map((row, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell>{row.name}</TableCell>
+                          <TableCell align="center">{row.tickets}</TableCell>
+                          <TableCell align="center">{row.avgWait}</TableCell>
+                          <TableCell align="center">{row.online ? "En línea" : "Offline"}</TableCell>
+                        </TableRow>
+                      ))}
+                      {!ticketsByAgent.length && (
+                        <TableRow>
+                          <TableCell colSpan={4} align="center">
+                            Sin datos de agentes
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Paper className={classes.tableCard} elevation={0}>
+                  <Typography variant="h6" style={{ marginBottom: 12, fontWeight: 600 }}>
+                    Tickets por Estado
+                  </Typography>
+                  <div className={classes.summaryRow}>
+                    <div className={classes.summaryCard}>
+                      <span className={classes.summaryLabel}>Pendientes</span>
+                      <span className={classes.summaryValue}>{counters.supportPending || 0}</span>
+                    </div>
+                    <div className={classes.summaryCard}>
+                      <span className={classes.summaryLabel}>En conversación</span>
+                      <span className={classes.summaryValue}>{counters.supportHappening || 0}</span>
+                    </div>
+                    <div className={classes.summaryCard}>
+                      <span className={classes.summaryLabel}>Resueltos</span>
+                      <span className={classes.summaryValue}>{counters.supportFinished || 0}</span>
+                    </div>
+                    <div className={classes.summaryCard}>
+                      <span className={classes.summaryLabel}>T.M. espera (pendientes)</span>
+                      <span className={classes.summaryValue}>{formatTime(counters.avgWaitTime)}</span>
+                    </div>
+                  </div>
+                </Paper>
+              </Grid>
             </Container>
           </TabPanel>
 
@@ -954,11 +1173,10 @@ const Dashboard = () => {
                       loading={loading}
                     />
                   ) : null}
-              </Grid>
+                </Grid>
               </Grid>
             </Container>
           </TabPanel>
-        </Grid>
       </Container>
     </div>
   );

@@ -28,9 +28,37 @@ import { AuthContext } from "../../context/Auth/AuthContext";
 import { Can } from "../Can";
 
 const useStyles = makeStyles((theme) => ({
-  maxWidth: {
-    width: "100%",
-  },
+	dialog: {
+		"& .MuiDialog-paper": {
+			borderRadius: 12,
+			paddingTop: 4,
+			paddingBottom: 8,
+			width: "100%",
+			maxWidth: 420,
+		},
+	},
+	dialogTitle: {
+		padding: "16px 20px 8px",
+		"& .MuiTypography-root": {
+			fontSize: "1.1rem",
+			fontWeight: 600,
+			color: theme.palette.text.primary,
+		},
+		textTransform: "capitalize",
+	},
+	dialogContent: {
+		padding: "12px 20px 4px",
+		display: "flex",
+		flexDirection: "column",
+		gap: 14,
+	},
+	dialogActions: {
+		padding: "12px 20px 16px",
+		gap: 8,
+	},
+	field: {
+		width: "100%",
+	},
 }));
 
 const filterOptions = createFilterOptions({
@@ -130,14 +158,14 @@ const TransferTicketModal = ({ modalOpen, onClose, ticketid, ticketWhatsappId })
 	};
 
 	return (
-		<Dialog open={modalOpen} onClose={handleClose} maxWidth="lg" scroll="paper">
+		<Dialog open={modalOpen} onClose={handleClose} className={classes.dialog} scroll="paper">
 			<form onSubmit={handleSaveTicket}>
-				<DialogTitle id="form-dialog-title">
+				<DialogTitle id="form-dialog-title" className={classes.dialogTitle}>
 					{i18n.t("transferTicketModal.title")}
 				</DialogTitle>
-				<DialogContent dividers>
+				<DialogContent dividers className={classes.dialogContent}>
 					<Autocomplete
-						style={{ width: 300, marginBottom: 20 }}
+						className={classes.field}
 						getOptionLabel={option => `${option.name}`}
 						onChange={(e, newValue) => {
 							setSelectedUser(newValue);
@@ -176,7 +204,7 @@ const TransferTicketModal = ({ modalOpen, onClose, ticketid, ticketWhatsappId })
 							/>
 						)}
 					/>
-					<FormControl variant="outlined" className={classes.maxWidth}>
+					<FormControl variant="outlined" className={classes.field}>
 						<InputLabel>{i18n.t("transferTicketModal.fieldQueueLabel")}</InputLabel>
 						<Select
 							value={selectedQueue}
@@ -193,7 +221,7 @@ const TransferTicketModal = ({ modalOpen, onClose, ticketid, ticketWhatsappId })
 						role={loggedInUser.profile}
 						perform="ticket-options:transferWhatsapp"
 						yes={() => (!loadingWhatsapps && 
-							<FormControl variant="outlined" className={classes.maxWidth} style={{ marginTop: 20 }}>
+							<FormControl variant="outlined" className={classes.field}>
 								<InputLabel>{i18n.t("transferTicketModal.fieldConnectionLabel")}</InputLabel>
 								<Select
 									value={selectedWhatsapp}
@@ -208,7 +236,7 @@ const TransferTicketModal = ({ modalOpen, onClose, ticketid, ticketWhatsappId })
 						)}
 					/>
 				</DialogContent>
-				<DialogActions>
+				<DialogActions className={classes.dialogActions}>
 					<Button
 						onClick={handleClose}
 						color="secondary"

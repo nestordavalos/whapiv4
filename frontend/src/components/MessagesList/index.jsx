@@ -632,6 +632,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   const { setReplyingMessage } = useContext(ReplyMessageContext);
 
   const [anchorEl, setAnchorEl] = useState(null);
+  const [anchorPosition, setAnchorPosition] = useState(null);
   const messageOptionsMenuOpen = Boolean(anchorEl);
   const currentTicketId = useRef(ticketId);
 
@@ -749,6 +750,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
 
   const handleOpenMessageOptionsMenu = (e, message) => {
     setAnchorEl(e.currentTarget);
+    setAnchorPosition({ top: e.clientY, left: e.clientX });
     setSelectedMessage(message);
   };
 
@@ -759,6 +761,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
 
   const handleCloseMessageOptionsMenu = (e) => {
     setAnchorEl(null);
+    setAnchorPosition(null);
   };
 
   // Selection handlers
@@ -796,10 +799,12 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     setSelectedMessages([]);
   };
 
-  const handleLongPress = (message) => {
-    if (!selectionMode) {
-      setSelectionMode(true);
-      setSelectedMessages([message]);
+  const handleMessageClick = (event, message) => {
+    if (selectionMode || event.ctrlKey || event.metaKey) {
+      if (!selectionMode) {
+        setSelectionMode(true);
+      }
+      handleSelectMessage(message);
     }
   };
 
@@ -1200,12 +1205,10 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                     [classes.messageWithReaction]: hasReactions(message),
                   })}
                   onDoubleClick={(e) => hanldeReplyMessage(e, message)}
-                  onClick={() => selectionMode && handleSelectMessage(message)}
+                  onClick={(e) => handleMessageClick(e, message)}
                   onContextMenu={(e) => {
-                    if (!selectionMode) {
-                      e.preventDefault();
-                      handleLongPress(message);
-                    }
+                    e.preventDefault();
+                    handleOpenMessageOptionsMenu(e, message);
                   }}
                 >
                   <IconButton
@@ -1277,12 +1280,10 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                     [classes.messageWithReaction]: hasReactions(message),
                   })}
                   onDoubleClick={(e) => hanldeReplyMessage(e, message)}
-                  onClick={() => selectionMode && handleSelectMessage(message)}
+                  onClick={(e) => handleMessageClick(e, message)}
                   onContextMenu={(e) => {
-                    if (!selectionMode) {
-                      e.preventDefault();
-                      handleLongPress(message);
-                    }
+                    e.preventDefault();
+                    handleOpenMessageOptionsMenu(e, message);
                   }}
                 >
                   <IconButton
@@ -1356,6 +1357,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
       <MessageOptionsMenu
         message={selectedMessage}
         anchorEl={anchorEl}
+        anchorPosition={anchorPosition}
         menuOpen={messageOptionsMenuOpen}
         handleClose={handleCloseMessageOptionsMenu}
       />

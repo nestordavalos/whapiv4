@@ -34,7 +34,7 @@ const useStyles = makeStyles((theme) => ({
 		height: "100%",
 		...theme.scrollbarStyles,
 		borderTop: `1px solid ${theme.palette.divider}`,
-		padding: "4px 8px 4px 0",
+		padding: "4px 12px 4px 12px",
 	},
 
 	ticketsListHeader: {

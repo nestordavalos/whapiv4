@@ -70,7 +70,6 @@ const QueueSelect = ({ selectedQueueIds, onChange }) => {
 				<InputLabel>{i18n.t("queueSelect.inputLabel")}</InputLabel>
 				<Select
 					multiple
-					labelWidth={60}
 					value={selectedQueueIds}
 					onChange={handleChange}
 					MenuProps={{
@@ -82,7 +81,6 @@ const QueueSelect = ({ selectedQueueIds, onChange }) => {
 							vertical: "top",
 							horizontal: "left",
 						},
-						getContentAnchorEl: null,
 					}}
 					renderValue={selected => (
 						<div className={classes.chips}>

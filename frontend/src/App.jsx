@@ -19,6 +19,17 @@ const { system } = config;
 const App = () => {
   const [locale, setLocale] = useState();
 
+  const sanitizeColor = (value, fallback) => {
+    if (!value) return fallback;
+    if (typeof value === "string" && value.startsWith("linear-gradient")) {
+      return fallback;
+    }
+    return value;
+  };
+
+  const lightToolbar = sanitizeColor(system.color.lightTheme.toolbar.background, system.color.lightTheme.palette.primary || "#0071c1");
+  const darkToolbar = sanitizeColor(system.color.darkTheme.toolbar.background, system.color.darkTheme.palette.primary || "#0071c1");
+
   const lightTheme = createTheme(adaptV4Theme({
     scrollbarStyles: {
       "&::-webkit-scrollbar": {
@@ -38,7 +49,7 @@ const App = () => {
       mode: "light",
       primary: { main: system.color.lightTheme.palette.primary || "#0071c1" },
       secondary: { main: system.color.lightTheme.palette.secondary || "#0D0D0D" },
-      toolbar: { main: system.color.lightTheme.toolbar.background || "#0071c1" },
+      toolbar: { main: lightToolbar },
       menuItens: { main: system.color.lightTheme.menuItens || "#ffffff" },
       sub: { main: system.color.lightTheme.sub || "#ffffff" },
       toolbarIcon: { main: system.color.lightTheme.toolbarIcon || "#ffffff" },
@@ -54,6 +65,15 @@ const App = () => {
     },
     backgroundImage: `url(${lightBackground})`,
     mode: "light",
+    components: {
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: {
+            borderRadius: 12,
+          },
+        },
+      },
+    },
   }, locale));
 
   const darkTheme = createTheme(adaptV4Theme({
@@ -108,6 +128,7 @@ const App = () => {
           "&$focused $notchedOutline": {
             borderColor: "#0071c1",
           },
+          borderRadius: 12,
         },
         notchedOutline: {},
       },
@@ -214,7 +235,7 @@ const App = () => {
       mode: "dark",
       primary: { main: system.color.darkTheme.palette.primary || "#0071c1" },
       secondary: { main: system.color.darkTheme.palette.secondary || "#0071c1" },
-      toolbar: { main: system.color.darkTheme.toolbar.background || "#0071c1" },
+      toolbar: { main: darkToolbar },
       menuItens: { main: system.color.darkTheme.menuItens || "#181d22" },
       sub: { main: system.color.darkTheme.sub || "#181d22" },
       toolbarIcon: { main: system.color.darkTheme.toolbarIcon || "#0071c1" },
@@ -238,6 +259,15 @@ const App = () => {
     },
     backgroundImage: `url(${darkBackground})`,
     mode: "dark",
+    components: {
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: {
+            borderRadius: 12,
+          },
+        },
+      },
+    },
   }, locale));
 
   const [theme, setTheme] = useState("light");

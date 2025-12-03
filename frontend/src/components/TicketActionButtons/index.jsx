@@ -161,7 +161,7 @@ const TicketActionButtons = ({ ticket }) => {
 						<IconButton 
 							disabled={loading} 
 							className={`${classes.actionButton} ${classes.closeButton}`}
-							onClick={e => handleUpdateTicketStatus(e, "closed", user?.id, false)}
+							onClick={e => handleUpdateTicketStatus(e, "closed", user?.id, true)}
 							size="small"
 						>
 							<CancelIcon fontSize="small" />

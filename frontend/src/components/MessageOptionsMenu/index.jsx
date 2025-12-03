@@ -14,7 +14,7 @@ import toastError from "../../errors/toastError";
 // Tiempo máximo para editar un mensaje (15 minutos en milisegundos)
 const MAX_EDIT_TIME_MS = 15 * 60 * 1000;
 
-const MessageOptionsMenu = ({ message, menuOpen, handleClose, anchorEl }) => {
+const MessageOptionsMenu = ({ message, menuOpen, handleClose, anchorEl, anchorPosition }) => {
   const { setReplyingMessage } = useContext(ReplyMessageContext);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [forwardModalOpen, setForwardModalOpen] = useState(false);
@@ -91,7 +91,8 @@ const MessageOptionsMenu = ({ message, menuOpen, handleClose, anchorEl }) => {
       />
       <Menu
         anchorEl={anchorEl}
-        getContentAnchorEl={null}
+        anchorReference={anchorPosition ? "anchorPosition" : "anchorEl"}
+        anchorPosition={anchorPosition}
         anchorOrigin={{
           vertical: "bottom",
           horizontal: "right",

@@ -324,7 +324,6 @@ const NewTicketModalPageContact = ({ modalOpen, onClose, initialContact }) => {
 										vertical: "top",
 										horizontal: "left",
 									},
-									getContentAnchorEl: null,
 									PaperProps: {
 										style: {
 											borderRadius: 12,

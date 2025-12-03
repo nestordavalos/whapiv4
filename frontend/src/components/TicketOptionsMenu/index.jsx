@@ -65,7 +65,6 @@ const TicketOptionsMenu = ({ ticket, menuOpen, handleClose, anchorEl }) => {
 			<Menu
 				id="menu-appbar"
 				anchorEl={anchorEl}
-				getContentAnchorEl={null}
 				anchorOrigin={{
 					vertical: "bottom",
 					horizontal: "right",

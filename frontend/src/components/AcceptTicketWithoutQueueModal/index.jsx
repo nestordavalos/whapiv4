@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useRef, useEffect } from "react";
 import { useHistory } from "react-router-dom";
 
 import {
@@ -94,20 +94,35 @@ const useStyles = makeStyles((theme) => ({
 	},
 }));
 
-const AcceptTicketWithouSelectQueue = ({ modalOpen, onClose, ticketId }) => {
+const AcceptTicketWithouSelectQueue = ({ modalOpen, onClose, ticketId, onAccepted }) => {
 	const history = useHistory();
 	const classes = useStyles();
 	const [selectedQueue, setSelectedQueue] = useState('');
 	const [loading, setLoading] = useState(false);
 	const { user } = useContext(AuthContext);
+	const isMounted = useRef(true);
+
+	useEffect(() => {
+		return () => {
+			isMounted.current = false;
+		};
+	}, []);
 
 const handleClose = () => {
 	onClose();
-	setSelectedQueue("");
 };
 
+useEffect(() => {
+	if (modalOpen && isMounted.current) {
+		setSelectedQueue("");
+		setLoading(false);
+	}
+}, [modalOpen]);
+
 const handleUpdateTicketStatus = async (queueId) => {
-	setLoading(true);
+	if (isMounted.current) {
+		setLoading(true);
+	}
 	try {
 		await api.put(`/tickets/${ticketId}`, {
 			status: "open",
@@ -115,11 +130,18 @@ const handleUpdateTicketStatus = async (queueId) => {
             queueId: queueId
 		});
 
-		setLoading(false);
+		if (isMounted.current) {
+			setLoading(false);
+		}
 		history.push(`/tickets/${ticketId}`);
-        handleClose();
+		if (typeof onAccepted === "function") {
+			onAccepted();
+		}
+		handleClose();
 	} catch (err) {
-		setLoading(false);
+		if (isMounted.current) {
+			setLoading(false);
+		}
 		toastError(err);
 	}
 };

@@ -32,8 +32,8 @@ const useStyles = makeStyles(theme => ({
 	ticket: {
 		position: "relative",
 		display: "flex",
-		padding: "8px 12px",
-		margin: "4px 10px 4px 6px",
+		padding: "8px 10px",
+		margin: "8px 0",
 		borderRadius: 10,
 		border: `1px solid ${theme.palette.divider}`,
 		backgroundColor: theme.palette.background.paper,
@@ -181,6 +181,29 @@ const useStyles = makeStyles(theme => ({
 		fontWeight: 500,
 		whiteSpace: "nowrap",
 	},
+	waitBadge: {
+		marginTop: 2,
+		padding: "2px 8px",
+		borderRadius: 999,
+		fontSize: "0.68rem",
+		fontWeight: 600,
+		lineHeight: 1.2,
+		display: "inline-flex",
+		alignItems: "center",
+		gap: 4,
+	},
+	waitOk: {
+		color: "#166534",
+		backgroundColor: "#dcfce7",
+	},
+	waitWarn: {
+		color: "#92400e",
+		backgroundColor: "#fef3c7",
+	},
+	waitDanger: {
+		color: "#991b1b",
+		backgroundColor: "#fee2e2",
+	},
 	lastMessagePreview: {
 		color: theme.palette.text.secondary,
 		fontSize: "0.78rem",
@@ -234,11 +257,17 @@ const useStyles = makeStyles(theme => ({
 		padding: 4,
 		borderRadius: 8,
 	},
-	timeAndBadge: {
+	timeWrapper: {
+		display: "flex",
+		flexDirection: "column",
+		alignItems: "flex-end",
+		gap: 2,
+		flexShrink: 0,
+	},
+	timeRow: {
 		display: "flex",
 		alignItems: "center",
 		gap: 6,
-		flexShrink: 0,
 	},
 	unreadIndicator: {
 		backgroundColor: theme.palette.success.main,
@@ -264,6 +293,30 @@ const TicketListItem = ({ handleChangeTab, ticket }) => {
     const [acceptTicketWithouSelectQueueOpen, setAcceptTicketWithouSelectQueueOpen] = useState(false);
     const isMounted = useRef(true);
     const tags = ticket?.contact?.tags || [];
+
+    const waitMinutes = useMemo(() => {
+        if (ticket.status !== "pending") return null;
+        const start = ticket.queuedAt || ticket.queueAt || ticket.createdAt || ticket.updatedAt;
+        if (!start) return null;
+        const diff = Math.max(0, Math.floor((Date.now() - new Date(start).getTime()) / 60000));
+        return diff;
+    }, [ticket]);
+
+    const waitLevel = useMemo(() => {
+        if (waitMinutes === null) return null;
+        if (waitMinutes < 5) return "ok";
+        if (waitMinutes < 15) return "warn";
+        return "danger";
+    }, [waitMinutes]);
+
+    const waitLabel = useMemo(() => {
+        if (waitMinutes === null) return "";
+        if (waitMinutes === 1) return "1 min";
+        if (waitMinutes < 60) return `${waitMinutes} min`;
+        const hours = Math.floor(waitMinutes / 60);
+        const mins = waitMinutes % 60;
+        return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    }, [waitMinutes]);
 
     const safeHandleChangeTab = useCallback((event, nextTab) => {
         if (typeof handleChangeTab === "function") {
@@ -527,8 +580,14 @@ return (
     <React.Fragment key={ticket.id}>
         <AcceptTicketWithouSelectQueue
             modalOpen={acceptTicketWithouSelectQueueOpen}
-            onClose={() => setAcceptTicketWithouSelectQueueOpen(false)}
+            onClose={() => isMounted.current && setAcceptTicketWithouSelectQueueOpen(false)}
             ticketId={ticket.id}
+            onAccepted={() => {
+                if (isMounted.current) {
+                    setAcceptTicketWithouSelectQueueOpen(false);
+                    safeHandleChangeTab(null, "open");
+                }
+            }}
         />
         <ListItem
             dense
@@ -615,14 +674,28 @@ return (
                         >
                             {ticket.contact?.name}
                         </Typography>
-                        <div className={classes.timeAndBadge}>
-                            {lastMessageTime && (
-                                <Typography component="span" className={classes.messageTime}>
-                                    {lastMessageTime}
-                                </Typography>
-                            )}
-                            {ticket.unreadMessages > 0 && (
-                                <span className={classes.unreadIndicator}>{ticket.unreadMessages}</span>
+                        <div className={classes.timeWrapper}>
+                            <div className={classes.timeRow}>
+                                {lastMessageTime && (
+                                    <Typography component="span" className={classes.messageTime}>
+                                        {lastMessageTime}
+                                    </Typography>
+                                )}
+                                {ticket.unreadMessages > 0 && (
+                                    <span className={classes.unreadIndicator}>{ticket.unreadMessages}</span>
+                                )}
+                            </div>
+                            {waitMinutes !== null && (
+                                <span
+                                    className={clsx(
+                                        classes.waitBadge,
+                                        waitLevel === "ok" && classes.waitOk,
+                                        waitLevel === "warn" && classes.waitWarn,
+                                        waitLevel === "danger" && classes.waitDanger
+                                    )}
+                                >
+                                    {waitLabel}
+                                </span>
                             )}
                         </div>
                     </div>

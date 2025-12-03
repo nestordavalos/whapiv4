@@ -68,18 +68,15 @@ export default async function DashboardDataService(
         inner join traking tt1 on t1.id = tt1.ticketId
         where t1.status like 'pending' 
       ) supportPending,
-      (select count(id) from traking where finished) supportFinished,
       (
-        select count(leads.id) from (
-          select
-            ct1.id,
-            count(tt1.id) total
-          from traking tt1
-          left join Tickets t1 on t1.id = tt1.ticketId
-          left join Contacts ct1 on ct1.id = t1.contactId
-          group by 1
-          having count(tt1.id) = 1
-        ) leads
+        select count(distinct t1.id)
+        from Tickets t1
+        inner join traking tt1 on t1.id = tt1.ticketId
+        where t1.status like 'closed' or tt1.finished
+      ) supportFinished,
+      (
+        select count(distinct contactId)
+        from traking
       ) leads,
       (
         select 

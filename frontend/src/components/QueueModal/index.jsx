@@ -137,7 +137,7 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
   const absenceRef = useRef();
   const startWorkRef = useRef();
   const endWorkRef = useRef();
-  const [activeStep, setActiveStep] = React.useState(null);
+  const [activeStep, setActiveStep] = React.useState(0);
   const [selectedQueue, setSelectedQueue] = useState(null);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [isNameEdit, setIsNamedEdit] = React.useState(null);
@@ -182,15 +182,13 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
   }, [queueId, open]);
 
   useEffect(() => {
-    console.log(activeStep);
-    console.log(isNameEdit);
   }, [isNameEdit, activeStep]);
 
   const handleClose = () => {
     onClose();
     setQueue(initialState);
     setIsNamedEdit(null);
-    setActiveStep(null);
+    setActiveStep(0);
     setGreetingMessageEdit(null);
   };
 

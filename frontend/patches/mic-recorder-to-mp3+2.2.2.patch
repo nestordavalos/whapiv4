@@ -1,0 +1,12 @@
+diff --git a/node_modules/mic-recorder-to-mp3/dist/index.js b/node_modules/mic-recorder-to-mp3/dist/index.js
+index 6eaf4c7..a675ed4 100644
+--- a/node_modules/mic-recorder-to-mp3/dist/index.js
++++ b/node_modules/mic-recorder-to-mp3/dist/index.js
+@@ -15496,6 +15496,7 @@ var VBRTag_1 = VBRTag;
+ 
+ var new_byte = common.new_byte;
+ var assert = common.assert;
++var Lame, Presets, GainAnalysis, QuantizePVT, Quantize, Takehiro, Reservoir, MPEGMode, BitStream;
+ 
+ Lame = Lame_1;
+ Presets = Presets_1;

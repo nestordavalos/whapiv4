@@ -4,7 +4,11 @@ import Contact from "../../models/Contact";
 import Ticket from "../../models/Ticket";
 import ShowTicketService from "./ShowTicketService";
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
-import Message from "../../models/Message";
+
+interface FindOrCreateOptions {
+  /** If true and no open ticket exists, create as closed (for synced read messages) */
+  createAsClosed?: boolean;
+}
 
 const FindOrCreateTicketService = async (
   contact: Contact,
@@ -14,17 +18,20 @@ const FindOrCreateTicketService = async (
   tagsId?: number,
   userId?: number,
   groupContact?: Contact,
-  ): Promise<Ticket> => {
+  options?: FindOrCreateOptions
+): Promise<Ticket> => {
+  const { createAsClosed = false } = options || {};
+
   let ticket = await Ticket.findOne({
     where: {
       status: {
         [Op.or]: ["open", "pending"]
       },
       contactId: groupContact ? groupContact.id : contact.id,
-      whatsappId: whatsappId
+      whatsappId
     }
   });
- 
+
   if (ticket) {
     await ticket.update({ unreadMessages });
   }
@@ -33,7 +40,7 @@ const FindOrCreateTicketService = async (
     ticket = await Ticket.findOne({
       where: {
         contactId: groupContact.id,
-        whatsappId: whatsappId
+        whatsappId
       },
       order: [["updatedAt", "DESC"]]
     });
@@ -43,23 +50,28 @@ const FindOrCreateTicketService = async (
         status: "pending",
         userId: null,
         unreadMessages,
-        isBot: true
+        isBot: true,
+        queueId: null
       });
     }
   }
 
   if (!ticket && !groupContact) {
-    const listSettingsService = await ListSettingsServiceOne({ key: "timeCreateNewTicket" });
-    var timeCreateNewTicket = listSettingsService?.value;
-
+    const listSettingsService = await ListSettingsServiceOne({
+      key: "timeCreateNewTicket"
+    });
+    const timeCreateNewTicket = listSettingsService?.value;
 
     ticket = await Ticket.findOne({
       where: {
         updatedAt: {
-          [Op.between]: [+subSeconds(new Date(), Number(timeCreateNewTicket)), +new Date()]
+          [Op.between]: [
+            +subSeconds(new Date(), Number(timeCreateNewTicket)),
+            +new Date()
+          ]
         },
         contactId: contact.id,
-        whatsappId: whatsappId
+        whatsappId
       },
       order: [["updatedAt", "DESC"]]
     });
@@ -69,15 +81,19 @@ const FindOrCreateTicketService = async (
         status: "pending",
         userId: null,
         unreadMessages,
-        isBot: true
+        isBot: true,
+        queueId: null
       });
     }
   }
 
   if (!ticket) {
+    // Determine initial status based on options
+    const initialStatus = createAsClosed ? "closed" : "pending";
+
     ticket = await Ticket.create({
       contactId: groupContact ? groupContact.id : contact.id,
-      status: "pending",
+      status: initialStatus,
       isGroup: !!groupContact,
       isBot: true,
       unreadMessages,
@@ -85,19 +101,23 @@ const FindOrCreateTicketService = async (
     });
   }
 
+  // Optimized: Single update instead of multiple separate updates
+  const updateFields: Partial<Ticket> = {};
+
   if (queueId != 0 && queueId != undefined) {
-    //Determina qual a fila esse ticket pertence.
-    await ticket.update({ queueId: queueId });
+    updateFields.queueId = queueId;
   }
 
   if (tagsId != 0 && tagsId != undefined) {
-    //Determina qual a fila esse ticket pertence.
-    await ticket.update({ tagsId: tagsId });
+    (updateFields as any).tagsId = tagsId;
   }
 
   if (userId != 0 && userId != undefined) {
-    //Determina qual a fila esse ticket pertence.
-    await ticket.update({ userId: userId });
+    updateFields.userId = userId;
+  }
+
+  if (Object.keys(updateFields).length > 0) {
+    await ticket.update(updateFields);
   }
 
   ticket = await ShowTicketService(ticket.id);

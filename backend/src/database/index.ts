@@ -16,6 +16,9 @@ import DialogChatBots from "../models/DialogChatBots";
 import Tag from "../models/Tag";
 import ContactTag from "../models/ContactTag";
 import UserRating from "../models/UserRating";
+import QueueIntegrations from "../models/QueueIntegrations";
+import MessageReaction from "../models/MessageReaction";
+import PendingUpload from "../models/PendingUpload";
 
 // eslint-disable-next-line
 const dbConfig = require("../config/database");
@@ -28,6 +31,7 @@ const models = [
   Contact,
   Ticket,
   Message,
+  MessageReaction,
   Whatsapp,
   ContactCustomField,
   Setting,
@@ -40,7 +44,9 @@ const models = [
   Tag,
   ContactTag,
   UserRating,
-  TicketTraking
+  TicketTraking,
+  QueueIntegrations,
+  PendingUpload
 ];
 
 sequelize.addModels(models);

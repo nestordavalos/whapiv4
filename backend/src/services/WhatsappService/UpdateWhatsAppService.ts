@@ -5,6 +5,7 @@ import AppError from "../../errors/AppError";
 import Whatsapp from "../../models/Whatsapp";
 import ShowWhatsAppService from "./ShowWhatsAppService";
 import AssociateWhatsappQueue from "./AssociateWhatsappQueue";
+import { invalidateWebhookCache } from "../WebhookService/SendWebhookEvent";
 
 interface WhatsappData {
   name?: string;
@@ -13,10 +14,10 @@ interface WhatsappData {
   isDefault?: boolean;
   greetingMessage?: string;
   farewellMessage?: string;
-  //Difinindo horario comercial
+  // Difinindo horario comercial
   defineWorkHours?: boolean;
   outOfWorkMessage?: string;
-  //Dias da semana.
+  // Dias da semana.
   monday?: boolean;
   tuesday?: boolean;
   wednesday?: boolean;
@@ -67,6 +68,24 @@ interface WhatsappData {
   sendInactiveMessage?: boolean;
   inactiveMessage?: string;
   timeInactiveMessage?: string;
+  // Webhook configuration - Multiple webhooks support
+  webhookUrls?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    enabled: boolean;
+    events: string[];
+  }>;
+  webhookEnabled?: boolean;
+  // Archive chat on ticket close
+  archiveOnClose?: boolean;
+  // Sync configuration
+  syncMaxMessagesPerChat?: number;
+  syncMaxChats?: number;
+  syncMaxMessageAgeHours?: number;
+  syncDelayBetweenChats?: number;
+  syncMarkAsSeen?: boolean;
+  syncCreateClosedForRead?: boolean;
 }
 
 interface Request {
@@ -153,6 +172,15 @@ const UpdateWhatsAppService = async ({
     sendInactiveMessage,
     inactiveMessage,
     timeInactiveMessage,
+    webhookUrls,
+    webhookEnabled,
+    archiveOnClose,
+    syncMaxMessagesPerChat,
+    syncMaxChats,
+    syncMaxMessageAgeHours,
+    syncDelayBetweenChats,
+    syncMarkAsSeen,
+    syncCreateClosedForRead,
     queueIds = []
   } = whatsappData;
 
@@ -252,17 +280,31 @@ const UpdateWhatsAppService = async ({
     EndDefineWorkHoursSunday,
     StartDefineWorkHoursSundayLunch,
     EndDefineWorkHoursSundayLunch,
-    
+
     ratingMessage,
     isDefault,
     isDisplay,
     isGroup,
     sendInactiveMessage,
     inactiveMessage,
-    timeInactiveMessage
+    timeInactiveMessage,
+    webhookUrls: webhookUrls ? JSON.stringify(webhookUrls) : undefined,
+    webhookEnabled,
+    archiveOnClose,
+    syncMaxMessagesPerChat,
+    syncMaxChats,
+    syncMaxMessageAgeHours,
+    syncDelayBetweenChats,
+    syncMarkAsSeen,
+    syncCreateClosedForRead
   });
 
   await AssociateWhatsappQueue(whatsapp, queueIds);
+
+  // Invalidar cache de webhook si se actualizaron los campos de webhook
+  if (webhookUrls !== undefined || webhookEnabled !== undefined) {
+    invalidateWebhookCache(whatsapp.id);
+  }
 
   return { whatsapp, oldDefaultWhatsapp };
 };

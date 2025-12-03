@@ -9,13 +9,13 @@ interface SerializedUser {
   profile: string;
   queues: Queue[];
   whatsapp: Whatsapp;
-  allHistoric: string,
-  isRemoveTags: string,
-  viewConection: string,
-  viewSector: string,
-  viewName: string,
-  viewTags: string,
-  allTicket: string,
+  allHistoric: string;
+  isRemoveTags: string;
+  viewConection: string;
+  viewSector: string;
+  viewName: string;
+  viewTags: string;
+  allTicket: string;
   startWork: string;
   endWork: string;
 }

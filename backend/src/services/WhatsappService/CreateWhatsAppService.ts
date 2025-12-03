@@ -10,10 +10,10 @@ interface Request {
   greetingMessage?: string;
   farewellMessage?: string;
 
-  //Difinindo horario comercial
+  // Difinindo horario comercial
   defineWorkHours?: boolean;
   outOfWorkMessage?: string;
-  //Dias da semana.
+  // Dias da semana.
   monday?: boolean;
   tuesday?: boolean;
   wednesday?: boolean;
@@ -65,6 +65,22 @@ interface Request {
   sendInactiveMessage?: boolean;
   inactiveMessage?: string;
   timeInactiveMessage?: string;
+  // Webhook configuration - Multiple webhooks support
+  webhookUrls?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    enabled: boolean;
+    events: string[];
+  }>;
+  webhookEnabled?: boolean;
+  // Sync configuration
+  syncMaxMessagesPerChat?: number;
+  syncMaxChats?: number;
+  syncMaxMessageAgeHours?: number;
+  syncDelayBetweenChats?: number;
+  syncMarkAsSeen?: boolean;
+  syncCreateClosedForRead?: boolean;
 }
 
 interface Response {
@@ -131,7 +147,15 @@ const CreateWhatsAppService = async ({
   isGroup = false,
   sendInactiveMessage = false,
   inactiveMessage = "",
-  timeInactiveMessage = "0"
+  timeInactiveMessage = "0",
+  webhookUrls = [],
+  webhookEnabled = false,
+  syncMaxMessagesPerChat = 50,
+  syncMaxChats = 100,
+  syncMaxMessageAgeHours = 24,
+  syncDelayBetweenChats = 100,
+  syncMarkAsSeen = true,
+  syncCreateClosedForRead = true
 }: Request): Promise<Response> => {
   const schema = Yup.object().shape({
     name: Yup.string()
@@ -246,7 +270,15 @@ const CreateWhatsAppService = async ({
       isGroup,
       sendInactiveMessage,
       inactiveMessage,
-      timeInactiveMessage
+      timeInactiveMessage,
+      webhookUrls: webhookUrls.length > 0 ? JSON.stringify(webhookUrls) : null,
+      webhookEnabled,
+      syncMaxMessagesPerChat,
+      syncMaxChats,
+      syncMaxMessageAgeHours,
+      syncDelayBetweenChats,
+      syncMarkAsSeen,
+      syncCreateClosedForRead
     },
     { include: ["queues"] }
   );

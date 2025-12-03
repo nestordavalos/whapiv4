@@ -2,6 +2,7 @@ import Whatsapp from "../../models/Whatsapp";
 import AppError from "../../errors/AppError";
 import Queue from "../../models/Queue";
 import Chatbot from "../../models/Chatbot";
+import QueueIntegrations from "../../models/QueueIntegrations";
 
 const ShowWhatsAppService = async (id: string | number): Promise<Whatsapp> => {
   const whatsapp = await Whatsapp.findByPk(id, {
@@ -9,18 +10,33 @@ const ShowWhatsAppService = async (id: string | number): Promise<Whatsapp> => {
       {
         model: Queue,
         as: "queues",
-        attributes: ["id", "name", "color", "greetingMessage", "startWork", "endWork", "absenceMessage"],
+        attributes: [
+          "id",
+          "name",
+          "color",
+          "greetingMessage",
+          "startWork",
+          "endWork",
+          "absenceMessage",
+          "integrationId"
+        ],
         include: [
           {
             model: Chatbot,
             as: "chatbots",
             attributes: ["id", "name", "greetingMessage"]
+          },
+          {
+            model: QueueIntegrations,
+            as: "integration",
+            attributes: ["id", "type", "name"]
           }
         ]
       }
     ],
-    order: [["queues", "name", "ASC"],
-    ["queues", "chatbots", "id", "ASC"]
+    order: [
+      ["queues", "name", "ASC"],
+      ["queues", "chatbots", "id", "ASC"]
     ]
   });
 

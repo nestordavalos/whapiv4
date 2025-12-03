@@ -32,7 +32,6 @@ interface Response {
   name: string;
   email: string;
   profile: string;
-
 }
 
 const UpdateUserService = async ({
@@ -70,7 +69,7 @@ const UpdateUserService = async ({
     viewSector,
     viewName,
     viewTags,
-    allTicket,
+    allTicket
   } = userData;
 
   try {
@@ -85,7 +84,7 @@ const UpdateUserService = async ({
       viewSector,
       viewName,
       viewTags,
-      allTicket,
+      allTicket
     });
   } catch (err) {
     throw new AppError(err.message);
@@ -105,7 +104,7 @@ const UpdateUserService = async ({
     viewSector,
     viewName,
     viewTags,
-    allTicket,
+    allTicket
   });
 
   await user.$set("queues", queueIds);

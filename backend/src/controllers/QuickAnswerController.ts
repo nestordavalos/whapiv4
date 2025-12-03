@@ -121,8 +121,6 @@ export const removeAll = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { quickAnswerId } = req.params;
-
   await DeleteAllQuickAnswerService();
 
   return res.status(200).json({ message: "All Quick Answer deleted" });

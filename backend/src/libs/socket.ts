@@ -32,7 +32,12 @@ export const initIO = (httpServer: Server): SocketIO => {
     const { token } = socket.handshake.query;
     let tokenData: SocketTokenPayload | null = null;
     try {
-      const tokenString = Array.isArray(token) ? token[0] : token; // Ensure token is a string
+      const tokenString = Array.isArray(token) ? token[0] : token;
+      if (!tokenString) {
+        logger.warn("Socket connection attempted without token");
+        socket.disconnect();
+        return io;
+      }
       tokenData = verify(tokenString, authConfig.secret) as SocketTokenPayload;
       logger.debug(JSON.stringify(tokenData), "io-onConnection: tokenData");
     } catch (error) {

@@ -19,7 +19,7 @@ const ListService = async ({
   pageNumber = "1"
 }: Request): Promise<Response> => {
   let whereCondition = {};
-  const limit = 9999; //Aumenta o limite de apresentações dos dados
+  const limit = 9999; // Aumenta o limite de apresentações dos dados
   const offset = limit * (+pageNumber - 1);
 
   if (searchParam) {
@@ -38,7 +38,7 @@ const ListService = async ({
     order: [["name", "ASC"]],
     include: [
       { model: ContactTag, attributes: ["tagId"] },
-      { model: Contact, through: { attributes: [] } } //Add funcition que busca também o contato vinculado a tag
+      { model: Contact, through: { attributes: [] } } // Add funcition que busca também o contato vinculado a tag
     ]
   });
 

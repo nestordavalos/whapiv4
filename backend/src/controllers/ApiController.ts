@@ -3,7 +3,6 @@ import * as Yup from "yup";
 import AppError from "../errors/AppError";
 import GetDefaultWhatsApp from "../helpers/GetDefaultWhatsApp";
 import SetTicketMessagesAsRead from "../helpers/SetTicketMessagesAsRead";
-import Message from "../models/Message";
 import Whatsapp from "../models/Whatsapp";
 import CreateOrUpdateContactService from "../services/ContactServices/CreateOrUpdateContactService";
 import FindOrCreateTicketService from "../services/TicketServices/FindOrCreateTicketService";
@@ -19,25 +18,18 @@ import ListQueuesService from "../services/QueueService/ListQueuesService";
 
 type UserData = {
   userId: number;
-}
+};
 
 type TagData = {
   tagsId: number;
-}
+};
 
 type QueueData = {
   queueId: number;
-}
+};
 
 type WhatsappData = {
   whatsappId: number;
-}
-
-type MessageData = {
-  body: string;
-  fromMe: boolean;
-  read: boolean;
-  quotedMsg?: Message;
 };
 
 interface ContactData {
@@ -86,8 +78,8 @@ const createContact = async (
     1,
     queueId,
     tagsId,
-    userId,
-);
+    userId
+  );
 
   const ticket = await ShowTicketService(createTicket.id);
 
@@ -137,17 +129,28 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   if (medias && medias.length > 0) {
     await Promise.all(
       medias.map(async (media: Express.Multer.File) => {
-        resp = await SendWhatsAppMedia({ body, media, ticket: contactAndTicket, quotedMsg });
+        resp = await SendWhatsAppMedia({
+          body,
+          media,
+          ticket: contactAndTicket,
+          quotedMsg
+        });
       })
     );
   } else {
-    resp = await SendWhatsAppMessage({ body, ticket: contactAndTicket, quotedMsg });
+    resp = await SendWhatsAppMessage({
+      body,
+      ticket: contactAndTicket,
+      quotedMsg
+    });
   }
 
-  const listSettingsService = await ListSettingsServiceOne({ key: "closeTicketApi" });
-  var closeTicketApi = listSettingsService?.value;
+  const listSettingsService = await ListSettingsServiceOne({
+    key: "closeTicketApi"
+  });
+  const closeTicketApi = listSettingsService?.value;
 
-  if (closeTicketApi === 'enabled') {
+  if (closeTicketApi === "enabled") {
     setTimeout(async () => {
       await UpdateTicketService({
         ticketId: contactAndTicket.id,

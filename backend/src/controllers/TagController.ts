@@ -96,8 +96,6 @@ export const removeAll = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { tagId } = req.params;
-
   await DeleteAllService();
 
   return res.send();

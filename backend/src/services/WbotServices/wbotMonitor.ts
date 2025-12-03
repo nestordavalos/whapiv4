@@ -5,6 +5,7 @@ import { getIO } from "../../libs/socket";
 import Whatsapp from "../../models/Whatsapp";
 import { logger } from "../../utils/logger";
 import { StartWhatsAppSession } from "./StartWhatsAppSession";
+import { sendConnectionUpdateWebhook } from "../WebhookService/SendWebhookEvent";
 
 interface Session extends Client {
   id?: number;
@@ -22,6 +23,13 @@ const wbotMonitor = async (
       logger.info(`Monitor session: ${sessionName}, ${newState}`);
       try {
         await whatsapp.update({ status: newState });
+
+        // Enviar webhook de cambio de estado de conexión
+        sendConnectionUpdateWebhook(whatsapp.id, {
+          status: newState,
+          sessionName,
+          timestamp: new Date().toISOString()
+        });
       } catch (err) {
         Sentry.captureException(err);
         logger.error(err);
@@ -35,9 +43,22 @@ const wbotMonitor = async (
 
     wbot.on("disconnected", async reason => {
       logger.info(`Disconnected session: ${sessionName}, reason: ${reason}`);
+
+      // Enviar webhook de desconexión
+      sendConnectionUpdateWebhook(whatsapp.id, {
+        status: "DISCONNECTED",
+        reason,
+        sessionName,
+        timestamp: new Date().toISOString()
+      });
+
       try {
         if (reason === "LOGOUT") {
-          await whatsapp.update({ status: "DISCONNECTED", session: "", number: "" });
+          await whatsapp.update({
+            status: "DISCONNECTED",
+            session: "",
+            number: ""
+          });
           io.emit("whatsappSession", {
             action: "update",
             session: whatsapp

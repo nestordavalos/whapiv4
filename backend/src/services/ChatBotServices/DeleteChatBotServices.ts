@@ -1,7 +1,7 @@
 import ShowChatBotServices from "./ShowChatBotServices";
 
 const DeleteChatBotServices = async (
-  chatbotId: number | string,
+  chatbotId: number | string
 ): Promise<void> => {
   const chatbot = await ShowChatBotServices(chatbotId);
 

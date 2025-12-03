@@ -1,26 +1,22 @@
 import { Request, Response } from "express";
 
+import { Message as WbotMessage } from "whatsapp-web.js";
 import SetTicketMessagesAsRead from "../helpers/SetTicketMessagesAsRead";
 import { getIO } from "../libs/socket";
-import Message from "../models/Message";
 
 import ListMessagesService from "../services/MessageServices/ListMessagesService";
+import SyncMessagesService from "../services/MessageServices/SyncMessagesService";
 import ShowTicketService from "../services/TicketServices/ShowTicketService";
 import DeleteWhatsAppMessage from "../services/WbotServices/DeleteWhatsAppMessage";
+import EditWhatsAppMessage from "../services/WbotServices/EditWhatsAppMessage";
 import SendWhatsAppMedia from "../services/WbotServices/SendWhatsAppMedia";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
+import ForwardWhatsAppMessage from "../services/WbotServices/ForwardWhatsAppMessage";
 import CreateMessageService from "../services/MessageServices/CreateMessageService";
-import { Message as WbotMessage } from "whatsapp-web.js";
+import Message from "../models/Message";
 
 type IndexQuery = {
   pageNumber: string;
-};
-
-type MessageData = {
-  body: string;
-  fromMe: boolean;
-  read: boolean;
-  quotedMsg?: Message;
 };
 
 export const index = async (req: Request, res: Response): Promise<Response> => {
@@ -127,4 +123,67 @@ export const remove = async (
   });
 
   return res.send();
+};
+
+export const edit = async (req: Request, res: Response): Promise<Response> => {
+  const { messageId } = req.params;
+  const { body } = req.body;
+
+  const message = await EditWhatsAppMessage({
+    messageId,
+    newBody: body
+  });
+
+  const io = getIO();
+  io.to(message.ticketId.toString()).emit("appMessage", {
+    action: "update",
+    message
+  });
+
+  return res.json(message);
+};
+
+type SyncQuery = {
+  limit?: string;
+};
+
+export const sync = async (req: Request, res: Response): Promise<Response> => {
+  const { ticketId } = req.params;
+  const { limit } = req.query as SyncQuery;
+
+  const result = await SyncMessagesService({
+    ticketId,
+    limit: limit ? parseInt(limit, 10) : 100
+  });
+
+  return res.json(result);
+};
+
+export const forward = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { messageId } = req.params;
+  const { contactId } = req.body;
+
+  const message = await Message.findByPk(messageId, {
+    include: ["ticket"]
+  });
+
+  if (!message) {
+    return res.status(404).json({ error: "Message not found" });
+  }
+
+  const ticket = await ShowTicketService(message.ticketId.toString());
+
+  const result = await ForwardWhatsAppMessage({
+    message,
+    ticket,
+    contactNumber: contactId
+  });
+
+  return res.json({
+    message: "Message forwarded successfully",
+    destinationTicketId: result.destinationTicketId
+  });
 };

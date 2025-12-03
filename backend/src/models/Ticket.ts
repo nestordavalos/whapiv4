@@ -18,6 +18,7 @@ import Message from "./Message";
 import Queue from "./Queue";
 import User from "./User";
 import Whatsapp from "./Whatsapp";
+import QueueIntegrations from "./QueueIntegrations";
 
 @Table
 class Ticket extends Model<Ticket> {
@@ -43,6 +44,7 @@ class Ticket extends Model<Ticket> {
   @Default(false)
   @Column
   isBot: boolean;
+
   @Index
   @CreatedAt
   createdAt: Date;
@@ -96,6 +98,25 @@ class Ticket extends Model<Ticket> {
   @Default(false)
   @Column
   isFinished: boolean;
+
+  // Typebot integration fields
+  @Column
+  typebotSessionId: string;
+
+  @Default(false)
+  @Column
+  typebotStatus: boolean;
+
+  @Default(false)
+  @Column
+  useIntegration: boolean;
+
+  @ForeignKey(() => QueueIntegrations)
+  @Column
+  integrationId: number;
+
+  @BelongsTo(() => QueueIntegrations)
+  integration: QueueIntegrations;
 }
 
 export default Ticket;

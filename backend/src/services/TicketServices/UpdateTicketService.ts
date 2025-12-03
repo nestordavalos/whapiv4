@@ -1,9 +1,12 @@
 import moment from "moment";
-import * as Sentry from "@sentry/node";
 import CheckContactOpenTickets from "../../helpers/CheckContactOpenTickets";
 import SetTicketMessagesAsRead from "../../helpers/SetTicketMessagesAsRead";
 import { getIO } from "../../libs/socket";
 import Ticket from "../../models/Ticket";
+import Contact from "../../models/Contact";
+import User from "../../models/User";
+import Queue from "../../models/Queue";
+import Whatsapp from "../../models/Whatsapp";
 import SendWhatsAppMessage from "../WbotServices/SendWhatsAppMessage";
 import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
 import ShowTicketService from "./ShowTicketService";
@@ -18,12 +21,17 @@ interface TicketData {
   fromMe?: boolean;
   isMsgGroup?: boolean;
   isFinished?: boolean;
-  }
+  useIntegration?: boolean;
+  integrationId?: number | null;
+  typebotSessionId?: string | null;
+  typebotStatus?: boolean;
+  isBot?: boolean;
+}
 
 interface Request {
   ticketData: TicketData | Ticket;
   ticketId: string | number;
-  }
+}
 
 interface Response {
   ticket: Ticket;
@@ -35,126 +43,169 @@ const UpdateTicketService = async ({
   ticketData,
   ticketId
 }: Request): Promise<Response> => {
-    const { status }= ticketData;  
+  const { status } = ticketData;
 
-      const io = getIO();
+  const io = getIO();
 
-      const ticket = await ShowTicketService(ticketId);
-      let { userId, queueId, whatsappId, fromMe, isMsgGroup ,isFinished }= ticketData;
+  const ticket = await ShowTicketService(ticketId);
+  const {
+    userId,
+    queueId,
+    whatsappId,
+    fromMe,
+    isMsgGroup,
+    isFinished,
+    useIntegration,
+    integrationId,
+    typebotSessionId,
+    typebotStatus,
+    isBot
+  } = ticketData;
 
-      await SetTicketMessagesAsRead(ticket);
+  await SetTicketMessagesAsRead(ticket);
 
-      if(whatsappId && ticket.whatsappId !== whatsappId) {
-        await CheckContactOpenTickets(ticket.contactId, whatsappId);
+  if (whatsappId && ticket.whatsappId !== whatsappId) {
+    await CheckContactOpenTickets(ticket.contactId, whatsappId);
+  }
+
+  const ticketTraking = await FindOrCreateATicketTrakingService({
+    ticketId,
+    whatsappId: ticket.whatsappId
+  });
+
+  const oldStatus = ticket.status;
+  const oldUserId = ticket.user?.id;
+
+  if (oldStatus === "closed") {
+    await CheckContactOpenTickets(ticket.contact.id, ticket.whatsappId);
+  }
+
+  if (status !== undefined && ["closed"].indexOf(status) > -1 && !isFinished) {
+    const { ratingMessage } = await ShowWhatsAppService(ticket.whatsappId);
+
+    if (ratingMessage && !ticket.isGroup) {
+      if (ticketTraking.ratingAt == null) {
+        await ticketTraking.update({
+          closedAt: moment().toDate()
+        });
+
+        const ratingTxt = ratingMessage || "";
+        const bodyRatingMessage = `\u200e${ratingTxt}\n`;
+
+        const msg = await SendWhatsAppMessage({
+          body: bodyRatingMessage,
+          ticket
+        });
+
+        await verifyMessage(msg, ticket, ticket.contact);
+
+        io.to("open").to(ticketId.toString()).emit("ticket", {
+          action: "delete",
+          ticketId: ticket.id
+        });
+
+        return { ticket, oldStatus, oldUserId };
       }
-
-      const ticketTraking = await FindOrCreateATicketTrakingService({
-        ticketId,
-        whatsappId: ticket.whatsappId
-      });
-
-      const oldStatus = ticket.status;
-      const oldUserId = ticket.user?.id;
-
-      if (oldStatus === "closed") {
-        await CheckContactOpenTickets(ticket.contact.id, ticket.whatsappId);
-      }
-
-      if (status !== undefined && ["closed"].indexOf(status) > -1 && !isFinished) {
-        const { ratingMessage } = await ShowWhatsAppService(
-          ticket.whatsappId
-        );
-
-        if (ratingMessage && !ticket.isGroup) {
-          if (ticketTraking.ratingAt == null) {
-
-            await ticketTraking.update({
-              closedAt: moment().toDate()
-            });
-            
-            const ratingTxt = ratingMessage || "";
-            let bodyRatingMessage = `\u200e${ratingTxt}\n`;
-
-            const msg = await SendWhatsAppMessage({ body: bodyRatingMessage, ticket });
-
-            await verifyMessage(msg, ticket, ticket.contact);
-
-            io.to("open")
-              .to(ticketId.toString())
-              .emit("ticket", {
-                action: "delete",
-                ticketId: ticket.id
-              });
-
-            return { ticket, oldStatus, oldUserId };
-          }
-        }
-    };
-
-   
-    if (queueId !== undefined && queueId !== null) {
-      let queuedAt = moment().toDate();
-      await ticketTraking.update({ 
-        queuedAt
-      });
     }
+  }
 
+  if (queueId !== undefined && queueId !== null) {
+    const queuedAt = moment().toDate();
+    await ticketTraking.update({
+      queuedAt
+    });
+  }
+
+  await ticket.update({
+    status,
+    queueId,
+    userId,
+    fromMe,
+    isMsgGroup,
+    useIntegration,
+    integrationId,
+    typebotSessionId,
+    typebotStatus,
+    isBot
+  });
+
+  if (whatsappId) {
     await ticket.update({
-      status,
-      queueId,
-      userId,
-      fromMe,
-      isMsgGroup
+      whatsappId
+    });
+  }
+
+  // Reload with all necessary associations for socket emission
+  await ticket.reload({
+    include: [
+      {
+        model: Contact,
+        as: "contact",
+        attributes: ["id", "name", "number", "email", "profilePicUrl"],
+        include: ["extraInfo", "tags"]
+      },
+      {
+        model: User,
+        as: "user",
+        attributes: ["id", "name"]
+      },
+      {
+        model: Queue,
+        as: "queue",
+        attributes: ["id", "name", "color"]
+      },
+      {
+        model: Whatsapp,
+        as: "whatsapp",
+        attributes: ["name"]
+      }
+    ]
+  });
+
+  if (status !== undefined && ["pending"].indexOf(status) > -1) {
+    await ticketTraking.update({
+      whatsappId: ticket.whatsappId,
+      queuedAt: moment().toDate(),
+      startedAt: null,
+      userId: null
+    });
+  }
+
+  if (status !== undefined && ["open"].indexOf(status) > -1) {
+    await ticketTraking.update({
+      startedAt: moment().toDate(),
+      ratingAt: null,
+      rated: false,
+      whatsappId: ticket.whatsappId,
+      userId: ticket.userId
+    });
+  }
+
+  await ticketTraking.save();
+  (ticket as any).queuedAt = ticketTraking.queuedAt;
+  (ticket as any).queueAt = ticketTraking.queuedAt;
+  ticket.setDataValue("queuedAt", ticketTraking.queuedAt);
+  ticket.setDataValue("queueAt", ticketTraking.queuedAt);
+
+  if (ticket.status !== oldStatus || ticket.user?.id !== oldUserId) {
+    ticketTraking.update({
+      userId: ticket.userId
+    });
+    io.to(oldStatus).emit("ticket", {
+      action: "delete",
+      ticketId: ticket.id
+    });
+  }
+
+  io.to(ticket.status)
+    .to("notification")
+    .to(ticketId.toString())
+    .emit("ticket", {
+      action: "update",
+      ticket
     });
 
-    if(whatsappId) {
-      await ticket.update({
-        whatsappId
-      });
-    }
-
-    await ticket.reload();
-
-    if (status !== undefined && ["pending"].indexOf(status) > -1) {
-      ticketTraking.update({
-        whatsappId: ticket.whatsappId,
-        queuedAt: moment().toDate(),
-        startedAt: null,
-        userId: null
-      });
-    }
-
-    if (status !== undefined && ["open"].indexOf(status) > -1) {
-      ticketTraking.update({
-        startedAt: moment().toDate(),
-        ratingAt: null,
-        rated: false,
-        whatsappId: ticket.whatsappId,
-        userId: ticket.userId
-      });
-    }
-
-    await ticketTraking.save();
-    
-    if (ticket.status !== oldStatus || ticket.user?.id !== oldUserId) {
-      ticketTraking.update({
-        userId: ticket.userId
-      })
-      io.to(oldStatus).emit("ticket", {
-        action: "delete",
-        ticketId: ticket.id
-      });
-    }
-
-    io.to(ticket.status)
-      .to("notification")
-      .to(ticketId.toString())
-      .emit("ticket", {
-        action: "update",
-        ticket
-      });
-
-    return { ticket, oldStatus, oldUserId };
+  return { ticket, oldStatus, oldUserId };
 };
 
 export default UpdateTicketService;

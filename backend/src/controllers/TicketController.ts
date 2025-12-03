@@ -10,6 +10,8 @@ import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
 import ShowQueueService from "../services/QueueService/ShowQueueService";
 import formatBody from "../helpers/Mustache";
+import { getWbot } from "../libs/wbot";
+import { logger } from "../utils/logger";
 
 type IndexQuery = {
   searchParam: string;
@@ -19,6 +21,9 @@ type IndexQuery = {
   showAll: string;
   withUnreadMessages: string;
   queueIds: string;
+  tags: string;
+  whatsappIds: string;
+  userIds: string;
 };
 
 interface TicketData {
@@ -38,15 +43,33 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
     searchParam,
     showAll,
     queueIds: queueIdsStringified,
+    tags: tagsStringified,
+    whatsappIds: whatsappIdsStringified,
+    userIds: userIdsStringified,
     withUnreadMessages
   } = req.query as IndexQuery;
 
   const userId = req.user.id;
 
   let queueIds: number[] = [];
+  let tags: number[] = [];
+  let whatsappIds: number[] = [];
+  let userIds: number[] = [];
 
   if (queueIdsStringified) {
     queueIds = JSON.parse(queueIdsStringified);
+  }
+
+  if (tagsStringified) {
+    tags = JSON.parse(tagsStringified);
+  }
+
+  if (whatsappIdsStringified) {
+    whatsappIds = JSON.parse(whatsappIdsStringified);
+  }
+
+  if (userIdsStringified) {
+    userIds = JSON.parse(userIdsStringified);
   }
 
   const { tickets, count, hasMore } = await ListTicketsService({
@@ -57,7 +80,10 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
     showAll,
     userId,
     queueIds,
-    withUnreadMessages,
+    tags,
+    whatsappIds,
+    userIds,
+    withUnreadMessages
   });
 
   return res.status(200).json({ tickets, count, hasMore });
@@ -110,7 +136,12 @@ export const update = async (
     }
   }
 
-  if (ticket.status === "closed" && ticket.isGroup === false && ticket.user !== null && !ticketData.isFinished) {
+  if (
+    ticket.status === "closed" &&
+    ticket.isGroup === false &&
+    ticket.user !== null &&
+    !ticketData.isFinished
+  ) {
     const whatsapp = await ShowWhatsAppService(ticket.whatsappId);
 
     const { farewellMessage } = whatsapp;
@@ -121,9 +152,62 @@ export const update = async (
         ticket
       });
     }
+
+    // Archive chat if enabled
+    if (whatsapp.archiveOnClose) {
+      try {
+        // Only archive if WhatsApp is connected
+        if (whatsapp.status === "CONNECTED") {
+          const wbot = getWbot(ticket.whatsappId);
+          const chatId = `${ticket.contact.number}@c.us`;
+          await wbot.archiveChat(chatId);
+          logger.info(
+            `[TicketController] Chat archived for ticket ${ticket.id}`
+          );
+        } else {
+          logger.warn(
+            `[TicketController] Cannot archive chat - WhatsApp not connected (status: ${whatsapp.status})`
+          );
+        }
+      } catch (err: any) {
+        const errorMessage =
+          err?.message || err?.toString() || JSON.stringify(err);
+        logger.warn(
+          `[TicketController] Could not archive chat for ticket ${ticket.id}: ${errorMessage}`
+        );
+      }
+    }
   }
-  if (ticket.status === "closed" && ticket.isGroup === false && ticketData.isFinished) {
-    
+  if (
+    ticket.status === "closed" &&
+    ticket.isGroup === false &&
+    ticketData.isFinished
+  ) {
+    // Archive chat if enabled (for finished tickets too)
+    const whatsapp = await ShowWhatsAppService(ticket.whatsappId);
+    if (whatsapp.archiveOnClose) {
+      try {
+        // Only archive if WhatsApp is connected
+        if (whatsapp.status === "CONNECTED") {
+          const wbot = getWbot(ticket.whatsappId);
+          const chatId = `${ticket.contact.number}@c.us`;
+          await wbot.archiveChat(chatId);
+          logger.info(
+            `[TicketController] Chat archived for finished ticket ${ticket.id}`
+          );
+        } else {
+          logger.warn(
+            `[TicketController] Cannot archive chat - WhatsApp not connected (status: ${whatsapp.status})`
+          );
+        }
+      } catch (err: any) {
+        const errorMessage =
+          err?.message || err?.toString() || JSON.stringify(err);
+        logger.warn(
+          `[TicketController] Could not archive chat for finished ticket ${ticket.id}: ${errorMessage}`
+        );
+      }
+    }
   }
 
   return res.status(200).json(ticket);
@@ -138,13 +222,10 @@ export const remove = async (
   const ticket = await DeleteTicketService(ticketId);
 
   const io = getIO();
-  io.to(ticket.status)
-    .to(ticketId)
-    .to("notification")
-    .emit("ticket", {
-      action: "delete",
-      ticketId: +ticketId
-    });
+  io.to(ticket.status).to(ticketId).to("notification").emit("ticket", {
+    action: "delete",
+    ticketId: +ticketId
+  });
 
   return res.status(200).json({ message: "ticket deleted" });
 };

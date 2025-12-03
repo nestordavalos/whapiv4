@@ -60,7 +60,6 @@ class Whatsapp extends Model<Whatsapp> {
   @Column(DataType.TEXT)
   ratingMessage: string;
 
-
   // __________________________________________________________________ Reconhecimento do horario de atendimento
   @Column(DataType.BOOLEAN)
   defineWorkHours: boolean;
@@ -182,7 +181,6 @@ class Whatsapp extends Model<Whatsapp> {
   @Column(DataType.TEXT)
   EndDefineWorkHoursSundayLunch: string;
 
-
   @Default(false)
   @AllowNull
   @Column
@@ -218,6 +216,45 @@ class Whatsapp extends Model<Whatsapp> {
   @Default("")
   @Column(DataType.TEXT)
   timeInactiveMessage: string;
+
+  // Webhook configuration - Multiple webhooks support
+  @AllowNull
+  @Column(DataType.TEXT)
+  webhookUrls: string;
+
+  @Default(false)
+  @Column(DataType.BOOLEAN)
+  webhookEnabled: boolean;
+
+  // Archive chat on ticket close
+  @Default(false)
+  @Column(DataType.BOOLEAN)
+  archiveOnClose: boolean;
+
+  // Sync configuration per instance
+  @Default(50)
+  @Column(DataType.INTEGER)
+  syncMaxMessagesPerChat: number;
+
+  @Default(100)
+  @Column(DataType.INTEGER)
+  syncMaxChats: number;
+
+  @Default(24)
+  @Column(DataType.INTEGER)
+  syncMaxMessageAgeHours: number;
+
+  @Default(100)
+  @Column(DataType.INTEGER)
+  syncDelayBetweenChats: number;
+
+  @Default(true)
+  @Column(DataType.BOOLEAN)
+  syncMarkAsSeen: boolean;
+
+  @Default(true)
+  @Column(DataType.BOOLEAN)
+  syncCreateClosedForRead: boolean;
 
   @HasMany(() => Ticket)
   tickets: Ticket[];

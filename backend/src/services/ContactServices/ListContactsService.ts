@@ -1,7 +1,5 @@
-import { Sequelize, Op, Filterable, Includeable } from "sequelize";
-import { intersection } from "lodash";
+import { Sequelize, Op, Filterable } from "sequelize";
 import Contact from "../../models/Contact";
-import Tag from "../../models/Tag";
 import ContactTag from "../../models/ContactTag";
 
 interface Request {
@@ -21,49 +19,64 @@ const ListContactsService = async ({
   pageNumber = "1",
   tags
 }: Request): Promise<Response> => {
+  const sanitizedSearch = searchParam.toLowerCase().trim();
+
   let whereCondition: Filterable["where"] = {
     [Op.or]: [
       {
         name: Sequelize.where(
           Sequelize.fn("LOWER", Sequelize.col("name")),
           "LIKE",
-          `%${searchParam.toLowerCase().trim()}%`
+          `%${sanitizedSearch}%`
         )
       },
-      { number: { [Op.like]: `%${searchParam.toLowerCase().trim()}%` } },
+      { number: { [Op.like]: `%${sanitizedSearch}%` } },
       {
         email: Sequelize.where(
           Sequelize.fn("LOWER", Sequelize.col("email")),
           "LIKE",
-          `%${searchParam.toLowerCase().trim()}%`
+          `%${sanitizedSearch}%`
         )
       }
     ]
   };
 
-  let includeCondition: Includeable[];
-  includeCondition = [
-    {
-      model: Tag,
-      as: "tags",
-      attributes: ["id", "name", "color"]
-    }
-  ];
-
+  // Optimized: Single query instead of N queries for tags
   if (Array.isArray(tags) && tags.length > 0) {
-    const contactsTagFilter = [];
-    for (const tag of tags) {
-      const contactTags = await ContactTag.findAll({ where: { tagId: tag } });
-      if (contactTags) {
-        contactsTagFilter.push(contactTags.map(t => t.contactId));
+    // Get all contact-tag associations in a single query
+    const contactTags = await ContactTag.findAll({
+      where: { tagId: { [Op.in]: tags } },
+      attributes: ["contactId", "tagId"]
+    });
+
+    // Group contacts by tag in memory
+    const contactsByTag = new Map<number, Set<number>>();
+    contactTags.forEach(ct => {
+      if (!contactsByTag.has(ct.tagId)) {
+        contactsByTag.set(ct.tagId, new Set());
+      }
+      contactsByTag.get(ct.tagId)!.add(ct.contactId);
+    });
+
+    // Find intersection of contacts that have ALL specified tags
+    let contactsIntersection: Set<number> | null = null;
+    for (const [, contactIds] of contactsByTag) {
+      if (contactsIntersection === null) {
+        contactsIntersection = new Set(contactIds);
+      } else {
+        contactsIntersection = new Set(
+          [...contactsIntersection].filter(id => contactIds.has(id))
+        );
       }
     }
 
-    const contactsIntersection: number[] = intersection(...contactsTagFilter);
+    const contactIdArray = contactsIntersection
+      ? Array.from(contactsIntersection)
+      : [];
 
     whereCondition = {
       id: {
-        [Op.in]: contactsIntersection
+        [Op.in]: contactIdArray.length > 0 ? contactIdArray : [-1] // -1 ensures no results if empty
       }
     };
   }

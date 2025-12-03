@@ -1,34 +1,39 @@
-/* eslint-disable no-plusplus */
-/* eslint-disable no-nested-ternary */
-import { join } from "path";
-import { promisify } from "util";
-import { writeFile } from "fs";
 import * as Sentry from "@sentry/node";
-import { head, isNull, isNil, isNaN, isNative } from "lodash";
+import { isNull } from "lodash";
 import moment from "moment";
 
 import {
   Contact as WbotContact,
   Message as WbotMessage,
   MessageAck,
-  Client
+  Client,
+  Reaction
 } from "whatsapp-web.js";
 
 import Contact from "../../models/Contact";
 import Ticket from "../../models/Ticket";
 import Message from "../../models/Message";
 import Settings from "../../models/Setting";
-import Whatsapp from "../../models/Whatsapp";
+import Queue from "../../models/Queue";
 
 import { getIO } from "../../libs/socket";
 import CreateMessageService from "../MessageServices/CreateMessageService";
+import HandleMessageReactionService from "../MessageServices/HandleMessageReactionService";
+import HandleMessageEditService from "../MessageServices/HandleMessageEditService";
 import { logger } from "../../utils/logger";
 import CreateOrUpdateContactService from "../ContactServices/CreateOrUpdateContactService";
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
 import FindOrCreateTicketService from "../TicketServices/FindOrCreateTicketService";
 import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
 import ShowWhatsaAppHours from "../WhatsappService/ShowWhatsaAppHours";
+
 import { debounce } from "../../helpers/Debounce";
+import {
+  buildDaySchedule,
+  evaluateSchedule,
+  secondsFromDate,
+  timeStringToSeconds
+} from "../../helpers/workHours";
 import UpdateTicketService from "../TicketServices/UpdateTicketService";
 import CreateContactService from "../ContactServices/CreateContactService";
 import formatBody from "../../helpers/Mustache";
@@ -37,15 +42,18 @@ import UserRating from "../../models/UserRating";
 import TicketTraking from "../../models/TicketTraking";
 import SendWhatsAppMessage from "./SendWhatsAppMessage";
 import FindOrCreateATicketTrakingService from "../TicketServices/FindOrCreateATicketTrakingService";
-import Queue from "../../models/Queue";
-import { boolean } from "yup";
-import ShowTicketService from "../TicketServices/ShowTicketService";
+import {
+  sendMessageReceivedWebhook,
+  sendMessageSentWebhook,
+  sendMessageAckWebhook
+} from "../WebhookService/SendWebhookEvent";
+import typebotListener from "../TypebotServices/typebotListener";
+import ShowQueueIntegrationService from "../QueueIntegrationServices/ShowQueueIntegrationService";
+import { getStorageService } from "../StorageServices/StorageService";
 
 interface Session extends Client {
   id?: number;
 }
-
-const writeFileAsync = promisify(writeFile);
 
 const verifyContact = async (msgContact: WbotContact): Promise<Contact> => {
   try {
@@ -159,65 +167,64 @@ const verifyMediaMessage = async (
   }
 
   try {
-    await writeFileAsync(
-      join(__dirname, "..", "..", "..", "public", media.filename),
+    // Use StorageService for file upload (supports S3, S3-compatible, and local with fallback)
+    const storageService = getStorageService();
+    await storageService.uploadBase64(
       media.data,
-      "base64"
+      media.filename,
+      media.mimetype
     );
+    logger.debug(`Media uploaded via StorageService: ${media.filename}`);
   } catch (err: any) {
     Sentry.captureException(err);
-    logger.error(err);
+    logger.error(`Failed to upload media via StorageService: ${err}`);
   }
 
   let $tipoArquivo: string;
 
   switch (media.mimetype.split("/")[0]) {
-    case 'audio':
-      $tipoArquivo = '🔉 Mensaje de audio';
+    case "audio":
+      $tipoArquivo = "🔉 Mensaje de audio";
       break;
 
-    case 'image':
-      $tipoArquivo = '🖼️ Archivo de imagen';
+    case "image":
+      $tipoArquivo = "🖼️ Archivo de imagen";
       break;
 
-    case 'video':
-      $tipoArquivo = '🎬 Archivo de vídeo';
+    case "video":
+      $tipoArquivo = "🎬 Archivo de vídeo";
       break;
 
-    case 'document':
-      $tipoArquivo = '📘 Documento';
+    case "document":
+      $tipoArquivo = "📘 Documento";
       break;
 
-    case 'application':
-      $tipoArquivo = '📎 Documento';
+    case "application":
+      $tipoArquivo = "📎 Documento";
       break;
 
-    case 'ciphertext':
-      $tipoArquivo = '⚠️ Notificación';
+    case "ciphertext":
+      $tipoArquivo = "⚠️ Notificación";
       break;
 
-    case 'e2e_notification':
-      $tipoArquivo = '⛔ Notificación';
+    case "e2e_notification":
+      $tipoArquivo = "⛔ Notificación";
       break;
 
-    case 'revoked':
-      $tipoArquivo = '❌ Borrado';
+    case "revoked":
+      $tipoArquivo = "❌ Borrado";
       break;
     default:
-      $tipoArquivo = '📎 Archivo';
+      $tipoArquivo = "📎 Archivo";
       break;
   }
 
   let $strBody: string;
 
   if (msg.fromMe) {
-
     $strBody = msg.body;
-
   } else {
-
     $strBody = msg.body;
-
   }
 
   const messageData = {
@@ -236,9 +243,15 @@ const verifyMediaMessage = async (
   };
 
   if (msg.fromMe == true) {
-    await ticket.update({ lastMessage: "🢅" + "⠀" + $tipoArquivo || "🢅" + "⠀" + $tipoArquivo });
+    await ticket.update({
+      lastMessage:
+        `${"🢅" + "⠀"}${$tipoArquivo}` || `${"🢅" + "⠀"}${$tipoArquivo}`
+    });
   } else {
-    await ticket.update({ lastMessage: "🢇" + "⠀" + $tipoArquivo || "🢇" + "⠀" + $tipoArquivo });
+    await ticket.update({
+      lastMessage:
+        `${"🢇" + "⠀"}${$tipoArquivo}` || `${"🢇" + "⠀"}${$tipoArquivo}`
+    });
   }
 
   const newMessage = await CreateMessageService({ messageData });
@@ -255,7 +268,9 @@ const prepareLocation = (msg: WbotMessage): WbotMessage => {
   const gmapsUrl = `https://maps.google.com/maps?q=${msg.location.latitude}%2C${msg.location.longitude}&z=17`;
   msg.body = `data:image/png;base64,${msg.body}|${gmapsUrl}`;
   const description = getLocationDescription(msg);
-  msg.body += `|${description ? description : `${msg.location.latitude}, ${msg.location.longitude}`}`;
+  msg.body += `|${
+    description || `${msg.location.latitude}, ${msg.location.longitude}`
+  }`;
   return msg;
 };
 
@@ -263,7 +278,7 @@ export const verifyMessage = async (
   msg: WbotMessage,
   ticket: Ticket,
   contact: Contact
-) => {
+): Promise<Message> => {
   if (msg.type === "location") msg = prepareLocation(msg);
 
   const quotedMsg = await verifyQuotedMessage(msg);
@@ -283,26 +298,37 @@ export const verifyMessage = async (
 
   if (msg.fromMe == true) {
     await ticket.update({
-      //texto que sai do chat tb,
+      // texto que sai do chat tb,
       fromMe: msg.fromMe,
       lastMessage:
         msg.type === "location"
           ? getLocationDescription(msg)
-            ? "🢅" + "⠀" + `Localization - ${String(getLocationDescription(msg)).split("\\n")[0]}`
+            ? "🢅" +
+              "⠀" +
+              `Localization - ${
+                String(getLocationDescription(msg)).split("\\n")[0]
+              }`
             : "🢅" + "⠀" + "🗺️:" + "Localization"
-          : "🢅" + "⠀" + msg.body
+          : `${"🢅" + "⠀"}${msg.body}`
     });
   } else {
-    await ticket.update({//aqui mapei texto que chega do chat
+    await ticket.update({
+      // aqui mapei texto que chega do chat
       lastMessage:
         msg.type === "location"
           ? getLocationDescription(msg)
-            ? "🢇" + "⠀" + "🗺️:" + `Localization - ${String(getLocationDescription(msg)).split("\\n")[0]}`
+            ? "🢇" +
+              "⠀" +
+              "🗺️:" +
+              `Localization - ${
+                String(getLocationDescription(msg)).split("\\n")[0]
+              }`
             : "🢇" + "⠀" + "🗺️:" + "Localization"
-          : "🢇" + "⠀" + msg.body
+          : `${"🢇" + "⠀"}${msg.body}`
     });
   }
-  await CreateMessageService({ messageData });
+  const newMessage = await CreateMessageService({ messageData });
+  return newMessage;
 };
 
 const verifyQueue = async (
@@ -311,12 +337,17 @@ const verifyQueue = async (
   ticket: Ticket,
   contact: Contact
 ) => {
-  const { queues, greetingMessage, isDisplay } = await ShowWhatsAppService(wbot.id!);
+  const whatsapp = await ShowWhatsAppService(wbot.id!);
+  const queues: Queue[] = whatsapp.queues || [];
+  const { greetingMessage, isDisplay } = whatsapp;
+
+  if (queues.length === 0) {
+    return;
+  }
 
   const {
     defineWorkHours,
     outOfWorkMessage,
-    id,
     sunday,
     StartDefineWorkHoursSunday,
     EndDefineWorkHoursSunday,
@@ -352,1849 +383,71 @@ const verifyQueue = async (
     EndDefineWorkHoursSaturday,
     StartDefineWorkHoursSaturdayLunch,
     EndDefineWorkHoursSaturdayLunch
-  } = await ShowWhatsaAppHours(
-    wbot.id!
-  );
-
-  //Verificando se está habilitado dias de expediente
-  if (defineWorkHours) {
-    const now = new Date();
-    const diaSemana = now.getDay();
-    let diaSemanaStr;
-    //Verificando os dias da semana se estão hbailitador, se não envie a mensagem de indisponivel
-
-    // Domingo_____________________________________________________________________________________________________________________
-    if (diaSemana === 0) {
-      diaSemanaStr = "sunday"
-      //if que identifica o dia da semana
-      if (sunday) {
-        //if que identifica se o dia da semana está ativo
-        const hh: number = now.getHours() * 60 * 60;
-        const mm: number = now.getMinutes() * 60;
-        const hora = hh + mm;
-
-        const start: string = StartDefineWorkHoursSunday;
-        const hhStart = Number(start.split(":")[0]) * 60 * 60;
-        const mmStart = Number(start.split(":")[1]) * 60;
-        const hoursStart = hhStart + mmStart;
-
-        const startLunch: string = StartDefineWorkHoursSundayLunch;
-        const hhStartLunch = Number(startLunch.split(":")[0]) * 60 * 60;
-        const mmStartLunch = Number(startLunch.split(":")[1]) * 60;
-        const hoursStartLunch = hhStartLunch + mmStartLunch;
-
-        const endLunch: string = EndDefineWorkHoursSundayLunch;
-        const hhEndLunch = Number(endLunch.split(":")[0]) * 60 * 60;
-        const mmEndLunch = Number(endLunch.split(":")[1]) * 60;
-        const hoursEndLunch = hhEndLunch + mmEndLunch;
-
-        const end: string = EndDefineWorkHoursSunday;
-        const hhEnd = Number(end.split(":")[0]) * 60 * 60;
-        const mmEnd = Number(end.split(":")[1]) * 60;
-        const hoursEnd = hhEnd + mmEnd;
-
-        if ((hora >= hoursStart && hora < hoursStartLunch) || (hora >= hoursEndLunch && hora < hoursEnd)) {
-          //if que identifica se está dentro do horario comerical desse dia em especifico
-          if (queues.length === 1) {
-            //if que identifica se a conexão tem só 1 setor, se tiver só um envia mensagem de saudação e transfere o chamado para o setor.
-            const selectedOption = '1';
-
-            const choosenQueue = queues[+selectedOption - 1];
-            if (choosenQueue) {
-              const Hr = new Date();
-
-              const hh: number = Hr.getHours() * 60 * 60;
-              const mm: number = Hr.getMinutes() * 60;
-              const hora = hh + mm;
-
-              const inicio: string = choosenQueue.startWork;
-              const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-              const mminicio = Number(inicio.split(":")[1]) * 60;
-              const horainicio = hhinicio + mminicio;
-
-              const termino: string = choosenQueue.endWork;
-              const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-              const mmtermino = Number(termino.split(":")[1]) * 60;
-              const horatermino = hhtermino + mmtermino;
-
-              if (hora < horainicio || hora > horatermino) {
-                const absenceMessage = choosenQueue.absenceMessage;
-                if (absenceMessage) {
-                  const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-                  const debouncedSentMessage = debounce(
-                    async () => {
-                      const sentMessage = await wbot.sendMessage(
-                        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                        body
-                      );
-                      verifyMessage(sentMessage, ticket, contact);
-                    },
-                    3000,
-                    ticket.id
-                  );
-
-                  debouncedSentMessage();
-                }
-              } else {
-                await UpdateTicketService({
-                  ticketData: { queueId: choosenQueue.id },
-                  ticketId: ticket.id
-                });
-
-                const chat = await msg.getChat();
-                await chat.sendStateTyping();
-
-                const greetingMessage = choosenQueue.greetingMessage;
-                if (greetingMessage) {
-                  const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-                  const sentMessage = await wbot.sendMessage(
-                    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                    body
-                  );
-
-                  await verifyMessage(sentMessage, ticket, contact);
-                }
-              }
-            }
-            await UpdateTicketService({
-              ticketData: { queueId: queues[0].id },
-              ticketId: ticket.id
-            });
-            return;
-          }
-
-          const selectedOption = msg.body;
-          const choosenQueue = queues[+selectedOption - 1];
-          if (choosenQueue) {
-            //if que identifica todos os setores selecionados na conexão
-            const Hr = new Date();
-
-            const hh: number = Hr.getHours() * 60 * 60;
-            const mm: number = Hr.getMinutes() * 60;
-            const hora = hh + mm;
-
-            const inicio: string = choosenQueue.startWork;
-            const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-            const mminicio = Number(inicio.split(":")[1]) * 60;
-            const horainicio = hhinicio + mminicio;
-
-            const termino: string = choosenQueue.endWork;
-            const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-            const mmtermino = Number(termino.split(":")[1]) * 60;
-            const horatermino = hhtermino + mmtermino;
-
-            if (hora < horainicio || hora > horatermino) {
-              //If que identifica se o setor tem hora definida de atendimento
-              const absenceMessage = choosenQueue.absenceMessage;
-              if (absenceMessage) {
-                const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-                const debouncedSentMessage = debounce(
-                  async () => {
-                    const sentMessage = await wbot.sendMessage(
-                      `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                      body
-                    );
-                    verifyMessage(sentMessage, ticket, contact);
-                  },
-                  3000,
-                  ticket.id
-                );
-
-                debouncedSentMessage();
-              }
-            } else {
-              //else que retorna a mensagem de fora de expediente do setor
-              await UpdateTicketService({
-                ticketData: { queueId: choosenQueue.id },
-                ticketId: ticket.id
-              });
-
-              const chat = await msg.getChat();
-              await chat.sendStateTyping();
-
-              const greetingMessage = choosenQueue.greetingMessage;
-              if (greetingMessage) {
-                const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-
-                await verifyMessage(sentMessage, ticket, contact);
-              }
-            }
-          } else {
-            //Envia mensagem com setores
-            let options = "";
-
-            const chat = await msg.getChat();
-            await chat.sendStateTyping();
-
-            queues.forEach((queue, index) => {
-              if (queue.startWork && queue.endWork) {
-                if (isDisplay) {
-                  options += `*${index + 1}* - ${queue.name} das ${queue.startWork
-                    } as ${queue.endWork}\n`;
-                } else {
-                  options += `*${index + 1}* - ${queue.name}\n`;
-                }
-              } else {
-                options += `*${index + 1}* - ${queue.name}\n`;
-              }
-            });
-
-            const body = formatBody(`\u200e${greetingMessage}\n\n${options}`, ticket);
-
-
-            const debouncedSentMessage = debounce(
-              async () => {
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-                verifyMessage(sentMessage, ticket, contact);
-              },
-              3000,
-              ticket.id
-            );
-
-            debouncedSentMessage();
-          }
-        } else {
-          //envia mensagem de fora do expediente, horario fora
-          if (outOfWorkMessage && outOfWorkMessage.trim() !== "") {
-            const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
-            const debouncedSentMessage = debounce(
-              async () => {
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-                verifyMessage(sentMessage, ticket, contact);
-              },
-              3000,
-              ticket.id
-            );
-            debouncedSentMessage();
-          }
-        }
-      } else {
-        //envia mensagem de fora do expediente, dia desativado
-        if (outOfWorkMessage && outOfWorkMessage.trim() !== "") {
-          const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
-          const debouncedSentMessage = debounce(
-            async () => {
-              const sentMessage = await wbot.sendMessage(
-                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                body
-              );
-              verifyMessage(sentMessage, ticket, contact);
-            },
-            3000,
-            ticket.id
-          );
-          debouncedSentMessage();
-        }
-      }
-    }
-    // Fim Domingo_________________________________________________________________________________________________________________
-
-    // Segunda_____________________________________________________________________________________________________________________
-    if (diaSemana === 1) {
-      diaSemanaStr = "monday"
-      //Verifica dia ativo ou não
-      if (monday) {
-        //if que identifica se o dia da semana está ativo
-        const hh: number = now.getHours() * 60 * 60;
-        const mm: number = now.getMinutes() * 60;
-        const hora = hh + mm;
-
-        const start: string = StartDefineWorkHoursMonday;
-        const hhStart = Number(start.split(":")[0]) * 60 * 60;
-        const mmStart = Number(start.split(":")[1]) * 60;
-        const hoursStart = hhStart + mmStart;
-
-        const startLunch: string = StartDefineWorkHoursMondayLunch;
-        const hhStartLunch = Number(startLunch.split(":")[0]) * 60 * 60;
-        const mmStartLunch = Number(startLunch.split(":")[1]) * 60;
-        const hoursStartLunch = hhStartLunch + mmStartLunch;
-
-        const endLunch: string = EndDefineWorkHoursMondayLunch;
-        const hhEndLunch = Number(endLunch.split(":")[0]) * 60 * 60;
-        const mmEndLunch = Number(endLunch.split(":")[1]) * 60;
-        const hoursEndLunch = hhEndLunch + mmEndLunch;
-
-        const end: string = EndDefineWorkHoursMonday;
-        const hhEnd = Number(end.split(":")[0]) * 60 * 60;
-        const mmEnd = Number(end.split(":")[1]) * 60;
-        const hoursEnd = hhEnd + mmEnd;
-
-        if ((hora >= hoursStart && hora < hoursStartLunch) || (hora >= hoursEndLunch && hora < hoursEnd)) {
-          //if que identifica se está dentro do horario comerical desse dia em especifico
-          if (queues.length === 1) {
-            //if que identifica se a conexão tem só 1 setor, se tiver só um envia mensagem de saudação e transfere o chamado para o setor.
-            const selectedOption = '1';
-
-            const choosenQueue = queues[+selectedOption - 1];
-            if (choosenQueue) {
-              const Hr = new Date();
-
-              const hh: number = Hr.getHours() * 60 * 60;
-              const mm: number = Hr.getMinutes() * 60;
-              const hora = hh + mm;
-
-              const inicio: string = choosenQueue.startWork;
-              const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-              const mminicio = Number(inicio.split(":")[1]) * 60;
-              const horainicio = hhinicio + mminicio;
-
-              const termino: string = choosenQueue.endWork;
-              const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-              const mmtermino = Number(termino.split(":")[1]) * 60;
-              const horatermino = hhtermino + mmtermino;
-
-              if (hora < horainicio || hora > horatermino) {
-                const absenceMessage = choosenQueue.absenceMessage;
-                if (absenceMessage) {
-                  const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-                  const debouncedSentMessage = debounce(
-                    async () => {
-                      const sentMessage = await wbot.sendMessage(
-                        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                        body
-                      );
-                      verifyMessage(sentMessage, ticket, contact);
-                    },
-                    3000,
-                    ticket.id
-                  );
-
-                  debouncedSentMessage();
-                }
-              } else {
-                await UpdateTicketService({
-                  ticketData: { queueId: choosenQueue.id },
-                  ticketId: ticket.id
-                });
-
-                const chat = await msg.getChat();
-                await chat.sendStateTyping();
-                const greetingMessage = choosenQueue.greetingMessage;
-                if (greetingMessage) {
-                  const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-                  const sentMessage = await wbot.sendMessage(
-                    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                    body
-                  );
-
-                  await verifyMessage(sentMessage, ticket, contact);
-                }
-              }
-            }
-            await UpdateTicketService({
-              ticketData: { queueId: queues[0].id },
-              ticketId: ticket.id
-            });
-            return;
-          }
-          const selectedOption = msg.body;
-          const choosenQueue = queues[+selectedOption - 1];
-          if (choosenQueue) {
-            //if que identifica todos os setores selecionados na conexão
-            const Hr = new Date();
-
-            const hh: number = Hr.getHours() * 60 * 60;
-            const mm: number = Hr.getMinutes() * 60;
-            const hora = hh + mm;
-
-            const inicio: string = choosenQueue.startWork;
-            const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-            const mminicio = Number(inicio.split(":")[1]) * 60;
-            const horainicio = hhinicio + mminicio;
-
-            const termino: string = choosenQueue.endWork;
-            const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-            const mmtermino = Number(termino.split(":")[1]) * 60;
-            const horatermino = hhtermino + mmtermino;
-
-            if (hora < horainicio || hora > horatermino) {
-              const absenceMessage = choosenQueue.absenceMessage;
-              if (absenceMessage) {
-                const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-                const debouncedSentMessage = debounce(
-                  async () => {
-                    const sentMessage = await wbot.sendMessage(
-                      `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                      body
-                    );
-                    verifyMessage(sentMessage, ticket, contact);
-                  },
-                  3000,
-                  ticket.id
-                );
-
-                debouncedSentMessage();
-              }
-            } else {
-              //else que retorna a mensagem de fora de expediente do setor
-              await UpdateTicketService({
-                ticketData: { queueId: choosenQueue.id },
-                ticketId: ticket.id
-              });
-
-              const chat = await msg.getChat();
-              await chat.sendStateTyping();
-
-              const greetingMessage = choosenQueue.greetingMessage;
-              if (greetingMessage) {
-                const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-
-                await verifyMessage(sentMessage, ticket, contact);
-              }
-            }
-          } else {
-            //Envia mensagem com setores
-            let options = "";
-
-            const chat = await msg.getChat();
-            await chat.sendStateTyping();
-
-            queues.forEach((queue, index) => {
-              if (queue.startWork && queue.endWork) {
-                if (isDisplay) {
-                  options += `*${index + 1}* - ${queue.name} das ${queue.startWork
-                    } as ${queue.endWork}\n`;
-                } else {
-                  options += `*${index + 1}* - ${queue.name}\n`;
-                }
-              } else {
-                options += `*${index + 1}* - ${queue.name}\n`;
-              }
-            });
-
-            const body = formatBody(`\u200e${greetingMessage}\n\n${options}`, ticket);
-
-            const debouncedSentMessage = debounce(
-              async () => {
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-                verifyMessage(sentMessage, ticket, contact);
-              },
-              3000,
-              ticket.id
-            );
-
-            debouncedSentMessage();
-          }
-        } else {
-          //envia mensagem de fora do expediente, horario fora
-          if (outOfWorkMessage && outOfWorkMessage.trim() !== "") {
-            const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
-            const debouncedSentMessage = debounce(
-              async () => {
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-                verifyMessage(sentMessage, ticket, contact);
-              },
-              3000,
-              ticket.id
-            );
-            debouncedSentMessage();
-          }
-        }
-      } else {
-        //envia mensagem de fora do expediente, dia desativado
-        if (outOfWorkMessage && outOfWorkMessage !== "") {
-          const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
-          const debouncedSentMessage = debounce(
-            async () => {
-              const sentMessage = await wbot.sendMessage(
-                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                body
-              );
-              verifyMessage(sentMessage, ticket, contact);
-            },
-            3000,
-            ticket.id
-          );
-          debouncedSentMessage();
-        }
-      }
-    }
-    // Fim Segunda_________________________________________________________________________________________________________________
-
-    // Terça_____________________________________________________________________________________________________________________
-    if (diaSemana === 2) {
-      diaSemanaStr = "tuesday"
-      //if que identifica o dia da semana
-      if (tuesday) {
-        //if que identifica se o dia da semana está ativo
-        const hh: number = now.getHours() * 60 * 60;
-        const mm: number = now.getMinutes() * 60;
-        const hora = hh + mm;
-
-        const start: string = StartDefineWorkHoursTuesday;
-        const hhStart = Number(start.split(":")[0]) * 60 * 60;
-        const mmStart = Number(start.split(":")[1]) * 60;
-        const hoursStart = hhStart + mmStart;
-
-        const startLunch: string = StartDefineWorkHoursTuesdayLunch;
-        const hhStartLunch = Number(startLunch.split(":")[0]) * 60 * 60;
-        const mmStartLunch = Number(startLunch.split(":")[1]) * 60;
-        const hoursStartLunch = hhStartLunch + mmStartLunch;
-
-        const endLunch: string = EndDefineWorkHoursTuesdayLunch;
-        const hhEndLunch = Number(endLunch.split(":")[0]) * 60 * 60;
-        const mmEndLunch = Number(endLunch.split(":")[1]) * 60;
-        const hoursEndLunch = hhEndLunch + mmEndLunch;
-
-        const end: string = EndDefineWorkHoursTuesday;
-        const hhEnd = Number(end.split(":")[0]) * 60 * 60;
-        const mmEnd = Number(end.split(":")[1]) * 60;
-        const hoursEnd = hhEnd + mmEnd;
-
-        if ((hora >= hoursStart && hora < hoursStartLunch) || (hora >= hoursEndLunch && hora < hoursEnd)) {
-          //if que identifica se está dentro do horario comerical desse dia em especifico
-          if (queues.length === 1) {
-            //if que identifica se a conexão tem só 1 setor, se tiver só um envia mensagem de saudação e transfere o chamado para o setor.
-            const selectedOption = '1';
-
-            const choosenQueue = queues[+selectedOption - 1];
-            if (choosenQueue) {
-              const Hr = new Date();
-
-              const hh: number = Hr.getHours() * 60 * 60;
-              const mm: number = Hr.getMinutes() * 60;
-              const hora = hh + mm;
-
-              const inicio: string = choosenQueue.startWork;
-              const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-              const mminicio = Number(inicio.split(":")[1]) * 60;
-              const horainicio = hhinicio + mminicio;
-
-              const termino: string = choosenQueue.endWork;
-              const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-              const mmtermino = Number(termino.split(":")[1]) * 60;
-              const horatermino = hhtermino + mmtermino;
-
-              if (hora < horainicio || hora > horatermino) {
-                const absenceMessage = choosenQueue.absenceMessage;
-                if (absenceMessage) {
-                  const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-                  const debouncedSentMessage = debounce(
-                    async () => {
-                      const sentMessage = await wbot.sendMessage(
-                        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                        body
-                      );
-                      verifyMessage(sentMessage, ticket, contact);
-                    },
-                    3000,
-                    ticket.id
-                  );
-
-                  debouncedSentMessage();
-                }
-              } else {
-                await UpdateTicketService({
-                  ticketData: { queueId: choosenQueue.id },
-                  ticketId: ticket.id
-                });
-
-                const chat = await msg.getChat();
-                await chat.sendStateTyping();
-                const greetingMessage = choosenQueue.greetingMessage;
-                if (greetingMessage) {
-                  const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-                  const sentMessage = await wbot.sendMessage(
-                    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                    body
-                  );
-
-                  await verifyMessage(sentMessage, ticket, contact);
-                }
-              }
-            }
-            await UpdateTicketService({
-              ticketData: { queueId: queues[0].id },
-              ticketId: ticket.id
-            });
-            return;
-          }
-          const selectedOption = msg.body;
-          const choosenQueue = queues[+selectedOption - 1];
-          if (choosenQueue) {
-            //if que identifica todos os setores selecionados na conexão
-            const Hr = new Date();
-
-            const hh: number = Hr.getHours() * 60 * 60;
-            const mm: number = Hr.getMinutes() * 60;
-            const hora = hh + mm;
-
-            const inicio: string = choosenQueue.startWork;
-            const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-            const mminicio = Number(inicio.split(":")[1]) * 60;
-            const horainicio = hhinicio + mminicio;
-
-            const termino: string = choosenQueue.endWork;
-            const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-            const mmtermino = Number(termino.split(":")[1]) * 60;
-            const horatermino = hhtermino + mmtermino;
-
-            if (hora < horainicio || hora > horatermino) {
-              const absenceMessage = choosenQueue.absenceMessage;
-              if (absenceMessage) {
-                const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-                const debouncedSentMessage = debounce(
-                  async () => {
-                    const sentMessage = await wbot.sendMessage(
-                      `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                      body
-                    );
-                    verifyMessage(sentMessage, ticket, contact);
-                  },
-                  3000,
-                  ticket.id
-                );
-
-                debouncedSentMessage();
-              }
-            } else {
-              //else que retorna a mensagem de fora de expediente do setor
-              await UpdateTicketService({
-                ticketData: { queueId: choosenQueue.id },
-                ticketId: ticket.id
-              });
-
-              const chat = await msg.getChat();
-              await chat.sendStateTyping();
-
-              const greetingMessage = choosenQueue.greetingMessage;
-              if (greetingMessage) {
-                const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-
-                await verifyMessage(sentMessage, ticket, contact);
-              }
-            }
-          } else {
-            //Envia mensagem com setores
-            let options = "";
-
-            const chat = await msg.getChat();
-            await chat.sendStateTyping();
-
-            queues.forEach((queue, index) => {
-              if (queue.startWork && queue.endWork) {
-                if (isDisplay) {
-                  options += `*${index + 1}* - ${queue.name} das ${queue.startWork
-                    } as ${queue.endWork}\n`;
-                } else {
-                  options += `*${index + 1}* - ${queue.name}\n`;
-                }
-              } else {
-                options += `*${index + 1}* - ${queue.name}\n`;
-              }
-            });
-
-            const body = formatBody(`\u200e${greetingMessage}\n\n${options}`, ticket);
-
-            const debouncedSentMessage = debounce(
-              async () => {
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-                verifyMessage(sentMessage, ticket, contact);
-              },
-              3000,
-              ticket.id
-            );
-
-            debouncedSentMessage();
-          }
-        } else {
-          //envia mensagem de fora do expediente, horario fora
-          if (outOfWorkMessage && outOfWorkMessage.trim() !== "") {
-            const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
-            const debouncedSentMessage = debounce(
-              async () => {
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-                verifyMessage(sentMessage, ticket, contact);
-              },
-              3000,
-              ticket.id
-            );
-            debouncedSentMessage();
-          }
-        }
-      } else {
-        //envia mensagem de fora do expediente, dia desativado
-        if (outOfWorkMessage && outOfWorkMessage !== "") {
-          const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
-          const debouncedSentMessage = debounce(
-            async () => {
-              const sentMessage = await wbot.sendMessage(
-                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                body
-              );
-              verifyMessage(sentMessage, ticket, contact);
-            },
-            3000,
-            ticket.id
-          );
-          debouncedSentMessage();
-        }
-      }
-    }
-    // Fim Terça_________________________________________________________________________________________________________________
-
-    // Quarta_____________________________________________________________________________________________________________________
-    if (diaSemana === 3) {
-      diaSemanaStr = "wednesday"
-      //if que identifica o dia da semana
-      if (wednesday) {
-        //if que identifica se o dia da semana está ativo
-        const hh: number = now.getHours() * 60 * 60;
-        const mm: number = now.getMinutes() * 60;
-        const hora = hh + mm;
-
-        const start: string = StartDefineWorkHoursWednesday;
-        const hhStart = Number(start.split(":")[0]) * 60 * 60;
-        const mmStart = Number(start.split(":")[1]) * 60;
-        const hoursStart = hhStart + mmStart;
-
-        const startLunch: string = StartDefineWorkHoursWednesdayLunch;
-        const hhStartLunch = Number(startLunch.split(":")[0]) * 60 * 60;
-        const mmStartLunch = Number(startLunch.split(":")[1]) * 60;
-        const hoursStartLunch = hhStartLunch + mmStartLunch;
-
-        const endLunch: string = EndDefineWorkHoursWednesdayLunch;
-        const hhEndLunch = Number(endLunch.split(":")[0]) * 60 * 60;
-        const mmEndLunch = Number(endLunch.split(":")[1]) * 60;
-        const hoursEndLunch = hhEndLunch + mmEndLunch;
-
-        const end: string = EndDefineWorkHoursWednesday;
-        const hhEnd = Number(end.split(":")[0]) * 60 * 60;
-        const mmEnd = Number(end.split(":")[1]) * 60;
-        const hoursEnd = hhEnd + mmEnd;
-
-        if ((hora >= hoursStart && hora < hoursStartLunch) || (hora >= hoursEndLunch && hora < hoursEnd)) {
-          //if que identifica se está dentro do horario comerical desse dia em especifico
-          if (queues.length === 1) {
-            //if que identifica se a conexão tem só 1 setor, se tiver só um envia mensagem de saudação e transfere o chamado para o setor.
-            const selectedOption = '1';
-
-            const choosenQueue = queues[+selectedOption - 1];
-            if (choosenQueue) {
-              const Hr = new Date();
-
-              const hh: number = Hr.getHours() * 60 * 60;
-              const mm: number = Hr.getMinutes() * 60;
-              const hora = hh + mm;
-
-              const inicio: string = choosenQueue.startWork;
-              const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-              const mminicio = Number(inicio.split(":")[1]) * 60;
-              const horainicio = hhinicio + mminicio;
-
-              const termino: string = choosenQueue.endWork;
-              const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-              const mmtermino = Number(termino.split(":")[1]) * 60;
-              const horatermino = hhtermino + mmtermino;
-
-              if (hora < horainicio || hora > horatermino) {
-                const absenceMessage = choosenQueue.absenceMessage;
-                if (absenceMessage) {
-                  const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-                  const debouncedSentMessage = debounce(
-                    async () => {
-                      const sentMessage = await wbot.sendMessage(
-                        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                        body
-                      );
-                      verifyMessage(sentMessage, ticket, contact);
-                    },
-                    3000,
-                    ticket.id
-                  );
-
-                  debouncedSentMessage();
-                }
-              } else {
-                await UpdateTicketService({
-                  ticketData: { queueId: choosenQueue.id },
-                  ticketId: ticket.id
-                });
-
-                const chat = await msg.getChat();
-                await chat.sendStateTyping();
-                const greetingMessage = choosenQueue.greetingMessage;
-                if (greetingMessage) {
-                  const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-                  const sentMessage = await wbot.sendMessage(
-                    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                    body
-                  );
-
-                  await verifyMessage(sentMessage, ticket, contact);
-                }
-              }
-            }
-            await UpdateTicketService({
-              ticketData: { queueId: queues[0].id },
-              ticketId: ticket.id
-            });
-            return;
-          }
-          const selectedOption = msg.body;
-          const choosenQueue = queues[+selectedOption - 1];
-          if (choosenQueue) {
-            //if que identifica todos os setores selecionados na conexão
-            const Hr = new Date();
-
-            const hh: number = Hr.getHours() * 60 * 60;
-            const mm: number = Hr.getMinutes() * 60;
-            const hora = hh + mm;
-
-            const inicio: string = choosenQueue.startWork;
-            const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-            const mminicio = Number(inicio.split(":")[1]) * 60;
-            const horainicio = hhinicio + mminicio;
-
-            const termino: string = choosenQueue.endWork;
-            const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-            const mmtermino = Number(termino.split(":")[1]) * 60;
-            const horatermino = hhtermino + mmtermino;
-
-            if (hora < horainicio || hora > horatermino) {
-              const absenceMessage = choosenQueue.absenceMessage;
-              if (absenceMessage) {
-                const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-                const debouncedSentMessage = debounce(
-                  async () => {
-                    const sentMessage = await wbot.sendMessage(
-                      `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                      body
-                    );
-                    verifyMessage(sentMessage, ticket, contact);
-                  },
-                  3000,
-                  ticket.id
-                );
-
-                debouncedSentMessage();
-              }
-            } else {
-              //else que retorna a mensagem de fora de expediente do setor
-              await UpdateTicketService({
-                ticketData: { queueId: choosenQueue.id },
-                ticketId: ticket.id
-              });
-
-              const chat = await msg.getChat();
-              await chat.sendStateTyping();
-
-              const greetingMessage = choosenQueue.greetingMessage;
-              if (greetingMessage) {
-                const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-
-                await verifyMessage(sentMessage, ticket, contact);
-              }
-            }
-          } else {
-            //Envia mensagem com setores
-            let options = "";
-
-            const chat = await msg.getChat();
-            await chat.sendStateTyping();
-
-            queues.forEach((queue, index) => {
-              if (queue.startWork && queue.endWork) {
-                if (isDisplay) {
-                  options += `*${index + 1}* - ${queue.name} das ${queue.startWork
-                    } as ${queue.endWork}\n`;
-                } else {
-                  options += `*${index + 1}* - ${queue.name}\n`;
-                }
-              } else {
-                options += `*${index + 1}* - ${queue.name}\n`;
-              }
-            });
-
-            const body = formatBody(`\u200e${greetingMessage}\n\n${options}`, ticket);
-
-            const debouncedSentMessage = debounce(
-              async () => {
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-                verifyMessage(sentMessage, ticket, contact);
-              },
-              3000,
-              ticket.id
-            );
-
-            debouncedSentMessage();
-          }
-        } else {
-          //envia mensagem de fora do expediente, horario fora
-          if (outOfWorkMessage && outOfWorkMessage.trim() !== "") {
-            const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
-            const debouncedSentMessage = debounce(
-              async () => {
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-                verifyMessage(sentMessage, ticket, contact);
-              },
-              3000,
-              ticket.id
-            );
-            debouncedSentMessage();
-          }
-        }
-      } else {
-        //envia mensagem de fora do expediente, dia desativado
-        if (outOfWorkMessage && outOfWorkMessage !== "") {
-          const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
-          const debouncedSentMessage = debounce(
-            async () => {
-              const sentMessage = await wbot.sendMessage(
-                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                body
-              );
-              verifyMessage(sentMessage, ticket, contact);
-            },
-            3000,
-            ticket.id
-          );
-          debouncedSentMessage();
-        }
-      }
-    }
-    // Fim Quarta_________________________________________________________________________________________________________________
-
-    // Quinta_____________________________________________________________________________________________________________________
-    if (diaSemana === 4) {
-      diaSemanaStr = "thursday"
-
-      // console.log(thursday)
-      //if que identifica o dia da semana
-      if (thursday) {
-        //if que identifica se o dia da semana está ativo
-        const hh: number = now.getHours() * 60 * 60;
-        const mm: number = now.getMinutes() * 60;
-        const hora = hh + mm;
-
-        // console.log(StartDefineWorkHoursThursday)
-
-        const start: string = StartDefineWorkHoursThursday;
-        const hhStart = Number(start.split(":")[0]) * 60 * 60;
-        const mmStart = Number(start.split(":")[1]) * 60;
-        const hoursStart = hhStart + mmStart;
-
-        const startLunch: string = StartDefineWorkHoursThursdayLunch;
-        const hhStartLunch = Number(startLunch.split(":")[0]) * 60 * 60;
-        const mmStartLunch = Number(startLunch.split(":")[1]) * 60;
-        const hoursStartLunch = hhStartLunch + mmStartLunch;
-
-        const endLunch: string = EndDefineWorkHoursThursdayLunch;
-        const hhEndLunch = Number(endLunch.split(":")[0]) * 60 * 60;
-        const mmEndLunch = Number(endLunch.split(":")[1]) * 60;
-        const hoursEndLunch = hhEndLunch + mmEndLunch;
-
-        const end: string = EndDefineWorkHoursThursday;
-        const hhEnd = Number(end.split(":")[0]) * 60 * 60;
-        const mmEnd = Number(end.split(":")[1]) * 60;
-        const hoursEnd = hhEnd + mmEnd;
-
-        // console.log(StartDefineWorkHoursThursday)
-        if ((hora >= hoursStart && hora < hoursStartLunch) || (hora >= hoursEndLunch && hora < hoursEnd)) {
-          //if que identifica se está dentro do horario comerical desse dia em especifico
-          if (queues.length === 1) {
-            //if que identifica se a conexão tem só 1 setor, se tiver só um envia mensagem de saudação e transfere o chamado para o setor.
-            const selectedOption = '1';
-
-            const choosenQueue = queues[+selectedOption - 1];
-            if (choosenQueue) {
-              const Hr = new Date();
-
-              const hh: number = Hr.getHours() * 60 * 60;
-              const mm: number = Hr.getMinutes() * 60;
-              const hora = hh + mm;
-
-              const inicio: string = choosenQueue.startWork;
-              const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-              const mminicio = Number(inicio.split(":")[1]) * 60;
-              const horainicio = hhinicio + mminicio;
-
-              const termino: string = choosenQueue.endWork;
-              const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-              const mmtermino = Number(termino.split(":")[1]) * 60;
-              const horatermino = hhtermino + mmtermino;
-
-              if (hora < horainicio || hora > horatermino) {
-                const absenceMessage = choosenQueue.absenceMessage;
-                if (absenceMessage) {
-                  const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-                  const debouncedSentMessage = debounce(
-                    async () => {
-                      const sentMessage = await wbot.sendMessage(
-                        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                        body
-                      );
-                      verifyMessage(sentMessage, ticket, contact);
-                    },
-                    3000,
-                    ticket.id
-                  );
-
-                  debouncedSentMessage();
-                }
-              } else {
-                await UpdateTicketService({
-                  ticketData: { queueId: choosenQueue.id },
-                  ticketId: ticket.id
-                });
-
-                const chat = await msg.getChat();
-                await chat.sendStateTyping();
-                const greetingMessage = choosenQueue.greetingMessage;
-                if (greetingMessage) {
-                  const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-                  const sentMessage = await wbot.sendMessage(
-                    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                    body
-                  );
-
-                  await verifyMessage(sentMessage, ticket, contact);
-                }
-              }
-            }
-            await UpdateTicketService({
-              ticketData: { queueId: queues[0].id },
-              ticketId: ticket.id
-            });
-            return;
-          }
-          const selectedOption = msg.body;
-          const choosenQueue = queues[+selectedOption - 1];
-          if (choosenQueue) {
-            //if que identifica todos os setores selecionados na conexão
-            const Hr = new Date();
-
-            const hh: number = Hr.getHours() * 60 * 60;
-            const mm: number = Hr.getMinutes() * 60;
-            const hora = hh + mm;
-
-            const inicio: string = choosenQueue.startWork;
-            const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-            const mminicio = Number(inicio.split(":")[1]) * 60;
-            const horainicio = hhinicio + mminicio;
-
-            const termino: string = choosenQueue.endWork;
-            const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-            const mmtermino = Number(termino.split(":")[1]) * 60;
-            const horatermino = hhtermino + mmtermino;
-
-            if (hora < horainicio || hora > horatermino) {
-              const absenceMessage = choosenQueue.absenceMessage;
-              if (absenceMessage) {
-                const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-                const debouncedSentMessage = debounce(
-                  async () => {
-                    const sentMessage = await wbot.sendMessage(
-                      `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                      body
-                    );
-                    verifyMessage(sentMessage, ticket, contact);
-                  },
-                  3000,
-                  ticket.id
-                );
-
-                debouncedSentMessage();
-              }
-            } else {
-              //else que retorna a mensagem de fora de expediente do setor
-              await UpdateTicketService({
-                ticketData: { queueId: choosenQueue.id },
-                ticketId: ticket.id
-              });
-
-              const chat = await msg.getChat();
-              await chat.sendStateTyping();
-
-              const greetingMessage = choosenQueue.greetingMessage;
-              if (greetingMessage) {
-                const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-
-                await verifyMessage(sentMessage, ticket, contact);
-              }
-            }
-          } else {
-            //Envia mensagem com setores
-            let options = "";
-
-            const chat = await msg.getChat();
-            await chat.sendStateTyping();
-
-            queues.forEach((queue, index) => {
-              if (queue.startWork && queue.endWork) {
-                if (isDisplay) {
-                  options += `*${index + 1}* - ${queue.name} das ${queue.startWork
-                    } as ${queue.endWork}\n`;
-                } else {
-                  options += `*${index + 1}* - ${queue.name}\n`;
-                }
-              } else {
-                options += `*${index + 1}* - ${queue.name}\n`;
-              }
-            });
-
-            const body = formatBody(`\u200e${greetingMessage}\n\n${options}`, ticket);
-
-            const debouncedSentMessage = debounce(
-              async () => {
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-                verifyMessage(sentMessage, ticket, contact);
-              },
-              3000,
-              ticket.id
-            );
-
-            debouncedSentMessage();
-          }
-        } else {
-          //envia mensagem de fora do expediente, horario fora
-          if (outOfWorkMessage && outOfWorkMessage.trim() !== "") {
-            const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
-            const debouncedSentMessage = debounce(
-              async () => {
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-                verifyMessage(sentMessage, ticket, contact);
-              },
-              3000,
-              ticket.id
-            );
-            debouncedSentMessage();
-          }
-        }
-      } else {
-        //envia mensagem de fora do expediente, dia desativado
-        if (outOfWorkMessage && outOfWorkMessage !== "") {
-          const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
-          const debouncedSentMessage = debounce(
-            async () => {
-              const sentMessage = await wbot.sendMessage(
-                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                body
-              );
-              verifyMessage(sentMessage, ticket, contact);
-            },
-            3000,
-            ticket.id
-          );
-          debouncedSentMessage();
-        }
-      }
-    }
-    // Fim Quinta_________________________________________________________________________________________________________________
-
-    // Sexta_________________________________________________________________________________________________________________
-    if (diaSemana === 5) {
-      diaSemanaStr = "friday"
-      //if que identifica o dia da semana
-      if (friday) {
-        //if que identifica se o dia da semana está ativo
-        const hh: number = now.getHours() * 60 * 60;
-        const mm: number = now.getMinutes() * 60;
-        const hora = hh + mm;
-
-        const start: string = StartDefineWorkHoursFriday;
-        const hhStart = Number(start.split(":")[0]) * 60 * 60;
-        const mmStart = Number(start.split(":")[1]) * 60;
-        const hoursStart = hhStart + mmStart;
-
-        const startLunch: string = StartDefineWorkHoursFridayLunch;
-        const hhStartLunch = Number(startLunch.split(":")[0]) * 60 * 60;
-        const mmStartLunch = Number(startLunch.split(":")[1]) * 60;
-        const hoursStartLunch = hhStartLunch + mmStartLunch;
-
-        const endLunch: string = EndDefineWorkHoursFridayLunch;
-        const hhEndLunch = Number(endLunch.split(":")[0]) * 60 * 60;
-        const mmEndLunch = Number(endLunch.split(":")[1]) * 60;
-        const hoursEndLunch = hhEndLunch + mmEndLunch;
-
-        const end: string = EndDefineWorkHoursFriday;
-        const hhEnd = Number(end.split(":")[0]) * 60 * 60;
-        const mmEnd = Number(end.split(":")[1]) * 60;
-        const hoursEnd = hhEnd + mmEnd;
-
-        if ((hora >= hoursStart && hora < hoursStartLunch) || (hora >= hoursEndLunch && hora < hoursEnd)) {
-          //if que identifica se está dentro do horario comerical desse dia em especifico
-          if (queues.length === 1) {
-            //if que identifica se a conexão tem só 1 setor, se tiver só um envia mensagem de saudação e transfere o chamado para o setor.
-            const selectedOption = '1';
-
-            const choosenQueue = queues[+selectedOption - 1];
-            if (choosenQueue) {
-              const Hr = new Date();
-
-              const hh: number = Hr.getHours() * 60 * 60;
-              const mm: number = Hr.getMinutes() * 60;
-              const hora = hh + mm;
-
-              const inicio: string = choosenQueue.startWork;
-              const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-              const mminicio = Number(inicio.split(":")[1]) * 60;
-              const horainicio = hhinicio + mminicio;
-
-              const termino: string = choosenQueue.endWork;
-              const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-              const mmtermino = Number(termino.split(":")[1]) * 60;
-              const horatermino = hhtermino + mmtermino;
-
-              if (hora < horainicio || hora > horatermino) {
-                const absenceMessage = choosenQueue.absenceMessage;
-                if (absenceMessage) {
-                  const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-                  const debouncedSentMessage = debounce(
-                    async () => {
-                      const sentMessage = await wbot.sendMessage(
-                        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                        body
-                      );
-                      verifyMessage(sentMessage, ticket, contact);
-                    },
-                    3000,
-                    ticket.id
-                  );
-
-                  debouncedSentMessage();
-                }
-              } else {
-                await UpdateTicketService({
-                  ticketData: { queueId: choosenQueue.id },
-                  ticketId: ticket.id
-                });
-
-                const chat = await msg.getChat();
-                await chat.sendStateTyping();
-                const greetingMessage = choosenQueue.greetingMessage;
-                if (greetingMessage) {
-                  const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-                  const sentMessage = await wbot.sendMessage(
-                    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                    body
-                  );
-
-                  await verifyMessage(sentMessage, ticket, contact);
-                }
-              }
-            }
-            await UpdateTicketService({
-              ticketData: { queueId: queues[0].id },
-              ticketId: ticket.id
-            });
-            return;
-          }
-          const selectedOption = msg.body;
-          const choosenQueue = queues[+selectedOption - 1];
-          if (choosenQueue) {
-            //if que identifica todos os setores selecionados na conexão
-            const Hr = new Date();
-
-            const hh: number = Hr.getHours() * 60 * 60;
-            const mm: number = Hr.getMinutes() * 60;
-            const hora = hh + mm;
-
-            const inicio: string = choosenQueue.startWork;
-            const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-            const mminicio = Number(inicio.split(":")[1]) * 60;
-            const horainicio = hhinicio + mminicio;
-
-            const termino: string = choosenQueue.endWork;
-            const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-            const mmtermino = Number(termino.split(":")[1]) * 60;
-            const horatermino = hhtermino + mmtermino;
-
-            if (hora < horainicio || hora > horatermino) {
-              const absenceMessage = choosenQueue.absenceMessage;
-              if (absenceMessage) {
-                const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-                const debouncedSentMessage = debounce(
-                  async () => {
-                    const sentMessage = await wbot.sendMessage(
-                      `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                      body
-                    );
-                    verifyMessage(sentMessage, ticket, contact);
-                  },
-                  3000,
-                  ticket.id
-                );
-
-                debouncedSentMessage();
-              }
-            } else {
-              //else que retorna a mensagem de fora de expediente do setor
-              await UpdateTicketService({
-                ticketData: { queueId: choosenQueue.id },
-                ticketId: ticket.id
-              });
-
-              const chat = await msg.getChat();
-              await chat.sendStateTyping();
-
-              const greetingMessage = choosenQueue.greetingMessage;
-              if (greetingMessage) {
-                const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-
-                await verifyMessage(sentMessage, ticket, contact);
-              }
-            }
-          } else {
-            //Envia mensagem com setores
-            let options = "";
-
-            const chat = await msg.getChat();
-            await chat.sendStateTyping();
-
-            queues.forEach((queue, index) => {
-              if (queue.startWork && queue.endWork) {
-                if (isDisplay) {
-                  options += `*${index + 1}* - ${queue.name} das ${queue.startWork
-                    } as ${queue.endWork}\n`;
-                } else {
-                  options += `*${index + 1}* - ${queue.name}\n`;
-                }
-              } else {
-                options += `*${index + 1}* - ${queue.name}\n`;
-              }
-            });
-
-            const body = formatBody(`\u200e${greetingMessage}\n\n${options}`, ticket);
-
-            const debouncedSentMessage = debounce(
-              async () => {
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-                verifyMessage(sentMessage, ticket, contact);
-              },
-              3000,
-              ticket.id
-            );
-
-            debouncedSentMessage();
-          }
-        } else {
-          //envia mensagem de fora do expediente, horario fora
-          if (outOfWorkMessage && outOfWorkMessage.trim() !== "") {
-            const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
-            const debouncedSentMessage = debounce(
-              async () => {
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-                verifyMessage(sentMessage, ticket, contact);
-              },
-              3000,
-              ticket.id
-            );
-            debouncedSentMessage();
-          }
-        }
-      } else {
-        //envia mensagem de fora do expediente, dia desativado
-        if (outOfWorkMessage && outOfWorkMessage !== "") {
-          const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
-          const debouncedSentMessage = debounce(
-            async () => {
-              const sentMessage = await wbot.sendMessage(
-                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                body
-              );
-              verifyMessage(sentMessage, ticket, contact);
-            },
-            3000,
-            ticket.id
-          );
-          debouncedSentMessage();
-        }
-      }
-    }
-    // Fim Sexta_________________________________________________________________________________________________________________
-
-    // Sabado_________________________________________________________________________________________________________________
-    if (diaSemana === 6) {
-      diaSemanaStr = "saturday"
-      //if que identifica o dia da semana
-      if (saturday) {
-        //if que identifica se o dia da semana está ativo
-        const hh: number = now.getHours() * 60 * 60;
-        const mm: number = now.getMinutes() * 60;
-        const hora = hh + mm;
-
-        const start: string = StartDefineWorkHoursSaturday;
-        const hhStart = Number(start.split(":")[0]) * 60 * 60;
-        const mmStart = Number(start.split(":")[1]) * 60;
-        const hoursStart = hhStart + mmStart;
-
-        const startLunch: string = StartDefineWorkHoursSaturdayLunch;
-        const hhStartLunch = Number(startLunch.split(":")[0]) * 60 * 60;
-        const mmStartLunch = Number(startLunch.split(":")[1]) * 60;
-        const hoursStartLunch = hhStartLunch + mmStartLunch;
-
-        const endLunch: string = EndDefineWorkHoursSaturdayLunch;
-        const hhEndLunch = Number(endLunch.split(":")[0]) * 60 * 60;
-        const mmEndLunch = Number(endLunch.split(":")[1]) * 60;
-        const hoursEndLunch = hhEndLunch + mmEndLunch;
-
-        const end: string = EndDefineWorkHoursSaturday;
-        const hhEnd = Number(end.split(":")[0]) * 60 * 60;
-        const mmEnd = Number(end.split(":")[1]) * 60;
-        const hoursEnd = hhEnd + mmEnd;
-
-        if ((hora >= hoursStart && hora < hoursStartLunch) || (hora >= hoursEndLunch && hora < hoursEnd)) {
-          //if que identifica se está dentro do horario comerical desse dia em especifico
-          if (queues.length === 1) {
-            //if que identifica se a conexão tem só 1 setor, se tiver só um envia mensagem de saudação e transfere o chamado para o setor.
-            const selectedOption = '1';
-
-            const choosenQueue = queues[+selectedOption - 1];
-            if (choosenQueue) {
-              const Hr = new Date();
-
-              const hh: number = Hr.getHours() * 60 * 60;
-              const mm: number = Hr.getMinutes() * 60;
-              const hora = hh + mm;
-
-              const inicio: string = choosenQueue.startWork;
-              const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-              const mminicio = Number(inicio.split(":")[1]) * 60;
-              const horainicio = hhinicio + mminicio;
-
-              const termino: string = choosenQueue.endWork;
-              const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-              const mmtermino = Number(termino.split(":")[1]) * 60;
-              const horatermino = hhtermino + mmtermino;
-
-              if (hora < horainicio || hora > horatermino) {
-                const absenceMessage = choosenQueue.absenceMessage;
-                if (absenceMessage) {
-                  const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-                  const debouncedSentMessage = debounce(
-                    async () => {
-                      const sentMessage = await wbot.sendMessage(
-                        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                        body
-                      );
-                      verifyMessage(sentMessage, ticket, contact);
-                    },
-                    3000,
-                    ticket.id
-                  );
-
-                  debouncedSentMessage();
-                }
-              } else {
-                await UpdateTicketService({
-                  ticketData: { queueId: choosenQueue.id },
-                  ticketId: ticket.id
-                });
-
-                const chat = await msg.getChat();
-                await chat.sendStateTyping();
-                const greetingMessage = choosenQueue.greetingMessage;
-                if (greetingMessage) {
-                  const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-                  const sentMessage = await wbot.sendMessage(
-                    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                    body
-                  );
-
-                  await verifyMessage(sentMessage, ticket, contact);
-                }
-              }
-            }
-            await UpdateTicketService({
-              ticketData: { queueId: queues[0].id },
-              ticketId: ticket.id
-            });
-            return;
-          }
-          const selectedOption = msg.body;
-          const choosenQueue = queues[+selectedOption - 1];
-          if (choosenQueue) {
-            //if que identifica todos os setores selecionados na conexão
-            const Hr = new Date();
-
-            const hh: number = Hr.getHours() * 60 * 60;
-            const mm: number = Hr.getMinutes() * 60;
-            const hora = hh + mm;
-
-            const inicio: string = choosenQueue.startWork;
-            const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-            const mminicio = Number(inicio.split(":")[1]) * 60;
-            const horainicio = hhinicio + mminicio;
-
-            const termino: string = choosenQueue.endWork;
-            const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-            const mmtermino = Number(termino.split(":")[1]) * 60;
-            const horatermino = hhtermino + mmtermino;
-
-            if (hora < horainicio || hora > horatermino) {
-              const absenceMessage = choosenQueue.absenceMessage;
-              if (absenceMessage) {
-                const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-                const debouncedSentMessage = debounce(
-                  async () => {
-                    const sentMessage = await wbot.sendMessage(
-                      `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                      body
-                    );
-                    verifyMessage(sentMessage, ticket, contact);
-                  },
-                  3000,
-                  ticket.id
-                );
-
-                debouncedSentMessage();
-              }
-            } else {
-              //else que retorna a mensagem de fora de expediente do setor
-              await UpdateTicketService({
-                ticketData: { queueId: choosenQueue.id },
-                ticketId: ticket.id
-              });
-
-              const chat = await msg.getChat();
-              await chat.sendStateTyping();
-
-              const greetingMessage = choosenQueue.greetingMessage;
-              if (greetingMessage) {
-                const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-
-                await verifyMessage(sentMessage, ticket, contact);
-              }
-            }
-          } else {
-            //Envia mensagem com setores
-            let options = "";
-
-            const chat = await msg.getChat();
-            await chat.sendStateTyping();
-
-            queues.forEach((queue, index) => {
-              if (queue.startWork && queue.endWork) {
-                if (isDisplay) {
-                  options += `*${index + 1}* - ${queue.name} das ${queue.startWork
-                    } as ${queue.endWork}\n`;
-                } else {
-                  options += `*${index + 1}* - ${queue.name}\n`;
-                }
-              } else {
-                options += `*${index + 1}* - ${queue.name}\n`;
-              }
-            });
-
-            const body = formatBody(`\u200e${greetingMessage}\n\n${options}`, ticket);
-
-            const debouncedSentMessage = debounce(
-              async () => {
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-                verifyMessage(sentMessage, ticket, contact);
-              },
-              3000,
-              ticket.id
-            );
-
-            debouncedSentMessage();
-          }
-        } else {
-          //envia mensagem de fora do expediente, horario fora
-          if (outOfWorkMessage && outOfWorkMessage.trim() !== "") {
-            const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
-            const debouncedSentMessage = debounce(
-              async () => {
-                const sentMessage = await wbot.sendMessage(
-                  `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                  body
-                );
-                verifyMessage(sentMessage, ticket, contact);
-              },
-              3000,
-              ticket.id
-            );
-            debouncedSentMessage();
-          }
-        }
-      } else {
-        //envia mensagem de fora do expediente, dia desativado
-        if (outOfWorkMessage && outOfWorkMessage !== "") {
-          const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
-          const debouncedSentMessage = debounce(
-            async () => {
-              const sentMessage = await wbot.sendMessage(
-                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                body
-              );
-              verifyMessage(sentMessage, ticket, contact);
-            },
-            3000,
-            ticket.id
-          );
-          debouncedSentMessage();
-        }
-      }
-    }
-    // Fim sabado_________________________________________________________________________________________________________________
-
-    // console.log(diaSemanaStr);
-    return;
-  }
-  if (queues.length === 1) {
-    const selectedOption = '1';
-
-    const choosenQueue = queues[+selectedOption - 1];
-
-    if (choosenQueue) {
-      const Hr = new Date();
-
-      const hh: number = Hr.getHours() * 60 * 60;
-      const mm: number = Hr.getMinutes() * 60;
-      const hora = hh + mm;
-
-      const inicio: string = choosenQueue.startWork;
-      const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-      const mminicio = Number(inicio.split(":")[1]) * 60;
-      const horainicio = hhinicio + mminicio;
-
-      const termino: string = choosenQueue.endWork;
-      const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-      const mmtermino = Number(termino.split(":")[1]) * 60;
-      const horatermino = hhtermino + mmtermino;
-
-      if (hora < horainicio || hora > horatermino) {
-        const absenceMessage = choosenQueue.absenceMessage;
-        if (absenceMessage) {
-          const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-          const debouncedSentMessage = debounce(
-            async () => {
-              const sentMessage = await wbot.sendMessage(
-                `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-                body
-              );
-              verifyMessage(sentMessage, ticket, contact);
-            },
-            3000,
-            ticket.id
-          );
-
-          debouncedSentMessage();
-        }
-      } else {
-        await UpdateTicketService({
-          ticketData: { queueId: choosenQueue.id },
-          ticketId: ticket.id
-        });
-
-        const chat = await msg.getChat();
-        await chat.sendStateTyping();
-        const greetingMessage = choosenQueue.greetingMessage;
-        if (greetingMessage) {
-          const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-
-          const sentMessage = await wbot.sendMessage(
-            `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-            body
-          );
-
-          await verifyMessage(sentMessage, ticket, contact);
-        }
-      }
-    }
-
-    await UpdateTicketService({
-      ticketData: { queueId: queues[0].id },
-      ticketId: ticket.id
-    });
-
-    return;
-  }
-
-  if (queues.length === 0) {
-    await UpdateTicketService({
-      ticketData: { queueId: queues[0].id },
-      ticketId: ticket.id
-    });
-
-    return;
-  }
-
-  const selectedOption = msg.body;
-  const choosenQueue = queues[+selectedOption - 1];
-
-  if (choosenQueue) {
-    const Hr = new Date();
-
-    const hh: number = Hr.getHours() * 60 * 60;
-    const mm: number = Hr.getMinutes() * 60;
-    const hora = hh + mm;
-
-    const inicio: string = choosenQueue.startWork;
-    const hhinicio = Number(inicio.split(":")[0]) * 60 * 60;
-    const mminicio = Number(inicio.split(":")[1]) * 60;
-    const horainicio = hhinicio + mminicio;
-
-    const termino: string = choosenQueue.endWork;
-    const hhtermino = Number(termino.split(":")[0]) * 60 * 60;
-    const mmtermino = Number(termino.split(":")[1]) * 60;
-    const horatermino = hhtermino + mmtermino;
-
-    if (hora < horainicio || hora > horatermino) {
-      const absenceMessage = choosenQueue.absenceMessage;
-      if (absenceMessage) {
-        const body = formatBody(`\u200e${choosenQueue.absenceMessage}`, ticket);
-        const debouncedSentMessage = debounce(
-          async () => {
-            const sentMessage = await wbot.sendMessage(
-              `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-              body
-            );
-            verifyMessage(sentMessage, ticket, contact);
-          },
-          3000,
-          ticket.id
-        );
-
-        debouncedSentMessage();
-      }
-    } else {
-      await UpdateTicketService({
-        ticketData: { queueId: choosenQueue.id },
-        ticketId: ticket.id
-      });
-
-    if (choosenQueue.chatbots.length > 0) {
-      let options = "";
-      choosenQueue.chatbots.forEach((chatbot, index) => {
-        options += `🔹 *${index + 1}* - ${chatbot.name}\n`;
-      });
-
-      const chat = await msg.getChat();
-      await chat.sendStateTyping();
-
-      const body = formatBody(
-        `\u200e${choosenQueue.greetingMessage}\n\n${options}\n*#* *Para volver al menu principal*`,
-        ticket
-      );
-
-        const sentMessage = await wbot.sendMessage(
-          `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-          body
-        );
-
-        await verifyMessage(sentMessage, ticket, contact);
-      }
-
-    if (!choosenQueue.chatbots.length) {
-      const body = formatBody(`\u200e${choosenQueue.greetingMessage}`, ticket);
-      const sentMessage = await wbot.sendMessage(
-        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-        body
-      );
-
-      await verifyMessage(sentMessage, ticket, contact);
-    }
-  }
-  } else {
-    let options = "";
-
-    const chat = await msg.getChat();
-    await chat.sendStateTyping();
-
-    queues.forEach((queue, index) => {
-      if (queue.startWork && queue.endWork) {
-        if (isDisplay) {
-          options += `🔹 *${index + 1}* - ${queue.name} das ${queue.startWork
-            } as ${queue.endWork}\n`;
-        } else {
-          options += `🔹 *${index + 1}* - ${queue.name}\n`;
-        }
-      } else {
-        options += `🔹 *${index + 1}*- ${queue.name}\n`;
-      }
-    });
-
-    const body = formatBody(`\u200e${greetingMessage}\n\n${options}`, ticket);
-
+  } = await ShowWhatsaAppHours(wbot.id!);
+
+  const schedules = {
+    0: buildDaySchedule(
+      sunday,
+      StartDefineWorkHoursSunday,
+      StartDefineWorkHoursSundayLunch,
+      EndDefineWorkHoursSundayLunch,
+      EndDefineWorkHoursSunday
+    ),
+    1: buildDaySchedule(
+      monday,
+      StartDefineWorkHoursMonday,
+      StartDefineWorkHoursMondayLunch,
+      EndDefineWorkHoursMondayLunch,
+      EndDefineWorkHoursMonday
+    ),
+    2: buildDaySchedule(
+      tuesday,
+      StartDefineWorkHoursTuesday,
+      StartDefineWorkHoursTuesdayLunch,
+      EndDefineWorkHoursTuesdayLunch,
+      EndDefineWorkHoursTuesday
+    ),
+    3: buildDaySchedule(
+      wednesday,
+      StartDefineWorkHoursWednesday,
+      StartDefineWorkHoursWednesdayLunch,
+      EndDefineWorkHoursWednesdayLunch,
+      EndDefineWorkHoursWednesday
+    ),
+    4: buildDaySchedule(
+      thursday,
+      StartDefineWorkHoursThursday,
+      StartDefineWorkHoursThursdayLunch,
+      EndDefineWorkHoursThursdayLunch,
+      EndDefineWorkHoursThursday
+    ),
+    5: buildDaySchedule(
+      friday,
+      StartDefineWorkHoursFriday,
+      StartDefineWorkHoursFridayLunch,
+      EndDefineWorkHoursFridayLunch,
+      EndDefineWorkHoursFriday
+    ),
+    6: buildDaySchedule(
+      saturday,
+      StartDefineWorkHoursSaturday,
+      StartDefineWorkHoursSaturdayLunch,
+      EndDefineWorkHoursSaturdayLunch,
+      EndDefineWorkHoursSaturday
+    )
+  };
+
+  const now = new Date();
+  const scheduleStatus = evaluateSchedule(now, schedules[now.getDay()]);
+  const currentSeconds = secondsFromDate(now);
+  const remoteJid = `${contact.number}@${
+    ticket.isGroup ? "g.us" : "s.whatsapp.net"
+  }`;
+
+  const sendDebouncedText = (body: string) => {
     const debouncedSentMessage = debounce(
       async () => {
-        const sentMessage = await wbot.sendMessage(
-          `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
-          body
-        );
+        const sentMessage = await wbot.sendMessage(remoteJid, body);
         verifyMessage(sentMessage, ticket, contact);
       },
       3000,
@@ -2202,8 +455,196 @@ const verifyQueue = async (
     );
 
     debouncedSentMessage();
+  };
+
+  const sendOutOfWork = () => {
+    if (!outOfWorkMessage || outOfWorkMessage.trim() === "") {
+      return;
+    }
+
+    const body = formatBody(`\u200e${outOfWorkMessage}`, ticket);
+    sendDebouncedText(body);
+  };
+
+  if (defineWorkHours) {
+    if (!scheduleStatus.enabled || !scheduleStatus.open) {
+      sendOutOfWork();
+      return;
+    }
   }
+
+  const isQueueOperating = (queue: Queue) => {
+    if (!queue.startWork || !queue.endWork) {
+      return true;
+    }
+
+    const start = timeStringToSeconds(queue.startWork);
+    const end = timeStringToSeconds(queue.endWork);
+
+    if (start === null || end === null) {
+      return true;
+    }
+
+    if (start <= end) {
+      return currentSeconds >= start && currentSeconds <= end;
+    }
+
+    return currentSeconds >= start || currentSeconds <= end;
+  };
+
+  const sendQueueAbsence = (queue: Queue) => {
+    if (!queue.absenceMessage) {
+      return;
+    }
+
+    const body = formatBody(`\u200e${queue.absenceMessage}`, ticket);
+    sendDebouncedText(body);
+  };
+
+  const sendQueueGreeting = async (queue: Queue) => {
+    if (
+      !queue.greetingMessage &&
+      (!queue.chatbots || queue.chatbots.length === 0)
+    ) {
+      return;
+    }
+
+    const chat = await msg.getChat();
+    await chat.sendStateTyping();
+
+    if (queue.chatbots && queue.chatbots.length > 0) {
+      let options = "";
+      queue.chatbots.forEach((chatbot, index) => {
+        options += `🔹 *${index + 1}* - ${chatbot.name}\n`;
+      });
+
+      const header = queue.greetingMessage || "";
+      const body = formatBody(
+        `\u200e${header}\n\n${options}\n*#* *Para volver al menu principal*`,
+        ticket
+      );
+      const sentMessage = await wbot.sendMessage(remoteJid, body);
+      await verifyMessage(sentMessage, ticket, contact);
+      return;
+    }
+
+    if (queue.greetingMessage) {
+      const body = formatBody(
+        `\u200e${queue.greetingMessage}\n\n*#* *Para volver al menu principal*`,
+        ticket
+      );
+      const sentMessage = await wbot.sendMessage(remoteJid, body);
+      await verifyMessage(sentMessage, ticket, contact);
+    }
+  };
+
+  const assignQueue = async (queue: Queue) => {
+    // If queue has typebot integration, activate it
+    if (queue.integrationId && queue.integration) {
+      await UpdateTicketService({
+        ticketData: {
+          queueId: queue.id,
+          useIntegration: true,
+          integrationId: queue.integrationId
+        },
+        ticketId: ticket.id
+      });
+
+      // Load full integration data for typebot
+      if (queue.integration.type === "typebot") {
+        try {
+          const fullIntegration = await ShowQueueIntegrationService(
+            queue.integrationId
+          );
+          await typebotListener({
+            wbot,
+            msg,
+            ticket,
+            typebot: fullIntegration
+          });
+        } catch (error) {
+          logger.error("Error starting typebot from queue: ", error);
+        }
+      }
+    } else {
+      // No integration, just assign queue normally
+      await UpdateTicketService({
+        ticketData: { queueId: queue.id },
+        ticketId: ticket.id
+      });
+      await sendQueueGreeting(queue);
+    }
+  };
+
+  const handleSingleQueue = async () => {
+    const [queue] = queues;
+    if (!queue) {
+      return;
+    }
+
+    if (isQueueOperating(queue)) {
+      await assignQueue(queue);
+    } else {
+      sendQueueAbsence(queue);
+      await UpdateTicketService({
+        ticketData: { queueId: queue.id },
+        ticketId: ticket.id
+      });
+    }
+  };
+
+  const buildQueueOptions = () => {
+    let options = "";
+
+    queues.forEach((queue, index) => {
+      const baseOption = `🔹 *${index + 1}* - ${queue.name}`;
+
+      if (queue.startWork && queue.endWork && isDisplay) {
+        options += `${baseOption} das ${queue.startWork} as ${queue.endWork}\n`;
+      } else {
+        options += `${baseOption}\n`;
+      }
+    });
+
+    return options;
+  };
+
+  const sendQueueOptions = async () => {
+    const chat = await msg.getChat();
+    await chat.sendStateTyping();
+
+    const options = buildQueueOptions();
+    const header = greetingMessage || "";
+    const body = formatBody(`\u200e${header}\n\n${options}`, ticket);
+
+    sendDebouncedText(body);
+  };
+
+  const handleMultipleQueues = async () => {
+    const selectedIndex = Number(msg.body) - 1;
+    const selectedQueue = queues[selectedIndex];
+
+    if (!selectedQueue) {
+      await sendQueueOptions();
+      return;
+    }
+
+    if (!isQueueOperating(selectedQueue)) {
+      sendQueueAbsence(selectedQueue);
+      return;
+    }
+
+    await assignQueue(selectedQueue);
+  };
+
+  if (queues.length === 1) {
+    await handleSingleQueue();
+    return;
+  }
+
+  await handleMultipleQueues();
 };
+
 console.log();
 const isValidMsg = (msg: WbotMessage): boolean => {
   if (msg.from === "status@broadcast") return false;
@@ -2227,17 +668,41 @@ const isValidMsg = (msg: WbotMessage): boolean => {
   return false;
 };
 
+interface HandleMessageOptions {
+  /** Indica si es una sincronización de mensajes históricos */
+  isSync?: boolean;
+  /** Indica si el mensaje ya fue leído (para crear ticket como cerrado) */
+  isAlreadyRead?: boolean;
+}
+
 const handleMessage = async (
   msg: WbotMessage,
-  wbot: Session
+  wbot: Session,
+  options: boolean | HandleMessageOptions = false
 ): Promise<void> => {
+  // Compatibilidad con llamadas antiguas que pasan boolean
+  const opts: HandleMessageOptions =
+    typeof options === "boolean" ? { isSync: options } : options;
+  const { isSync = false, isAlreadyRead = false } = opts;
+
+  logger.debug(
+    `[handleMessage] Inicio - msgId: ${msg.id.id}, fromMe: ${msg.fromMe}, ` +
+      `type: ${msg.type}, isSync: ${isSync}, isAlreadyRead: ${isAlreadyRead}`
+  );
+
   if (!isValidMsg(msg)) {
+    logger.debug(
+      `[handleMessage] Mensaje ${msg.id.id} no es válido (isValidMsg=false)`
+    );
     return;
   }
   const showMessageGroupConnection = await ShowWhatsAppService(wbot.id!);
 
   const selfJid = `${showMessageGroupConnection.number}@c.us`;
   if (msg.from === selfJid && msg.to === selfJid) {
+    logger.debug(
+      `[handleMessage] Mensaje ${msg.id.id} ignorado - es mensaje a sí mismo`
+    );
     return;
   }
 
@@ -2246,18 +711,28 @@ const handleMessage = async (
     where: { key: "CheckMsgIsGroup" }
   });
   if (showMessageGroupConnection.isGroup) {
-  }
-  else if (Settingdb?.value === "enabled" || !showMessageGroupConnection.isGroup) {
+  } else if (
+    Settingdb?.value === "enabled" ||
+    !showMessageGroupConnection.isGroup
+  ) {
     const chat = await msg.getChat();
+
+    // Log detallado para debug
+    logger.debug(
+      // eslint-disable-next-line no-underscore-dangle
+      `[handleMessage] Verificando mensaje ${msg.id.id}: type=${msg.type}, from=${msg.from}, to=${msg.to}, author=${msg.author}, chat.id=${chat.id?._serialized}, chat.name=${chat.name}, chat.isGroup=${chat.isGroup}`
+    );
+
     if (
       // msg.type === "sticker" ||
       msg.type === "e2e_notification" ||
       msg.type === "notification_template" ||
       msg.from === "status@broadcast" ||
-      msg.author !== null &&
-      msg.author !== undefined ||
       chat.isGroup
     ) {
+      logger.debug(
+        `[handleMessage] Mensaje ${msg.id.id} ignorado - tipo no permitido o grupo (type=${msg.type}, from=${msg.from}, isGroup=${chat.isGroup})`
+      );
       return;
     }
   }
@@ -2267,19 +742,23 @@ const handleMessage = async (
   try {
     let msgContact: WbotContact;
     let groupContact: Contact | undefined;
-    let queueId: number = 0;
-    let tagsId: number = 0;
-    let userId: number = 0;
-    let isBody: boolean = false;
+    const queueId = 0;
+    const tagsId = 0;
+    const userId = 0;
+    let isBody = false;
+    let callSetting: string | undefined;
 
     // console.log(msg)
     if (msg.fromMe) {
       // messages sent automatically by wbot have a special character in front of it
       // if so, this message was already been stored in database;
+      // Skip this check during sync to allow importing historical messages
 
-      isBody = /\u200e/.test(msg.body[0]);
-      console.log("ISBODY  " + isBody)
-      if (isBody) return;
+      if (!isSync) {
+        isBody = /\u200e/.test(msg.body[0]);
+        console.log(`ISBODY  ${isBody}`);
+        if (isBody) return;
+      }
       // media messages sent from me from cell phone, first comes with "hasMedia = false" and type = "image/ptt/etc"
       // in this case, return and let this message be handled by "media_uploaded" event, when it will have "hasMedia = true"
 
@@ -2295,9 +774,17 @@ const handleMessage = async (
       msgContact = await wbot.getContactById(msg.to);
     } else {
       const listSettingsService = await ListSettingsServiceOne({ key: "call" });
-      var callSetting = listSettingsService?.value;
+      callSetting = listSettingsService?.value;
 
       msgContact = await msg.getContact();
+    }
+
+    // Ignore empty chat messages (e.g., empty payloads coming from typebot)
+    if (msg.type === "chat" && (!msg.body || msg.body.trim() === "")) {
+      logger.debug(
+        `[handleMessage] Ignorando mensaje vacío - id: ${msg.id?.id}, from: ${msg.from}`
+      );
+      return;
     }
 
     const chat = await msg.getChat();
@@ -2319,26 +806,39 @@ const handleMessage = async (
 
     const contact = await verifyContact(msgContact);
 
+    // Determinar si crear ticket como cerrado (para sincronización de mensajes ya leídos)
+    const shouldCreateAsClosed =
+      isSync &&
+      isAlreadyRead &&
+      process.env.SYNC_CREATE_CLOSED_FOR_READ !== "false";
+    const skipAutomations = isSync && isAlreadyRead;
+
     // console.log("OUTRO TESTE " + unreadMessages)
-    let ticket = await FindOrCreateTicketService(
+    const ticket = await FindOrCreateTicketService(
       contact,
       wbot.id!,
       unreadMessages,
       queueId,
       tagsId,
       userId,
-      groupContact
+      groupContact,
+      { createAsClosed: shouldCreateAsClosed }
     );
 
-
-    if (
-      (unreadMessages === 0 &&
-        whatsapp.farewellMessage &&
-        formatBody(whatsapp.farewellMessage, ticket) === msg.body)) {
-      console.log("entrou aquii IF 2193")
-      return;
+    if (shouldCreateAsClosed) {
+      logger.debug(
+        `[handleMessage] Ticket ${ticket.id} creado como cerrado (sync de mensaje leído)`
+      );
     }
 
+    if (
+      unreadMessages === 0 &&
+      whatsapp.farewellMessage &&
+      formatBody(whatsapp.farewellMessage, ticket) === msg.body
+    ) {
+      console.log("entrou aquii IF 2193");
+      return;
+    }
 
     // if (msg.body === "#" && ticket.userId === null) {
     //   await ticket.update({
@@ -2368,22 +868,28 @@ const handleMessage = async (
 
     try {
       if (!msg.fromMe) {
-        if (ticketTraking !== null && verifyRating(ticketTraking) && whatsapp.ratingMessage) {
-          let rate = +msg.body;
-          //testa se o usuário digitou uma avaliação numérica, se não enviou, envia novametne a mensagem de avaliação
+        if (
+          ticketTraking !== null &&
+          verifyRating(ticketTraking) &&
+          whatsapp.ratingMessage
+        ) {
+          const rate = +msg.body;
+          // testa se o usuário digitou uma avaliação numérica, se não enviou, envia novametne a mensagem de avaliação
           if (!Number.isNaN(rate) && Number.isInteger(rate) && !isNull(rate)) {
             handleRating(msg, ticket, ticketTraking);
             return;
           }
-          else {
-            let bodyRatingMessage = `\u200e${whatsapp.ratingMessage}\n`;
 
-            const msg = await SendWhatsAppMessage({ body: bodyRatingMessage, ticket });
+          const bodyRatingMessage = `\u200e${whatsapp.ratingMessage}\n`;
 
-            await verifyMessage(msg, ticket, ticket.contact);
+          const sentRatingMsg = await SendWhatsAppMessage({
+            body: bodyRatingMessage,
+            ticket
+          });
 
-            return;
-          }
+          await verifyMessage(sentRatingMsg, ticket, ticket.contact);
+
+          return;
         }
       }
     } catch (e) {
@@ -2391,21 +897,100 @@ const handleMessage = async (
       console.log(e);
     }
 
-    if (msg.hasMedia) {
-      await verifyMediaMessage(msg, ticket, contact);
-    } else {
-      await verifyMessage(msg, ticket, contact);
+    // Verificar si el mensaje ya existe en la BD (evita duplicados de mensajes enviados desde el panel)
+    const existingMessage = await Message.findByPk(msg.id.id);
+
+    if (existingMessage) {
+      // El mensaje ya existe, solo actualizar el ack si es necesario
+      logger.debug(
+        `[handleMessage] Mensaje ${msg.id.id} ya existe en BD, ticketId: ${existingMessage.ticketId}`
+      );
+      if (existingMessage.ack !== msg.ack) {
+        await existingMessage.update({ ack: msg.ack });
+      }
+      return;
     }
 
+    logger.info(
+      `[handleMessage] Creando mensaje nuevo: ${msg.id.id}, fromMe: ${msg.fromMe}, type: ${msg.type}`
+    );
+
+    let createdMessage: Message | null = null;
+
+    const shouldDownloadMedia =
+      msg.hasMedia &&
+      msg.type !== "interactive" && // interactive genera error de webMediaType al descargar
+      !(isSync && msg.fromMe); // en sync histórico desde “fromMe” el media suele no estar disponible
+
+    if (shouldDownloadMedia) {
+      createdMessage = await verifyMediaMessage(msg, ticket, contact);
+    } else {
+      createdMessage = await verifyMessage(msg, ticket, contact);
+    }
+
+    // Enviar webhook de mensaje recibido o enviado
+    // Construir la URL del media si existe
+    let mediaUrl: string | null = null;
+    let mediaMimeType: string | null = null;
+
+    if (msg.hasMedia && createdMessage) {
+      // Obtener el mensaje con la URL completa del media
+      const messageWithMedia = await Message.findByPk(createdMessage.id);
+      if (messageWithMedia) {
+        mediaUrl = messageWithMedia.mediaUrl;
+        mediaMimeType = messageWithMedia.mediaType;
+      }
+    }
+
+    const webhookMessageData = {
+      messageId: msg.id.id,
+      body: msg.body,
+      fromMe: msg.fromMe,
+      mediaType: msg.type,
+      hasMedia: msg.hasMedia,
+      timestamp: msg.timestamp,
+      ticketId: ticket.id,
+      contact: {
+        id: contact.id,
+        name: contact.name,
+        number: contact.number
+      },
+      // Información de multimedia
+      media: msg.hasMedia
+        ? {
+            url: mediaUrl,
+            mimeType: mediaMimeType,
+            type: msg.type // image, video, audio, document, sticker, etc.
+          }
+        : null
+    };
+
+    if (msg.fromMe) {
+      sendMessageSentWebhook(wbot.id!, webhookMessageData);
+    } else {
+      sendMessageReceivedWebhook(wbot.id!, webhookMessageData);
+    }
+
+    const hasQueueSelected = Boolean(ticket.queueId);
+
     if (
-      !ticket.queue &&
+      !skipAutomations &&
+      !hasQueueSelected &&
+      !ticket.useIntegration &&
       !chat.isGroup &&
       !msg.fromMe &&
       !ticket.userId &&
-       whatsapp.queues.length >= 1
-     ) {
-       await verifyQueue(wbot, msg, ticket, contact);
-     }
+      whatsapp.queues.length >= 1
+    ) {
+      await verifyQueue(wbot, msg, ticket, contact);
+      // Reload ticket to get updated status after queue assignment
+      await ticket.reload();
+      // If a queue was assigned during verifyQueue, stop processing
+      // to avoid triggering sayChatbot or other handlers
+      if (ticket.queueId) {
+        return;
+      }
+    }
 
     // Atualiza o ticket se a ultima mensagem foi enviada por mim, para que possa ser finalizado. Se for grupo, nao finaliza
     try {
@@ -2420,7 +1005,67 @@ const handleMessage = async (
       console.log(e);
     }
 
-    if (ticket.queue && ticket.queueId) {
+    // Handle integration with Typebot, n8n or webhooks
+    // Check if ticket already has an active integration
+    if (
+      !skipAutomations &&
+      !msg.fromMe &&
+      !chat.isGroup &&
+      ticket.useIntegration &&
+      ticket.integrationId
+    ) {
+      try {
+        const integration = await ShowQueueIntegrationService(
+          ticket.integrationId
+        );
+        if (integration.type === "typebot") {
+          await typebotListener({ wbot, msg, ticket, typebot: integration });
+          return;
+        }
+      } catch (error) {
+        logger.error("Error handling integration: ", error);
+      }
+    }
+
+    // Handle "#" to go back to main menu
+    // Allow returning to menu when ticket has queue but agent hasn't responded yet
+    if (
+      !skipAutomations &&
+      msg.body === "#" &&
+      !msg.fromMe &&
+      !chat.isGroup &&
+      ticket.queueId &&
+      !ticket.useIntegration
+    ) {
+      // Reset queue, userId and show main menu options
+      await UpdateTicketService({
+        ticketData: { queueId: null, userId: null, status: "pending" },
+        ticketId: ticket.id
+      });
+
+      // Show queue options again
+      const { queues, greetingMessage } = whatsapp;
+      let options = "";
+      queues.forEach((queue, index) => {
+        options += `🔹 *${index + 1}* - ${queue.name}\n`;
+      });
+
+      const body = formatBody(`\u200e${greetingMessage}\n\n${options}`, ticket);
+      const sentMessage = await wbot.sendMessage(
+        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
+        body
+      );
+      await verifyMessage(sentMessage, ticket, contact);
+      return;
+    }
+
+    // Only run internal chatbot if there's no active typebot integration
+    if (
+      !skipAutomations &&
+      ticket.queue &&
+      ticket.queueId &&
+      !ticket.useIntegration
+    ) {
       if (!ticket.user) {
         await sayChatbot(ticket.queueId, wbot, ticket, contact, msg);
       }
@@ -2432,10 +1077,10 @@ const handleMessage = async (
         const obj = [];
         // eslint-disable-next-line no-shadow
         let contact = "";
-        for (let index = 0; index < array.length; index++) {
+        for (let index = 0; index < array.length; index += 1) {
           const v = array[index];
           const values = v.split(":");
-          for (let ind = 0; ind < values.length; ind++) {
+          for (let ind = 0; ind < values.length; ind += 1) {
             if (values[ind].indexOf("+") !== -1) {
               obj.push({ number: values[ind] });
             }
@@ -2493,22 +1138,22 @@ export const verifyRating = (ticketTraking: TicketTraking) => {
   return false;
 };
 
-
-
-const handleRating = async (msg: WbotMessage, ticket: Ticket, ticketTraking: TicketTraking) => {
+const handleRating = async (
+  msg: WbotMessage,
+  ticket: Ticket,
+  ticketTraking: TicketTraking
+) => {
   const io = getIO();
   let rate: number | null = null;
 
   const bodyMessage = msg.body;
-  const { farewellMessage, ratingMessage } = await ShowWhatsAppService(ticket.whatsappId);
-
+  const { farewellMessage } = await ShowWhatsAppService(ticket.whatsappId);
 
   if (bodyMessage) {
     rate = +bodyMessage;
   }
 
   if (!Number.isNaN(rate) && Number.isInteger(rate) && !isNull(rate)) {
-
     let finalRate = rate;
 
     if (rate < 0) {
@@ -2518,17 +1163,15 @@ const handleRating = async (msg: WbotMessage, ticket: Ticket, ticketTraking: Tic
       finalRate = 10;
     }
 
-
-
     await UserRating.create({
       ticketId: ticketTraking.ticketId,
       userId: ticketTraking.userId,
-      rate: finalRate,
+      rate: finalRate
     });
 
     // await record?.update({ rate: finalRate });
 
-    if (farewellMessage.trim() !== '') {
+    if (farewellMessage.trim() !== "") {
       const body = `\u200e${farewellMessage}`;
 
       await SendWhatsAppMessage({ body, ticket });
@@ -2536,21 +1179,20 @@ const handleRating = async (msg: WbotMessage, ticket: Ticket, ticketTraking: Tic
     await ticketTraking.update({
       ratingAt: moment().toDate(),
       finishedAt: moment().toDate(),
-      rated: true,
+      rated: true
     });
 
     await ticket.update({
       status: "closed"
     });
 
-
-    io.to("open").emit(`ticket`, {
+    io.to("open").emit("ticket", {
       action: "delete",
       ticket,
       ticketId: ticket.id
     });
 
-    io.to(ticket.status).to(ticket.id.toString()).emit(`ticket`, {
+    io.to(ticket.status).to(ticket.id.toString()).emit("ticket", {
       action: "update",
       ticket,
       ticketId: ticket.id
@@ -2558,12 +1200,15 @@ const handleRating = async (msg: WbotMessage, ticket: Ticket, ticketTraking: Tic
   }
 };
 
-const handleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
+const handleMsgAck = async (
+  msg: WbotMessage,
+  ack: MessageAck,
+  wbot: Session
+) => {
   await new Promise(r => setTimeout(r, 500));
 
   const io = getIO();
 
-  console.log("ingreso el ack " + msg.body)
   try {
     const messageToUpdate = await Message.findByPk(msg.id.id, {
       include: [
@@ -2585,15 +1230,53 @@ const handleMsgAck = async (msg: WbotMessage, ack: MessageAck) => {
       action: "update",
       message: messageToUpdate
     });
+
+    // Enviar webhook de ACK
+    if (wbot.id) {
+      sendMessageAckWebhook(wbot.id, {
+        messageId: msg.id.id,
+        ack,
+        ackName: getAckName(ack),
+        ticketId: messageToUpdate.ticketId,
+        body: msg.body
+      });
+    }
   } catch (err) {
     Sentry.captureException(err);
     logger.error(`Error handling message ack. Err: ${err}`);
   }
 };
 
+// Helper function to get ACK name
+const getAckName = (ack: MessageAck): string => {
+  const ackNames: Record<number, string> = {
+    [-1]: "ERROR",
+    0: "PENDING",
+    1: "SERVER",
+    2: "DEVICE",
+    3: "READ",
+    4: "PLAYED"
+  };
+  return ackNames[ack] || "UNKNOWN";
+};
+
 const wbotMessageListener = async (wbot: Session): Promise<void> => {
   wbot.on("message_create", async msg => {
+    logger.debug(
+      `[message_create] Mensaje recibido - id: ${msg.id?.id}, fromMe: ${
+        msg.fromMe
+      }, type: ${msg.type}, body: "${msg.body?.substring(0, 50)}..."`
+    );
+
+    if (!msg.fromMe) {
+      logger.debug("[message_create] Ignorando mensaje - no es fromMe");
+      return;
+    }
+
     try {
+      logger.debug(
+        `[message_create] Procesando mensaje fromMe - id: ${msg.id?.id}`
+      );
       await handleMessage(msg, wbot);
     } catch (err) {
       Sentry.captureException(err);
@@ -2602,6 +1285,8 @@ const wbotMessageListener = async (wbot: Session): Promise<void> => {
   });
 
   wbot.on("media_uploaded", async msg => {
+    if (!msg.fromMe) return;
+
     try {
       await handleMessage(msg, wbot);
     } catch (err) {
@@ -2612,7 +1297,7 @@ const wbotMessageListener = async (wbot: Session): Promise<void> => {
 
   wbot.on("message_ack", async (msg, ack) => {
     try {
-      await handleMsgAck(msg, ack);
+      await handleMsgAck(msg, ack, wbot);
     } catch (err) {
       Sentry.captureException(err);
       logger.error(`Error handling message_ack: ${err}`);
@@ -2628,6 +1313,103 @@ const wbotMessageListener = async (wbot: Session): Promise<void> => {
     } catch (err) {
       Sentry.captureException(err);
       logger.error(`Error handling message_revoke_everyone: ${err}`);
+    }
+  });
+
+  // Handler for message edit events (both from user and contacts)
+  wbot.on("message_edit", async (msg: WbotMessage, newBody: string) => {
+    try {
+      logger.info(
+        `[MessageEdit] Evento recibido - id: ${msg.id?.id}, fromMe: ${
+          msg.fromMe
+        }, newBody: "${newBody.substring(0, 50)}..."`
+      );
+
+      // Extract the message ID
+      const messageId = msg.id?.id;
+      if (!messageId) {
+        logger.warn("[MessageEdit] No se pudo obtener el ID del mensaje");
+        return;
+      }
+
+      await HandleMessageEditService({
+        messageId,
+        newBody,
+        fromMe: msg.fromMe
+      });
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error(`Error handling message_edit: ${err}`);
+    }
+  });
+
+  wbot.on("message_reaction", async (reaction: Reaction) => {
+    try {
+      // Log para debug de la estructura de la reacción
+      logger.info(
+        `[Reaction] Recibida: ${JSON.stringify({
+          id: reaction.id,
+          msgId: reaction.msgId,
+          reaction: reaction.reaction,
+          senderId: reaction.senderId,
+          ack: reaction.ack
+        })}`
+      );
+
+      // reaction.msgId es el MessageId del mensaje al que se reaccionó
+      // reaction.id es el ID de la propia reacción
+      // reaction.reaction es el emoji (vacío si se quitó)
+      // reaction.senderId es quien envió la reacción
+
+      // Usar msgId que contiene el ID del mensaje original
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const msgIdRaw = reaction.msgId as any;
+      const messageId =
+        typeof msgIdRaw === "string"
+          ? msgIdRaw
+          : // eslint-disable-next-line no-underscore-dangle
+            msgIdRaw?.id || msgIdRaw?._serialized || reaction.id?.id;
+
+      const emoji = reaction.reaction;
+
+      // senderId puede ser string o objeto con _serialized
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const senderIdRaw = reaction.senderId as any;
+      const senderId =
+        typeof senderIdRaw === "string"
+          ? senderIdRaw
+          : // eslint-disable-next-line no-underscore-dangle
+            senderIdRaw._serialized || String(senderIdRaw);
+
+      // fromMe indica si la reacción es nuestra
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fromMe = (reaction as any).id?.fromMe || false;
+
+      logger.info(
+        `[Reaction] Procesando: messageId=${messageId}, emoji=${emoji}, senderId=${senderId}`
+      );
+
+      // Obtener nombre del contacto si está disponible
+      let senderName: string | undefined;
+      try {
+        const contact = await wbot.getContactById(senderId);
+        senderName = contact?.pushname || contact?.name;
+      } catch {
+        // Ignorar si no se puede obtener el contacto
+      }
+
+      await HandleMessageReactionService({
+        reactionData: {
+          messageId,
+          emoji,
+          senderId,
+          senderName,
+          fromMe
+        }
+      });
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error(`Error handling message_reaction: ${err}`);
     }
   });
 };

@@ -13,6 +13,7 @@ interface QueueData {
   startWork?: string;
   endWork?: string;
   absenceMessage?: string;
+  integrationId?: number | null;
 }
 
 const UpdateQueueService = async (
@@ -96,7 +97,10 @@ const UpdateQueueService = async (
         model: Chatbot,
         as: "chatbots",
         attributes: ["id", "name", "greetingMessage"],
-        order: [[{ model: Chatbot, as: "chatbots" }, "id", "asc"], ["id", "ASC"]]
+        order: [
+          [{ model: Chatbot, as: "chatbots" }, "id", "asc"],
+          ["id", "ASC"]
+        ]
       }
     ]
   });

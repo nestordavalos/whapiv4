@@ -1,4 +1,3 @@
-import fs from "fs";
 import { MessageMedia, Message as WbotMessage } from "whatsapp-web.js";
 import AppError from "../../errors/AppError";
 import GetTicketWbot from "../../helpers/GetTicketWbot";
@@ -45,7 +44,8 @@ const SendWhatsAppMedia = async ({
     );
 
     await ticket.update({ lastMessage: body || media.filename });
-    fs.unlinkSync(media.path);
+    // NO borrar el archivo - se necesita para mostrarlo en el panel
+    // fs.unlinkSync(media.path);
     return sentMessage;
   } catch (err) {
     try {
@@ -56,14 +56,16 @@ const SendWhatsAppMedia = async ({
       const [lastMessage] = await chat.fetchMessages({ limit: 1 });
       if (lastMessage && lastMessage.fromMe && lastMessage.hasMedia) {
         await ticket.update({ lastMessage: body || media.filename });
-        fs.unlinkSync(media.path);
+        // NO borrar el archivo - se necesita para mostrarlo en el panel
+        // fs.unlinkSync(media.path);
         return lastMessage as WbotMessage;
       }
     } catch (checkErr) {
       logger.warn(`Failed to verify sent media: ${checkErr}`);
     }
 
-    fs.unlinkSync(media.path);
+    // NO borrar el archivo - se necesita para mostrarlo en el panel
+    // fs.unlinkSync(media.path);
     logger.warn(`Error sending WhatsApp media: ${err}`);
     throw new AppError("ERR_SENDING_WAPP_MSG");
   }

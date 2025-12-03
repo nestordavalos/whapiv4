@@ -12,10 +12,51 @@ import {
   ForeignKey,
   Index,
   BeforeCreate,
-  BeforeUpdate
+  BeforeUpdate,
+  HasMany
 } from "sequelize-typescript";
+import { existsSync } from "fs";
+import { join } from "path";
 import Contact from "./Contact";
 import Ticket from "./Ticket";
+import MessageReaction from "./MessageReaction";
+import getStorageConfig from "../config/storage";
+
+// Helper to build S3 URL
+const buildS3Url = (
+  config: ReturnType<typeof getStorageConfig>,
+  filename: string
+): string => {
+  const filePath = config.s3.prefix
+    ? `${config.s3.prefix}/${filename}`
+    : filename;
+
+  if (config.s3.publicUrl) {
+    return `${config.s3.publicUrl}/${filePath}`;
+  }
+  if (config.s3.endpoint) {
+    // S3-compatible services
+    return `${config.s3.endpoint}/${config.s3.bucket}/${filePath}`;
+  }
+  // Standard AWS S3
+  return `https://${config.s3.bucket}.s3.${config.s3.region}.amazonaws.com/${filePath}`;
+};
+
+// Helper to build local URL
+const buildLocalUrl = (filename: string): string => {
+  return `${process.env.BACKEND_URL}:${process.env.PROXY_PORT}/public/${filename}`;
+};
+
+// Check if S3 credentials are configured
+const hasS3Credentials = (
+  config: ReturnType<typeof getStorageConfig>
+): boolean => {
+  return !!(
+    config.s3.bucket &&
+    config.s3.accessKeyId &&
+    config.s3.secretAccessKey
+  );
+};
 
 @Table({ timestamps: true })
 class Message extends Model<Message> {
@@ -51,12 +92,34 @@ class Message extends Model<Message> {
 
   @Column(DataType.STRING)
   get mediaUrl(): string | null {
-    if (this.getDataValue("mediaUrl")) {
-      return `${process.env.BACKEND_URL}:${
-        process.env.PROXY_PORT
-      }/public/${this.getDataValue("mediaUrl")}`;
+    const filename = this.getDataValue("mediaUrl");
+    if (!filename) {
+      return null;
     }
-    return null;
+
+    const config = getStorageConfig();
+    const localFilePath = join(__dirname, "..", "..", "public", filename);
+    const fileExistsLocally = existsSync(localFilePath);
+    const s3Configured = hasS3Credentials(config);
+
+    // Priority logic:
+    // 1. If file exists locally -> serve from local (faster, enables migration)
+    // 2. If S3 is configured -> serve from S3
+    // 3. Fallback to local URL
+
+    // If file exists locally, always prefer local URL
+    // This allows viewing files pending migration and is faster
+    if (fileExistsLocally) {
+      return buildLocalUrl(filename);
+    }
+
+    // File not local - try S3 if configured
+    if (s3Configured) {
+      return buildS3Url(config, filename);
+    }
+
+    // Default: return local URL (will 404 if file doesn't exist)
+    return buildLocalUrl(filename);
   }
 
   @Column
@@ -65,6 +128,10 @@ class Message extends Model<Message> {
   @Default(false)
   @Column
   isDeleted: boolean;
+
+  @Default(false)
+  @Column
+  isEdited: boolean;
 
   @Index
   @CreatedAt
@@ -97,6 +164,9 @@ class Message extends Model<Message> {
 
   @BelongsTo(() => Contact, "contactId")
   contact: Contact;
+
+  @HasMany(() => MessageReaction, "messageId")
+  reactions: MessageReaction[];
 
   @BeforeCreate
   @BeforeUpdate

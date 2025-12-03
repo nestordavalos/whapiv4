@@ -12,13 +12,110 @@ import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
 import formatBody from "../../helpers/Mustache";
 import UpdateTicketService from "../TicketServices/UpdateTicketService";
 import Chatbot from "../../models/Chatbot";
-import User from "../../models/User";
 
 type Session = Client & {
   id?: number;
 };
 
 const isNumeric = (value: string) => /^-?\d+$/.test(value);
+
+const pickOption = (
+  options: Array<Chatbot | null> | undefined,
+  selectedIndex: number
+): Chatbot | undefined => {
+  if (!options || options.length === 0) {
+    return undefined;
+  }
+
+  const validOptions = options.filter(Boolean) as Chatbot[];
+
+  if (validOptions.length === 0) {
+    return undefined;
+  }
+
+  if (!Number.isNaN(selectedIndex) && validOptions[selectedIndex]) {
+    return validOptions[selectedIndex];
+  }
+
+  return validOptions[0];
+};
+
+const assignAgentIfPossible = async (
+  node: Chatbot,
+  ticket: Ticket
+): Promise<boolean> => {
+  if (!node.queueId) {
+    console.warn(
+      `[Chatbot] Cannot assign agent for ${node.name}: missing queueId`
+    );
+    return false;
+  }
+
+  const queue = await ShowQueueService(node.queueId);
+  const queueUsers = queue.users || [];
+
+  if (!queueUsers.length) {
+    console.warn(
+      `[Chatbot] Queue ${queue.name} has no agents with permission to receive tickets`
+    );
+    return false;
+  }
+
+  const user =
+    queueUsers.find(qUser => qUser.name === node.name) || queueUsers[0];
+
+  await UpdateTicketService({
+    ticketData: {
+      userId: user.id,
+      status: "open",
+      queueId: queue.id
+    },
+    ticketId: ticket.id
+  });
+
+  return true;
+};
+
+const hasChildOptions = (node?: Chatbot) =>
+  !!node?.options && node.options.length > 0;
+
+const buildLeafTicketUpdate = (node: Chatbot, agentAssigned: boolean) => {
+  const ticketData: {
+    status?: string;
+    queueId?: number;
+    userId?: number | null;
+  } = {};
+
+  if (node.queueId) {
+    ticketData.queueId = node.queueId;
+  }
+
+  if (node.isAgent) {
+    ticketData.status = "open";
+    if (!agentAssigned) {
+      ticketData.userId = null;
+    }
+  } else {
+    ticketData.status = "pending";
+    ticketData.userId = null;
+  }
+
+  return Object.keys(ticketData).length ? ticketData : undefined;
+};
+
+const finalizeChatbotFlow = async (
+  node: Chatbot,
+  wbot: Session,
+  contact: Contact,
+  ticket: Ticket
+) => {
+  await DeleteDialogChatBotsServices(contact.id);
+  await ticket.update({ isBot: false });
+
+  if (node.greetingMessage) {
+    await sendMessage(wbot, contact, ticket, `\u200e${node.greetingMessage}`);
+  }
+};
 
 export const deleteAndCreateDialogStage = async (
   contact: Contact,
@@ -59,9 +156,11 @@ const sendDialog = async (
   choosenQueue: Chatbot,
   wbot: Session,
   contact: Contact,
-  ticket: Ticket
+  ticket: Ticket,
+  nodeWithOptions?: Chatbot
 ) => {
-  const showChatBots = await ShowChatBotServices(choosenQueue.id);
+  const showChatBots =
+    nodeWithOptions || (await ShowChatBotServices(choosenQueue.id));
   if (showChatBots.options) {
     let options = "";
 
@@ -129,30 +228,47 @@ export const sayChatbot = async (
 
   if (!getStageBot) {
     const queue = await ShowQueueService(queueId);
-    const choosenQueue = queue.chatbots[+selectedOption - 1];
+    const optionIndex = Number(selectedOption) - 1;
+    const choosenQueue = pickOption(queue.chatbots, optionIndex);
+
+    if (!choosenQueue) {
+      await backToMainMenu(wbot, contact, ticket);
+      return;
+    }
     if (!choosenQueue?.greetingMessage) {
       await DeleteDialogChatBotsServices(contact.id);
       return;
     } // nao tem mensagem de boas vindas
 
     if (choosenQueue) {
-      if (choosenQueue.isAgent) {
-        const getUserByName = await User.findOne({
-          where: {
-            name: choosenQueue.name
-          }
-        });
-        const ticketUpdateAgent = {
-          ticketData: {
-            userId: getUserByName.id,
-            status: "open"
-          },
-          ticketId: ticket.id
-        };
-        await UpdateTicketService(ticketUpdateAgent);
+      const nodeDetails = await ShowChatBotServices(choosenQueue.id);
+      const childrenAvailable = hasChildOptions(nodeDetails);
+      const agentAssigned = choosenQueue.isAgent
+        ? await assignAgentIfPossible(choosenQueue, ticket)
+        : false;
+
+      if (!childrenAvailable) {
+        const ticketUpdate = buildLeafTicketUpdate(choosenQueue, agentAssigned);
+
+        if (ticketUpdate) {
+          await UpdateTicketService({
+            ticketData: ticketUpdate,
+            ticketId: ticket.id
+          });
+        }
+
+        await finalizeChatbotFlow(choosenQueue, wbot, contact, ticket);
+        return;
       }
+
       await deleteAndCreateDialogStage(contact, choosenQueue.id, ticket);
-      const send = await sendDialog(choosenQueue, wbot, contact, ticket);
+      const send = await sendDialog(
+        choosenQueue,
+        wbot,
+        contact,
+        ticket,
+        nodeDetails
+      );
       return send;
     }
   }
@@ -160,32 +276,48 @@ export const sayChatbot = async (
   if (getStageBot) {
     const selected = isNumeric(selectedOption) ? selectedOption : 1;
     const bots = await ShowChatBotServices(getStageBot.chatbotId);
-    const choosenQueue = bots.options[+selected - 1]
-      ? bots.options[+selected - 1]
-      : bots.options[0];
+    const optionIndex = Number(selected) - 1;
+    const choosenQueue = pickOption(bots.options, optionIndex);
+
+    if (!choosenQueue) {
+      await DeleteDialogChatBotsServices(contact.id);
+      await backToMainMenu(wbot, contact, ticket);
+      return;
+    }
     if (!choosenQueue.greetingMessage) {
       await DeleteDialogChatBotsServices(contact.id);
       return;
     } // nao tem mensagem de boas vindas
 
     if (choosenQueue) {
-      if (choosenQueue.isAgent) {
-        const getUserByName = await User.findOne({
-          where: {
-            name: choosenQueue.name
-          }
-        });
-        const ticketUpdateAgent = {
-          ticketData: {
-            userId: getUserByName.id,
-            status: "open"
-          },
-          ticketId: ticket.id
-        };
-        await UpdateTicketService(ticketUpdateAgent);
+      const nodeDetails = await ShowChatBotServices(choosenQueue.id);
+      const childrenAvailable = hasChildOptions(nodeDetails);
+      const agentAssigned = choosenQueue.isAgent
+        ? await assignAgentIfPossible(choosenQueue, ticket)
+        : false;
+
+      if (!childrenAvailable) {
+        const ticketUpdate = buildLeafTicketUpdate(choosenQueue, agentAssigned);
+
+        if (ticketUpdate) {
+          await UpdateTicketService({
+            ticketData: ticketUpdate,
+            ticketId: ticket.id
+          });
+        }
+
+        await finalizeChatbotFlow(choosenQueue, wbot, contact, ticket);
+        return;
       }
+
       await deleteAndCreateDialogStage(contact, choosenQueue.id, ticket);
-      const send = await sendDialog(choosenQueue, wbot, contact, ticket);
+      const send = await sendDialog(
+        choosenQueue,
+        wbot,
+        contact,
+        ticket,
+        nodeDetails
+      );
       return send;
     }
   }

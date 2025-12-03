@@ -6,7 +6,11 @@ import * as ImportPhoneContactsController from "../controllers/ImportPhoneContac
 
 const contactRoutes = express.Router();
 
-contactRoutes.post("/contacts/import", isAuth, ImportPhoneContactsController.store);
+contactRoutes.post(
+  "/contacts/import",
+  isAuth,
+  ImportPhoneContactsController.store
+);
 contactRoutes.get("/contacts", isAuth, ContactController.index);
 contactRoutes.get("/contacts/:contactId", isAuth, ContactController.show);
 contactRoutes.post("/contacts", isAuth, ContactController.store);

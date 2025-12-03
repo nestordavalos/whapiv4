@@ -51,6 +51,8 @@ import { i18n } from "../../translate/i18n";
 // import { Viewer } from "@react-pdf-viewer/core";
 //import { PDFViewer, Document, Page } from "@react-pdf/renderer";
 
+const drawerWidth = 320;
+
 const useStyles = makeStyles((theme) => ({
   messagesListWrapper: {
     overflow: "hidden",
@@ -474,7 +476,7 @@ const useStyles = makeStyles((theme) => ({
   },
   checkboxContainer: {
     position: "absolute",
-    left: -35,
+    left: -25,
     top: "50%",
     transform: "translateY(-50%)",
     zIndex: 10,
@@ -491,15 +493,19 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     alignItems: "center",
   },
-  floatingActions: {
+  floatingActions: ({ drawerOpen }) => ({
     position: "fixed",
     bottom: 100,
-    right: 30,
+    right: drawerOpen ? drawerWidth + 30 : 30,
     display: "flex",
     flexDirection: "column",
     gap: 10,
     zIndex: 1000,
-  },
+    [theme.breakpoints.down("sm")]: {
+      right: 16,
+      bottom: 80,
+    },
+  }),
   fabForward: {
     backgroundColor: "#25D366",
     color: "#fff",
@@ -620,8 +626,8 @@ const reducer = (state, action) => {
   }
 };
 
-const MessagesList = ({ ticketId, isGroup }) => {
-  const classes = useStyles();
+const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
+  const classes = useStyles({ drawerOpen: isContactDrawerOpen });
 
   const [messagesList, dispatch] = useReducer(reducer, []);
   const [pageNumber, setPageNumber] = useState(1);
@@ -1387,7 +1393,11 @@ const MessagesList = ({ ticketId, isGroup }) => {
               <Close />
             </Fab>
           </Tooltip>
-          <Badge badgeContent={selectedMessages.length} color="secondary">
+          <Badge
+            badgeContent={selectedMessages.length}
+            color="secondary"
+            overlap="rectangular"
+          >
             <Tooltip title={i18n.t("messageOptionsMenu.forward")}>
               <Fab
                 color="primary"

@@ -171,6 +171,7 @@ const Ticket = () => {
           <MessagesList
             ticketId={ticketId}
             isGroup={ticket.isGroup}
+            isContactDrawerOpen={drawerOpen}
           ></MessagesList>
           <MessageInput ticketStatus={ticket.status} />
         </ReplyMessageProvider>

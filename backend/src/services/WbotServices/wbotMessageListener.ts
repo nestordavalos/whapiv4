@@ -779,6 +779,14 @@ const handleMessage = async (
       msgContact = await msg.getContact();
     }
 
+    // Ignore empty chat messages (e.g., empty payloads coming from typebot)
+    if (msg.type === "chat" && (!msg.body || msg.body.trim() === "")) {
+      logger.debug(
+        `[handleMessage] Ignorando mensaje vacío - id: ${msg.id?.id}, from: ${msg.from}`
+      );
+      return;
+    }
+
     const chat = await msg.getChat();
 
     if (chat.isGroup) {
@@ -962,8 +970,11 @@ const handleMessage = async (
       sendMessageReceivedWebhook(wbot.id!, webhookMessageData);
     }
 
+    const hasQueueSelected = Boolean(ticket.queueId);
+
     if (
-      !ticket.queue &&
+      !hasQueueSelected &&
+      !ticket.useIntegration &&
       !chat.isGroup &&
       !msg.fromMe &&
       !ticket.userId &&

@@ -294,11 +294,14 @@ const MessageInput = ({ ticketStatus }) => {
   }, [ticketId, setReplyingMessage]);
 
   useEffect(() => {
-    setTimeout(() => {
+    if (!onDragEnter) return undefined;
+
+    const timer = setTimeout(() => {
       setOnDragEnter(false);
     }, 10000);
-    // eslint-disable-next-line
-  }, [onDragEnter === true]);
+
+    return () => clearTimeout(timer);
+  }, [onDragEnter]);
 
   const capitalizeFirstLetter = (string) => {
     return string.charAt(0).toUpperCase() + string.slice(1);

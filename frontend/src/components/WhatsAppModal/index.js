@@ -816,7 +816,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       label={i18n.t("queueModal.form.greetingMessage")}
                       type="greetingMessage"
                       multiline
-                      rows={4}
+                      minRows={4}
                       fullWidth
                       name="greetingMessage"
                       error={
@@ -835,7 +835,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       label={i18n.t("whatsappModal.form.farewellMessage")}
                       type="farewellMessage"
                       multiline
-                      rows={4}
+                      minRows={4}
                       fullWidth
                       name="farewellMessage"
                       error={
@@ -854,7 +854,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       label={i18n.t("whatsappModal.form.ratingMessage")}
                       type="ratingMessage"
                       multiline
-                      rows={4}
+                      minRows={4}
                       fullWidth
                       name="ratingMessage"
                       helperText={i18n.t("whatsappModal.form.instructionRatingMessage")}
@@ -889,7 +889,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       label={i18n.t("whatsappModal.form.inactiveMessage")}
                       type="inactiveMessage"
                       multiline
-                      rows={4}
+                      minRows={4}
                       fullWidth
                       name="inactiveMessage"
                       error={
@@ -962,7 +962,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       <Box className={classes.workHoursBox}>
                         <TextField
                           label={i18n.t("whatsappModal.form.outOfWorkMessage")}
-                          rows={3}
+                          minRows={3}
                           multiline
                           fullWidth
                           name="outOfWorkMessage"

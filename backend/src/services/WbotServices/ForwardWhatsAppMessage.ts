@@ -1,5 +1,4 @@
 import { MessageMedia } from "whatsapp-web.js";
-import fs from "fs";
 import path from "path";
 import AppError from "../../errors/AppError";
 import GetTicketWbot from "../../helpers/GetTicketWbot";
@@ -9,6 +8,7 @@ import Contact from "../../models/Contact";
 import { logger } from "../../utils/logger";
 import FindOrCreateTicketService from "../TicketServices/FindOrCreateTicketService";
 import CreateMessageService from "../MessageServices/CreateMessageService";
+import { getStorageService } from "../StorageServices/StorageService";
 
 interface Request {
   message: Message;
@@ -50,6 +50,7 @@ const ForwardWhatsAppMessage = async ({
 
     let sentMessage;
     const forwardedBody = message.body || "";
+    let storedBody = forwardedBody;
     let mediaUrl: string | undefined;
     let mediaType: string | undefined;
 
@@ -57,30 +58,61 @@ const ForwardWhatsAppMessage = async ({
     const originalMediaUrl = message.getDataValue("mediaUrl");
 
     if (originalMediaUrl && message.mediaType) {
-      // Get the media file path
-      const publicFolder = path.resolve(__dirname, "..", "..", "..", "public");
-      const mediaPath = path.join(publicFolder, originalMediaUrl);
+      const storageService = getStorageService();
+      const ext = path.extname(originalMediaUrl).toLowerCase();
+      const mimeMap: Record<string, string> = {
+        ".jpeg": "image/jpeg",
+        ".jpg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".mp4": "video/mp4",
+        ".3gp": "video/3gpp",
+        ".ogg": "audio/ogg",
+        ".oga": "audio/ogg",
+        ".mp3": "audio/mpeg",
+        ".wav": "audio/wav",
+        ".pdf": "application/pdf",
+        ".doc": "application/msword",
+        ".docx":
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".xls": "application/vnd.ms-excel",
+        ".xlsx":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      };
 
-      if (fs.existsSync(mediaPath)) {
-        // Send media message
-        const media = MessageMedia.fromFilePath(mediaPath);
+      try {
+        const buffer = await storageService.downloadToBuffer(originalMediaUrl);
+        const mimeType =
+          mimeMap[ext] ||
+          (message.mediaType
+            ? `${message.mediaType}/*`
+            : "application/octet-stream");
+        const media = new MessageMedia(
+          mimeType,
+          buffer.toString("base64"),
+          path.basename(originalMediaUrl)
+        );
+
         sentMessage = await wbot.sendMessage(destinationChatId, media, {
           caption: forwardedBody || undefined,
           sendAudioAsVoice: message.mediaType === "audio"
         });
+
         mediaUrl = originalMediaUrl;
         mediaType = message.mediaType;
-      } else {
-        // Media file not found, send as text
-        logger.warn(`Media file not found: ${mediaPath}`);
-        sentMessage = await wbot.sendMessage(
-          destinationChatId,
-          forwardedBody || "[Media no disponible]"
+      } catch (error: any) {
+        logger.warn(
+          `Media file not found in storage (${originalMediaUrl}): ${error.message}`
         );
+        const fallbackText = forwardedBody || "[Media no disponible]";
+        sentMessage = await wbot.sendMessage(destinationChatId, fallbackText);
+        storedBody = fallbackText;
       }
     } else {
       // Send text message
       sentMessage = await wbot.sendMessage(destinationChatId, forwardedBody);
+      storedBody = forwardedBody;
     }
 
     // Create the message in the database
@@ -92,7 +124,7 @@ const ForwardWhatsAppMessage = async ({
       messageData: {
         id: sentMessage.id.id,
         ticketId: destinationTicket.id,
-        body: forwardedBody,
+        body: storedBody,
         contactId: destinationContact.id,
         fromMe: true,
         read: true,
@@ -106,7 +138,7 @@ const ForwardWhatsAppMessage = async ({
     // Update the destination ticket's last message
     await destinationTicket.update({
       lastMessage:
-        forwardedBody || (mediaType ? `[${mediaType}]` : "Forwarded message")
+        storedBody || (mediaType ? `[${mediaType}]` : "Forwarded message")
     });
 
     logger.info(

@@ -163,7 +163,7 @@ const UpdateTicketService = async ({
   });
 
   if (status !== undefined && ["pending"].indexOf(status) > -1) {
-    ticketTraking.update({
+    await ticketTraking.update({
       whatsappId: ticket.whatsappId,
       queuedAt: moment().toDate(),
       startedAt: null,
@@ -172,7 +172,7 @@ const UpdateTicketService = async ({
   }
 
   if (status !== undefined && ["open"].indexOf(status) > -1) {
-    ticketTraking.update({
+    await ticketTraking.update({
       startedAt: moment().toDate(),
       ratingAt: null,
       rated: false,
@@ -182,6 +182,10 @@ const UpdateTicketService = async ({
   }
 
   await ticketTraking.save();
+  (ticket as any).queuedAt = ticketTraking.queuedAt;
+  (ticket as any).queueAt = ticketTraking.queuedAt;
+  ticket.setDataValue("queuedAt", ticketTraking.queuedAt);
+  ticket.setDataValue("queueAt", ticketTraking.queuedAt);
 
   if (ticket.status !== oldStatus || ticket.user?.id !== oldUserId) {
     ticketTraking.update({

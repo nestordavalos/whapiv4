@@ -391,7 +391,7 @@ const TicketsList = (props) => {
 					) : (
 						<>
 							{ticketsList.map((ticket) => (
-								<TicketListItem handleChangeTab={handleChangeTab}ticket={ticket} key={ticket.id} />
+								<TicketListItem handleChangeTab={handleChangeTab} ticket={ticket} key={ticket.id} />
 							))}
 						</>
 					)}

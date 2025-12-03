@@ -9,6 +9,7 @@ import Whatsapp from "../../models/Whatsapp";
 import Tag from "../../models/Tag";
 import ShowUserService from "../UserServices/ShowUserService";
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
+import User from "../../models/User";
 
 interface Request {
   searchParam?: string;
@@ -70,6 +71,11 @@ const ListTicketsService = async ({
     {
       model: Whatsapp,
       as: "whatsapp",
+      attributes: ["id", "name"]
+    },
+    {
+      model: User,
+      as: "user",
       attributes: ["id", "name"]
     }
   ];

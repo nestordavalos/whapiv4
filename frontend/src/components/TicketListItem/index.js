@@ -261,7 +261,6 @@ const useStyles = makeStyles(theme => ({
 		const userQueues = user?.queues || [];
 		const [loading, setLoading] = useState(false);
 		const [acceptTicketWithouSelectQueueOpen, setAcceptTicketWithouSelectQueueOpen] = useState(false);
-		const [userName, setUserName] = useState(null);
 		const isMounted = useRef(true);
 		const tags = ticket?.contact?.tags || [];
 
@@ -276,30 +275,6 @@ const useStyles = makeStyles(theme => ({
 				isMounted.current = false;
 			};
 		}, []);
-
-		useEffect(() => {
-		if (ticket.status === "pending" || !ticket.userId) {
-			setUserName(null);
-			return;
-		}
-
-		let cancelled = false;
-		const fetchUserName = async () => {
-			try {
-				const { data } = await api.get(`/users/${ticket.userId}`);
-				if (!cancelled) {
-					setUserName(data?.name || null);
-				}
-			} catch (err) {
-				// Falha silenciosa
-			}
-		};
-
-		fetchUserName();
-		return () => {
-			cancelled = true;
-		};
-	}, [ticket.status, ticket.userId]);
 
 	const queueName = useCallback((selectedTicket) => {
 		let name = null;
@@ -316,6 +291,10 @@ const useStyles = makeStyles(theme => ({
 	const queueInfo = useMemo(() => queueName(ticket), [ticket, queueName]);
 	const queueColor = ticket.queue?.color || queueInfo.color || theme.palette.primary.light;
 	const queueLabel = ticket.queue?.name || queueInfo.name || i18n.t("ticketsList.items.queueless");
+	const assignedUserName = useMemo(() => {
+		if (ticket.status === "pending" || !ticket.userId) return null;
+		return ticket.user?.name || null;
+	}, [ticket.status, ticket.userId, ticket.user]);
 
 	const statusDisplay = useMemo(() => {
 		const palette = theme.palette;
@@ -594,11 +573,11 @@ const useStyles = makeStyles(theme => ({
 									role={user?.profile}
 									perform="drawer-admin-items:view"
 									yes={() => (
-										userName ? (
+										assignedUserName ? (
 											<Tooltip title={i18n.t("ticketsList.items.user")}>
 												<Chip
 													icon={<PersonOutlineIcon style={{ fontSize: "1rem" }} />}
-													label={userName}
+													label={assignedUserName}
 													size="small"
 													className={classes.userChip}
 												/>

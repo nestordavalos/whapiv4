@@ -1,0 +1,967 @@
+import React, { useState, useEffect } from "react";
+
+import Paper from "@mui/material/Paper";
+import Container from "@mui/material/Container";
+import Grid from "@mui/material/Grid";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
+import TextField from "@mui/material/TextField";
+import FormHelperText from "@mui/material/FormHelperText";
+import { Typography, Avatar, Tab, Tabs } from "@mui/material";
+
+import SpeedIcon from "@mui/icons-material/Speed";
+import GroupIcon from "@mui/icons-material/Group";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import PersonIcon from "@mui/icons-material/Person";
+import AppBar from "@mui/material/AppBar";
+import SentimentSatisfiedAltIcon  from "@mui/icons-material/SentimentSatisfiedAlt";
+import SentimentVeryDissatisfiedIcon from "@mui/icons-material/SentimentDissatisfied";
+import SentimentNeutralIcon from "@mui/icons-material/SentimentNeutral";
+import Score from "@mui/icons-material/Score";
+
+import makeStyles from '@mui/styles/makeStyles';
+import { toast } from "react-toastify";
+
+
+//import Chart from "./Chart";
+import ButtonWithSpinner from "../../components/ButtonWithSpinner";
+import TabPanel from "../../components/TabPanel";
+import { UsersFilter } from "../../components/UsersFilter";
+import QueueSelect from "../../components/QueueSelect";
+
+//import CardCounter from "../../components/Dashboard/CardCounter";
+import TableAttendantsStatus from "../../components/Dashboard/TableAttendantsStatus";
+import { isArray } from "lodash";
+
+import useDashboard from "../../hooks/useDashboard";
+
+import { isEmpty } from "lodash";
+import moment from "moment";
+
+const useStyles = makeStyles((theme) => ({
+  tab: {
+    paddingTop: theme.spacing(4),
+    display: "flex",
+    alignItems: "center",
+    height: "auto",
+    width: "100%",
+    backgroundColor: theme.palette.background.paper,
+    [theme.breakpoints.down('md')]: {
+      paddingTop: theme.spacing(2),
+    },
+  },
+  container: {
+    paddingTop: theme.spacing(2),
+    paddingBottom: theme.spacing(4),
+    maxWidth: "1150px",
+    minWidth: "xs",
+    [theme.breakpoints.down('md')]: {
+      paddingTop: theme.spacing(1),
+      paddingBottom: theme.spacing(2),
+    },
+  },
+  cardContainer1: {
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(85, 120, 235, 0.15)" : "#eef1fdff",
+    width: "100%",
+    height: "auto",
+    minHeight: 100,
+    display: "flex",
+    alignItems: "center",
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: theme.palette.mode === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.mode === "dark" ? `1px solid rgba(85, 120, 235, 0.3)` : "none",
+    [theme.breakpoints.down('sm')]: {
+      padding: "10px 12px",
+      minHeight: 80,
+    },
+  },
+  cardContainer2: {
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(255, 184, 34, 0.15)" : "#fff8e8ff",
+    width: "100%",
+    height: "auto",
+    minHeight: 100,
+    display: "flex",
+    alignItems: "center",
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: theme.palette.mode === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.mode === "dark" ? `1px solid rgba(255, 184, 34, 0.3)` : "none",
+    [theme.breakpoints.down('sm')]: {
+      padding: "10px 12px",
+      minHeight: 80,
+    },
+  },
+  cardContainer3: {
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(10, 187, 135, 0.15)" : "#e6f8f3ff",
+    width: "100%",
+    height: "auto",
+    minHeight: 100,
+    display: "flex",
+    alignItems: "center",
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: theme.palette.mode === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.mode === "dark" ? `1px solid rgba(10, 187, 135, 0.3)` : "none",
+    [theme.breakpoints.down('sm')]: {
+      padding: "10px 12px",
+      minHeight: 80,
+    },
+  },
+  cardContainer4: {
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(250, 112, 112, 0.15)" : "#fbe7edff",
+    width: "100%",
+    height: "auto",
+    minHeight: 100,
+    display: "flex",
+    alignItems: "center",
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: theme.palette.mode === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.mode === "dark" ? `1px solid rgba(250, 112, 112, 0.3)` : "none",
+    [theme.breakpoints.down('sm')]: {
+      padding: "10px 12px",
+      minHeight: 80,
+    },
+  },
+  cardContainer5: {
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(10, 187, 135, 0.15)" : "#e6f8f3ff",
+    width: "100%",
+    height: "auto",
+    minHeight: 100,
+    display: "flex",
+    alignItems: "center",
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: theme.palette.mode === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.mode === "dark" ? `1px solid rgba(10, 187, 135, 0.3)` : "none",
+    [theme.breakpoints.down('sm')]: {
+      padding: "10px 12px",
+      minHeight: 80,
+    },
+  },
+  cardContainer6: {
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(85, 120, 235, 0.15)" : "#eef1fdff",
+    width: "100%",
+    height: "auto",
+    minHeight: 100,
+    display: "flex",
+    alignItems: "center",
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: theme.palette.mode === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.mode === "dark" ? `1px solid rgba(85, 120, 235, 0.3)` : "none",
+    [theme.breakpoints.down('sm')]: {
+      padding: "10px 12px",
+      minHeight: 80,
+    },
+  },
+  cardContainer7: {
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(85, 120, 235, 0.15)" : "#eef1fdff",
+    width: "100%",
+    height: "auto",
+    minHeight: 100,
+    display: "flex",
+    alignItems: "center",
+    padding: "12px 16px",
+    borderRadius: 12,
+    boxShadow: theme.palette.mode === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.mode === "dark" ? `1px solid rgba(85, 120, 235, 0.3)` : "none",
+    justifyItems: "center",
+    [theme.breakpoints.down('sm')]: {
+      padding: "10px 12px",
+      minHeight: 80,
+    },
+  },
+  fixedHeightPaper: {
+    padding: theme.spacing(2),
+    display: "flex",
+    flexDirection: "column",
+    height: 340,
+    overflowY: "hidden",
+    ...theme.scrollbarStyles,
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: 12,
+    backgroundColor: theme.palette.background.paper,
+    [theme.breakpoints.down('md')]: {
+      height: "auto",
+      minHeight: 200,
+    },
+  },
+  cardAvatar: {
+    paddingLeft: "12px",
+    marginLeft: "auto",
+    [theme.breakpoints.down('sm')]: {
+      paddingLeft: "8px",
+    },
+  },
+  cardAvatar1: {
+    color: "#5578eb",
+    width: "70px",
+    height: "70px",
+    display: "flex",
+    fontSize: "48px",
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(85, 120, 235, 0.25)" : "#eef1fdff",
+    borderRadius: 12,
+    [theme.breakpoints.down('sm')]: {
+      width: 50,
+      height: 50,
+      fontSize: "32px",
+    },
+  },
+  cardAvatar2: {
+    color: "#ffb822ff",
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(255, 184, 34, 0.25)" : "#fff8e8ff",
+    width: "70px",
+    height: "70px",
+    display: "flex",
+    fontSize: "48px",
+    borderRadius: 12,
+    [theme.breakpoints.down('sm')]: {
+      width: 50,
+      height: 50,
+      fontSize: "32px",
+    },
+  },
+  cardAvatar3: {
+    color: "#0abb87ff",
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(10, 187, 135, 0.25)" : "#e6f8f3ff",
+    width: "70px",
+    height: "70px",
+    display: "flex",
+    fontSize: "48px",
+    borderRadius: 12,
+    [theme.breakpoints.down('sm')]: {
+      width: 50,
+      height: 50,
+      fontSize: "32px",
+    },
+  },
+  cardAvatar4: {
+    color: "#fa7070ff",
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(250, 112, 112, 0.25)" : "#fbe7edff",
+    width: "70px",
+    height: "70px",
+    display: "flex",
+    fontSize: "48px",
+    borderRadius: 12,
+    [theme.breakpoints.down('sm')]: {
+      width: 50,
+      height: 50,
+      fontSize: "32px",
+    },
+  },
+  cardAvatar5: {
+    color: "#0abb87ff",
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(10, 187, 135, 0.25)" : "#e6f8f3ff",
+    width: "70px",
+    height: "70px",
+    display: "flex",
+    fontSize: "48px",
+    borderRadius: 12,
+    [theme.breakpoints.down('sm')]: {
+      width: 50,
+      height: 50,
+      fontSize: "32px",
+    },
+  },
+  cardAvatar6: {
+    color: "#5578eb",
+    backgroundColor: theme.palette.mode === "dark" ? "rgba(85, 120, 235, 0.25)" : "#eef1fdff",
+    width: "70px",
+    height: "70px",
+    display: "flex",
+    fontSize: "48px",
+    borderRadius: 12,
+    [theme.breakpoints.down('sm')]: {
+      width: 50,
+      height: 50,
+      fontSize: "32px",
+    },
+  },
+  cardTitle: {
+    color: theme.palette.text.primary,
+    fontSize: "0.85rem",
+    fontWeight: 500,
+    [theme.breakpoints.down('sm')]: {
+      fontSize: "0.75rem",
+    },
+  },
+  cardSubtitle2: {
+    color: theme.palette.text.primary,
+    fontSize: "1.5rem",
+    fontWeight: 600,
+    [theme.breakpoints.down('sm')]: {
+      fontSize: "1.2rem",
+    },
+  },
+  cardSubtitle: {
+    color: theme.palette.text.primary,
+    fontSize: "1.5rem",
+    fontWeight: 600,
+    [theme.breakpoints.down('sm')]: {
+      fontSize: "1.2rem",
+    },
+  },
+  alignRight: {
+    textAlign: "right",
+  },
+  alignLeft: {
+    textAlign: "left",
+  },
+  fullWidth: {
+    width: "100%",
+  },
+  selectContainer: {
+    width: "100%",
+    textAlign: "left",
+  },
+  attendants: {
+    backgroundColor: "#4287f5"
+  },
+  filterContainer: {
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: 12,
+    padding: theme.spacing(2),
+    marginBottom: theme.spacing(2),
+    boxShadow: theme.palette.mode === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    [theme.breakpoints.down('md')]: {
+      padding: theme.spacing(1.5),
+    },
+  },
+  tabsAppBar: {
+    borderRadius: 10,
+    overflow: "hidden",
+    boxShadow: theme.palette.mode === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.4)" 
+      : "0 2px 8px rgba(0,0,0,0.1)",
+    backgroundColor: theme.palette.background.paper,
+    border: theme.palette.mode === "dark" ? `1px solid ${theme.palette.divider}` : "none",
+    "& .MuiTabs-root": {
+      minHeight: 48,
+    },
+    "& .MuiTab-root": {
+      minHeight: 48,
+      fontSize: "0.85rem",
+      fontWeight: 500,
+      textTransform: "none",
+      color: theme.palette.text.secondary,
+      "&.Mui-selected": {
+        color: theme.palette.primary.main,
+      },
+      [theme.breakpoints.down('sm')]: {
+        fontSize: "0.75rem",
+        minWidth: 80,
+      },
+    },
+    "& .MuiTabs-indicator": {
+      backgroundColor: theme.palette.primary.main,
+    },
+  },
+  tableContainer: {
+    backgroundColor: theme.palette.background.paper,
+    borderRadius: 12,
+    boxShadow: theme.palette.mode === "dark" 
+      ? "0 2px 8px rgba(0,0,0,0.3)" 
+      : "0 2px 8px rgba(0,0,0,0.06)",
+    border: theme.palette.mode === "dark" ? `1px solid ${theme.palette.divider}` : "none",
+    "& .MuiTableHead-root": {
+      backgroundColor: theme.palette.mode === "dark" 
+        ? "rgba(0, 113, 193, 0.1)" 
+        : "rgba(0, 113, 193, 0.05)",
+    },
+    "& .MuiTableCell-head": {
+      color: theme.palette.text.primary,
+      fontWeight: 600,
+      borderBottom: `1px solid ${theme.palette.divider}`,
+    },
+    "& .MuiTableCell-body": {
+      color: theme.palette.text.primary,
+      borderBottom: `1px solid ${theme.palette.divider}`,
+    },
+    "& .MuiTableRow-root:hover": {
+      backgroundColor: theme.palette.mode === "dark" 
+        ? "rgba(255, 255, 255, 0.05)" 
+        : "rgba(0, 0, 0, 0.02)",
+    },
+  },
+}));
+
+const Dashboard = () => {
+  const [tab, setTab] = useState("Indicadores");
+  const classes = useStyles();
+  const [counters, setCounters] = useState({});
+  const [attendants, setAttendants] = useState([]);
+  const [filterType, setFilterType] = useState(1);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [selectedQueues, setSelectedQueues] = useState([]);
+  const [period, setPeriod] = useState(0);
+  const [dateFrom, setDateFrom] = useState(
+    moment("1", "D").format("YYYY-MM-DD")
+  );
+  const [dateTo, setDateTo] = useState(moment().format("YYYY-MM-DD"));
+  const [loading, setLoading] = useState(false);
+  const { find } = useDashboard();
+  useEffect(() => {
+    async function firstLoad() {
+      await fetchData();
+    }
+    setTimeout(() => {
+      firstLoad();
+    }, 1000);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleChangePeriod(value) {
+    setPeriod(value);
+  }
+
+  async function handleChangeFilterType(value) {
+    setFilterType(value);
+    if (value === 1) {
+      setPeriod(0);
+    } else {
+      setDateFrom("");
+      setDateTo("");
+    }
+  }
+
+  const handleSelectedUsers = (selecteds) => {
+    const users = selecteds.map((t) => t.id);
+    setSelectedUsers(users);
+  };
+
+
+  const handleChangeTab = (e, newValue) => {
+    setTab(newValue);
+  };
+
+  async function fetchData() {
+    setLoading(true);
+
+    let params = {};
+
+    if (period > 0) {
+      params = {
+        days: period,
+      };
+    }
+
+    if (!isEmpty(dateFrom) && moment(dateFrom).isValid()) {
+      params = {
+        ...params,
+        date_from: moment(dateFrom).format("YYYY-MM-DD"),
+      };
+    }
+
+    if (!isEmpty(dateTo) && moment(dateTo).isValid()) {
+      params = {
+        ...params,
+        date_to: moment(dateTo).format("YYYY-MM-DD"),
+      };
+    }
+
+    if (!isEmpty(selectedUsers)) {
+       params = {
+        ...params,
+        userId: selectedUsers,
+      };
+    }
+
+    if (!isEmpty(selectedQueues)) {
+      params = {
+       ...params,
+       queueId: selectedQueues,
+     };
+   }
+
+
+    if (Object.keys(params).length === 0) {
+      toast.error("Parametrize o filtro");
+      setLoading(false);
+      return;
+    }
+
+    const data = await find(params);
+
+    const counters = JSON.parse(data.counters);
+    const attendants = JSON.parse(data.attendants);
+    setCounters(counters);
+    if (isArray(attendants)) {
+      setAttendants(attendants);
+    } else {
+      setAttendants([]);
+    }
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    async function fetchData() {
+    }
+    fetchData();
+  }, [])
+  
+  function formatTime(minutes) {
+    return moment()
+      .startOf("day")
+      .add(minutes, "minutes")
+      .format("HH[h] mm[m]");
+  }
+
+  function renderFilters() {
+    if (filterType === 1) {
+      return (
+        <>
+          <Grid item xs={12} sm={6} md={4}>
+            <TextField
+              label="Fecha Inicial"
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className={classes.fullWidth}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <TextField
+              label="Fecha Final"
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className={classes.fullWidth}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+          </Grid>
+        </>
+      );
+    } else {
+      return (
+        <Grid item xs={12} sm={6} md={4}>
+          <FormControl className={classes.selectContainer}>
+            <InputLabel id="period-selector-label">Período</InputLabel>
+            <Select
+              labelId="period-selector-label"
+              id="period-selector"
+              value={period}
+              onChange={(e) => handleChangePeriod(e.target.value)}
+            >
+              <MenuItem value={0}>Ninguna seleccionada</MenuItem>
+              <MenuItem value={3}>Últimos 3 dias</MenuItem>
+              <MenuItem value={7}>Últimos 7 dias</MenuItem>
+              <MenuItem value={15}>Últimos 15 dias</MenuItem>
+              <MenuItem value={30}>Últimos 30 dias</MenuItem>
+              <MenuItem value={60}>Últimos 60 dias</MenuItem>
+              <MenuItem value={90}>Últimos 90 dias</MenuItem>
+            </Select>
+            <FormHelperText>Seleccione el período deseado</FormHelperText>
+          </FormControl>
+        </Grid>
+      );
+    }
+  }
+
+  return (
+    <div>
+      <Container maxWidth="lg" className={classes.container}>
+        <Grid container spacing={3} className={classes.container}>
+          <Grid item xs={12} sm={6} md={4}>
+            <FormControl className={classes.selectContainer}>
+              <InputLabel id="period-selector-label">Tipo de Filtro</InputLabel>
+              <Select
+                labelId="period-selector-label"
+                value={filterType}
+                onChange={(e) => handleChangeFilterType(e.target.value)}
+              >
+                <MenuItem value={1}>Filtro por Fecha</MenuItem>
+                <MenuItem value={2}>Filtro por Período</MenuItem>
+              </Select>
+              <FormHelperText>Seleccione el período deseado</FormHelperText>
+            </FormControl>
+          </Grid>
+
+          {renderFilters()}
+
+          <Grid item xs={12}  md={4} style={{ marginLeft: '-10px' }}>
+            <UsersFilter onFiltered={handleSelectedUsers} />
+          </Grid>
+
+          <Grid item xs={6}  md={4} style={{ marginTop: '-15px' }}>
+            <QueueSelect 
+              selectedQueueIds={selectedQueues} 
+              onChange={values => setSelectedQueues(values)} 
+            />          
+          </Grid>
+
+          <Grid item xs={12} className={classes.alignRight}>
+            <ButtonWithSpinner
+              loading={loading}
+              onClick={() => fetchData()}
+              variant="contained"
+              color="primary"
+            >
+              Filtrar
+            </ButtonWithSpinner>
+          </Grid>
+
+          <AppBar position="static" className={classes.tabsAppBar} elevation={0}>
+            <Grid container width="100%" >
+              <Tabs
+                value={tab}
+                onChange={handleChangeTab}                
+                aria-label="primary tabs example"
+                variant="fullWidth"
+                indicatorColor="primary"
+                textColor="primary"
+              >
+                <Tab value="Indicadores" label="Indicadores" />
+                <Tab value="NPS" label="NPS" />
+                <Tab value="Atendentes" label="Atendentes" />
+              </Tabs>
+            </Grid>
+          </AppBar>
+
+          <TabPanel
+            className={classes.container}
+            value={tab}
+            name={"Indicadores"}
+          >
+            <Container maxWidth="lg" className={classes.container}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6} md={4}>
+                <Paper className={classes.cardContainer1} elevation={0}>
+                  <div>
+                    <Typography
+                      variant="subtitle1"
+                      component="p"
+                      className={classes.cardSubtitle}
+                    >
+                      <span translate="no">{counters.supportPending}</span>
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      component="h2"
+                      className={classes.cardTitle}
+                    >
+                      {"Aguardando"}
+                    </Typography>
+                  </div>
+                  <div className={classes.cardAvatar}>
+                    <Avatar className={classes.cardAvatar1}>
+                      {<GroupIcon />}
+                    </Avatar>
+                  </div>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <Paper className={classes.cardContainer2} elevation={0}>
+                  <div>
+                    <Typography
+                      variant="subtitle1"
+                      component="p"
+                      className={classes.cardSubtitle}
+                    >
+                      {counters.supportHappening}
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      component="h2"
+                      className={classes.cardTitle}
+                    >
+                      {"En Conversación"}
+                    </Typography>
+                  </div>
+                  <div className={classes.cardAvatar}>
+                    <Avatar className={classes.cardAvatar2}>
+                      {<AssignmentIcon fontSize="inherit" />}
+                    </Avatar>
+                  </div>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <Paper className={classes.cardContainer3} elevation={0}>
+                  <div>
+                    <Typography
+                      variant="subtitle1"
+                      component="p"
+                      className={classes.cardSubtitle}
+                    >
+                      {counters.supportFinished}
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      component="h2"
+                      className={classes.cardTitle}
+                    >
+                      {"Resolvidos"}
+                    </Typography>
+                  </div>
+                  <div className={classes.cardAvatar}>
+                    <Avatar className={classes.cardAvatar3}>
+                      {<AssignmentIcon fontSize="inherit" />}
+                    </Avatar>
+                  </div>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <Paper className={classes.cardContainer4} elevation={0}>
+                  <div>
+                    <Typography
+                      variant="subtitle1"
+                      component="p"
+                      className={classes.cardSubtitle}
+                    >
+                      {counters.leads}
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      component="h2"
+                      className={classes.cardTitle}
+                    >
+                      {"Leads"}
+                    </Typography>
+                  </div>
+                  <div className={classes.cardAvatar}>
+                    <Avatar className={classes.cardAvatar4}>
+                      {<PersonIcon fontSize="inherit" />}
+                    </Avatar>
+                  </div>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <Paper className={classes.cardContainer5} elevation={0}>
+                  <div>
+                    <Typography
+                      variant="subtitle1"
+                      component="p"
+                      className={classes.cardSubtitle}
+                    >
+                      {formatTime(counters.avgSupportTime)}
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      component="h2"
+                      className={classes.cardTitle}
+                    >
+                      {"T.M. de Atendimento"}
+                    </Typography>
+                  </div>
+                  <div className={classes.cardAvatar}>
+                    <Avatar className={classes.cardAvatar5}>
+                      {<SpeedIcon fontSize="inherit" />}
+                    </Avatar>
+                  </div>
+                </Paper>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={4}>
+                <Paper className={classes.cardContainer6} elevation={0}>
+                  <div>
+                    <Typography
+                      variant="subtitle1"
+                      component="p"
+                      className={classes.cardSubtitle}
+                    >
+                      {formatTime(counters.avgWaitTime)}
+                    </Typography>
+                    <Typography
+                      variant="h6"
+                      component="h2"
+                      className={classes.cardTitle}
+                    >
+                      {"T.M. de Espera"}
+                    </Typography>
+                  </div>
+                  <div className={classes.cardAvatar}>
+                    <Avatar className={classes.cardAvatar6}>
+                      {<SpeedIcon fontSize="inherit" />}
+                    </Avatar>
+                  </div>
+                </Paper>
+              </Grid>
+              </Grid>
+            </Container>
+          </TabPanel>
+
+          <TabPanel
+            className={classes.container}
+            value={tab}
+            name={"NPS"}
+          >
+            <Container 
+               width="lg%" 
+               className={classes.container} 
+              //  alignContent="center"
+            >
+            <Grid 
+              container 
+              spacing={3} >
+            <Grid item  xs={12} sm={6} md={4}>
+              <Paper className={classes.cardContainer5} elevation={0}>
+                <div>
+                  <Typography
+                    variant="subtitle1"
+                    component="p"
+                    className={classes.cardSubtitle}
+                  >
+                    {Number(counters.npsPromotersPerc/100).toLocaleString(undefined,{style:'percent'})}
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    component="h2"
+                    className={classes.cardTitle}
+                  >
+                    {"Promotores"}
+                  </Typography>
+                </div>
+                <div className={classes.cardAvatar}>
+                  <Avatar className={classes.cardAvatar5}>
+                    {<SentimentSatisfiedAltIcon  fontSize="inherit" />}
+                  </Avatar>
+                </div>
+              </Paper>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={4}>
+              <Paper className={classes.cardContainer2} elevation={0}>
+                <div>
+                  <Typography
+                    variant="subtitle1"
+                    component="p"
+                    className={classes.cardSubtitle}
+                  >
+                    {Number(counters.npsPassivePerc/100).toLocaleString(undefined,{style:'percent'})}
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    component="h2"
+                    className={classes.cardTitle}
+                  >
+                    {"Neutros"}
+                  </Typography>
+                </div>
+                <div className={classes.cardAvatar}>
+                  <Avatar className={classes.cardAvatar2}>
+                    {<SentimentNeutralIcon fontSize="inherit" />}
+                  </Avatar>
+                </div>
+              </Paper>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={4}>
+              <Paper className={classes.cardContainer4} elevation={0}>
+                <div>
+                  <Typography
+                    variant="subtitle1"
+                    component="p"
+                    className={classes.cardSubtitle}
+                  >
+                    {Number(counters.npsDetractorsPerc/100).toLocaleString(undefined,{style:'percent'})}
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    component="h2"
+                    className={classes.cardTitle}
+                  >
+                    {"Dretatores"}
+                  </Typography>
+                </div>
+                <div className={classes.cardAvatar}>
+                  <Avatar className={classes.cardAvatar4}>
+                    {<SentimentVeryDissatisfiedIcon fontSize="inherit" />}
+                  </Avatar>
+                </div>
+              </Paper>
+            </Grid>
+
+            </Grid>
+          </Container>
+
+          <Container
+            width="lg%" 
+            className={classes.container} 
+          >
+          <Grid container spacing={3} >
+           <Grid item  xs={12} sm={6} md={4} >
+              <Paper 
+             className={classes.cardContainer7} elevation={0}    
+              >
+                <div>
+                  <Typography
+                    variant="subtitle1"
+                    component="p"
+                    className={classes.cardSubtitle}
+                  >
+                    {Number(counters.npsScore/100).toLocaleString(undefined,{style:'percent'})}
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    component="h2"
+                    className={classes.cardTitle}
+                  >
+                    {"Score"}
+                  </Typography>
+                </div>
+                <div className={classes.cardAvatar}>
+                  <Avatar className={classes.cardAvatar6}>
+                    {<Score fontSize="inherit" />}
+                  </Avatar>
+                </div>
+              </Paper>
+             </Grid>
+            </Grid>
+          </Container>
+ 
+          </TabPanel>
+          
+          <TabPanel
+            className={classes.container}
+            value={tab}
+            name={"Atendentes"}
+          >
+            <Container width="100%" className={classes.container}>
+              <Grid container width="100%">
+                <Grid item xs={12}>
+                  {attendants.length ? (
+                    <TableAttendantsStatus
+                      attendants={attendants}
+                      loading={loading}
+                    />
+                  ) : null}
+              </Grid>
+              </Grid>
+            </Container>
+          </TabPanel>
+        </Grid>
+      </Container>
+    </div>
+  );
+};
+
+export default Dashboard;

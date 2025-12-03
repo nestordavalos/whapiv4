@@ -1,5 +1,6 @@
-import { Tooltip, makeStyles } from "@material-ui/core";
-import SpeedIcon from "@material-ui/icons/Speed";
+import { Tooltip } from "@mui/material";
+import makeStyles from '@mui/styles/makeStyles';
+import SpeedIcon from "@mui/icons-material/Speed";
 
 import React, { useRef, useEffect, useState } from "react";
 

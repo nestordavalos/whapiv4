@@ -72,7 +72,6 @@
 ### 12/02/2023
 
 - [Atualização da lib wwebjs de 1.19.3 para 1.19.4](https://github.com/rtenorioh/Press-Ticket/commit/9373ba6bba4be8edbd912ad5cd5a1f3ce25d886e).
->>>>>>> f469732 (Changelog 05/03/2023)
 
 ### 08/02/2023
 
@@ -99,27 +98,25 @@
 
 ### 15/01/2023
 
-- [Atualização da lib wwebjs de 1.18.4 para 1.19.2](https://github.com/rtenorioh/Press-Ticket/commit/8fbdd3ce8873fe6113c25f76ed8fa4465b17df67).
+- [Atualiza��ǜo da lib wwebjs de 1.18.4 para 1.19.2](https://github.com/rtenorioh/Press-Ticket/commit/8fbdd3ce8873fe6113c25f76ed8fa4465b17df67).
 
-<<<<<<< HEAD
+### 24/12/2022
+
+- [Atualiza��ǜo do ListTicketService](https://github.com/rtenorioh/Press-Ticket/commit/6bbd2f071a4a8af9c2c6e132f1379538e7ecf3f7);
+- [Inclusǜo de valida��ǜo no c��digo para exibir o nǧmero conectado](https://github.com/rtenorioh/Press-Ticket/commit/911865958ffe9b0ce3eed7fe2085779706ebaefd); e
+- [Corre��ǜo da variǭvel da porta do Frontend](https://github.com/rtenorioh/Press-Ticket/commit/0bcc18ca1c1364ffde34660eea7dc8c014a56a86).
+
 ### 23/12/2022
 
 - [Update in view of all ticket for all users](https://github.com/FilipeCamillo/Press-Ticket/commit/708977b71d0a6d430e522910cd4e836519e1a70a)
-=======
-### 24/12/2022
-
-- [Atualização do ListTicketService](https://github.com/rtenorioh/Press-Ticket/commit/6bbd2f071a4a8af9c2c6e132f1379538e7ecf3f7);
-- [Inclusão de validação no código para exibir o número conectado](https://github.com/rtenorioh/Press-Ticket/commit/911865958ffe9b0ce3eed7fe2085779706ebaefd); e
-- [Correção da variável da porta do Frontend](https://github.com/rtenorioh/Press-Ticket/commit/0bcc18ca1c1364ffde34660eea7dc8c014a56a86).
 
 ### 29/11/2022
 
-- [Inclusão do Número da Conexão](https://github.com/rtenorioh/Press-Ticket/commit/5827a45362f9824a1d1ee5dceb030dac7509f305).
+- [Inclusǜo do Nǧmero da Conexǜo](https://github.com/rtenorioh/Press-Ticket/commit/5827a45362f9824a1d1ee5dceb030dac7509f305).
 
 ### 27/11/2022
 
-- [Atualização da lib whatsapp-web.js](https://github.com/rtenorioh/Press-Ticket/commit/75fd718dea270df43b59249ee291470d4220648a).
->>>>>>> 0e65719eec11637c851495e6065a70e38bc927f3
+- [Atualiza��ǜo da lib whatsapp-web.js](https://github.com/rtenorioh/Press-Ticket/commit/75fd718dea270df43b59249ee291470d4220648a).
 
 ### 15/11/2022
 

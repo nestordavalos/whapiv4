@@ -93,11 +93,7 @@ REACT_APP_BACKEND_URL=http://localhost:8080
 REACT_APP_HOURS_CLOSE_TICKETS_AUTO=
 REACT_APP_PAGE_TITLE=PressTicket
 PORT=3333
-<<<<<<< HEAD
 ``` 
-=======
-```  
->>>>>>> 0e65719eec11637c851495e6065a70e38bc927f3
 
 14. Instalar as dependências
 

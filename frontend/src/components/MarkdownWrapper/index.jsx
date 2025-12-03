@@ -28,7 +28,7 @@ const MarkdownWrapper = ({ children }) => {
 
   // Validaciones de contenido, pero sin cortar el renderizado por completo
   if (children.includes("BEGIN:VCARD") || children.includes("data:image/")) {
-    return <span style={{ fontStyle: "italic", color: "#999" }}>[Contenido omitido]</span>;
+    return <span style={{ fontStyle: "italic", color: "#999" }}></span>;
   }
 
   // Procesar markdown personalizado

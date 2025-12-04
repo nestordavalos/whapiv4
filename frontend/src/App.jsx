@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import Routes from "./routes";
 import "react-toastify/dist/ReactToastify.css";
 
-import { createTheme, ThemeProvider, StyledEngineProvider, adaptV4Theme } from "@mui/material/styles";
+import { createTheme, ThemeProvider, StyledEngineProvider } from "@mui/material/styles";
+import { ThemeProvider as StylesThemeProvider } from "@mui/styles";
 import { esES } from "@mui/material/locale";
 
 import { CssBaseline } from "@mui/material";
@@ -30,7 +31,7 @@ const App = () => {
   const lightToolbar = sanitizeColor(system.color.lightTheme.toolbar.background, system.color.lightTheme.palette.primary || "#0071c1");
   const darkToolbar = sanitizeColor(system.color.darkTheme.toolbar.background, system.color.darkTheme.palette.primary || "#0071c1");
 
-  const lightTheme = createTheme(adaptV4Theme({
+  const lightTheme = createTheme({
     scrollbarStyles: {
       "&::-webkit-scrollbar": {
         width: "8px",
@@ -64,7 +65,6 @@ const App = () => {
       },
     },
     backgroundImage: `url(${lightBackground})`,
-    mode: "light",
     components: {
       MuiOutlinedInput: {
         styleOverrides: {
@@ -74,149 +74,9 @@ const App = () => {
         },
       },
     },
-  }, locale));
+  }, locale);
 
-  const darkTheme = createTheme(adaptV4Theme({
-    overrides: {
-      MuiCssBaseline: {
-        "@global": {
-          body: {
-            backgroundColor: "#080d14",
-          },
-        },
-      },
-      MuiPaper: {
-        root: {
-          backgroundColor: "#181d22",
-        },
-      },
-      MuiTableCell: {
-        root: {
-          borderBottom: "1px solid #2d3748",
-        },
-        head: {
-          backgroundColor: "#0d1117",
-        },
-      },
-      MuiTableRow: {
-        root: {
-          "&:hover": {
-            backgroundColor: "rgba(255, 255, 255, 0.04) !important",
-          },
-        },
-      },
-      MuiButton: {
-        root: {
-          "&.MuiButton-containedPrimary": {
-            color: "#ffffff",
-          },
-        },
-      },
-      MuiInputBase: {
-        root: {
-          color: "#F2F0E4",
-        },
-      },
-      MuiOutlinedInput: {
-        root: {
-          "& $notchedOutline": {
-            borderColor: "#2d3748",
-          },
-          "&:hover $notchedOutline": {
-            borderColor: "#4a5568",
-          },
-          "&$focused $notchedOutline": {
-            borderColor: "#0071c1",
-          },
-          borderRadius: 12,
-        },
-        notchedOutline: {},
-      },
-      MuiInputLabel: {
-        root: {
-          color: "#a0aec0",
-        },
-      },
-      MuiSelect: {
-        icon: {
-          color: "#a0aec0",
-        },
-      },
-      MuiMenuItem: {
-        root: {
-          "&:hover": {
-            backgroundColor: "rgba(255, 255, 255, 0.08)",
-          },
-          "&$selected": {
-            backgroundColor: "rgba(0, 113, 193, 0.16)",
-          },
-        },
-      },
-      MuiListItem: {
-        root: {
-          "&$selected": {
-            backgroundColor: "rgba(0, 113, 193, 0.16)",
-          },
-        },
-      },
-      MuiDivider: {
-        root: {
-          backgroundColor: "#2d3748",
-        },
-      },
-      MuiChip: {
-        root: {
-          backgroundColor: "#2d3748",
-        },
-        outlined: {
-          borderColor: "#4a5568",
-        },
-      },
-      MuiTabs: {
-        indicator: {
-          backgroundColor: "#0071c1",
-        },
-      },
-      MuiTab: {
-        root: {
-          "&$selected": {
-            color: "#0071c1",
-          },
-        },
-        textColorPrimary: {
-          color: "#a0aec0",
-          "&$selected": {
-            color: "#0071c1",
-          },
-        },
-      },
-      MuiSwitch: {
-        track: {
-          backgroundColor: "#4a5568",
-        },
-      },
-      MuiTooltip: {
-        tooltip: {
-          backgroundColor: "#1a202c",
-          color: "#F2F0E4",
-        },
-      },
-      MuiDialog: {
-        paper: {
-          backgroundColor: "#181d22",
-        },
-      },
-      MuiDialogTitle: {
-        root: {
-          backgroundColor: "#0d1117",
-        },
-      },
-      MuiAppBar: {
-        colorPrimary: {
-          backgroundColor: "#0d1117",
-        },
-      },
-    },
+  const darkTheme = createTheme({
     scrollbarStyles: {
       "&::-webkit-scrollbar": {
         width: "8px",
@@ -258,17 +118,184 @@ const App = () => {
       divider: "#2d3748",
     },
     backgroundImage: `url(${darkBackground})`,
-    mode: "dark",
     components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: {
+            backgroundColor: "#080d14",
+          },
+        },
+      },
+      MuiPaper: {
+        styleOverrides: {
+          root: {
+            backgroundColor: "#181d22",
+          },
+        },
+      },
+      MuiTableCell: {
+        styleOverrides: {
+          root: {
+            borderBottom: "1px solid #2d3748",
+          },
+          head: {
+            backgroundColor: "#0d1117",
+          },
+        },
+      },
+      MuiTableRow: {
+        styleOverrides: {
+          root: {
+            "&:hover": {
+              backgroundColor: "rgba(255, 255, 255, 0.04) !important",
+            },
+          },
+        },
+      },
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            "&.MuiButton-containedPrimary": {
+              color: "#ffffff",
+            },
+          },
+        },
+      },
+      MuiInputBase: {
+        styleOverrides: {
+          root: {
+            color: "#F2F0E4",
+          },
+        },
+      },
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#2d3748",
+            },
+            "&:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#4a5568",
+            },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+              borderColor: "#0071c1",
+            },
             borderRadius: 12,
           },
         },
       },
+      MuiInputLabel: {
+        styleOverrides: {
+          root: {
+            color: "#a0aec0",
+          },
+        },
+      },
+      MuiSelect: {
+        styleOverrides: {
+          icon: {
+            color: "#a0aec0",
+          },
+        },
+      },
+      MuiMenuItem: {
+        styleOverrides: {
+          root: {
+            "&:hover": {
+              backgroundColor: "rgba(255, 255, 255, 0.08)",
+            },
+            "&.Mui-selected": {
+              backgroundColor: "rgba(0, 113, 193, 0.16)",
+            },
+          },
+        },
+      },
+      MuiListItem: {
+        styleOverrides: {
+          root: {
+            "&.Mui-selected": {
+              backgroundColor: "rgba(0, 113, 193, 0.16)",
+            },
+          },
+        },
+      },
+      MuiDivider: {
+        styleOverrides: {
+          root: {
+            backgroundColor: "#2d3748",
+          },
+        },
+      },
+      MuiChip: {
+        styleOverrides: {
+          root: {
+            backgroundColor: "#2d3748",
+          },
+          outlined: {
+            borderColor: "#4a5568",
+          },
+        },
+      },
+      MuiTabs: {
+        styleOverrides: {
+          indicator: {
+            backgroundColor: "#0071c1",
+          },
+        },
+      },
+      MuiTab: {
+        styleOverrides: {
+          root: {
+            "&.Mui-selected": {
+              color: "#0071c1",
+            },
+          },
+          textColorPrimary: {
+            color: "#a0aec0",
+            "&.Mui-selected": {
+              color: "#0071c1",
+            },
+          },
+        },
+      },
+      MuiSwitch: {
+        styleOverrides: {
+          track: {
+            backgroundColor: "#4a5568",
+          },
+        },
+      },
+      MuiTooltip: {
+        styleOverrides: {
+          tooltip: {
+            backgroundColor: "#1a202c",
+            color: "#F2F0E4",
+          },
+        },
+      },
+      MuiDialog: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: "#181d22",
+          },
+        },
+      },
+      MuiDialogTitle: {
+        styleOverrides: {
+          root: {
+            backgroundColor: "#0d1117",
+          },
+        },
+      },
+      MuiAppBar: {
+        styleOverrides: {
+          colorPrimary: {
+            backgroundColor: "#0d1117",
+          },
+        },
+      },
     },
-  }, locale));
+  }, locale);
 
   const [theme, setTheme] = useState("light");
 
@@ -305,8 +332,10 @@ const App = () => {
   return (
     <StyledEngineProvider injectFirst>
       <ThemeProvider theme={theme === "light" ? lightTheme : darkTheme}>
-        <Routes />
-        <CssBaseline />
+        <StylesThemeProvider theme={theme === "light" ? lightTheme : darkTheme}>
+          <Routes />
+          <CssBaseline />
+        </StylesThemeProvider>
       </ThemeProvider>
     </StyledEngineProvider>
   );

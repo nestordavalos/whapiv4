@@ -7,6 +7,7 @@ import clsx from "clsx";
 import { useTheme } from "@mui/material/styles";
 import makeStyles from '@mui/styles/makeStyles';
 import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
 import Typography from "@mui/material/Typography";
 import Avatar from "@mui/material/Avatar";
 import Divider from "@mui/material/Divider";
@@ -589,15 +590,16 @@ return (
                 }
             }}
         />
-        <ListItem
-            dense
-            button
-            onClick={() => handleSelectTicket(ticket.id)}
-            selected={ticketId && +ticketId === ticket.id}
-            className={clsx(classes.ticket, {
-                [classes.pendingTicket]: ticket.status === "pending",
-            })}
-        >
+        <ListItem disablePadding>
+            <ListItemButton
+                onClick={() => handleSelectTicket(ticket.id)}
+                selected={ticketId && +ticketId === ticket.id}
+                disableGutters
+                sx={{ p: 0, width: "100%", alignItems: "flex-start" }}
+                className={clsx(classes.ticket, {
+                    [classes.pendingTicket]: ticket.status === "pending",
+                })}
+            >
             <Tooltip title={queueLabel} placement="left">
                 <span
                     className={classes.ticketQueueColor}
@@ -736,6 +738,7 @@ return (
                     <div className={classes.actionsWrapper}>{renderActionButtons()}</div>
                 </div>
             </div>
+            </ListItemButton>
         </ListItem>
         <Divider component="li" style={{ margin: "0 12px", borderColor: theme.palette.divider, opacity: 0.4 }} />
     </React.Fragment>

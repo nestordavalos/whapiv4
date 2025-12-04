@@ -1,14 +1,13 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
+import Box from "@mui/material/Box";
 import makeStyles from '@mui/styles/makeStyles';
 
 import TicketsManager from "../../components/TicketsManager/";
 import Ticket from "../../components/Ticket/";
 
 // import { i18n } from "../../translate/i18n";
-import Hidden from "@mui/material/Hidden";
 
 import logo from "../../assets/Logo_circle.png";
 
@@ -81,39 +80,46 @@ const Chat = () => {
   return (
     <div className={classes.chatContainer}>
       <div className={classes.chatPapper}>
-        <Grid container spacing={0}>
-          {/* <Grid item xs={4} className={classes.contactsWrapper}> */}
-          <Grid
-            item
-            xs={12}
-            md={4}
+        <Box sx={{ display: "flex", width: "100%", height: "100%", gap: 0 }}>
+          <Box
+            sx={{
+              width: { xs: "100%", md: "33.3333%" },
+              display: "flex",
+              height: "100%",
+              minWidth: 0,
+            }}
             className={
               ticketId ? classes.contactsWrapperSmall : classes.contactsWrapper
             }
           >
             <TicketsManager />
-          </Grid>
-          <Grid item xs={12} md={8} className={classes.messagessWrapper}>
-            {/* <Grid item xs={8} className={classes.messagessWrapper}> */}
+          </Box>
+          <Box
+            sx={{
+              width: { xs: "100%", md: "66.6666%" },
+              display: "flex",
+              height: "100%",
+              minWidth: 0,
+            }}
+            className={classes.messagessWrapper}
+          >
             {ticketId ? (
               <>
                 <Ticket />
               </>
             ) : (
-              <Hidden only={["sm", "xs"]}>
+              <Box sx={{ display: { xs: "none", sm: "none", md: "flex" }, height: "100%", width: "100%" }}>
                 <Paper className={classes.welcomeMsg}>
-                  {/* <Paper square variant="outlined" className={classes.welcomeMsg}> */}
                   <span>
                     <center>
                       <img src={logo} width="40%" alt="logo"/>
                     </center>
-                    {/* {i18n.t("chat.noTicketMessage")} */}
                     </span>
                 </Paper>
-              </Hidden>
+              </Box>
             )}
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </div>
     </div>
   );

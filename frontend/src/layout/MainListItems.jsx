@@ -5,7 +5,7 @@ import pkg from "../../package.json";
 import {
   Badge,
   Divider,
-  ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
   ListSubheader,
@@ -139,9 +139,8 @@ function ListItemLink(props) {
 
   return (
     <li className={classes.listItemWrapper}>
-      <ListItem 
-        button 
-        component={renderLink} 
+      <ListItemButton
+        component={renderLink}
         className={`${classes.menuItem} ${collapsed ? classes.menuItemClosed : ""} ${isActive ? classes.menuItemActive : ""} ${className || ""}`}
       >
         {icon ? (
@@ -149,11 +148,11 @@ function ListItemLink(props) {
             {icon}
           </ListItemIcon>
         ) : null}
-        <ListItemText 
-          primary={primary} 
-          className={`${classes.menuText} ${collapsed ? classes.menuTextHidden : ""}`} 
+        <ListItemText
+          primary={primary}
+          className={`${classes.menuText} ${collapsed ? classes.menuTextHidden : ""}`}
         />
-      </ListItem>
+      </ListItemButton>
     </li>
   );
 }

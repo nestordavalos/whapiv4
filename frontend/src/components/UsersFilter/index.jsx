@@ -24,15 +24,26 @@ const useStyles = makeStyles((theme) => ({
     "& .MuiInputBase-root": {
       height: 40,
       padding: "0 14px",
+      backgroundColor: theme.palette.background.paper,
     },
     "& .MuiInputBase-input": {
       color: theme.palette.text.primary,
       fontSize: '0.9rem',
+      backgroundColor: theme.palette.background.paper,
     },
     "& .MuiInputLabel-root": {
       fontSize: '0.9rem',
+      color: theme.palette.text.primary,
+      backgroundColor: theme.palette.background.paper,
+      paddingLeft: 4,
+      paddingRight: 4,
       "&.MuiInputLabel-shrink": {
         fontSize: '0.85rem',
+        color: theme.palette.text.primary,
+        backgroundColor: theme.palette.background.paper,
+      },
+      "&.Mui-focused": {
+        color: theme.palette.primary.main,
       },
     },
     "& .MuiAutocomplete-popupIndicator": {

@@ -40,7 +40,19 @@ const useStyles = makeStyles(theme => ({
 			color: theme.palette.text.secondary,
 		},
 		"& .MuiInputLabel-root": {
-			color: theme.palette.text.secondary,
+			color: theme.palette.text.primary,
+			backgroundColor: theme.palette.background.paper,
+			paddingLeft: 4,
+			paddingRight: 4,
+			fontSize: '0.9rem',
+			"&.MuiInputLabel-shrink": {
+				fontSize: '0.85rem',
+				color: theme.palette.text.primary,
+				backgroundColor: theme.palette.background.paper,
+			},
+			"&.Mui-focused": {
+				color: theme.palette.primary.main,
+			},
 		},
 	},
 }));

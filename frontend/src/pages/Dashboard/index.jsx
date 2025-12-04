@@ -372,11 +372,21 @@ const useStyles = makeStyles((theme) => ({
       borderRadius: 8,
       height: 40,
       fontSize: '0.9rem',
+      backgroundColor: theme.palette.background.paper,
     },
     "& .MuiInputLabel-root": {
       fontSize: '0.9rem',
+      color: theme.palette.text.primary,
+      backgroundColor: theme.palette.background.paper,
+      paddingLeft: 4,
+      paddingRight: 4,
       "&.MuiInputLabel-shrink": {
         fontSize: '0.85rem',
+        color: theme.palette.text.primary,
+        backgroundColor: theme.palette.background.paper,
+      },
+      "&.Mui-focused": {
+        color: theme.palette.primary.main,
       },
     },
     "& .MuiFormHelperText-root": {
@@ -384,6 +394,7 @@ const useStyles = makeStyles((theme) => ({
     },
     "& .MuiInputBase-root": {
       height: 40,
+      backgroundColor: theme.palette.background.paper,
     },
   },
   filterButton: {
@@ -793,7 +804,7 @@ const Dashboard = () => {
               </ButtonWithSpinner>
             </Grid>
           </Grid>
-          <FormHelperText style={{ marginTop: 8, marginLeft: 4, color: '#888', fontSize: '0.75rem' }}>
+          <FormHelperText style={{ marginTop: 8, marginLeft: 4, color: '#666', fontSize: '0.75rem' }}>
             Seleccione el periodo y los filtros deseados para visualizar los datos.
           </FormHelperText>
         </Paper>
@@ -829,9 +840,9 @@ const Dashboard = () => {
               indicatorColor="primary"
               textColor="primary"
             >
-              <Tab value="Indicadores" label="Indicadores" />
-              <Tab value="NPS" label="NPS" />
-              <Tab value="Atendentes" label="Atendentes" />
+              <Tab value="Indicadores" label="Indicadores" id="simple-tab-Indicadores" aria-controls="simple-tabpanel-Indicadores" />
+              <Tab value="NPS" label="NPS" id="simple-tab-NPS" aria-controls="simple-tabpanel-NPS" />
+              <Tab value="Atendentes" label="Atendentes" id="simple-tab-Atendentes" aria-controls="simple-tabpanel-Atendentes" />
             </Tabs>
           </Grid>
         </AppBar>
@@ -1002,7 +1013,7 @@ const Dashboard = () => {
 
               <Grid item xs={12}>
                 <Paper className={classes.tableCard} elevation={0}>
-                  <Typography variant="h6" component="h2" style={{ marginBottom: 12, fontWeight: 600 }}>
+                  <Typography variant="h6" component="h3" style={{ marginBottom: 12, fontWeight: 600 }}>
                     Tickets por Agente
                   </Typography>
                   <Table size="small">
@@ -1037,7 +1048,7 @@ const Dashboard = () => {
 
               <Grid item xs={12}>
                 <Paper className={classes.tableCard} elevation={0}>
-                  <Typography variant="h6" style={{ marginBottom: 12, fontWeight: 600 }}>
+                  <Typography variant="h6" component="h3" style={{ marginBottom: 12, fontWeight: 600 }}>
                     Tickets por Estado
                   </Typography>
                   <div className={classes.summaryRow}>

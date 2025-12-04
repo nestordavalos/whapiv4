@@ -36,6 +36,12 @@ const useStyles = makeStyles((theme) => ({
     paddingRight: 24,
     color: "#ffffff",
     background: theme.palette.toolbar.main,
+    "& .MuiIconButton-root": {
+      color: "#ffffff",
+    },
+    "& .MuiSvgIcon-root": {
+      color: "#ffffff",
+    },
     [theme.breakpoints.down('sm')]: {
       paddingRight: 8,
       paddingLeft: 8,
@@ -276,7 +282,7 @@ const LoggedInLayout = ({ children }) => {
       >
         <div className={clsx(classes.toolbarIcon, !drawerOpen && classes.toolbarIconClosed)}>
           <div className={clsx(classes.logoContainer, !drawerOpen && classes.logoContainerClosed)} aria-hidden="true">
-            <img src={logodash} alt="logo" />
+            <img src={logodash} alt="Logo T-Chateo" />
           </div>
           <IconButton
             className={classes.collapseButton}
@@ -310,7 +316,7 @@ const LoggedInLayout = ({ children }) => {
           <IconButton
             edge="start"
             color="inherit"
-            aria-label="open drawer"
+            aria-label={drawerOpen ? "Cerrar menú de navegación" : "Abrir menú de navegación"}
             onClick={() => setDrawerOpen(!drawerOpen)}
             className={clsx(
               classes.menuButton,
@@ -329,7 +335,7 @@ const LoggedInLayout = ({ children }) => {
 
           <div>
             <IconButton
-              aria-label="account of current user"
+              aria-label="Cuenta de usuario: abrir menú de perfil"
               aria-controls={menuOpen ? "menu-appbar" : undefined}
               aria-haspopup="true"
               aria-expanded={menuOpen ? "true" : undefined}

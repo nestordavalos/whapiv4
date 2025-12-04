@@ -328,7 +328,7 @@ const NotificationsPopOver = () => {
                     <IconButton
                             onClick={handleClick}
                             ref={anchorEl}
-                            aria-label="Open Notifications"
+                            aria-label={`Notificaciones: ${notifications.length} mensajes sin leer`}
                             color="inherit"
                             size="large">
                         <Badge badgeContent={notifications.length} color="secondary" overlap="rectangular" >

@@ -33,13 +33,13 @@ const useStyles = makeStyles(theme => ({
 	ticket: {
 		position: "relative",
 		display: "flex",
-		padding: "8px 10px",
-		margin: "8px 0",
-		borderRadius: 10,
+		padding: "6px 8px !important",
+		margin: "0 !important",
+		borderRadius: 8,
 		border: `1px solid ${theme.palette.divider}`,
 		backgroundColor: theme.palette.background.paper,
 		alignItems: "flex-start",
-		gap: 8,
+		gap: 6,
 		transition: "box-shadow 0.2s ease, transform 0.2s ease, background-color 0.2s ease",
 		overflow: "hidden",
 		"&:hover": {
@@ -63,9 +63,9 @@ const useStyles = makeStyles(theme => ({
 			},
 		},
 		[theme.breakpoints.down('sm')]: {
-			margin: "3px 6px 3px 4px",
-			padding: "6px 10px",
-			gap: 6,
+			margin: "4px 6px 4px 4px !important",
+			padding: "5px 8px !important",
+			gap: 5,
 		},
 	},
 	pendingTicket: {
@@ -634,7 +634,6 @@ return (
                                 icon={<WhatsAppIcon fontSize="small" />}
                                 label={ticket.whatsapp?.name || i18n.t("ticketsList.items.connection")}
                                 size="small"
-                                role="text"
                                 aria-label={`Conexion ${ticket.whatsapp?.name || i18n.t("ticketsList.items.connection")}`}
                                 className={classes.connectionChip}
                             />
@@ -647,7 +646,6 @@ return (
                                     icon={<BusinessCenterIcon style={{ fontSize: "1rem" }} />}
                                     label={queueLabel}
                                     size="small"
-                                    role="text"
                                     aria-label={`Sector ${queueLabel}`}
                                     className={classes.queueChip}
                                 />
@@ -664,7 +662,6 @@ return (
                                                 icon={<PersonOutlineIcon style={{ fontSize: "1rem" }} />}
                                                 label={assignedUserName}
                                                 size="small"
-                                                role="text"
                                                 aria-label={`Asignado a ${assignedUserName}`}
                                                 className={classes.userChip}
                                             />
@@ -771,7 +768,6 @@ return (
                 </div>
             </div>
         </ListItem>
-        <Divider component="li" style={{ margin: "0 12px", borderColor: theme.palette.divider, opacity: 0.4 }} />
     </React.Fragment>
 );
 };

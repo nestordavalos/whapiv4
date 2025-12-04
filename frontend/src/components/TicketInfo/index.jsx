@@ -127,16 +127,15 @@ const TicketInfo = ({ contact, ticket, onClick }) => {
 				</div>
 				<div className={classes.metaRow}>
 					{ticket.user && (
-						<Tooltip title="Asignado A">
-							<Chip
-								icon={<PersonOutlineIcon />}
-								label={ticket.user.name}
-								size="small"
-								role="text"
-								aria-label={`Asignado a ${ticket.user.name}`}
-								className={`${classes.chip} ${classes.userChip}`}
-							/>
-						</Tooltip>
+					<Tooltip title="Asignado A">
+						<Chip
+							icon={<PersonOutlineIcon />}
+							label={ticket.user.name}
+							size="small"
+							aria-label={`Asignado a ${ticket.user.name}`}
+							className={`${classes.chip} ${classes.userChip}`}
+						/>
+					</Tooltip>
 					)}
 					{ticket.queue && (
 						<Tooltip title="Sector">
@@ -144,7 +143,6 @@ const TicketInfo = ({ contact, ticket, onClick }) => {
 								icon={<BusinessCenterIcon />}
 								label={ticket.queue.name}
 								size="small"
-								role="text"
 								aria-label={`Sector ${ticket.queue.name}`}
 								className={`${classes.chip} ${classes.queueChip}`}
 							/>
@@ -156,7 +154,6 @@ const TicketInfo = ({ contact, ticket, onClick }) => {
 								icon={<WhatsAppIcon />}
 								label={ticket.whatsapp.name}
 								size="small"
-								role="text"
 								aria-label={`Whatsapp ${ticket.whatsapp.name}`}
 								className={`${classes.chip} ${classes.connectionChip}`}
 							/>

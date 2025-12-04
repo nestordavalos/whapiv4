@@ -11,7 +11,6 @@ import openSocket from "../../services/socket-io";
 
 import makeStyles from "@mui/styles/makeStyles";
 import Paper from "@mui/material/Paper";
-import List from "@mui/material/List";
 import { VariableSizeList as VirtualList } from "react-window";
 
 import TicketListItem from "../TicketListItem";
@@ -43,7 +42,7 @@ const useStyles = makeStyles((theme) => ({
 		height: "100%",
 		...theme.scrollbarStyles,
 		borderTop: `1px solid ${theme.palette.divider}`,
-		padding: "4px 12px 4px 12px",
+		padding: "8px 0",
 	},
 
 	ticketsListHeader: {
@@ -428,8 +427,10 @@ const TicketsList = (props) => {
 		}, [index, setSize, ticket]);
 
 		return (
-			<div style={style} role="listitem" ref={rowRef}>
-				<TicketListItem handleChangeTab={onChangeTab} ticket={ticket} key={ticket.id} />
+			<div style={style} role="listitem">
+				<div ref={rowRef} style={{ paddingLeft: '8px', paddingRight: '8px', paddingBottom: '5px', paddingTop: '6px' }}>
+					<TicketListItem handleChangeTab={onChangeTab} ticket={ticket} key={ticket.id} />
+				</div>
 			</div>
 		);
 	};

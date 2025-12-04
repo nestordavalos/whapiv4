@@ -687,7 +687,7 @@ return (
                     <Avatar
                         className={classes.avatar}
                         src={ticket?.contact?.profilePicUrl}
-                        alt={ticket.contact?.name || "contact"}
+                        alt={`Foto de perfil de ${ticket.contact?.name || 'contacto'}`}
                     />
                     <div className={classes.contactRow}>
                         <Typography

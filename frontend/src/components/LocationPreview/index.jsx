@@ -23,11 +23,11 @@ const LocationPreview = ({ image, link, description }) => {
 			}}>
 				<div>
 					<div style={{ float: "left" }}>
-						<img src={image} alt="loc" onClick={handleLocation} style={{ width: "100px" }} />
+						<img src={image} alt="Mapa de ubicación" onClick={handleLocation} style={{ width: "100px", cursor: "pointer" }} />
 					</div>
 					{ description && (
 					<div style={{ display: "flex", flexWrap: "wrap" }}>
-						<Typography style={{ marginTop: "12px", marginLeft: "15px", marginRight: "15px", float: "left" }} variant="subtitle1" color="primary" gutterBottom>
+						<Typography component="div" style={{ marginTop: "12px", marginLeft: "15px", marginRight: "15px", float: "left" }} variant="body2" color="primary" gutterBottom>
 							<div dangerouslySetInnerHTML={{ __html: description.replace('\\n', '<br />') }}></div>
 						</Typography>
 					</div>

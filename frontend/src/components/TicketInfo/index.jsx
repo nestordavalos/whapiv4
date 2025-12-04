@@ -114,7 +114,7 @@ const TicketInfo = ({ contact, ticket, onClick }) => {
 			<Avatar
 				className={classes.avatar}
 				src={contact.profilePicUrl}
-				alt="contact_image"
+				alt={`Foto de perfil de ${contact.name || 'contacto'}`}
 			/>
 			<div className={classes.infoContent}>
 				<div className={classes.titleRow}>

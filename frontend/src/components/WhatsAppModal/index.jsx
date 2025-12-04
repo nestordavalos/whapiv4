@@ -53,6 +53,11 @@ const useStyles = makeStyles(theme => ({
     "& .MuiDialog-paper": {
       borderRadius: 16,
       boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+      maxWidth: "1000px",
+      maxHeight: "90vh",
+      [theme.breakpoints.down('md')]: {
+        maxWidth: "calc(100% - 32px)",
+      },
       [theme.breakpoints.down('sm')]: {
         borderRadius: 12,
         margin: 12,
@@ -62,7 +67,7 @@ const useStyles = makeStyles(theme => ({
   },
 
   dialogTitle: {
-    padding: "20px 24px 16px",
+    padding: "16px 24px 12px",
     "& .MuiTypography-root": {
       fontWeight: 600,
       fontSize: "1.25rem",
@@ -77,22 +82,37 @@ const useStyles = makeStyles(theme => ({
   },
 
   dialogContent: {
-    padding: "16px 24px",
+    padding: "12px 24px",
     [theme.breakpoints.down('sm')]: {
-      padding: "12px 16px",
+      padding: "8px 16px",
     },
   },
 
   multFieldLine: {
-    display: "flex",
-    gap: theme.spacing(1.5),
+    display: "grid",
+    gridTemplateColumns: "repeat(4, 1fr)",
+    gap: theme.spacing(0.5),
     alignItems: "center",
-    flexWrap: "wrap",
-    marginBottom: theme.spacing(2),
-    padding: theme.spacing(2),
+    marginBottom: theme.spacing(1),
+    padding: theme.spacing(1),
     backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.02)',
     borderRadius: 10,
     border: `1px solid ${theme.palette.divider}`,
+    [theme.breakpoints.down('lg')]: {
+      gridTemplateColumns: "repeat(2, 1fr)",
+      gap: theme.spacing(1),
+    },
+    [theme.breakpoints.down('sm')]: {
+      gridTemplateColumns: "1fr",
+      gap: theme.spacing(1.5),
+    },
+    "& .MuiFormControlLabel-root": {
+      margin: 0,
+      "& .MuiFormControlLabel-label": {
+        fontSize: "0.875rem",
+        whiteSpace: "nowrap",
+      },
+    },
   },
 
   textField: {
@@ -110,6 +130,10 @@ const useStyles = makeStyles(theme => ({
     },
     "& .MuiInputLabel-root": {
       fontWeight: 500,
+      fontSize: "0.9rem",
+    },
+    "& .MuiInputBase-input": {
+      padding: "10px 14px",
     },
   },
 
@@ -130,26 +154,26 @@ const useStyles = makeStyles(theme => ({
     fontSize: 15,
     fontWeight: 600,
     color: theme.palette.primary.main,
-    marginTop: theme.spacing(3),
-    marginBottom: theme.spacing(2),
+    marginTop: theme.spacing(1),
+    marginBottom: theme.spacing(1),
     display: 'flex',
     alignItems: 'center',
     gap: theme.spacing(1),
   },
 
   messageField: {
-    marginBottom: theme.spacing(2),
+    marginBottom: theme.spacing(1),
     "& .MuiOutlinedInput-root": {
       borderRadius: 10,
     },
   },
 
   switchControlBox: {
-    padding: theme.spacing(1.5),
+    padding: theme.spacing(1),
     backgroundColor: theme.palette.mode === 'dark' ? 'rgba(33, 150, 243, 0.08)' : 'rgba(33, 150, 243, 0.04)',
     borderRadius: 10,
     border: `1px solid ${theme.palette.primary.main}33`,
-    marginBottom: theme.spacing(2),
+    marginBottom: theme.spacing(1.5),
   },
 
   workHoursBox: {
@@ -178,22 +202,32 @@ const useStyles = makeStyles(theme => ({
     textTransform: "none",
     fontWeight: 500,
     fontSize: "0.9rem",
-    minHeight: 48,
+    minHeight: 42,
     minWidth: 0,
-    padding: "8px 12px",
+    padding: "6px 12px",
     "&.Mui-selected": {
       color: theme.palette.primary.main,
       fontWeight: 600,
     },
     [theme.breakpoints.down('sm')]: {
       fontSize: "0.8rem",
-      minHeight: 42,
-      padding: "6px 10px",
+      minHeight: 38,
+      padding: "5px 10px",
     },
   },
 
   tabPanel: {
-    padding: theme.spacing(2, 0),
+    padding: theme.spacing(1.5, 0),
+  },
+
+  tabContent: {
+    "& .MuiTypography-caption": {
+      fontSize: "0.7rem",
+      lineHeight: 1.4,
+    },
+    "& .MuiTypography-body2": {
+      fontSize: "0.85rem",
+    },
   },
 
   dialogActions: {
@@ -262,39 +296,54 @@ const useStyles = makeStyles(theme => ({
   },
   // Sync config styles
   syncConfigBox: {
-    padding: theme.spacing(2),
+    padding: theme.spacing(1.5),
     backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#fafafa',
     borderRadius: 10,
     border: `1px solid ${theme.palette.divider}`,
-    marginBottom: theme.spacing(2),
+    marginBottom: theme.spacing(1.5),
   },
   syncSliderLabel: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: theme.spacing(1),
+    marginBottom: theme.spacing(0.5),
   },
   syncSliderValue: {
     fontWeight: 600,
     color: theme.palette.primary.main,
     backgroundColor: theme.palette.action.hover,
-    padding: "4px 12px",
+    padding: "2px 10px",
     borderRadius: 8,
-    fontSize: "0.85rem",
+    fontSize: "0.8rem",
   },
   syncSlider: {
     "& .MuiSlider-markLabel": {
       whiteSpace: "nowrap",
+      fontSize: "0.7rem",
+    },
+    "& .MuiSlider-root": {
+      height: 4,
+    },
+    "& .MuiSlider-thumb": {
+      width: 16,
+      height: 16,
+    },
+  },
+  
+  webhookChip: {
+    "& .MuiChip-root": {
+      height: 24,
       fontSize: "0.75rem",
     },
   },
+
   syncInfoBox: {
-    padding: theme.spacing(2),
+    padding: theme.spacing(1.5),
     backgroundColor: theme.palette.mode === "dark" 
       ? "rgba(33, 150, 243, 0.1)" 
       : "rgba(33, 150, 243, 0.05)",
     borderRadius: 8,
-    marginBottom: theme.spacing(2),
+    marginBottom: theme.spacing(1.5),
     border: `1px solid ${theme.palette.mode === "dark" 
       ? "rgba(33, 150, 243, 0.3)" 
       : "rgba(33, 150, 243, 0.2)"}`,
@@ -353,6 +402,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   const [selectedQueueIds, setSelectedQueueIds] = useState([]);
   const [webhooks, setWebhooks] = useState([]);
   const [expandedWebhook, setExpandedWebhook] = useState(null);
+  const [showPayloadExample, setShowPayloadExample] = useState(false);
 
   const [defineWorkHours, SetDefineWorkHours] = useState("");
   const [outOfWorkMessage, setOutOfWorkMessage] = useState("");
@@ -683,7 +733,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
       <Dialog
         open={open}
         onClose={handleClose}
-        maxWidth="md"
+        maxWidth="lg"
         fullWidth
         scroll="paper"
         className={classes.dialog}
@@ -785,9 +835,9 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     margin="dense"
                     fullWidth
                     className={classes.textField}
-                    style={{ marginBottom: 16 }}
+                    style={{ marginBottom: 8 }}
                   />
-                  <div className={classes.multFieldLine} style={{ padding: '12px 16px' }}>
+                  <div className={classes.multFieldLine}>
                     <FormControlLabel
                       control={
                         <Field
@@ -833,13 +883,13 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       label={i18n.t("whatsappModal.form.archiveOnClose")}
                     />
                   </div>
-                  <div className={classes.messageField} style={{ marginTop: 16 }}>
+                  <div className={classes.messageField}>
                     <Field
                       as={TextField}
                       label={i18n.t("queueModal.form.greetingMessage")}
                       type="greetingMessage"
                       multiline
-                      minRows={4}
+                      minRows={2}
                       fullWidth
                       name="greetingMessage"
                       error={
@@ -858,7 +908,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       label={i18n.t("whatsappModal.form.farewellMessage")}
                       type="farewellMessage"
                       multiline
-                      minRows={4}
+                      minRows={2}
                       fullWidth
                       name="farewellMessage"
                       error={
@@ -877,7 +927,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       label={i18n.t("whatsappModal.form.ratingMessage")}
                       type="ratingMessage"
                       multiline
-                      minRows={4}
+                      minRows={2}
                       fullWidth
                       name="ratingMessage"
                       helperText={i18n.t("whatsappModal.form.instructionRatingMessage")}
@@ -1552,11 +1602,11 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       </Box>
 
                       <Box className={classes.syncConfigBox}>
-                        <Typography variant="subtitle2" style={{ marginBottom: 16, fontWeight: 600 }}>
+                        <Typography variant="subtitle2" style={{ marginBottom: 12, fontWeight: 600 }}>
                           {i18n.t("whatsappModal.form.syncLimits")}
                         </Typography>
 
-                        <Grid container spacing={3}>
+                        <Grid container spacing={2}>
                           <Grid item xs={12} sm={6}>
                             <Box className={classes.syncSliderLabel}>
                               <Typography variant="body2">
@@ -1667,11 +1717,11 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       </Box>
 
                       <Box className={classes.syncConfigBox}>
-                        <Typography variant="subtitle2" style={{ marginBottom: 16, fontWeight: 600 }}>
+                        <Typography variant="subtitle2" style={{ marginBottom: 12, fontWeight: 600 }}>
                           {i18n.t("whatsappModal.form.syncBehavior")}
                         </Typography>
 
-                        <Box style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <Box style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                           <FormControlLabel
                             control={
                               <Field
@@ -1720,7 +1770,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       <Typography className={classes.sectionTitle}>
                         <span role="img" aria-label="webhook">🔗</span> {i18n.t("whatsappModal.form.webhooksTitle")}
                       </Typography>
-                      <Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
+                      <Typography variant="body2" color="textSecondary" style={{ marginBottom: 12 }}>
                         {i18n.t("whatsappModal.form.webhooksDescription")}
                       </Typography>
                       
@@ -1740,7 +1790,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
 
                       {values.webhookEnabled && (
                         <>
-                          <Box style={{ marginTop: 16, marginBottom: 16 }}>
+                          <Box style={{ marginTop: 12, marginBottom: 12 }}>
                             <Button
                               variant="outlined"
                               color="primary"
@@ -1752,7 +1802,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                           </Box>
 
                           {webhooks.length === 0 && (
-                            <Typography variant="body2" color="textSecondary" style={{ fontStyle: 'italic', textAlign: 'center', padding: 24 }}>
+                            <Typography variant="body2" color="textSecondary" style={{ fontStyle: 'italic', textAlign: 'center', padding: 16 }}>
                               {i18n.t("whatsappModal.form.noWebhooks")}
                             </Typography>
                           )}
@@ -1762,7 +1812,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                               key={webhook.id} 
                               variant="outlined" 
                               style={{ 
-                                marginBottom: 12, 
+                                marginBottom: 8, 
                                 borderRadius: 8,
                                 borderColor: webhook.enabled ? '#4caf50' : '#bdbdbd'
                               }}
@@ -1772,13 +1822,13 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                                   display: 'flex', 
                                   alignItems: 'center', 
                                   justifyContent: 'space-between',
-                                  padding: '8px 16px',
+                                  padding: '6px 12px',
                                   backgroundColor: 'rgba(0,0,0,0.02)',
                                   cursor: 'pointer'
                                 }}
                                 onClick={() => setExpandedWebhook(expandedWebhook === webhook.id ? null : webhook.id)}
                               >
-                                <Box style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <Box style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                   <Switch
                                     size="small"
                                     checked={webhook.enabled}
@@ -1810,8 +1860,8 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                               </Box>
 
                               <Collapse in={expandedWebhook === webhook.id}>
-                                <Box style={{ padding: 16 }}>
-                                  <Grid container spacing={2}>
+                                <Box style={{ padding: 10 }}>
+                                  <Grid container spacing={1.5}>
                                     <Grid item xs={12} sm={6}>
                                       <TextField
                                         label={i18n.t("whatsappModal.form.webhookName")}
@@ -1821,6 +1871,8 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                                         variant="outlined"
                                         size="small"
                                         placeholder="Ej: n8n, Make, Zapier"
+                                        InputLabelProps={{ style: { fontSize: '0.85rem' } }}
+                                        inputProps={{ style: { fontSize: '0.85rem', padding: '8px 10px' } }}
                                       />
                                     </Grid>
                                     <Grid item xs={12} sm={6}>
@@ -1832,15 +1884,17 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                                         variant="outlined"
                                         size="small"
                                         placeholder="https://your-server.com/webhook"
+                                        InputLabelProps={{ style: { fontSize: '0.85rem' } }}
+                                        inputProps={{ style: { fontSize: '0.85rem', padding: '8px 10px' } }}
                                       />
                                     </Grid>
                                   </Grid>
 
-                                  <Typography variant="subtitle2" style={{ marginTop: 16, marginBottom: 8 }}>
+                                  <Typography variant="subtitle2" style={{ marginTop: 8, marginBottom: 4, fontSize: '0.8rem', fontWeight: 600 }}>
                                     {i18n.t("whatsappModal.form.webhookEvents")}
                                   </Typography>
 
-                                  <Box style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                  <Box style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                                     {[
                                       { value: 'message_received', label: i18n.t("whatsappModal.form.webhookEventMessageReceived") },
                                       { value: 'message_sent', label: i18n.t("whatsappModal.form.webhookEventMessageSent") },
@@ -1859,6 +1913,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                                         clickable
                                         color={(webhook.events || []).includes(event.value) ? "primary" : "default"}
                                         onClick={() => toggleWebhookEvent(webhook.id, event.value)}
+                                        style={{ height: 24, fontSize: '0.75rem', padding: '0 8px' }}
                                       />
                                     ))}
                                   </Box>
@@ -1867,10 +1922,31 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             </Paper>
                           ))}
 
-                          <Typography variant="body2" color="textSecondary" style={{ marginTop: 16, padding: 12, backgroundColor: 'rgba(0,0,0,0.04)', borderRadius: 8 }}>
-                            <strong><span role="img" aria-label="nota">📝</span> {i18n.t("whatsappModal.form.webhookPayloadExample")}:</strong><br/>
-                            <code style={{ fontSize: '0.85em', whiteSpace: 'pre-wrap' }}>
-                              {`{
+                          <Box style={{ marginTop: 12 }}>
+                            <Box 
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: 8, 
+                                cursor: 'pointer',
+                                padding: '8px 10px',
+                                backgroundColor: 'rgba(0,0,0,0.04)',
+                                borderRadius: 8,
+                                marginBottom: 4
+                              }}
+                              onClick={() => setShowPayloadExample(!showPayloadExample)}
+                            >
+                              <span role="img" aria-label="nota">📝</span>
+                              <Typography variant="body2" style={{ fontSize: '0.8rem', fontWeight: 500 }}>
+                                {i18n.t("whatsappModal.form.webhookPayloadExample")}
+                              </Typography>
+                              {showPayloadExample ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                            </Box>
+                            
+                            <Collapse in={showPayloadExample}>
+                              <Box style={{ padding: 10, backgroundColor: 'rgba(0,0,0,0.04)', borderRadius: 8, marginTop: 4 }}>
+                                <code style={{ fontSize: '0.7em', whiteSpace: 'pre-wrap', lineHeight: 1.3 }}>
+                                  {`{
   "event": "message_received",
   "timestamp": "2024-12-01T10:30:00Z",
   "connectionId": 1,
@@ -1893,8 +1969,10 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
     }
   }
 }`}
-                            </code>
-                          </Typography>
+                                </code>
+                              </Box>
+                            </Collapse>
+                          </Box>
                         </>
                       )}
                     </Box>

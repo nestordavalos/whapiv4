@@ -282,6 +282,12 @@ const useStyles = makeStyles(theme => ({
     borderRadius: 8,
     fontSize: "0.85rem",
   },
+  syncSlider: {
+    "& .MuiSlider-markLabel": {
+      whiteSpace: "nowrap",
+      fontSize: "0.75rem",
+    },
+  },
   syncInfoBox: {
     padding: theme.spacing(2),
     backgroundColor: theme.palette.mode === "dark" 
@@ -397,6 +403,21 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   const [sex, setSex] = useState(true);
   const [sab, setSab] = useState(false);
   const [dom, setDom] = useState(false);
+
+  const formatSyncAgeLabel = (value) => {
+    if (value >= 24 && value % 24 === 0) {
+      const days = Math.round(value / 24);
+      return `${days}d`;
+    }
+    return `${value}h`;
+  };
+
+  const syncAgeMarks = [
+    { value: 24, label: "1d" },
+    { value: 168, label: "7d" },
+    { value: 360, label: "15d" },
+    { value: 720, label: "30d" },
+  ];
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -1594,7 +1615,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                                 {i18n.t("whatsappModal.form.syncMaxMessageAgeHours")}
                               </Typography>
                               <span className={classes.syncSliderValue}>
-                                {values.syncMaxMessageAgeHours || 24} {(values.syncMaxMessageAgeHours || 24) === 1 ? "hora" : "horas"}
+                                {formatSyncAgeLabel(values.syncMaxMessageAgeHours || 24)}
                               </span>
                             </Box>
                             <Field name="syncMaxMessageAgeHours">
@@ -1605,13 +1626,10 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                                   min={1}
                                   max={720}
                                   step={1}
-                                  marks={[
-                                    { value: 1, label: "1h" },
-                                    { value: 24, label: "24h" },
-                                    { value: 168, label: "7d" },
-                                    { value: 720, label: "30d" },
-                                  ]}
+                                  marks={syncAgeMarks}
                                   valueLabelDisplay="auto"
+                                  valueLabelFormat={formatSyncAgeLabel}
+                                  className={classes.syncSlider}
                                 />
                               )}
                             </Field>

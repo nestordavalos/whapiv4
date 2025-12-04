@@ -33,66 +33,90 @@ const useStyles = makeStyles(theme => ({
 	ticket: {
 		position: "relative",
 		display: "flex",
-		padding: "6px 8px !important",
-		margin: "0 !important",
-		borderRadius: 8,
-		border: `1px solid ${theme.palette.divider}`,
+		padding: "12px !important",
+		margin: "0 0 8px 0 !important",
+		borderRadius: 12,
+		border: `1.5px solid ${theme.palette.mode === "dark" ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
 		backgroundColor: theme.palette.background.paper,
 		alignItems: "flex-start",
-		gap: 6,
-		transition: "box-shadow 0.2s ease, transform 0.2s ease, background-color 0.2s ease",
+		gap: 10,
+		transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
 		overflow: "hidden",
+		boxShadow: theme.palette.mode === "dark"
+			? "0 2px 8px rgba(0,0,0,0.2)"
+			: "0 1px 3px rgba(0,0,0,0.08)",
 		"&:hover": {
 			boxShadow: theme.palette.mode === "dark"
-				? "0 8px 18px rgba(0,0,0,0.45)"
-				: "0 10px 24px rgba(15,23,42,0.12)",
-			transform: "translateY(-1px)",
+				? "0 8px 24px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2)"
+				: "0 8px 20px rgba(0,0,0,0.1), 0 2px 6px rgba(0,0,0,0.06)",
+			transform: "translateY(-2px)",
+			borderColor: theme.palette.mode === "dark" 
+				? "rgba(255,255,255,0.12)" 
+				: "rgba(0,0,0,0.1)",
 		},
 		"&.Mui-selected": {
 			backgroundColor: theme.palette.mode === "dark" 
-				? "rgba(0, 113, 193, 0.15)" 
-				: "rgba(0, 113, 193, 0.08)",
+				? "rgba(0, 113, 193, 0.12)" 
+				: "rgba(0, 113, 193, 0.06)",
 			borderColor: theme.palette.primary.main,
+			borderWidth: 2,
 			boxShadow: theme.palette.mode === "dark"
-				? "0 4px 12px rgba(0, 113, 193, 0.3)"
-				: "0 4px 12px rgba(0, 113, 193, 0.15)",
+				? "0 6px 16px rgba(0, 113, 193, 0.35), 0 0 0 3px rgba(0, 113, 193, 0.1)"
+				: "0 6px 16px rgba(0, 113, 193, 0.2), 0 0 0 3px rgba(0, 113, 193, 0.08)",
 			"&:hover": {
 				backgroundColor: theme.palette.mode === "dark" 
-					? "rgba(0, 113, 193, 0.2)" 
-					: "rgba(0, 113, 193, 0.12)",
+					? "rgba(0, 113, 193, 0.18)" 
+					: "rgba(0, 113, 193, 0.1)",
+				transform: "translateY(-2px)",
 			},
 		},
 		[theme.breakpoints.down('sm')]: {
-			margin: "4px 6px 4px 4px !important",
-			padding: "5px 8px !important",
-			gap: 5,
+			margin: "0 0 6px 0 !important",
+			padding: "10px !important",
+			gap: 8,
+			borderRadius: 10,
 		},
 	},
 	pendingTicket: {
-		backgroundColor: theme.palette.mode === "dark" ? "rgba(255,193,7,0.08)" : "#fffef7",
-		borderColor: theme.palette.mode === "dark" ? "rgba(255,193,7,0.3)" : "#fde68a",
+		backgroundColor: theme.palette.mode === "dark" ? "rgba(255,193,7,0.1)" : "rgba(255,243,205,0.5)",
+		borderColor: theme.palette.mode === "dark" ? "rgba(251,191,36,0.6)" : "rgba(251,191,36,0.7)",
+		borderWidth: 2,
+		boxShadow: theme.palette.mode === "dark"
+			? "0 2px 8px rgba(255,193,7,0.15)"
+			: "0 1px 3px rgba(251,191,36,0.15)",
+	},
+	openTicket: {
+		borderColor: theme.palette.mode === "dark" ? "rgba(33,150,243,0.6)" : "rgba(25,118,210,0.7)",
+		borderWidth: 2,
+	},
+	closedTicket: {
+		borderColor: theme.palette.mode === "dark" ? "rgba(76,175,80,0.6)" : "rgba(22,163,74,0.7)",
+		borderWidth: 2,
 	},
 	ticketQueueColor: {
-		width: 3,
-		borderRadius: 3,
+		width: 4,
+		borderRadius: 4,
 		alignSelf: "stretch",
 		backgroundColor: theme.palette.primary.light,
+		boxShadow: "0 0 8px currentColor",
+		opacity: 0.9,
 	},
 	cardContent: {
 		width: "100%",
 		display: "flex",
 		flexDirection: "column",
-		gap: 6,
+		gap: 10,
 	},
 	mainContentButton: {
 		textAlign: "left",
 		display: "flex",
 		flexDirection: "column",
-		gap: 6,
+		gap: 8,
 		alignItems: "stretch",
 		width: "100%",
 		padding: 0,
-		borderRadius: 8,
+		borderRadius: 10,
+		transition: "background-color 0.2s ease",
 		"&:hover": {
 			backgroundColor: "transparent",
 		},
@@ -101,39 +125,55 @@ const useStyles = makeStyles(theme => ({
 		display: "flex",
 		alignItems: "center",
 		justifyContent: "space-between",
-		gap: 8,
+		gap: 10,
 		width: "100%",
 	},
 	nameInfo: {
 		display: "flex",
 		alignItems: "center",
-		gap: 4,
+		gap: 6,
 		minWidth: 0,
 	},
 	metaChips: {
 		display: "flex",
 		flexWrap: "wrap",
-		gap: 4,
+		gap: 5,
 		justifyContent: "flex-end",
 		alignItems: "center",
 		[theme.breakpoints.down('sm')]: {
-			gap: 2,
+			gap: 3,
 		},
 	},
 	connectionChip: {
-		backgroundColor: theme.palette.mode === "dark" ? "rgba(76,175,80,0.18)" : "#ecfdf5",
-		color: theme.palette.success.main,
+		backgroundColor: theme.palette.mode === "dark" ? "rgba(76,175,80,0.2)" : "rgba(220,252,231,0.8)",
+		color: theme.palette.mode === "dark" ? "#66bb6a" : "#16a34a",
+		fontWeight: 600,
+		borderRadius: 8,
+		boxShadow: theme.palette.mode === "dark" 
+			? "0 1px 3px rgba(76,175,80,0.2)" 
+			: "0 1px 2px rgba(22,163,74,0.15)",
+		"& .MuiChip-icon": {
+			color: "inherit",
+		},
 		[theme.breakpoints.down('sm')]: {
 			display: "none",
 		},
 	},
 	queueChip: {
-		backgroundColor: theme.palette.mode === "dark" ? "rgba(33,150,243,0.2)" : "#e7f1ff",
-		color: theme.palette.primary.main,
+		backgroundColor: theme.palette.mode === "dark" ? "rgba(33,150,243,0.22)" : "rgba(231,241,255,0.9)",
+		color: theme.palette.mode === "dark" ? "#42a5f5" : "#1976d2",
+		fontWeight: 600,
+		borderRadius: 8,
+		boxShadow: theme.palette.mode === "dark" 
+			? "0 1px 3px rgba(33,150,243,0.2)" 
+			: "0 1px 2px rgba(25,118,210,0.15)",
+		"& .MuiChip-icon": {
+			color: "inherit",
+		},
 		[theme.breakpoints.down('sm')]: {
 			"& .MuiChip-label": {
-				padding: "0 4px",
-				fontSize: "0.6rem",
+				padding: "0 6px",
+				fontSize: "0.65rem",
 			},
 			"& .MuiChip-icon": {
 				display: "none",
@@ -141,38 +181,53 @@ const useStyles = makeStyles(theme => ({
 		},
 	},
 	userChip: {
-		backgroundColor: theme.palette.mode === "dark" ? "rgba(44,62,80,0.6)" : "#e5e7eb",
-		color: theme.palette.text.primary,
+		backgroundColor: theme.palette.mode === "dark" ? "rgba(158,158,158,0.2)" : "rgba(229,231,235,0.9)",
+		color: theme.palette.mode === "dark" ? "#bdbdbd" : "#374151",
+		fontWeight: 600,
+		borderRadius: 8,
+		boxShadow: theme.palette.mode === "dark" 
+			? "0 1px 3px rgba(158,158,158,0.15)" 
+			: "0 1px 2px rgba(107,114,128,0.15)",
+		"& .MuiChip-icon": {
+			color: "inherit",
+		},
 		[theme.breakpoints.down('sm')]: {
 			display: "none",
 		},
 	},
 	statusPill: {
-		padding: "0 6px",
+		padding: "3px 10px",
 		borderRadius: 999,
-		fontSize: "0.62rem",
+		fontSize: "0.65rem",
 		fontWeight: 700,
-		letterSpacing: "0.06em",
+		letterSpacing: "0.04em",
 		textTransform: "uppercase",
+		boxShadow: theme.palette.mode === "dark"
+			? "0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)"
+			: "0 1px 3px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.5)",
 		[theme.breakpoints.down('sm')]: {
-			padding: "0 4px",
-			fontSize: "0.55rem",
+			padding: "2px 8px",
+			fontSize: "0.6rem",
 		},
 	},
 	ticketBody: {
 		display: "flex",
 		alignItems: "center",
-		gap: 8,
+		gap: 10,
 	},
 	avatar: {
-		height: 34,
-		width: 34,
-		borderRadius: 8,
+		height: 40,
+		width: 40,
+		borderRadius: 10,
 		flexShrink: 0,
+		border: `2px solid ${theme.palette.mode === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)"}`,
+		boxShadow: theme.palette.mode === "dark"
+			? "0 2px 8px rgba(0,0,0,0.3)"
+			: "0 2px 6px rgba(0,0,0,0.1)",
 		[theme.breakpoints.down('sm')]: {
-			height: 30,
-			width: 30,
-			borderRadius: 6,
+			height: 34,
+			width: 34,
+			borderRadius: 8,
 		},
 	},
 	contactRow: {
@@ -181,79 +236,93 @@ const useStyles = makeStyles(theme => ({
 		display: "flex",
 		alignItems: "center",
 		justifyContent: "space-between",
-		gap: 8,
+		gap: 10,
 	},
 	messageRow: {
 		display: "flex",
 		alignItems: "flex-start",
-		gap: 6,
+		gap: 8,
 		width: "100%",
+		paddingLeft: 2,
 	},
 	messageTime: {
-		fontSize: "0.78rem",
+		fontSize: "0.75rem",
 		color: theme.palette.text.secondary,
-		fontWeight: 500,
+		fontWeight: 600,
 		whiteSpace: "nowrap",
+		letterSpacing: "0.01em",
 	},
 	waitBadge: {
 		marginTop: 2,
-		padding: "2px 8px",
+		padding: "3px 9px",
 		borderRadius: 999,
-		fontSize: "0.68rem",
-		fontWeight: 600,
+		fontSize: "0.7rem",
+		fontWeight: 700,
 		lineHeight: 1.2,
 		display: "inline-flex",
 		alignItems: "center",
 		gap: 4,
+		boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+		letterSpacing: "0.02em",
 	},
 	waitOk: {
 		color: "#166534",
 		backgroundColor: "#dcfce7",
+		border: "1px solid #86efac",
 	},
 	waitWarn: {
 		color: "#92400e",
 		backgroundColor: "#fef3c7",
+		border: "1px solid #fde68a",
 	},
 	waitDanger: {
 		color: "#991b1b",
 		backgroundColor: "#fee2e2",
+		border: "1px solid #fca5a5",
 	},
 	lastMessagePreview: {
 		color: theme.palette.text.secondary,
-		fontSize: "0.78rem",
+		fontSize: "0.8rem",
+		lineHeight: 1.5,
 		display: "-webkit-box",
 		WebkitLineClamp: 2,
 		WebkitBoxOrient: "vertical",
 		overflow: "hidden",
+		wordBreak: "break-word",
 		[theme.breakpoints.down('sm')]: {
-			fontSize: "0.72rem",
+			fontSize: "0.75rem",
 			WebkitLineClamp: 1,
+			lineHeight: 1.4,
 		},
 	},
 	ticketFooter: {
 		display: "flex",
 		alignItems: "center",
 		justifyContent: "space-between",
-		gap: 6,
+		gap: 8,
 		flexWrap: "wrap",
+		paddingTop: 2,
 	},
 	tagContainer: {
 		display: "flex",
 		flexWrap: "wrap",
-		gap: 3,
+		gap: 4,
 		flex: 1,
 		minWidth: 0,
-		maxHeight: 18,
+		maxHeight: 20,
 		overflow: "hidden",
 	},
 	tagChip: {
-		maxWidth: 80,
-		height: 16,
-		fontSize: "0.65rem",
+		maxWidth: 90,
+		height: 18,
+		fontSize: "0.68rem",
+		fontWeight: 600,
 		textOverflow: "ellipsis",
 		overflow: "hidden",
+		borderRadius: 6,
+		boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
 		"& .MuiChip-label": {
-			padding: "0 6px",
+			padding: "0 7px",
 		},
 	},
 	tagPlaceholder: {
@@ -268,14 +337,24 @@ const useStyles = makeStyles(theme => ({
 		flex: 1,
 	},
 	bottomButton: {
-		padding: 4,
-		borderRadius: 8,
+		padding: 6,
+		borderRadius: 10,
+		backgroundColor: theme.palette.mode === "dark" 
+			? "rgba(255,255,255,0.05)" 
+			: "rgba(0,0,0,0.03)",
+		transition: "all 0.2s ease",
+		"&:hover": {
+			backgroundColor: theme.palette.mode === "dark" 
+				? "rgba(0, 113, 193, 0.2)" 
+				: "rgba(0, 113, 193, 0.1)",
+			transform: "scale(1.05)",
+		},
 	},
 	timeAndBadge: {
 		display: "flex",
 		flexDirection: "column",
 		alignItems: "flex-end",
-		gap: 2,
+		gap: 4,
 		flexShrink: 0,
 	},
 	timeRow: {
@@ -286,13 +365,16 @@ const useStyles = makeStyles(theme => ({
 	unreadIndicator: {
 		backgroundColor: theme.palette.success.main,
 		color: "#fff",
-		fontSize: "0.65rem",
+		fontSize: "0.68rem",
 		fontWeight: 700,
-		borderRadius: 10,
-		padding: "2px 6px",
-		minWidth: 18,
+		borderRadius: 12,
+		padding: "2px 7px",
+		minWidth: 20,
 		textAlign: "center",
-		lineHeight: 1,
+		lineHeight: 1.1,
+		boxShadow: theme.palette.mode === "dark"
+			? "0 2px 6px rgba(76,175,80,0.4)"
+			: "0 2px 4px rgba(76,175,80,0.3)",
 	},
 	}));
 
@@ -609,6 +691,8 @@ return (
             selected={ticketId && +ticketId === ticket.id}
             className={clsx(classes.ticket, {
                 [classes.pendingTicket]: ticket.status === "pending",
+                [classes.openTicket]: ticket.status === "open",
+                [classes.closedTicket]: ticket.status === "closed",
             })}
         >
             <Tooltip title={queueLabel} placement="left">
@@ -694,7 +778,12 @@ return (
                             noWrap
                             component="span"
                             variant="body2"
-                            style={{ fontWeight: 700 }}
+                            style={{ 
+                                fontWeight: 700,
+                                fontSize: "0.9rem",
+                                color: theme.palette.text.primary,
+                                letterSpacing: "0.01em"
+                            }}
                         >
                             {ticket.contact?.name}
                         </Typography>

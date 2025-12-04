@@ -785,6 +785,7 @@ const messages = {
         header: "Datos de contacto",
         buttons: {
           edit: "Editar contacto",
+          close: "Cerrar panel",
         },
         extraInfo: "Otra información",
       },

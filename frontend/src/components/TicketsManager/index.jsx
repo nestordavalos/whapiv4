@@ -234,6 +234,11 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+const tabA11yProps = (value) => ({
+  id: `simple-tab-${value}`,
+  "aria-controls": `simple-tabpanel-${value}`,
+});
+
 const TicketsManager = () => {
   const classes = useStyles();
 
@@ -331,6 +336,7 @@ const TicketsManager = () => {
               </Badge>
             }
             classes={{ root: classes.tab }}
+            {...tabA11yProps("open")}
           />
           <Tab
             value={"pending"}
@@ -346,12 +352,14 @@ const TicketsManager = () => {
               </Badge>
             }
             classes={{ root: classes.tab }}
+            {...tabA11yProps("pending")}
           />
           <Tab
             value={"closed"}
             icon={<AllInboxRounded />}
             label={i18n.t("tickets.tabs.closed.title")}
             classes={{ root: classes.tab }}
+            {...tabA11yProps("closed")}
           />
         </Tabs>
       </Paper>

@@ -119,6 +119,7 @@ const TicketActionButtons = ({ ticket }) => {
 			<Tooltip title={i18n.t("messagesList.header.buttons.sync") || "Sincronizar mensajes"}>
 				<span>
 					<IconButton 
+						aria-label={i18n.t("messagesList.header.buttons.sync") || "Sincronizar mensajes"}
 						disabled={syncing || loading} 
 						className={`${classes.actionButton} ${classes.syncButton}`}
 						onClick={handleSyncMessages}
@@ -149,6 +150,7 @@ const TicketActionButtons = ({ ticket }) => {
 				<>
 					<Tooltip title={i18n.t("messagesList.header.buttons.return")}>
 						<IconButton 
+							aria-label={i18n.t("messagesList.header.buttons.return")}
 							disabled={loading} 
 							className={`${classes.actionButton} ${classes.returnButton}`}
 							onClick={e => handleUpdateTicketStatus(e, "pending", null, false)}
@@ -159,6 +161,7 @@ const TicketActionButtons = ({ ticket }) => {
 					</Tooltip>
 					<Tooltip title={i18n.t("messagesList.header.buttons.resolve")}>
 						<IconButton 
+							aria-label={i18n.t("messagesList.header.buttons.resolve")}
 							disabled={loading} 
 							className={`${classes.actionButton} ${classes.closeButton}`}
 							onClick={e => handleUpdateTicketStatus(e, "closed", user?.id, true)}
@@ -168,6 +171,7 @@ const TicketActionButtons = ({ ticket }) => {
 						</IconButton>
 					</Tooltip>
 					<IconButton 
+						aria-label={i18n.t("messagesList.header.buttons.more") || "Más opciones"}
 						disabled={loading} 
 						className={`${classes.actionButton} ${classes.moreButton}`}
 						onClick={handleOpenTicketOptionsMenu}

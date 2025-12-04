@@ -57,13 +57,12 @@ const NotificationsPopOver = () => {
 
         const historyRef = useRef(history);
 
-        useEffect(() => {
-                if (!("Notification" in window)) {
-                        console.log("This browser doesn't support notifications");
-                } else {
-                        Notification.requestPermission();
+        const requestPermissionIfNeeded = () => {
+                if (!("Notification" in window)) return;
+                if (Notification.permission === "default") {
+                        Notification.requestPermission().catch(() => undefined);
                 }
-        }, []);
+        };
 
         useEffect(() => {
                 audioRef.current.load();
@@ -311,9 +310,10 @@ const NotificationsPopOver = () => {
                 }
         };
 
-	const handleClick = () => {
-		setIsOpen(prevState => !prevState);
-	};
+        const handleClick = () => {
+                requestPermissionIfNeeded();
+                setIsOpen(prevState => !prevState);
+        };
 
 	const handleClickAway = () => {
 		setIsOpen(false);

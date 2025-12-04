@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from "react";
+﻿import React, { useState, useContext, useEffect } from "react";
 import clsx from "clsx";
 
 import { AppBar, Divider, Drawer, IconButton, List, Menu, MenuItem, Toolbar, Typography } from "@mui/material";
@@ -275,20 +275,26 @@ const LoggedInLayout = ({ children }) => {
         open={drawerOpen}
       >
         <div className={clsx(classes.toolbarIcon, !drawerOpen && classes.toolbarIconClosed)}>
-          <div className={clsx(classes.logoContainer, !drawerOpen && classes.logoContainerClosed)}>
+          <div className={clsx(classes.logoContainer, !drawerOpen && classes.logoContainerClosed)} aria-hidden="true">
             <img src={logodash} alt="logo" />
           </div>
           <IconButton
             className={classes.collapseButton}
             color="secondary"
+            aria-label={drawerOpen ? "Cerrar menú lateral" : "Abrir menú lateral"}
             onClick={() => setDrawerOpen(!drawerOpen)}
             size="large">
             {drawerOpen ? <ChevronLeftIcon /> : <MenuIcon />}
           </IconButton>
         </div>
-        <List className={clsx(classes.drawerList, !drawerOpen && classes.drawerListClosed)}>
-          <MainListItems drawerClose={drawerClose} drawerOpen={drawerOpen} />
-        </List>
+        <nav aria-label="MenÃº principal">
+          <List
+            component="ul"
+            className={clsx(classes.drawerList, !drawerOpen && classes.drawerListClosed)}
+          >
+            <MainListItems drawerClose={drawerClose} drawerOpen={drawerOpen} />
+          </List>
+        </nav>
       </Drawer>
       <UserModal
         open={userModalOpen}
@@ -324,8 +330,9 @@ const LoggedInLayout = ({ children }) => {
           <div>
             <IconButton
               aria-label="account of current user"
-              aria-controls="menu-appbar"
+              aria-controls={menuOpen ? "menu-appbar" : undefined}
               aria-haspopup="true"
+              aria-expanded={menuOpen ? "true" : undefined}
               onClick={handleMenu}
               color="inherit"
               size="large">

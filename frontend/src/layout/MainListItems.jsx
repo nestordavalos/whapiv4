@@ -6,6 +6,7 @@ import {
   Badge,
   Divider,
   ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
   ListSubheader,
@@ -57,10 +58,10 @@ const useStyles = makeStyles(theme => ({
       backgroundColor: theme.palette.primary.main + "24",
     },
     "& $menuIcon": {
-      color: theme.palette.primary.main,
+      color: theme.palette.primary.dark || theme.palette.primary.main,
     },
     "& .MuiListItemText-primary": {
-      color: theme.palette.primary.main,
+      color: theme.palette.primary.dark || theme.palette.primary.main,
       fontWeight: 600,
     },
   },
@@ -110,13 +111,9 @@ const useStyles = makeStyles(theme => ({
   },
   versionText: {
     fontSize: "0.7rem",
-    color: theme.palette.text.disabled,
+    color: theme.palette.text.primary,
     textAlign: "center",
-    fontWeight: 500,
-  },
-  listContainer: {
-    display: "flex",
-    flexDirection: "column",
+    fontWeight: 700,
   },
   listItemWrapper: {
     listStyle: "none",
@@ -124,7 +121,7 @@ const useStyles = makeStyles(theme => ({
 }));
 
 function ListItemLink(props) {
-  const { icon, primary, to, className, collapsed } = props;
+  const { icon, primary, to, className, collapsed, onClick } = props;
   const classes = useStyles();
   const location = useLocation();
   const isActive = location.pathname === to || (to !== "/" && location.pathname.startsWith(to));
@@ -138,11 +135,11 @@ function ListItemLink(props) {
   );
 
   return (
-    <li className={classes.listItemWrapper}>
-      <ListItem 
-        button 
-        component={renderLink} 
+    <ListItem component="li" className={classes.listItemWrapper} disablePadding>
+      <ListItemButton
+        component={renderLink}
         className={`${classes.menuItem} ${collapsed ? classes.menuItemClosed : ""} ${isActive ? classes.menuItemActive : ""} ${className || ""}`}
+        onClick={onClick}
       >
         {icon ? (
           <ListItemIcon className={`${classes.menuIcon} ${collapsed ? classes.menuIconClosed : ""}`}>
@@ -153,8 +150,8 @@ function ListItemLink(props) {
           primary={primary} 
           className={`${classes.menuText} ${collapsed ? classes.menuTextHidden : ""}`} 
         />
-      </ListItem>
-    </li>
+      </ListItemButton>
+    </ListItem>
   );
 }
 ListItemLink.displayName = "ListItemLink";
@@ -189,53 +186,45 @@ function MainListItems(props) {
     return () => clearTimeout(delayDebounceFn);
   }, [whatsApps]);
 
-  const handleKeyClose = (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      drawerClose();
-    }
-  };
-
   return (
-    <div
-      onClick={drawerClose}
-      onKeyDown={handleKeyClose}
-      role="button"
-      tabIndex={0}
-      className={classes.listContainer}
-    >
-
+    <>
       <ListItemLink
         to="/tickets"
         primary={i18n.t("mainDrawer.listItems.tickets")}
         icon={<WhatsApp />}
         collapsed={collapsed}
+        onClick={drawerClose}
       />
       <ListItemLink
         to="/contacts"
         primary={i18n.t("mainDrawer.listItems.contacts")}
         icon={<ContactPhoneOutlined />}
         collapsed={collapsed}
+        onClick={drawerClose}
       />
       <ListItemLink
         to="/quickAnswers"
         primary={i18n.t("mainDrawer.listItems.quickAnswers")}
         icon={<QuestionAnswerOutlined />}
         collapsed={collapsed}
+        onClick={drawerClose}
       />
       <ListItemLink
         to="/tags"
         primary={i18n.t("mainDrawer.listItems.tags")}
         icon={<LocalOffer />}
         collapsed={collapsed}
+        onClick={drawerClose}
       />
       <Can
         role={user.profile}
         perform="drawer-admin-items:view"
         yes={() => (
           <>
-            <Divider className={classes.divider} />
+            <Divider className={classes.divider} component="li" role="separator" />
             <ListSubheader 
               inset 
+              component="li"
               className={`${classes.sectionHeader} ${collapsed ? classes.sectionHeaderHidden : ""}`}
             >
               {i18n.t("mainDrawer.listItems.administration")}
@@ -245,6 +234,7 @@ function MainListItems(props) {
               primary="Dashboard"
               icon={<DashboardOutlined />}
               collapsed={collapsed}
+              onClick={drawerClose}
             />
             <ListItemLink
               to="/connections"
@@ -255,6 +245,7 @@ function MainListItems(props) {
                 </Badge>
               }
               collapsed={collapsed}
+              onClick={drawerClose}
             />
 
             <ListItemLink
@@ -262,40 +253,47 @@ function MainListItems(props) {
               primary={i18n.t("mainDrawer.listItems.users")}
               icon={<PeopleAltOutlined />}
               collapsed={collapsed}
+              onClick={drawerClose}
             />
             <ListItemLink
               to="/queues"
               primary={i18n.t("mainDrawer.listItems.queues")}
               icon={<AccountTreeOutlined />}
               collapsed={collapsed}
+              onClick={drawerClose}
             />
             <ListItemLink
               to="/queue-integrations"
               primary={i18n.t("mainDrawer.listItems.integrations")}
               icon={<DeviceHub />}
               collapsed={collapsed}
+              onClick={drawerClose}
             />
             <ListItemLink
               to="/settings"
               primary={i18n.t("mainDrawer.listItems.settings")}
               icon={<SettingsOutlined />}
               collapsed={collapsed}
+              onClick={drawerClose}
             />
-            <Divider className={classes.divider} />
+            <Divider className={classes.divider} component="li" role="separator" />
             <ListItemLink
               to="/apikey"
               primary={i18n.t("mainDrawer.listItems.apikey")}
               icon={<VpnKeyRounded />}
               collapsed={collapsed}
+              onClick={drawerClose}
             />
 
           </>
         )}
       />
-      <Box className={`${classes.versionContainer} ${collapsed ? classes.versionContainerClosed : ""}`}>
-        <Typography className={classes.versionText}>v{systemVersion}</Typography>
-      </Box>
-    </div>
+      <li className={classes.listItemWrapper}>
+        <Box className={`${classes.versionContainer} ${collapsed ? classes.versionContainerClosed : ""}`}>
+          <Typography className={classes.versionText}>v{systemVersion}</Typography>
+        </Box>
+      </li>
+    </>
   );
 }
 

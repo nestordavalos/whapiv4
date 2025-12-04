@@ -10,6 +10,7 @@ const useStyles = makeStyles((theme) => ({
     "& .MuiOutlinedInput-root": {
       backgroundColor: theme.palette.background.paper,
       borderRadius: 8,
+      height: 40,
       "& fieldset": {
         borderColor: theme.palette.divider,
       },
@@ -20,8 +21,19 @@ const useStyles = makeStyles((theme) => ({
         borderColor: theme.palette.primary.main,
       },
     },
+    "& .MuiInputBase-root": {
+      height: 40,
+      padding: "0 14px",
+    },
     "& .MuiInputBase-input": {
       color: theme.palette.text.primary,
+      fontSize: '0.9rem',
+    },
+    "& .MuiInputLabel-root": {
+      fontSize: '0.9rem',
+      "&.MuiInputLabel-shrink": {
+        fontSize: '0.85rem',
+      },
     },
     "& .MuiAutocomplete-popupIndicator": {
       color: theme.palette.text.secondary,
@@ -86,7 +98,7 @@ export function UsersFilter({ onFiltered, initialUsers }) {
   };
 
   return (
-    <Box style={{ padding: "0px 10px 10px" }}>
+    <Box style={{ padding: 0, margin: 0 }}>
       <Autocomplete
         multiple
         size="small"
@@ -118,6 +130,8 @@ export function UsersFilter({ onFiltered, initialUsers }) {
             {...params}
             variant="outlined"
             placeholder="Filtro por Usuários"
+            label="Filtro por Usuários"
+            InputLabelProps={{ shrink: true }}
           />
         )}
       />

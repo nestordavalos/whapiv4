@@ -12,6 +12,7 @@ import Avatar from "@mui/material/Avatar";
 import Divider from "@mui/material/Divider";
 import Chip from "@mui/material/Chip";
 import { IconButton, Tooltip } from "@mui/material";
+import ButtonBase from "@mui/material/ButtonBase";
 import DoneIcon from "@mui/icons-material/Done";
 import UndoRoundedIcon from "@mui/icons-material/UndoRounded";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -82,6 +83,19 @@ const useStyles = makeStyles(theme => ({
 		display: "flex",
 		flexDirection: "column",
 		gap: 6,
+	},
+	mainContentButton: {
+		textAlign: "left",
+		display: "flex",
+		flexDirection: "column",
+		gap: 6,
+		alignItems: "stretch",
+		width: "100%",
+		padding: 0,
+		borderRadius: 8,
+		"&:hover": {
+			backgroundColor: "transparent",
+		},
 	},
 	headerRow: {
 		display: "flex",
@@ -590,9 +604,8 @@ return (
             }}
         />
         <ListItem
+            component="div"
             dense
-            button
-            onClick={() => handleSelectTicket(ticket.id)}
             selected={ticketId && +ticketId === ticket.id}
             className={clsx(classes.ticket, {
                 [classes.pendingTicket]: ticket.status === "pending",
@@ -602,17 +615,27 @@ return (
                 <span
                     className={classes.ticketQueueColor}
                     style={{ backgroundColor: queueColor }}
+                    role="presentation"
+                    aria-hidden="true"
                 />
             </Tooltip>
             <div className={classes.cardContent}>
+                <ButtonBase
+                    className={classes.mainContentButton}
+                    onClick={() => handleSelectTicket(ticket.id)}
+                    focusRipple
+                    disableRipple
+                >
                 {/* FILA 1: Conexión (izq) + Sector + Agente + Estado (der) */}
-                <div className={classes.headerRow}>
+                    <div className={classes.headerRow}>
                     <div className={classes.nameInfo}>
                         {viewConection && ticket.whatsappId && (
                             <Chip
                                 icon={<WhatsAppIcon fontSize="small" />}
                                 label={ticket.whatsapp?.name || i18n.t("ticketsList.items.connection")}
                                 size="small"
+                                role="text"
+                                aria-label={`Conexion ${ticket.whatsapp?.name || i18n.t("ticketsList.items.connection")}`}
                                 className={classes.connectionChip}
                             />
                         )}
@@ -624,6 +647,8 @@ return (
                                     icon={<BusinessCenterIcon style={{ fontSize: "1rem" }} />}
                                     label={queueLabel}
                                     size="small"
+                                    role="text"
+                                    aria-label={`Sector ${queueLabel}`}
                                     className={classes.queueChip}
                                 />
                             </Tooltip>
@@ -639,6 +664,8 @@ return (
                                                 icon={<PersonOutlineIcon style={{ fontSize: "1rem" }} />}
                                                 label={assignedUserName}
                                                 size="small"
+                                                role="text"
+                                                aria-label={`Asignado a ${assignedUserName}`}
                                                 className={classes.userChip}
                                             />
                                         </Tooltip>
@@ -715,6 +742,8 @@ return (
                     </Typography>
                 </div>
 
+                </ButtonBase>
+
                 {/* FILA 4: Etiquetas (izq) + Botones (der) */}
                 <div className={classes.ticketFooter}>
                     {viewTags && tags.length > 0 ? (
@@ -725,7 +754,12 @@ return (
                                     label={currentTag.name}
                                     size="small"
                                     className={classes.tagChip}
-                                    style={{ backgroundColor: currentTag.color, color: "#fff" }}
+                                    style={{
+                                        backgroundColor: currentTag.color,
+                                        color: theme.palette.getContrastText
+                                            ? theme.palette.getContrastText(currentTag.color)
+                                            : "#111"
+                                    }}
                                 />
                             ))}
                         </div>

@@ -18,7 +18,11 @@ const useStyles = makeStyles(theme => ({
 export default function Title(props) {
 	const classes = useStyles();
 	return (
-		<Typography variant="h5" className={classes.title}>
+		<Typography
+			variant="h5"
+			component="h2"
+			className={classes.title}
+		>
 			{props.children}
 		</Typography>
 	);

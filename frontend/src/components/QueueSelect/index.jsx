@@ -48,6 +48,8 @@ const useStyles = makeStyles(theme => ({
 const QueueSelect = ({ selectedQueueIds, onChange }) => {
 	const classes = useStyles();
 	const [queues, setQueues] = useState([]);
+	const labelId = "queue-select-label";
+	const selectId = "queue-select";
 
 	useEffect(() => {
 		(async () => {
@@ -65,13 +67,19 @@ const QueueSelect = ({ selectedQueueIds, onChange }) => {
 	};
 
 	return (
-		<div style={{ marginTop: 6 }}>
-			<FormControl fullWidth margin="dense" variant="outlined" className={classes.formControl}>
-				<InputLabel>{i18n.t("queueSelect.inputLabel")}</InputLabel>
+		<div style={{ marginTop: 0 }}>
+			<FormControl fullWidth margin="none" variant="outlined" className={classes.formControl}>
+				<InputLabel id={labelId} shrink>{i18n.t("queueSelect.inputLabel")}</InputLabel>
 				<Select
+					labelId={labelId}
+					id={selectId}
+					inputProps={{ "aria-label": i18n.t("queueSelect.inputLabel") }}
+					label={i18n.t("queueSelect.inputLabel")}
 					multiple
 					value={selectedQueueIds}
 					onChange={handleChange}
+					notched
+					displayEmpty
 					MenuProps={{
 						anchorOrigin: {
 							vertical: "bottom",

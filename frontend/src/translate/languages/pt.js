@@ -730,6 +730,7 @@ const messages = {
         header: "Dados do contato",
         buttons: {
           edit: "Editar contato",
+          close: "Fechar painel",
         },
         extraInfo: "Outras informações",
       },

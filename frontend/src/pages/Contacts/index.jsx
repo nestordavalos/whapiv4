@@ -95,12 +95,12 @@ const reducer = (state, action) => {
 const useStyles = makeStyles((theme) => ({
   mainPaper: {
     flex: 1,
-    padding: theme.spacing(2),
-    margin: theme.spacing(1),
+    padding: theme.spacing(2.5),
+    margin: theme.spacing(1.5),
     overflowY: "auto",
-    borderRadius: 12,
+    borderRadius: 16,
     border: `1px solid ${theme.palette.divider}`,
-    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+    boxShadow: "0 12px 32px rgba(15, 23, 42, 0.08)",
     ...theme.scrollbarStyles,
     [theme.breakpoints.down('md')]: {
       padding: theme.spacing(1),
@@ -131,8 +131,8 @@ const useStyles = makeStyles((theme) => ({
         textTransform: "uppercase",
         letterSpacing: "0.5px",
         borderBottom: `2px solid ${theme.palette.divider}`,
-        padding: "12px 16px",
-        backgroundColor: theme.palette.background.default,
+        padding: "12px 14px",
+        backgroundColor: theme.palette.background.paper,
         [theme.breakpoints.down('sm')]: {
           padding: "8px 10px",
           fontSize: "0.7rem",
@@ -145,10 +145,13 @@ const useStyles = makeStyles((theme) => ({
         "&:hover": {
           backgroundColor: theme.palette.action.hover,
         },
+        "&:nth-of-type(even)": {
+          backgroundColor: theme.palette.action.selected,
+        },
       },
       "& .MuiTableCell-body": {
         fontSize: "0.875rem",
-        padding: "12px 16px",
+        padding: "12px 14px",
         borderBottom: `1px solid ${theme.palette.divider}`,
         [theme.breakpoints.down('sm')]: {
           padding: "8px 10px",
@@ -200,7 +203,7 @@ const useStyles = makeStyles((theme) => ({
   },
   searchField: {
     "& .MuiOutlinedInput-root": {
-      borderRadius: 10,
+      borderRadius: 12,
       backgroundColor: theme.palette.background.paper,
       "& fieldset": {
         borderColor: theme.palette.divider,
@@ -210,17 +213,17 @@ const useStyles = makeStyles((theme) => ({
       },
     },
     "& .MuiInputBase-input": {
-      padding: "10px 14px",
+      padding: "12px 14px",
       fontSize: "0.875rem",
     },
   },
   headerButton: {
-    borderRadius: 10,
-    padding: "8px 12px",
+    borderRadius: 12,
+    padding: "10px 12px",
     minWidth: 44,
     boxShadow: "none",
     "&:hover": {
-      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+      boxShadow: `0 10px 24px ${theme.palette.action.hover}`,
     },
     [theme.breakpoints.down('sm')]: {
       padding: "6px 10px",
@@ -278,7 +281,7 @@ const useStyles = makeStyles((theme) => ({
     width: "100%",
     maxWidth: 400,
     "& .MuiOutlinedInput-root": {
-      borderRadius: 10,
+      borderRadius: 12,
       backgroundColor: theme.palette.background.paper,
       "& fieldset": {
         borderColor: theme.palette.divider,
@@ -296,6 +299,17 @@ const useStyles = makeStyles((theme) => ({
     [theme.breakpoints.down('sm')]: {
       display: "none",
     },
+  },
+  srOnly: {
+    border: 0,
+    clip: "rect(0 0 0 0)",
+    height: 1,
+    margin: -1,
+    overflow: "hidden",
+    padding: 0,
+    position: "absolute",
+    width: 1,
+    whiteSpace: "nowrap",
   },
 }));
 
@@ -478,6 +492,7 @@ const Contacts = () => {
             <TextField
               placeholder={i18n.t("contacts.searchPlaceholder")}
               type="search"
+              aria-label={i18n.t("contacts.searchPlaceholder")}
               value={searchParam}
               onChange={handleSearch}
               variant="outlined"
@@ -501,6 +516,7 @@ const Contacts = () => {
                       variant="contained"
                       color="primary"
                       className={classes.headerButton}
+                      aria-label={i18n.t("contacts.buttons.import")}
                       onClick={(e) => setConfirmOpen(true)}
                     >
                       <ImportContacts style={{ fontSize: 20 }} />
@@ -514,6 +530,7 @@ const Contacts = () => {
                 variant="contained"
                 color="primary"
                 className={classes.headerButton}
+                aria-label={i18n.t("contacts.buttons.add")}
                 onClick={handleOpenContactModal}
               >
                 <AddCircleOutline style={{ fontSize: 20 }} />
@@ -540,6 +557,7 @@ const Contacts = () => {
                         variant="contained"
                         color="primary"
                         className={classes.headerButton}
+                        aria-label={i18n.t("contacts.buttons.export")}
                       >
                         <Archive style={{ fontSize: 20 }} />
                       </Button>
@@ -551,6 +569,7 @@ const Contacts = () => {
                       variant="contained"
                       color="primary"
                       className={classes.headerButton}
+                      aria-label={i18n.t("contacts.buttons.delete")}
                       onClick={(e) => {
                         setConfirmOpen(true);
                         setDeletingAllContact(contacts);
@@ -568,6 +587,7 @@ const Contacts = () => {
           <TextField
             placeholder={i18n.t("contacts.searchPlaceholder")}
             type="search"
+            aria-label={i18n.t("contacts.searchPlaceholder")}
             value={searchParam}
             onChange={handleSearch}
             variant="outlined"
@@ -591,7 +611,11 @@ const Contacts = () => {
         <Table size="small" className={classes.table}>
           <TableHead>
             <TableRow>
-              <TableCell padding="checkbox" />
+              <TableCell padding="checkbox" scope="col">
+                <span className={classes.srOnly}>
+                  {i18n.t("contacts.table.avatar", { defaultValue: "Avatar" })}
+                </span>
+              </TableCell>
               <TableCell>
                 {i18n.t("contacts.table.name")}
               </TableCell>
@@ -611,7 +635,11 @@ const Contacts = () => {
               {contacts.map((contact) => (
                 <TableRow key={contact.id}>
                   <TableCell style={{ paddingRight: 0, width: 50 }}>
-                    <Avatar src={contact.profilePicUrl} className={classes.avatar} />
+                    <Avatar
+                      src={contact.profilePicUrl}
+                      alt={contact.name || contact.number || "Contato"}
+                      className={classes.avatar}
+                    />
                   </TableCell>
                   <TableCell className={classes.mobileNameCell}>
                     <span className={classes.contactName}>{contact.name}</span>
@@ -626,6 +654,7 @@ const Contacts = () => {
                     <IconButton
                       size="small"
                       className={`${classes.actionButton} ${classes.whatsappButton}`}
+                      aria-label={`${i18n.t("contacts.table.whatsapp", { defaultValue: "WhatsApp" })} ${contact.name || contact.number}`}
                       onClick={() => {
                         setContactTicket(contact);
                         setNewTicketModalOpen(true);
@@ -636,6 +665,7 @@ const Contacts = () => {
                     <IconButton
                       size="small"
                       className={`${classes.actionButton} ${classes.editButton}`}
+                      aria-label={`${i18n.t("contacts.buttons.edit", { defaultValue: "Editar" })} ${contact.name || contact.number}`}
                       onClick={() => hadleEditContact(contact.id)}
                     >
                       <Edit style={{ fontSize: 18 }} />
@@ -646,7 +676,8 @@ const Contacts = () => {
                       yes={() => (
                         <IconButton
                           size="small"
-                          className={`${classes.actionButton} ${classes.deleteButton}`}
+                         className={`${classes.actionButton} ${classes.deleteButton}`}
+                          aria-label={`${i18n.t("contacts.buttons.delete", { defaultValue: "Excluir" })} ${contact.name || contact.number}`}
                           onClick={(e) => {
                             setConfirmOpen(true);
                             setDeletingContact(contact);

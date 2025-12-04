@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useMemo } from "react";
 
 import * as Yup from "yup";
 import {
@@ -23,7 +23,6 @@ import {
 import makeStyles from '@mui/styles/makeStyles';
 
 import { Colorize } from "@mui/icons-material";
-import { ColorBox } from 'material-ui-color';
 import { green } from "@mui/material/colors";
 
 import { i18n } from "../../translate/i18n";
@@ -42,6 +41,9 @@ const useStyles = makeStyles(theme => ({
             borderRadius: 16,
             boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
         },
+    },
+    dialogPaper: {
+        maxWidth: 520,
     },
     dialogTitle: {
         padding: "20px 24px 16px",
@@ -62,7 +64,7 @@ const useStyles = makeStyles(theme => ({
     },
     textField: {
         "& .MuiOutlinedInput-root": {
-            borderRadius: 10,
+            borderRadius: 12,
             transition: "all 0.2s ease",
             "&:hover": {
                 "& .MuiOutlinedInput-notchedOutline": {
@@ -102,10 +104,44 @@ const useStyles = makeStyles(theme => ({
     colorPickerContainer: {
         marginTop: 16,
         padding: 16,
-        borderRadius: 12,
-        backgroundColor: "#f8f9fa",
+        borderRadius: 14,
+        border: `1px solid ${theme.palette.divider}`,
+        backgroundColor: theme.palette.mode === "dark"
+            ? "rgba(255,255,255,0.04)"
+            : theme.palette.action.hover,
         display: "flex",
         justifyContent: "center",
+    },
+    colorPickerInner: {
+        width: "100%",
+        maxWidth: 320,
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        margin: "0 auto",
+    },
+    swatchesGrid: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(44px, 1fr))",
+        gap: 8,
+        width: "100%",
+    },
+    swatchButton: {
+        width: "100%",
+        height: 36,
+        borderRadius: 10,
+        border: `1px solid ${theme.palette.divider}`,
+        cursor: "pointer",
+        transition: "transform 0.15s ease, box-shadow 0.15s ease",
+        "&:hover": {
+            transform: "translateY(-1px)",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.12)",
+        },
+    },
+    swatchActive: {
+        outline: `2px solid ${theme.palette.primary.main}`,
+        outlineOffset: 2,
+        boxShadow: `0 4px 12px ${theme.palette.primary.main}33`,
     },
     dialogActions: {
         padding: "16px 24px",
@@ -155,6 +191,23 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
     };
 
     const [tag, setTag] = useState(initialState);
+    const colorOptions = useMemo(
+        () => [
+            "#0071c1",
+            "#2b9348",
+            "#d72638",
+            "#efb700",
+            "#8b5cf6",
+            "#ff7f50",
+            "#0ea5e9",
+            "#6366f1",
+            "#0f172a",
+            "#f59e0b",
+            "#10b981",
+            "#ec4899",
+        ],
+        []
+    );
 
     useEffect(() => {
         try {
@@ -200,10 +253,11 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
             <Dialog
                 open={open}
                 onClose={handleClose}
-                maxWidth="xs"
+                maxWidth="sm"
                 fullWidth
                 scroll="paper"
                 className={classes.dialog}
+                PaperProps={{ className: classes.dialogPaper }}
             >
                 <DialogTitle id="form-dialog-title" className={classes.dialogTitle}>
                     {(tagId ? `${i18n.t("tagModal.title.edit")}` : `${i18n.t("tagModal.title.add")}`)}
@@ -219,7 +273,7 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                         }, 400);
                     }}
                 >
-                    {({ touched, errors, isSubmitting, values }) => (
+                    {({ touched, errors, isSubmitting, values, setFieldValue }) => (
                         <Form>
                             <DialogContent dividers className={classes.dialogContent}>
                                 <div className={classes.multFieldLine}>
@@ -251,7 +305,7 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
                                             startAdornment: (
                                                 <InputAdornment position="start">
                                                     <div
-                                                        style={{ backgroundColor: values.color }}
+                                                        style={{ backgroundColor: values.color || tag.color }}
                                                         className={classes.colorAdorment}
                                                     ></div>
                                                 </InputAdornment>
@@ -274,14 +328,44 @@ const TagModal = ({ open, onClose, tagId, reload }) => {
 
                                 {colorPickerModalOpen && (
                                     <div className={classes.colorPickerContainer}>
-                                        <ColorBox
-                                            disableAlpha={true}
-                                            hslGradient={false}
-                                            value={tag.color}
-                                            onChange={val => {
-                                                setTag(prev => ({ ...prev, color: `#${val.hex}` }));
-                                            }}
-                                        />
+                                        <div className={classes.colorPickerInner}>
+                                            <div className={classes.swatchesGrid}>
+                                                {colorOptions.map(color => {
+                                                    const active = (values.color || tag.color || "").toUpperCase() === color.toUpperCase();
+                                                    return (
+                                                        <button
+                                                            key={color}
+                                                            type="button"
+                                                            className={`${classes.swatchButton} ${active ? classes.swatchActive : ""}`}
+                                                            style={{ backgroundColor: color }}
+                                                            onClick={() => {
+                                                                setTag(prev => ({ ...prev, color }));
+                                                                setFieldValue("color", color);
+                                                            }}
+                                                            aria-label={color}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+                                            <input
+                                                type="color"
+                                                value={(values.color || tag.color || "#0071c1").toUpperCase()}
+                                                onChange={e => {
+                                                    const hexValue = e.target.value;
+                                                    setTag(prev => ({ ...prev, color: hexValue }));
+                                                    setFieldValue("color", hexValue);
+                                                }}
+                                                style={{
+                                                    width: "100%",
+                                                    height: 48,
+                                                    border: `1px solid ${"#00000022"}`,
+                                                    borderRadius: 12,
+                                                    cursor: "pointer",
+                                                    background: "none",
+                                                    padding: 8,
+                                                }}
+                                            />
+                                        </div>
                                     </div>
                                 )}
                             </DialogContent>

@@ -428,10 +428,8 @@ const TicketsList = (props) => {
 		}, [index, setSize, ticket]);
 
 		return (
-			<div style={style}>
-				<div ref={rowRef}>
-					<TicketListItem handleChangeTab={onChangeTab} ticket={ticket} key={ticket.id} />
-				</div>
+			<div style={style} role="listitem" ref={rowRef}>
+				<TicketListItem handleChangeTab={onChangeTab} ticket={ticket} key={ticket.id} />
 			</div>
 		);
 	};
@@ -439,9 +437,8 @@ const TicketsList = (props) => {
 	const InnerElement = React.forwardRef(function TicketsListInner(innerProps, innerRef) {
 		const { style, ...rest } = innerProps;
 		return (
-			<List
+			<div
 				ref={innerRef}
-				disablePadding
 				style={style}
 				{...rest}
 			/>
@@ -456,6 +453,7 @@ const TicketsList = (props) => {
 				{...rest}
 				className={classes.ticketsList}
 				style={{ ...style }}
+				role="list"
 			/>
 		);
 	});

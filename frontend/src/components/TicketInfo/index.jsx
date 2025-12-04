@@ -132,6 +132,8 @@ const TicketInfo = ({ contact, ticket, onClick }) => {
 								icon={<PersonOutlineIcon />}
 								label={ticket.user.name}
 								size="small"
+								role="text"
+								aria-label={`Asignado a ${ticket.user.name}`}
 								className={`${classes.chip} ${classes.userChip}`}
 							/>
 						</Tooltip>
@@ -142,6 +144,8 @@ const TicketInfo = ({ contact, ticket, onClick }) => {
 								icon={<BusinessCenterIcon />}
 								label={ticket.queue.name}
 								size="small"
+								role="text"
+								aria-label={`Sector ${ticket.queue.name}`}
 								className={`${classes.chip} ${classes.queueChip}`}
 							/>
 						</Tooltip>
@@ -152,6 +156,8 @@ const TicketInfo = ({ contact, ticket, onClick }) => {
 								icon={<WhatsAppIcon />}
 								label={ticket.whatsapp.name}
 								size="small"
+								role="text"
+								aria-label={`Whatsapp ${ticket.whatsapp.name}`}
 								className={`${classes.chip} ${classes.connectionChip}`}
 							/>
 						</Tooltip>

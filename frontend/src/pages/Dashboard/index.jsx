@@ -359,36 +359,48 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   filterGrid: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: theme.spacing(1.5),
-    alignItems: "flex-start",
-  },
-  filterActions: {
-    display: "flex",
-    justifyContent: "flex-end",
-    marginTop: theme.spacing(1.5),
     width: "100%",
   },
   filterControl: {
-    flex: "1 1 240px",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "space-between",
-    minHeight: 86,
-    height: "100%",
+    justifyContent: "flex-start",
+    width: "100%",
+    margin: 0,
+    padding: 0,
     "& .MuiOutlinedInput-root": {
-      borderRadius: 12,
-      minHeight: 54,
+      borderRadius: 8,
+      height: 40,
+      fontSize: '0.9rem',
+    },
+    "& .MuiInputLabel-root": {
+      fontSize: '0.9rem',
+      "&.MuiInputLabel-shrink": {
+        fontSize: '0.85rem',
+      },
     },
     "& .MuiFormHelperText-root": {
-      marginTop: theme.spacing(0.5),
+      display: 'none',
     },
+    "& .MuiInputBase-root": {
+      height: 40,
+    },
+  },
+  filterButton: {
+    minHeight: 40,
+    height: 40,
+    padding: theme.spacing(0.75, 2),
+    borderRadius: 8,
+    fontSize: '0.875rem',
+    fontWeight: 600,
+    textTransform: 'none',
   },
   queueControl: {
     paddingTop: 0,
-    alignSelf: "flex-start",
-    marginTop: theme.spacing(-1.7),
+    marginTop: 0,
+    "& > div": {
+      marginTop: 0,
+    },
   },
   tabsAppBar: {
     borderRadius: 10,
@@ -667,100 +679,123 @@ const Dashboard = () => {
       .format("HH[h] mm[m]");
   }
 
-  function renderFilters() {
-    if (filterType === 1) {
-      return (
-        <React.Fragment>
-          <TextField
-            label="Fecha Inicial"
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className={classes.filterControl}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-          <TextField
-            label="Fecha Final"
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className={classes.filterControl}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-        </React.Fragment>
-      );
-    } else {
-      return (
-        <FormControl className={classes.filterControl}>
-          <InputLabel id="period-selector-label">Período</InputLabel>
-          <Select
-            labelId="period-selector-label"
-            id="period-selector"
-            value={period}
-            onChange={(e) => handleChangePeriod(e.target.value)}
-          >
-            <MenuItem value={0}>Ninguna seleccionada</MenuItem>
-            <MenuItem value={3}>Últimos 3 dias</MenuItem>
-            <MenuItem value={7}>Últimos 7 dias</MenuItem>
-            <MenuItem value={15}>Últimos 15 dias</MenuItem>
-            <MenuItem value={30}>Últimos 30 dias</MenuItem>
-            <MenuItem value={60}>Últimos 60 dias</MenuItem>
-            <MenuItem value={90}>Últimos 90 dias</MenuItem>
-          </Select>
-          <FormHelperText>Seleccione el período deseado</FormHelperText>
-        </FormControl>
-      );
-    }
-  }
-
   return (
+
     <div className={classes.page}>
       <Container maxWidth="lg" className={classes.container}>
         <Paper className={classes.filterContainer} elevation={0}>
-          <div className={classes.filterGrid}>
-            <FormControl className={classes.filterControl}>
-              <InputLabel id="period-selector-label">Tipo de Filtro</InputLabel>
-              <Select
-                labelId="period-selector-label"
-                value={filterType}
-                onChange={(e) => handleChangeFilterType(e.target.value)}
+          <Grid
+            container
+            spacing={1.5}
+            alignItems="center"
+            className={classes.filterGrid}
+          >
+            {/* Tipo de Filtro */}
+            <Grid item xs={12} sm={6} md={2} lg={2}>
+              <FormControl className={classes.filterControl} fullWidth size="small">
+                <InputLabel id="period-selector-label" shrink>Tipo de Filtro</InputLabel>
+                <Select
+                  labelId="period-selector-label"
+                  value={filterType}
+                  onChange={(e) => handleChangeFilterType(e.target.value)}
+                  displayEmpty
+                  notched
+                  label="Tipo de Filtro"
+                >
+                  <MenuItem value={1}>Filtro por Fecha</MenuItem>
+                  <MenuItem value={2}>Filtro por Periodo</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* Fecha o Periodo */}
+            {filterType === 1 ? (
+              <>
+                <Grid item xs={12} sm={6} md={2} lg={2}>
+                  <TextField
+                    label="Fecha Inicial"
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className={classes.filterControl}
+                    fullWidth
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={2} lg={2}>
+                  <TextField
+                    label="Fecha Final"
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className={classes.filterControl}
+                    fullWidth
+                    size="small"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+              </>
+            ) : (
+              <Grid item xs={12} sm={6} md={2} lg={2}>
+                <FormControl className={classes.filterControl} fullWidth size="small">
+                  <InputLabel id="periodo-label" shrink>Periodo</InputLabel>
+                  <Select
+                    labelId="periodo-label"
+                    id="period-selector"
+                    value={period}
+                    onChange={(e) => handleChangePeriod(e.target.value)}
+                    displayEmpty
+                    notched
+                    label="Periodo"
+                  >
+                    <MenuItem value={0}>Ninguna seleccionada</MenuItem>
+                    <MenuItem value={3}>Últimos 3 días</MenuItem>
+                    <MenuItem value={7}>Últimos 7 días</MenuItem>
+                    <MenuItem value={15}>Últimos 15 días</MenuItem>
+                    <MenuItem value={30}>Últimos 30 días</MenuItem>
+                    <MenuItem value={60}>Últimos 60 días</MenuItem>
+                    <MenuItem value={90}>Últimos 90 días</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
+
+            {/* Sectores (Queues) */}
+            <Grid item xs={12} sm={6} md={2} lg={2}>
+              <FormControl className={`${classes.filterControl} ${classes.queueControl}`} fullWidth size="small">
+                <QueueSelect 
+                  selectedQueueIds={selectedQueues} 
+                  onChange={values => setSelectedQueues(values)} 
+                />
+              </FormControl>
+            </Grid>
+
+            {/* Usuarios */}
+            <Grid item xs={12} sm={6} md={3} lg={3}>
+              <FormControl className={classes.filterControl} fullWidth size="small">
+                <UsersFilter onFiltered={handleSelectedUsers} />
+              </FormControl>
+            </Grid>
+
+            {/* Botón Filtrar */}
+            <Grid item xs={12} sm={6} md={1} lg={1}>
+              <ButtonWithSpinner
+                className={classes.filterButton}
+                loading={loading}
+                onClick={() => fetchData()}
+                variant="contained"
+                color="primary"
+                size="small"
+                fullWidth
               >
-                <MenuItem value={1}>Filtro por Fecha</MenuItem>
-                <MenuItem value={2}>Filtro por Período</MenuItem>
-              </Select>
-              <FormHelperText>Seleccione el período deseado</FormHelperText>
-            </FormControl>
-
-            {renderFilters()}
-
-            <FormControl className={`${classes.filterControl} ${classes.queueControl}`}>
-              <QueueSelect 
-                selectedQueueIds={selectedQueues} 
-                onChange={values => setSelectedQueues(values)} 
-              />
-              <FormHelperText>Seleccione el período deseado</FormHelperText>
-            </FormControl>
-
-            <FormControl className={classes.filterControl}>
-              <UsersFilter onFiltered={handleSelectedUsers} />
-              <FormHelperText>Seleccione el período deseado</FormHelperText>
-            </FormControl>
-          </div>
-
-          <div className={classes.filterActions}>
-            <ButtonWithSpinner
-              loading={loading}
-              onClick={() => fetchData()}
-              variant="contained"
-              color="primary"
-            >
-              Filtrar
-            </ButtonWithSpinner>
-          </div>
+                Filtrar
+              </ButtonWithSpinner>
+            </Grid>
+          </Grid>
+          <FormHelperText style={{ marginTop: 8, marginLeft: 4, color: '#888', fontSize: '0.75rem' }}>
+            Seleccione el periodo y los filtros deseados para visualizar los datos.
+          </FormHelperText>
         </Paper>
 
         <div className={classes.summaryRow}>
@@ -967,7 +1002,7 @@ const Dashboard = () => {
 
               <Grid item xs={12}>
                 <Paper className={classes.tableCard} elevation={0}>
-                  <Typography variant="h6" style={{ marginBottom: 12, fontWeight: 600 }}>
+                  <Typography variant="h6" component="h2" style={{ marginBottom: 12, fontWeight: 600 }}>
                     Tickets por Agente
                   </Typography>
                   <Table size="small">

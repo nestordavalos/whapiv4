@@ -1,5 +1,5 @@
 /* eslint-disable no-unexpected-multiline, no-empty */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import openSocket from "../../services/socket-io";
 import { useHistory } from "react-router-dom";
 
@@ -221,6 +221,8 @@ const IOSSwitch = withStyles((theme) => ({
 const Settings = () => {
 	const classes = useStyles();
 	const history = useHistory();
+	const isMounted = useRef(true);
+	const migrationPollRef = useRef(null);
 
 	const [settings, setSettings] = useState([]);
 	
@@ -242,6 +244,7 @@ const Settings = () => {
 				api.get("/storage/status"),
 				api.get("/storage/sync/status")
 			]);
+			if (!isMounted.current) return;
 			setStorageStatus(statusRes.data);
 			setStorageSyncStats(syncRes.data);
 			
@@ -251,6 +254,7 @@ const Settings = () => {
 					api.get("/storage/local/files"),
 					api.get("/storage/migration/status")
 				]);
+				if (!isMounted.current) return;
 				setLocalFilesInfo({
 					count: localRes.data.count || 0,
 					needsMigration: localRes.data.needsMigration || 0,
@@ -262,10 +266,13 @@ const Settings = () => {
 			}
 		} catch (err) {
 			// Storage endpoints might not exist if not configured
+			if (!isMounted.current) return;
 			setStorageStatus(null);
 			setStorageSyncStats(null);
 		} finally {
-			setLoadingStorage(false);
+			if (isMounted.current) {
+				setLoadingStorage(false);
+			}
 		}
 	}, []);
 
@@ -274,6 +281,7 @@ const Settings = () => {
 		try {
 			setScanning(true);
 			const { data } = await api.get("/storage/local/files");
+			if (!isMounted.current) return;
 			setLocalFilesInfo({
 				count: data.count || 0,
 				needsMigration: data.needsMigration || 0,
@@ -283,7 +291,7 @@ const Settings = () => {
 		} catch (err) {
 			toast.error(i18n.t("settings.settings.storage.scanError"));
 		} finally {
-			setScanning(false);
+			if (isMounted.current) setScanning(false);
 		}
 	};
 
@@ -293,11 +301,13 @@ const Settings = () => {
 			setSyncing(true);
 			await api.post("/storage/sync/trigger");
 			toast.success(i18n.t("settings.settings.storage.syncSuccess"));
-			fetchStorageStatus();
+			if (isMounted.current) {
+				fetchStorageStatus();
+			}
 		} catch (err) {
 			toast.error(i18n.t("settings.settings.storage.syncError"));
 		} finally {
-			setSyncing(false);
+			if (isMounted.current) setSyncing(false);
 		}
 	};
 
@@ -307,29 +317,38 @@ const Settings = () => {
 			setMigrating(true);
 			const { data: startData } = await api.post("/storage/migration/to-s3", { dryRun: false });
 			toast.info(i18n.t("settings.settings.storage.migrationStarted"));
-			setMigrationStatus(startData);
+			if (isMounted.current) setMigrationStatus(startData);
 			
 			// Poll for status
+			if (migrationPollRef.current) {
+				clearInterval(migrationPollRef.current);
+			}
 			const pollInterval = setInterval(async () => {
 				try {
 					const { data } = await api.get("/storage/migration/status");
+					if (!isMounted.current) return;
 					setMigrationStatus(data);
 					
 					if (data.status === "completed" || data.status === "failed" || data.status === "cancelled") {
 						clearInterval(pollInterval);
+						migrationPollRef.current = null;
 						setMigrating(false);
 						
 						// Refresh local files count
 						try {
 							const localRes = await api.get("/storage/local/files");
-							setLocalFilesInfo({
-								count: localRes.data.count || 0,
-								needsMigration: localRes.data.needsMigration || 0,
-								alreadyInS3: localRes.data.alreadyInS3 || 0
-							});
+							if (isMounted.current) {
+								setLocalFilesInfo({
+									count: localRes.data.count || 0,
+									needsMigration: localRes.data.needsMigration || 0,
+									alreadyInS3: localRes.data.alreadyInS3 || 0
+								});
+							}
 						} catch (e) {}
 						
-						fetchStorageStatus();
+						if (isMounted.current) {
+							fetchStorageStatus();
+						}
 						
 						if (data.status === "completed") {
 							toast.success(
@@ -341,12 +360,14 @@ const Settings = () => {
 					}
 				} catch (e) {
 					clearInterval(pollInterval);
-					setMigrating(false);
+					migrationPollRef.current = null;
+					if (isMounted.current) setMigrating(false);
 				}
 			}, 1500);
+			migrationPollRef.current = pollInterval;
 		} catch (err) {
 			toast.error(i18n.t("settings.settings.storage.migrationError"));
-			setMigrating(false);
+			if (isMounted.current) setMigrating(false);
 		}
 	};
 
@@ -354,13 +375,20 @@ const Settings = () => {
 		const fetchSession = async () => {
 			try {
 				const { data } = await api.get("/settings");
-				setSettings(data);
+				if (isMounted.current) setSettings(data);
 			} catch (err) {
 				toastError(err);
 			}
 		};
 		fetchSession();
 		fetchStorageStatus();
+		return () => {
+			isMounted.current = false;
+			if (migrationPollRef.current) {
+				clearInterval(migrationPollRef.current);
+				migrationPollRef.current = null;
+			}
+		};
 	}, [fetchStorageStatus]);
 
        useEffect(() => {

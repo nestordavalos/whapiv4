@@ -234,6 +234,9 @@ const useStyles = makeStyles((theme) => ({
     padding: "3px 80px 6px 6px",
     fontSize: "0.9rem",
     lineHeight: 1.4,
+    position: "relative",
+    zIndex: 1,
+    color: theme.palette.text.primary,
   },
 
   textContentItemEdited: {
@@ -241,6 +244,9 @@ const useStyles = makeStyles((theme) => ({
     padding: "3px 115px 6px 6px",
     fontSize: "0.9rem",
     lineHeight: 1.4,
+    position: "relative",
+    zIndex: 1,
+    color: theme.palette.text.primary,
   },
 
   textContentItemDeleted: {
@@ -273,10 +279,36 @@ const useStyles = makeStyles((theme) => ({
     position: "absolute",
     bottom: 2,
     right: 8,
-    color: theme.palette.mode === "dark" ? "#a0aec0" : "#667781",
     display: "flex",
     alignItems: "center",
     gap: 2,
+    padding: "0px 4px",
+    borderRadius: 4,
+    color: theme.palette.text.primary,
+    backgroundColor: "transparent",
+    border: "none",
+    zIndex: 2,
+  },
+  timestampLeft: {
+    backgroundColor: theme.palette.mode === "dark"
+      ? "rgba(17, 24, 39, 0.4)"
+      : "#ffffff",
+    color: theme.palette.mode === "dark" ? "#f8fafc" : "#0f172a",
+    boxShadow: "0 0 1px rgba(0,0,0,0.15)",
+  },
+  timestampRight: {
+    backgroundColor: theme.palette.mode === "dark"
+      ? "rgba(11, 79, 48, 0.5)"
+      : theme.palette.mode === "light" ? "#dcf8c6" : "#0b4f30",
+    color: theme.palette.mode === "dark" ? "#f0fff4" : "#0f172a",
+    boxShadow: "0 0 1px rgba(0,0,0,0.12)",
+  },
+  timestampOnMedia: {
+    backgroundColor: theme.palette.mode === "dark"
+      ? "rgba(15, 23, 42, 0.7)"
+      : "rgba(255, 255, 255, 0.85)",
+    color: theme.palette.mode === "dark" ? "#e5e7eb" : "#0f172a",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.18)",
   },
 
   editedIndicator: {
@@ -1251,7 +1283,13 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                   })}>
                     {message.quotedMsg && renderQuotedMessage(message)}
                     <MarkdownWrapper>{message.body}</MarkdownWrapper>
-                    <span className={classes.timestamp}>
+                    <span
+                      className={clsx(
+                        classes.timestamp,
+                        classes.timestampLeft,
+                        (message.mediaUrl || message.mediaType === "image" || message.mediaType === "video") && classes.timestampOnMedia
+                      )}
+                    >
                       {message.isEdited && (
                         <span className={classes.editedIndicator}>
                           {i18n.t("messagesList.edited")}
@@ -1319,7 +1357,13 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                     )}
                     {message.quotedMsg && renderQuotedMessage(message)}
                     <MarkdownWrapper>{message.body}</MarkdownWrapper>
-                    <span className={classes.timestamp}>
+                    <span
+                      className={clsx(
+                        classes.timestamp,
+                        classes.timestampRight,
+                        (message.mediaUrl || message.mediaType === "image" || message.mediaType === "video") && classes.timestampOnMedia
+                      )}
+                    >
                       {message.isEdited && (
                         <span className={classes.editedIndicator}>
                           {i18n.t("messagesList.edited")}
@@ -1364,6 +1408,9 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
       <div
         id="messagesList"
         className={classes.messagesList}
+        role="region"
+        tabIndex={0} // eslint-disable-line jsx-a11y/no-noninteractive-tabindex
+        aria-label={i18n.t("messagesList.messagesRegion", { defaultValue: "Lista de mensajes" })}
         onScroll={handleScroll}
       >
         {messagesList.length > 0 ? renderMessages() : []}

@@ -20,6 +20,7 @@ const ListContactsService = async ({
   tags
 }: Request): Promise<Response> => {
   const sanitizedSearch = searchParam.toLowerCase().trim();
+  const numericSearch = sanitizedSearch.replace(/\D/g, "");
 
   let whereCondition: Filterable["where"] = {
     [Op.or]: [
@@ -31,6 +32,10 @@ const ListContactsService = async ({
         )
       },
       { number: { [Op.like]: `%${sanitizedSearch}%` } },
+      // Also match pure digits regardless of formatting
+      ...(numericSearch
+        ? [{ number: { [Op.like]: `%${numericSearch}%` } }]
+        : []),
       {
         email: Sequelize.where(
           Sequelize.fn("LOWER", Sequelize.col("email")),

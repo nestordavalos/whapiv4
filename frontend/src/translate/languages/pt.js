@@ -419,6 +419,8 @@ const messages = {
         title: "Criar chamado",
         fieldLabel: "Digite para pesquisar o contato",
         add: "Adicionar",
+        connectionLabel: "Selecionar conexão",
+        connectionPlaceholder: "Escolha uma conexão",
         buttons: {
           ok: "Salvar",
           cancel: "Cancelar",

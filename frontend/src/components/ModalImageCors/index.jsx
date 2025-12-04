@@ -27,26 +27,49 @@ const ModalImageCors = ({ imageUrl }) => {
 
 	useEffect(() => {
 		if (!imageUrl) return;
+		let isMounted = true;
+		const source = axios.CancelToken.source();
+		let createdUrl = "";
 		const fetchImage = async () => {
 			try {
 				const { data, headers } = await axios.get(imageUrl, {
 					responseType: "blob",
+					cancelToken: source.token,
 				});
-				const url = window.URL.createObjectURL(
+				createdUrl = window.URL.createObjectURL(
 					new Blob([data], { type: headers["content-type"] })
 				);
-				setBlobUrl(url);
-				setFetching(false);
-				setImageError(false);
-			} catch (err) {
-				// Si es 404, marcar como error y no mostrar nada
-				if (err.response && err.response.status === 404) {
-					setImageError(true);
+				if (isMounted) {
+					setBlobUrl(createdUrl);
+					setFetching(false);
+					setImageError(false);
+				} else {
+					window.URL.revokeObjectURL(createdUrl);
 				}
-				setFetching(false);
+			} catch (err) {
+				if (axios.isCancel(err)) return;
+				if (isMounted) {
+					// Si es 404, marcar como error y no mostrar nada
+					if (err.response && err.response.status === 404) {
+						setImageError(true);
+					}
+					setFetching(false);
+				}
 			}
 		};
 		fetchImage();
+
+		return () => {
+			isMounted = false;
+			source.cancel("modal-image-unmounted");
+			if (createdUrl) {
+				window.URL.revokeObjectURL(createdUrl);
+			}
+			if (blobUrl) {
+				window.URL.revokeObjectURL(blobUrl);
+			}
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [imageUrl]);
 
 	// No renderizar nada si la imagen no existe

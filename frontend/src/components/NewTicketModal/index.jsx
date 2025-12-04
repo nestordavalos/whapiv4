@@ -19,6 +19,8 @@ import ButtonWithSpinner from "../ButtonWithSpinner";
 import ContactModal from "../ContactModal";
 import toastError from "../../errors/toastError";
 import { AuthContext } from "../../context/Auth/AuthContext";
+import { WhatsAppsContext } from "../../context/WhatsApp/WhatsAppsContext";
+import { toast } from "react-toastify";
 
 import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 
@@ -113,11 +115,26 @@ const NewTicketModal = ({ modalOpen, onClose }) => {
 	const [newContact, setNewContact] = useState({});
 	const [contactModalOpen, setContactModalOpen] = useState(false);
 	const { user } = useContext(AuthContext);
+	const { whatsApps } = useContext(WhatsAppsContext);
+	const [selectedWhatsapp, setSelectedWhatsapp] = useState("");
 	const [selectedQueue, setSelectedQueue] = useState('');
 	const classes = useStyles();
 
+	const getDefaultWhatsappId = () => {
+		if (user?.whatsapp?.id) {
+			return user.whatsapp.id;
+		}
+		const defaultConnection = whatsApps?.find((connection) => connection?.isDefault);
+		return defaultConnection?.id || "";
+	};
+
 	useEffect(() => {
-		if (!modalOpen || searchParam.length < 3) {
+		if (!modalOpen) return;
+		setSelectedWhatsapp(getDefaultWhatsappId());
+	}, [modalOpen, user, whatsApps]);
+
+	useEffect(() => {
+		if (!modalOpen) {
 			setLoading(false);
 			return;
 		}
@@ -125,38 +142,54 @@ const NewTicketModal = ({ modalOpen, onClose }) => {
 		const delayDebounceFn = setTimeout(() => {
 			const fetchContacts = async () => {
 				try {
+					const term = searchParam.trim();
+					const numericTerm = term.replace(/\D/g, "");
+					const query = numericTerm.length >= 3 ? numericTerm : term;
 					const { data } = await api.get("contacts", {
-						params: { searchParam },
+						params: { searchParam: query },
 					});
 					setOptions(data.contacts);
-					setLoading(false);
 				} catch (err) {
-					setLoading(false);
 					toastError(err);
+				} finally {
+					setLoading(false);
 				}
 			};
 
 			fetchContacts();
-		}, 500);
-		return () => clearTimeout(delayDebounceFn);
+		}, 400);
+		return () => {
+			clearTimeout(delayDebounceFn);
+			setLoading(false);
+		};
 	}, [searchParam, modalOpen]);
 
 	const handleClose = () => {
 		onClose();
 		setSearchParam("");
 		setSelectedContact(null);
+		setSelectedWhatsapp(getDefaultWhatsappId());
 	};
 
 	const handleSaveTicket = async contactId => {
 		if (!contactId) return;
+		const connectionActive = isConnectionActive(selectedWhatsapp);
+		if (!connectionActive) {
+			toast.error(i18n.t("notifications.connectionOffline") || "La conexión no está conectada.");
+			return;
+		}
 		setLoading(true);
 		try {
-			const { data: ticket } = await api.post("/tickets", {
+			const payload = {
 				contactId: contactId,
 				userId: user.id,
 				status: "open",
 				queueId: selectedQueue
-			});
+			};
+			if (selectedWhatsapp) {
+				payload.whatsappId = selectedWhatsapp;
+			}
+			const { data: ticket } = await api.post("/tickets", payload);
 			history.push(`/tickets/${ticket.id}`);
 		} catch (err) {
 			toastError(err);
@@ -185,29 +218,88 @@ const NewTicketModal = ({ modalOpen, onClose }) => {
 	const createAddContactOption = (filterOptions, params) => {
 		const filtered = filter(filterOptions, params);
 
-		if (params.inputValue !== "" && !loading && searchParam.length >= 3) {
-			filtered.push({
-				name: `${params.inputValue}`,
-			});
+		if (params.inputValue !== "" && !loading) {
+			const label = params.inputValue || searchParam;
+			const alreadyExists = filtered.some(opt => opt?.name === label || opt?.number === label);
+			if (!alreadyExists) {
+				filtered.push({ name: label });
+			}
 		}
 
 		return filtered;
 	};
 
-	const renderOption = option => {
-		if (option.number) {
-			return `${option.name} - ${option.number}`;
-		} else {
-			return `${i18n.t("newTicketModal.add")} ${option.name}`;
-		}
+	const formatOptionText = option => {
+		if (typeof option === "string") return option;
+		const name = option?.name || "";
+		const number = option?.number || "";
+		if (name && number) return `${name} - ${number}`;
+		return name || number || searchParam;
+	};
+
+	const isExistingContact = option => typeof option === "object" && !!option?.number;
+
+	const renderOption = (props, option) => {
+		const label = isExistingContact(option)
+			? formatOptionText(option)
+			: `${i18n.t("newTicketModal.add")} ${formatOptionText(option)}`;
+		return (
+			<li {...props} key={option?.id || option?.number || label}>
+				{label}
+			</li>
+		);
 	};
 
 	const renderOptionLabel = option => {
-		if (option.number) {
-			return `${option.name} - ${option.number}`;
-		} else {
-			return `${option.name}`;
+		if (isExistingContact(option)) {
+			return formatOptionText(option);
 		}
+		return option?.name || option?.number || searchParam;
+	};
+
+	const formatConnectionLabel = connection => {
+		if (!connection) return "";
+		const status = connection.status ? ` - ${connection.status}` : "";
+		return `${connection.name}${status}`;
+	};
+
+	const getStatusColor = (status) => {
+		const map = {
+			CONNECTED: "#2e7d32",
+			OPENING: "#ed6c02",
+			PAIRING: "#0288d1",
+			DISCONNECTED: "#d32f2f",
+			QR_CODE: "#0288d1",
+			TIMEOUT: "#ed6c02",
+		};
+		return map[status] || "#757575";
+	};
+
+	const renderConnection = (connection) => {
+		if (!connection) return null;
+		const status = connection.status || "UNKNOWN";
+		const color = getStatusColor(status);
+		return (
+			<span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+				<span
+					style={{
+						width: 10,
+						height: 10,
+						borderRadius: "50%",
+						backgroundColor: color,
+						display: "inline-block",
+						flexShrink: 0,
+					}}
+				/>
+				<span>{`${connection.name} - ${status}`}</span>
+			</span>
+		);
+	};
+
+	const isConnectionActive = (connectionId) => {
+		if (!connectionId) return false;
+		const connection = whatsApps?.find(c => c.id === connectionId);
+		return connection?.status === "CONNECTED";
 	};
 
 	return (
@@ -233,6 +325,9 @@ const NewTicketModal = ({ modalOpen, onClose }) => {
 						clearOnEscape
 						getOptionLabel={renderOptionLabel}
 						renderOption={renderOption}
+						isOptionEqualToValue={(option, value) =>
+							option?.id === value?.id || option?.number === value?.number
+						}
 						filterOptions={createAddContactOption}
 						onChange={(e, newValue) => handleSelectOption(e, newValue)}
 						className={classes.input}
@@ -266,9 +361,24 @@ const NewTicketModal = ({ modalOpen, onClose }) => {
 					/>
 
 					<FormControl variant="outlined" className={`${classes.maxWidth} ${classes.input}`}>
+						<InputLabel>{i18n.t("newTicketModal.connectionLabel")}</InputLabel>
+						<Select
+							value={selectedWhatsapp}
+							onChange={(e) => setSelectedWhatsapp(e.target.value)}
+							label={i18n.t("newTicketModal.connectionLabel")}
+						>
+							<MenuItem value={''}>&nbsp;</MenuItem>
+							{whatsApps?.map((connection) => (
+								<MenuItem key={connection.id} value={connection.id}>
+									{renderConnection(connection)}
+								</MenuItem>
+							))}
+						</Select>
+					</FormControl>
+
+					<FormControl variant="outlined" className={`${classes.maxWidth} ${classes.input}`}>
 						<InputLabel>{i18n.t("ticketsList.acceptModal.queue")}</InputLabel>
 						<Select
-							autoHighlight
 							required
 							value={selectedQueue}
 							onChange={(e) => setSelectedQueue(e.target.value)}
@@ -294,7 +404,7 @@ const NewTicketModal = ({ modalOpen, onClose }) => {
 					<ButtonWithSpinner
 						variant="contained"
 						type="button"
-						disabled={!selectedContact || !selectedQueue}
+						disabled={!selectedContact || !selectedQueue || !isConnectionActive(selectedWhatsapp)}
 						onClick={() => handleSaveTicket(selectedContact.id)}
 						color="primary"
 						loading={loading}

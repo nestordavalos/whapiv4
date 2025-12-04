@@ -484,6 +484,8 @@ const messages = {
         title: "Crear una Conversación",
         fieldLabel: "Entrar para buscar contacto",
         add: "Agregar",
+        connectionLabel: "Seleccionar conexión",
+        connectionPlaceholder: "Elige una conexión",
         buttons: {
           ok: "Guardar",
           cancel: "Cancelar",

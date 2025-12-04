@@ -417,6 +417,8 @@ const messages = {
         title: "Create Ticket",
         fieldLabel: "Enter to search for contact",
         add: "Add",
+        connectionLabel: "Select connection",
+        connectionPlaceholder: "Choose a connection",
         buttons: {
           ok: "Save",
           cancel: "Cancel",

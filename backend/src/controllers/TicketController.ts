@@ -30,6 +30,7 @@ interface TicketData {
   contactId: number;
   status: string;
   queueId: number;
+  whatsappId?: number;
   userId: number;
   transf: boolean;
   isFinished: boolean;
@@ -90,13 +91,15 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
 };
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
-  const { contactId, status, userId, queueId }: TicketData = req.body;
+  const { contactId, status, userId, queueId, whatsappId }: TicketData =
+    req.body;
 
   const ticket = await CreateTicketService({
     contactId,
     status,
     userId,
-    queueId
+    queueId,
+    whatsappId
   });
 
   const io = getIO();

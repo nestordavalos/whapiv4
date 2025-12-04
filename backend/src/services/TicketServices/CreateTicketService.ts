@@ -4,12 +4,14 @@ import GetDefaultWhatsApp from "../../helpers/GetDefaultWhatsApp";
 import Ticket from "../../models/Ticket";
 import User from "../../models/User";
 import ShowContactService from "../ContactServices/ShowContactService";
+import Whatsapp from "../../models/Whatsapp";
 
 interface Request {
   contactId: number;
   status: string;
   userId: number;
   queueId?: number;
+  whatsappId?: number;
   fromMe?: boolean;
   isMsgGroup?: boolean;
 }
@@ -19,12 +21,23 @@ const CreateTicketService = async ({
   status,
   userId,
   queueId,
+  whatsappId,
   fromMe,
   isMsgGroup
 }: Request): Promise<Ticket> => {
-  const defaultWhatsapp = await GetDefaultWhatsApp(userId);
+  let whatsapp: Whatsapp | null;
 
-  await CheckContactOpenTickets(contactId, defaultWhatsapp.id);
+  if (whatsappId) {
+    whatsapp = await Whatsapp.findByPk(whatsappId);
+  } else {
+    whatsapp = await GetDefaultWhatsApp(userId);
+  }
+
+  if (!whatsapp) {
+    throw new AppError("ERR_NO_DEF_WAPP_FOUND");
+  }
+
+  await CheckContactOpenTickets(contactId, whatsapp.id);
 
   const { isGroup } = await ShowContactService(contactId);
 
@@ -33,7 +46,7 @@ const CreateTicketService = async ({
     queueId = user?.queues.length === 1 ? user.queues[0].id : undefined;
   }
 
-  const { id }: Ticket = await defaultWhatsapp.$create("ticket", {
+  const { id }: Ticket = await whatsapp.$create("ticket", {
     contactId,
     status,
     isGroup,

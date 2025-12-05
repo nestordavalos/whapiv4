@@ -49,6 +49,7 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff,woff2}"],
+          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,
@@ -105,6 +106,19 @@ export default defineConfig(({ mode }) => {
         },
         jsx: "automatic"
       }
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'mui-core': ['@mui/material', '@mui/system', '@emotion/react', '@emotion/styled'],
+            'mui-icons': ['@mui/icons-material'],
+            'vendor': ['react', 'react-dom', 'react-router-dom'],
+            'utils': ['date-fns', 'yup', 'formik']
+          }
+        }
+      },
+      chunkSizeWarningLimit: 1000
     }
   };
 });

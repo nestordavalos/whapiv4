@@ -260,11 +260,31 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
           // 🔁 Verificar conexión cada 60s
           wbot.pingInterval = setInterval(async () => {
             try {
+              // Verificar si el cliente aún existe y está inicializado
+              if (!wbot.pupPage || wbot.pupPage.isClosed()) {
+                logger.warn(
+                  `[wbot] Página cerrada, limpiando intervalo de ping`
+                );
+                if (wbot.pingInterval) clearInterval(wbot.pingInterval);
+                return;
+              }
+
               const state = await wbot.getState();
               if (state !== "CONNECTED") {
                 logger.warn(`[wbot] Estado inusual: ${state}`);
               }
             } catch (pingErr) {
+              // Si es un error de protocolo (sesión cerrada), limpiar el intervalo
+              if (
+                pingErr.message &&
+                pingErr.message.includes("Session closed")
+              ) {
+                logger.warn(
+                  `[wbot] Sesión cerrada detectada, limpiando intervalo de ping`
+                );
+                if (wbot.pingInterval) clearInterval(wbot.pingInterval);
+                return;
+              }
               logger.error(`[wbot] Error al hacer ping: ${pingErr.message}`);
             }
           }, 60000);
@@ -298,6 +318,13 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
       wbot.on("disconnected", async reason => {
         try {
           logger.warn(`Session: ${sessionName} DISCONNECTED - ${reason}`);
+
+          // Limpiar el intervalo de ping cuando se desconecta
+          if (wbot.pingInterval) {
+            clearInterval(wbot.pingInterval);
+            wbot.pingInterval = null;
+          }
+
           await whatsapp.update({ status: "DISCONNECTED" });
           io.emit("whatsappSession", { action: "update", session: whatsapp });
         } catch (err) {

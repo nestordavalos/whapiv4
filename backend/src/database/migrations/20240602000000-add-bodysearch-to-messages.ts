@@ -2,14 +2,27 @@ import { QueryInterface, DataTypes } from "sequelize";
 
 module.exports = {
   up: async (queryInterface: QueryInterface) => {
-    await queryInterface.addColumn("Messages", "bodySearch", {
-      type: DataTypes.STRING,
-      allowNull: true
-    });
+    // Verificar si la columna ya existe
+    const tableDescription = await queryInterface.describeTable("Messages");
 
-    await queryInterface.addIndex("Messages", ["bodySearch"], {
-      name: "message_bodySearch_index"
-    });
+    if (!tableDescription.bodySearch) {
+      await queryInterface.addColumn("Messages", "bodySearch", {
+        type: DataTypes.STRING,
+        allowNull: true
+      });
+    }
+
+    // Verificar si el índice ya existe
+    const indexes = await queryInterface.showIndex("Messages");
+    const indexExists = indexes.some(
+      (index: any) => index.name === "message_bodySearch_index"
+    );
+
+    if (!indexExists) {
+      await queryInterface.addIndex("Messages", ["bodySearch"], {
+        name: "message_bodySearch_index"
+      });
+    }
 
     const dialect = queryInterface.sequelize.getDialect();
     const table = dialect === "postgres" ? '"Messages"' : "`Messages`";

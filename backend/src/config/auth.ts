@@ -10,25 +10,31 @@ const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET || defaultRefreshSecret;
 if (!isDevelopment) {
   if (!process.env.JWT_SECRET || jwtSecret === defaultSecret) {
     throw new Error(
-      "JWT_SECRET must be defined in environment variables and cannot be the default value in production. Generate a secure secret with: node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\""  
+      "JWT_SECRET must be defined in environment variables and cannot be the default value in production. Generate a secure secret with: node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\""
     );
   }
 
-  if (!process.env.JWT_REFRESH_SECRET || jwtRefreshSecret === defaultRefreshSecret) {
+  if (
+    !process.env.JWT_REFRESH_SECRET ||
+    jwtRefreshSecret === defaultRefreshSecret
+  ) {
     throw new Error(
-      "JWT_REFRESH_SECRET must be defined in environment variables and cannot be the default value in production. Generate a secure secret with: node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\""  
+      "JWT_REFRESH_SECRET must be defined in environment variables and cannot be the default value in production. Generate a secure secret with: node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\""
     );
   }
 }
 
 // En desarrollo, advertir si se están usando valores por defecto
-if (isDevelopment && (jwtSecret === defaultSecret || jwtRefreshSecret === defaultRefreshSecret)) {
+if (
+  isDevelopment &&
+  (jwtSecret === defaultSecret || jwtRefreshSecret === defaultRefreshSecret)
+) {
   // eslint-disable-next-line no-console
   console.warn(
     "\x1b[33m%s\x1b[0m",
     "\n⚠️  WARNING: Using default JWT secrets in development.\n" +
-    "   For production, generate secure secrets with:\n" +
-    "   node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\"\n"
+      "   For production, generate secure secrets with:\n" +
+      "   node -e \"console.log(require('crypto').randomBytes(64).toString('hex'))\"\n"
   );
 }
 

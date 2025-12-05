@@ -15,7 +15,9 @@ export const authLimiter = rateLimit({
 // Rate limiter para creación de recursos
 export const createLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minuto
-  max: parseInt(process.env.RATE_LIMIT_CREATE || (isDevelopment ? "500" : "200")),
+  max: parseInt(
+    process.env.RATE_LIMIT_CREATE || (isDevelopment ? "500" : "200")
+  ),
   message: "Too many resource creation requests, please slow down.",
   standardHeaders: true,
   legacyHeaders: false
@@ -33,7 +35,9 @@ export const apiLimiter = rateLimit({
 // Rate limiter para endpoints de mensajería - alto volumen
 export const messageLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minuto
-  max: parseInt(process.env.RATE_LIMIT_MESSAGES || (isDevelopment ? "2000" : "1000")),
+  max: parseInt(
+    process.env.RATE_LIMIT_MESSAGES || (isDevelopment ? "2000" : "1000")
+  ),
   message: "Too many messages sent, please slow down.",
   standardHeaders: true,
   legacyHeaders: false

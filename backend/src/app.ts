@@ -39,13 +39,16 @@ app.use(
 // Rate limiting general - configurado para alto tráfico
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: parseInt(process.env.RATE_LIMIT_GENERAL || (process.env.NODE_ENV === "production" ? "5000" : "10000")),
+  max: parseInt(
+    process.env.RATE_LIMIT_GENERAL ||
+      (process.env.NODE_ENV === "production" ? "5000" : "10000")
+  ),
   message: "Too many requests from this IP, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => {
+  skip: req => {
     // Skip rate limiting for health checks and public assets
-    return req.path === '/health' || req.path.startsWith('/public/');
+    return req.path === "/health" || req.path.startsWith("/public/");
   }
 });
 

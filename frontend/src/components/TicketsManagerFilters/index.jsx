@@ -179,7 +179,7 @@ const TicketsManagerFilters = ({
         setUsers(usersData.users || []);
 
       } catch (err) {
-        console.error("Error fetching filters data:", err);
+        // Error fetching filters data
       } finally {
         setLoading(false);
       }

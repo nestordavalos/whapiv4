@@ -12,6 +12,7 @@ import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
 import formatBody from "../../helpers/Mustache";
 import UpdateTicketService from "../TicketServices/UpdateTicketService";
 import Chatbot from "../../models/Chatbot";
+import { logger } from "../../utils/logger";
 
 type Session = Client & {
   id?: number;
@@ -45,7 +46,7 @@ const assignAgentIfPossible = async (
   ticket: Ticket
 ): Promise<boolean> => {
   if (!node.queueId) {
-    console.warn(
+    logger.warn(
       `[Chatbot] Cannot assign agent for ${node.name}: missing queueId`
     );
     return false;
@@ -55,7 +56,7 @@ const assignAgentIfPossible = async (
   const queueUsers = queue.users || [];
 
   if (!queueUsers.length) {
-    console.warn(
+    logger.warn(
       `[Chatbot] Queue ${queue.name} has no agents with permission to receive tickets`
     );
     return false;
@@ -321,5 +322,4 @@ export const sayChatbot = async (
       return send;
     }
   }
-  console.log();
 };

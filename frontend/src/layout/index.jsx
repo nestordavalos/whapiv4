@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from "react";
+﻿import React, { useState, useContext, useEffect } from "react";
 import clsx from "clsx";
 
 import { AppBar, Divider, Drawer, IconButton, List, Menu, MenuItem, Toolbar, Typography } from "@mui/material";
@@ -28,17 +28,47 @@ const useStyles = makeStyles((theme) => ({
   root: {
     display: "flex",
     height: "100vh",
+    overflow: "hidden",
     [theme.breakpoints.down('md')]: {
-      height: "calc(100vh - 56px)",
+      height: "100vh",
+      flexDirection: "column",
     },
   },
   toolbar: {
-    paddingRight: 24,
+    paddingRight: 16,
+    paddingLeft: 16,
     color: "#ffffff",
     background: theme.palette.toolbar.main,
+    minHeight: "48px !important",
+    height: "48px",
+    gap: "8px",
+    "& .MuiIconButton-root": {
+      color: "#ffffff",
+      padding: 10,
+      margin: "0 2px",
+    },
+    "& .MuiSvgIcon-root": {
+      color: "#ffffff",
+      fontSize: "1.25rem",
+    },
+    [theme.breakpoints.down('md')]: {
+      paddingRight: 12,
+      paddingLeft: 12,
+      minHeight: "56px !important",
+      height: "56px",
+      gap: "6px",
+    },
     [theme.breakpoints.down('sm')]: {
       paddingRight: 8,
       paddingLeft: 8,
+      gap: "4px",
+      "& .MuiIconButton-root": {
+        padding: 8,
+        margin: 0,
+      },
+      "& .MuiSvgIcon-root": {
+        fontSize: "1.3rem",
+      },
     },
   },
   toolbarIcon: {
@@ -46,7 +76,7 @@ const useStyles = makeStyles((theme) => ({
     alignItems: "center",
     justifyContent: "space-between",
     padding: "12px 16px",
-    minHeight: "64px",
+    minHeight: "48px",
     backgroundColor: theme.palette.toolbarIcon.main,
     borderBottom: `1px solid ${theme.palette.divider}`,
   },
@@ -60,7 +90,7 @@ const useStyles = makeStyles((theme) => ({
     gap: "8px",
     overflow: "hidden",
     "& img": {
-      height: 40,
+      height: 32,
       width: "auto",
       borderRadius: 8,
     }
@@ -89,14 +119,22 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   menuButton: {
-    marginRight: 36,
+    marginRight: 12,
+    [theme.breakpoints.down('sm')]: {
+      marginRight: 8,
+    },
   },
   menuButtonHidden: {
     display: "none",
   },
   title: {
     flexGrow: 1,
-    fontSize: "0.9rem",
+    fontSize: "1rem",
+    fontWeight: 500,
+    marginLeft: 8,
+    [theme.breakpoints.down('md')]: {
+      fontSize: "0.9rem",
+    },
     [theme.breakpoints.down('sm')]: {
       display: "none",
     },
@@ -106,7 +144,10 @@ const useStyles = makeStyles((theme) => ({
     [theme.breakpoints.down('sm')]: {
       display: "block",
       flexGrow: 1,
-      fontSize: "0.8rem",
+      fontSize: "1rem",
+      fontWeight: 600,
+      letterSpacing: "0.01em",
+      marginLeft: 8,
     },
   },
   drawerPaper: {
@@ -148,8 +189,8 @@ const useStyles = makeStyles((theme) => ({
   },
   appBarSpacer: {
     minHeight: "48px",
-    [theme.breakpoints.down('md')]: {
-      minHeight: "48px",
+    [theme.breakpoints.down('sm')]: {
+      minHeight: "56px",
     },
   },
   content: {
@@ -158,6 +199,10 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     flexDirection: "column",
     backgroundColor: theme.palette.background.default,
+    minWidth: 0,
+    [theme.breakpoints.down('md')]: {
+      width: "100%",
+    },
   },
   container: {
     paddingTop: theme.spacing(4),
@@ -275,20 +320,26 @@ const LoggedInLayout = ({ children }) => {
         open={drawerOpen}
       >
         <div className={clsx(classes.toolbarIcon, !drawerOpen && classes.toolbarIconClosed)}>
-          <div className={clsx(classes.logoContainer, !drawerOpen && classes.logoContainerClosed)}>
-            <img src={logodash} alt="logo" />
+          <div className={clsx(classes.logoContainer, !drawerOpen && classes.logoContainerClosed)} aria-hidden="true">
+            <img src={logodash} alt="Logo T-Chateo" />
           </div>
           <IconButton
             className={classes.collapseButton}
             color="secondary"
+            aria-label={drawerOpen ? "Cerrar menú lateral" : "Abrir menú lateral"}
             onClick={() => setDrawerOpen(!drawerOpen)}
             size="large">
             {drawerOpen ? <ChevronLeftIcon /> : <MenuIcon />}
           </IconButton>
         </div>
-        <List className={clsx(classes.drawerList, !drawerOpen && classes.drawerListClosed)}>
-          <MainListItems drawerClose={drawerClose} drawerOpen={drawerOpen} />
-        </List>
+        <nav aria-label="MenÃº principal">
+          <List
+            component="ul"
+            className={clsx(classes.drawerList, !drawerOpen && classes.drawerListClosed)}
+          >
+            <MainListItems drawerClose={drawerClose} drawerOpen={drawerOpen} />
+          </List>
+        </nav>
       </Drawer>
       <UserModal
         open={userModalOpen}
@@ -304,7 +355,7 @@ const LoggedInLayout = ({ children }) => {
           <IconButton
             edge="start"
             color="inherit"
-            aria-label="open drawer"
+            aria-label={drawerOpen ? "Cerrar menú de navegación" : "Abrir menú de navegación"}
             onClick={() => setDrawerOpen(!drawerOpen)}
             className={clsx(
               classes.menuButton,
@@ -323,9 +374,10 @@ const LoggedInLayout = ({ children }) => {
 
           <div>
             <IconButton
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
+              aria-label="Cuenta de usuario: abrir menú de perfil"
+              aria-controls={menuOpen ? "menu-appbar" : undefined}
               aria-haspopup="true"
+              aria-expanded={menuOpen ? "true" : undefined}
               onClick={handleMenu}
               color="inherit"
               size="large">

@@ -17,11 +17,13 @@ const useStyles = makeStyles((theme) => ({
     flex: 1,
     height: `calc(100% - 8px)`,
     minHeight: 0,
+    minWidth: 0,
     overflowY: "hidden",
     margin: theme.spacing(1),
     [theme.breakpoints.down('md')]: {
       margin: 0,
       height: "100%",
+      width: "100%",
     },
   },
 
@@ -29,6 +31,10 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     height: "100%",
     minHeight: 0,
+    minWidth: 0,
+    [theme.breakpoints.down('md')]: {
+      flexDirection: "column",
+    },
   },
 
   contactsWrapper: {
@@ -37,6 +43,10 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: "column",
     overflowY: "auto",
     minHeight: 0,
+    minWidth: 0,
+    [theme.breakpoints.down('md')]: {
+      width: "100%",
+    },
   },
   contactsWrapperSmall: {
     display: "flex",
@@ -44,6 +54,7 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: "column",
     overflowY: "auto",
     minHeight: 0,
+    minWidth: 0,
     [theme.breakpoints.down('md')]: {
       display: "none",
     },
@@ -53,17 +64,37 @@ const useStyles = makeStyles((theme) => ({
     height: "100%",
     flexDirection: "column",
     minHeight: 0,
+    minWidth: 0,
+    [theme.breakpoints.down('md')]: {
+      width: "100%",
+      flex: 1,
+    },
   },
   welcomeMsg: {
     backgroundColor: theme.palette.background.paper,
     display: "flex",
-    justifyContent: "space-evenly",
+    justifyContent: "center",
     alignItems: "center",
     height: "100%",
+    width: "100%",
     textAlign: "center",
     borderRadius: 12,
+    padding: theme.spacing(2),
+    "& img": {
+      maxWidth: "40%",
+      height: "auto",
+    },
     [theme.breakpoints.down('md')]: {
       borderRadius: 8,
+      padding: theme.spacing(1),
+      "& img": {
+        maxWidth: "60%",
+      },
+    },
+    [theme.breakpoints.down('sm')]: {
+      "& img": {
+        maxWidth: "80%",
+      },
     },
   },
   ticketsManager: {},
@@ -81,8 +112,7 @@ const Chat = () => {
   return (
     <div className={classes.chatContainer}>
       <div className={classes.chatPapper}>
-        <Grid container spacing={0}>
-          {/* <Grid item xs={4} className={classes.contactsWrapper}> */}
+        <Grid container spacing={0} sx={{ height: '100%', minWidth: 0 }}>
           <Grid
             item
             xs={12}
@@ -90,25 +120,25 @@ const Chat = () => {
             className={
               ticketId ? classes.contactsWrapperSmall : classes.contactsWrapper
             }
+            sx={{ minWidth: 0 }}
           >
             <TicketsManager />
           </Grid>
-          <Grid item xs={12} md={8} className={classes.messagessWrapper}>
-            {/* <Grid item xs={8} className={classes.messagessWrapper}> */}
+          <Grid 
+            item 
+            xs={12} 
+            md={8} 
+            className={classes.messagessWrapper}
+            sx={{ minWidth: 0 }}
+          >
             {ticketId ? (
-              <>
-                <Ticket />
-              </>
+              <Ticket />
             ) : (
               <Hidden only={["sm", "xs"]}>
                 <Paper className={classes.welcomeMsg}>
-                  {/* <Paper square variant="outlined" className={classes.welcomeMsg}> */}
-                  <span>
-                    <center>
-                      <img src={logo} width="40%" alt="logo"/>
-                    </center>
-                    {/* {i18n.t("chat.noTicketMessage")} */}
-                    </span>
+                  <div>
+                    <img src={logo} alt="logo" style={{ display: 'block', margin: '0 auto' }} />
+                  </div>
                 </Paper>
               </Hidden>
             )}

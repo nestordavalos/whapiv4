@@ -17,20 +17,34 @@ import { toast } from "react-toastify";
 
 const useStyles = makeStyles(theme => ({
 	actionButtons: {
-		marginRight: 5,
+		marginRight: 8,
 		flex: "none",
 		alignSelf: "center",
 		marginLeft: "auto",
 		display: "flex",
 		alignItems: "center",
-		gap: 4,
+		gap: 8,
+		[theme.breakpoints.down('md')]: {
+			gap: 6,
+			marginRight: 4,
+		},
+		[theme.breakpoints.down('sm')]: {
+			gap: 4,
+			marginRight: 2,
+		},
 	},
 	actionButton: {
-		padding: 6,
+		padding: 8,
 		borderRadius: 8,
 		transition: "all 0.2s ease",
 		"&:hover": {
 			transform: "scale(1.05)",
+		},
+		[theme.breakpoints.down('md')]: {
+			padding: 6,
+		},
+		[theme.breakpoints.down('sm')]: {
+			padding: 5,
 		},
 	},
 	returnButton: {
@@ -103,8 +117,10 @@ const TicketActionButtons = ({ ticket }) => {
 
 			setLoading(false);
 			if (status === "open") {
-				history.push(`/tickets/${ticket.id}`);
+				// Pasar el tab deseado en el state para que TicketsManager lo detecte
+				history.push(`/tickets/${ticket.id}`, { tab: "open" });
 			} else {
+				// Para pending y closed, redirigir sin cambiar el tab
 				history.push("/tickets");
 			}
 		} catch (err) {
@@ -119,6 +135,7 @@ const TicketActionButtons = ({ ticket }) => {
 			<Tooltip title={i18n.t("messagesList.header.buttons.sync") || "Sincronizar mensajes"}>
 				<span>
 					<IconButton 
+						aria-label={i18n.t("messagesList.header.buttons.sync") || "Sincronizar mensajes"}
 						disabled={syncing || loading} 
 						className={`${classes.actionButton} ${classes.syncButton}`}
 						onClick={handleSyncMessages}
@@ -149,6 +166,7 @@ const TicketActionButtons = ({ ticket }) => {
 				<>
 					<Tooltip title={i18n.t("messagesList.header.buttons.return")}>
 						<IconButton 
+							aria-label={i18n.t("messagesList.header.buttons.return")}
 							disabled={loading} 
 							className={`${classes.actionButton} ${classes.returnButton}`}
 							onClick={e => handleUpdateTicketStatus(e, "pending", null, false)}
@@ -159,6 +177,7 @@ const TicketActionButtons = ({ ticket }) => {
 					</Tooltip>
 					<Tooltip title={i18n.t("messagesList.header.buttons.resolve")}>
 						<IconButton 
+							aria-label={i18n.t("messagesList.header.buttons.resolve")}
 							disabled={loading} 
 							className={`${classes.actionButton} ${classes.closeButton}`}
 							onClick={e => handleUpdateTicketStatus(e, "closed", user?.id, true)}
@@ -168,6 +187,7 @@ const TicketActionButtons = ({ ticket }) => {
 						</IconButton>
 					</Tooltip>
 					<IconButton 
+						aria-label={i18n.t("messagesList.header.buttons.more") || "Más opciones"}
 						disabled={loading} 
 						className={`${classes.actionButton} ${classes.moreButton}`}
 						onClick={handleOpenTicketOptionsMenu}

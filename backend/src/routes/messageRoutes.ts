@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import isAuth from "../middleware/isAuth";
 import uploadConfig from "../config/upload";
+import { messageLimiter } from "../middleware/rateLimiters";
 
 import * as MessageController from "../controllers/MessageController";
 
@@ -12,6 +13,7 @@ messageRoutes.get("/messages/:ticketId", isAuth, MessageController.index);
 messageRoutes.post(
   "/messages/:ticketId",
   isAuth,
+  messageLimiter,
   upload.array("medias"),
   MessageController.store
 );

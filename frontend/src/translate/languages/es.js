@@ -361,6 +361,7 @@ const messages = {
           password: "Contraseña",
           profile: "Perfil",
           admin: "Administrador",
+          user: "Usuario",
           whatsapp: "Conexión estándar",
           asistente: "Asistente",
           startWork: "Inicio",
@@ -553,6 +554,7 @@ const messages = {
 
       },
       notifications: {
+        title: "Notificaciones",
         noTickets: "Sin notificaciones.",
       },
       queues: {
@@ -785,6 +787,7 @@ const messages = {
         header: "Datos de contacto",
         buttons: {
           edit: "Editar contacto",
+          close: "Cerrar panel",
         },
         extraInfo: "Otra información",
       },

@@ -10,14 +10,18 @@ const useStyles = makeStyles((theme) => ({
 	ticketInfoContainer: {
 		display: "flex",
 		alignItems: "center",
-		gap: 10,
+		gap: 12,
 		padding: "4px 8px",
 		cursor: "pointer",
 		minWidth: 0,
 		flex: 1,
 		[theme.breakpoints.down('md')]: {
+			gap: 10,
+			padding: "4px",
+		},
+		[theme.breakpoints.down('sm')]: {
 			gap: 8,
-			padding: "4px 0",
+			padding: "2px",
 		},
 	},
 	avatar: {
@@ -42,8 +46,11 @@ const useStyles = makeStyles((theme) => ({
 	titleRow: {
 		display: "flex",
 		alignItems: "center",
-		gap: 8,
+		gap: 10,
 		minWidth: 0,
+		[theme.breakpoints.down('md')]: {
+			gap: 8,
+		},
 	},
 	contactName: {
 		fontWeight: 700,
@@ -114,7 +121,7 @@ const TicketInfo = ({ contact, ticket, onClick }) => {
 			<Avatar
 				className={classes.avatar}
 				src={contact.profilePicUrl}
-				alt="contact_image"
+				alt={`Foto de perfil de ${contact.name || 'contacto'}`}
 			/>
 			<div className={classes.infoContent}>
 				<div className={classes.titleRow}>
@@ -127,14 +134,15 @@ const TicketInfo = ({ contact, ticket, onClick }) => {
 				</div>
 				<div className={classes.metaRow}>
 					{ticket.user && (
-						<Tooltip title="Asignado A">
-							<Chip
-								icon={<PersonOutlineIcon />}
-								label={ticket.user.name}
-								size="small"
-								className={`${classes.chip} ${classes.userChip}`}
-							/>
-						</Tooltip>
+					<Tooltip title="Asignado A">
+						<Chip
+							icon={<PersonOutlineIcon />}
+							label={ticket.user.name}
+							size="small"
+							aria-label={`Asignado a ${ticket.user.name}`}
+							className={`${classes.chip} ${classes.userChip}`}
+						/>
+					</Tooltip>
 					)}
 					{ticket.queue && (
 						<Tooltip title="Sector">
@@ -142,6 +150,7 @@ const TicketInfo = ({ contact, ticket, onClick }) => {
 								icon={<BusinessCenterIcon />}
 								label={ticket.queue.name}
 								size="small"
+								aria-label={`Sector ${ticket.queue.name}`}
 								className={`${classes.chip} ${classes.queueChip}`}
 							/>
 						</Tooltip>
@@ -152,6 +161,7 @@ const TicketInfo = ({ contact, ticket, onClick }) => {
 								icon={<WhatsAppIcon />}
 								label={ticket.whatsapp.name}
 								size="small"
+								aria-label={`Whatsapp ${ticket.whatsapp.name}`}
 								className={`${classes.chip} ${classes.connectionChip}`}
 							/>
 						</Tooltip>

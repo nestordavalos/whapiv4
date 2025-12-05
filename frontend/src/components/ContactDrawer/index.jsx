@@ -215,6 +215,7 @@ const ContactDrawer = ({ open, handleDrawerClose, contact, loading }) => {
 					className={classes.closeButton}
 					size="small"
 					onClick={handleDrawerClose}
+					aria-label={i18n.t("contactDrawer.buttons.close") || "Cerrar"}
 				>
 					<CloseIcon fontSize="small" />
 				</IconButton>

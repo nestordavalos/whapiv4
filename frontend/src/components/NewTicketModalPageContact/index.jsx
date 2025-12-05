@@ -279,12 +279,6 @@ const NewTicketModalPageContact = ({ modalOpen, onClose, initialContact }) => {
 		return option?.name || option?.number || searchParam;
 	};
 
-	const formatConnectionLabel = connection => {
-		if (!connection) return "";
-		const status = connection.status ? ` - ${connection.status}` : "";
-		return `${connection.name}${status}`;
-	};
-
 	const getStatusColor = (status) => {
 		const map = {
 			CONNECTED: "#2e7d32",

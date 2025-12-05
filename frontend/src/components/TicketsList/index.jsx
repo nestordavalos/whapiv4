@@ -11,7 +11,6 @@ import openSocket from "../../services/socket-io";
 
 import makeStyles from "@mui/styles/makeStyles";
 import Paper from "@mui/material/Paper";
-import List from "@mui/material/List";
 import { VariableSizeList as VirtualList } from "react-window";
 
 import TicketListItem from "../TicketListItem";
@@ -43,7 +42,7 @@ const useStyles = makeStyles((theme) => ({
 		height: "100%",
 		...theme.scrollbarStyles,
 		borderTop: `1px solid ${theme.palette.divider}`,
-		padding: "4px 12px 4px 12px",
+		padding: "8px 0",
 	},
 
 	ticketsListHeader: {
@@ -297,16 +296,6 @@ const TicketsList = (props) => {
 		};
 
 		const handleTicket = (data) => {
-			console.debug(`[TicketsList ${status}] Received ticket event:`, {
-				action: data.action,
-				ticketId: data.ticket?.id || data.ticketId,
-				ticketStatus: data.ticket?.status,
-				ticketUserId: data.ticket?.userId,
-				shouldUpdate: data.ticket ? shouldUpdateTicket(data.ticket) : "N/A",
-				isAdmin,
-				showAll,
-			});
-
 			if (data.action === "updateUnread") {
 				dispatch({
 					type: "RESET_UNREAD",
@@ -346,7 +335,6 @@ const TicketsList = (props) => {
 
 		if (status) {
 			handleAppMessage = (data) => {
-				console.debug("TicketsList received appMessage", data);
 				if (data.action === "create" && shouldUpdateTicket(data.ticket)) {
 					dispatch({
 						type: "UPDATE_TICKET_UNREAD_MESSAGES",
@@ -428,8 +416,8 @@ const TicketsList = (props) => {
 		}, [index, setSize, ticket]);
 
 		return (
-			<div style={style}>
-				<div ref={rowRef}>
+			<div style={style} role="listitem">
+				<div ref={rowRef} style={{ paddingLeft: '8px', paddingRight: '8px', paddingBottom: '5px', paddingTop: '6px' }}>
 					<TicketListItem handleChangeTab={onChangeTab} ticket={ticket} key={ticket.id} />
 				</div>
 			</div>
@@ -439,9 +427,8 @@ const TicketsList = (props) => {
 	const InnerElement = React.forwardRef(function TicketsListInner(innerProps, innerRef) {
 		const { style, ...rest } = innerProps;
 		return (
-			<List
+			<div
 				ref={innerRef}
-				disablePadding
 				style={style}
 				{...rest}
 			/>
@@ -456,6 +443,7 @@ const TicketsList = (props) => {
 				{...rest}
 				className={classes.ticketsList}
 				style={{ ...style }}
+				role="list"
 			/>
 		);
 	});

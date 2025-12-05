@@ -277,6 +277,7 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     alignItems: "center",
     gap: 2,
+    pointerEvents: "none",
   },
 
   editedIndicator: {
@@ -683,6 +684,11 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     if (!socket) return undefined;
 
     const handleMessage = data => {
+      // Verificar que el mensaje pertenece al ticket actual
+      if (data.message && data.message.ticketId !== parseInt(ticketId)) {
+        return;
+      }
+
       if (data.action === "create") {
         dispatch({ type: "ADD_MESSAGE", payload: data.message });
         scrollToBottom();
@@ -848,23 +854,6 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
       }
       return <VcardPreview contact={contact} numbers={obj[0].number} />;
     } else if (message.mediaType === "image") {
-    /*else if (message.mediaType === "multi_vcard") {
-      console.log("multi_vcard")
-      console.log(message)
-    	
-      if(message.body !== null && message.body !== "") {
-        let newBody = JSON.parse(message.body)
-        return (
-          <>
-            {
-            newBody.map(v => (
-              <VcardPreview contact={v.name} numbers={v.number} />
-            ))
-            }
-          </>
-        )
-      } else return (<></>)
-    }*/
       return <ModalImageCors imageUrl={message.mediaUrl} />
     } else if (message.mediaType === "audio") {
       return (
@@ -961,7 +950,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
       return (
         <span
           className={classes.dailyTimestamp}
-          key={`timestamp-${message.id}`}
+          key={`daily-timestamp-first-${message.id}`}
         >
           <div className={classes.dailyTimestampText}>
             {format(
@@ -980,7 +969,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
         return (
           <span
             className={classes.dailyTimestamp}
-            key={`timestamp-${message.id}`}
+            key={`daily-timestamp-${message.id}`}
           >
             <div className={classes.dailyTimestampText}>
               {format(parseISO(messagesList[index].createdAt), "dd/MM/yyyy")}
@@ -1022,7 +1011,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
 
     if (lastTicket !== currentTicket && lastTicket !== undefined) {
       return (
-        <span className={classes.currentTick} key={`timestamp-${message.id}`}>
+        <span className={classes.currentTick} key={`ticket-separator-${message.id}`}>
           <div className={classes.currentTicktText}>
             #Conversación {message.ticketId}{" "}
 
@@ -1364,6 +1353,9 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
       <div
         id="messagesList"
         className={classes.messagesList}
+        role="region"
+        tabIndex={0} // eslint-disable-line jsx-a11y/no-noninteractive-tabindex
+        aria-label={i18n.t("messagesList.messagesRegion", { defaultValue: "Lista de mensajes" })}
         onScroll={handleScroll}
       >
         {messagesList.length > 0 ? renderMessages() : []}

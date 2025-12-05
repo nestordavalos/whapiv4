@@ -255,7 +255,6 @@ const UserModal = ({ open, onClose, userId }) => {
 			viewTags: values.viewTags,
 			allTicket: values.allTicket,
 		};
-		console.log(values.allHistoric)
 		try {
 			if (userId) {
 				await api.put(`/users/${userId}`, userData);

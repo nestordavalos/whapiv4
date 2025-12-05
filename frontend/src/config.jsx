@@ -32,9 +32,6 @@ function getConfig(name, defaultValue = null) {
 
 export function getBackendUrl() {
   const url = getConfig("VITE_BACKEND_URL");
-  if (!url) {
-    console.error("REACT_APP_BACKEND_URL is not defined");
-  }
   return url;
 }
 

@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
+import { useHistory } from "react-router-dom";
 
 import { Badge, Button, FormControlLabel, Paper, Tab, Tabs, Switch } from "@mui/material";
 
@@ -234,8 +235,14 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+const tabA11yProps = (value) => ({
+  id: `simple-tab-${value}`,
+  "aria-controls": `simple-tabpanel-${value}`,
+});
+
 const TicketsManager = () => {
   const classes = useStyles();
+  const history = useHistory();
 
   const [searchParam, setSearchParam] = useState("");
   const [tab, setTab] = useState("open");
@@ -263,6 +270,26 @@ const TicketsManager = () => {
     }
     setShowAllInitialized(true);
   }, [normalizedProfile, showAllInitialized]);
+
+  // Detectar cambios de tab desde el history state
+  useEffect(() => {
+    const locationState = history.location.state;
+    if (locationState && locationState.tab) {
+      setTab(locationState.tab);
+      // Limpiar el state después de un pequeño delay para evitar que persista
+      // pero sin afectar la navegación actual
+      const timer = setTimeout(() => {
+        if (history.location.state && history.location.state.tab) {
+          history.replace({
+            pathname: history.location.pathname,
+            search: history.location.search,
+            state: undefined
+          });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [history.location.pathname, history.location.state]);
 
   const handleSearch = (e) => {
     const searchedTerm = e.target.value.toLowerCase();
@@ -331,6 +358,7 @@ const TicketsManager = () => {
               </Badge>
             }
             classes={{ root: classes.tab }}
+            {...tabA11yProps("open")}
           />
           <Tab
             value={"pending"}
@@ -346,12 +374,14 @@ const TicketsManager = () => {
               </Badge>
             }
             classes={{ root: classes.tab }}
+            {...tabA11yProps("pending")}
           />
           <Tab
             value={"closed"}
             icon={<AllInboxRounded />}
             label={i18n.t("tickets.tabs.closed.title")}
             classes={{ root: classes.tab }}
+            {...tabA11yProps("closed")}
           />
         </Tabs>
       </Paper>
@@ -406,6 +436,7 @@ const TicketsManager = () => {
         <TabPanel value={tab} name="open" className={classes.tabPanel}>
           <Paper className={classes.tabPanelContent}>
           <TicketsList
+            handleChangeTab={handleChangeTab}
             status="open"
             showAll={showAllTickets}
             selectedQueueIds={selectedQueueIds}
@@ -416,6 +447,7 @@ const TicketsManager = () => {
             style={applyPanelStyle("open")}
           />
           <TicketsList
+            handleChangeTab={handleChangeTab}
             status="pending"
             selectedQueueIds={selectedQueueIds}
             selectedTagIds={selectedTags}

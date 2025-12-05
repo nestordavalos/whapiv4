@@ -15,7 +15,6 @@ const reducer = (state, action) => {
 	if (action.type === "UPDATE_WHATSAPPS") {
 		const whatsApp = action.payload;
 		if (!whatsApp || !whatsApp.id) {
-			console.warn("UPDATE_WHATSAPPS: payload inválido", whatsApp);
 			return state;
 		}
 		const whatsAppIndex = state.findIndex(s => s && s.id === whatsApp.id);
@@ -31,7 +30,6 @@ const reducer = (state, action) => {
 	if (action.type === "UPDATE_SESSION") {
 		const whatsApp = action.payload;
 		if (!whatsApp || !whatsApp.id) {
-			console.warn("UPDATE_SESSION: payload inválido", whatsApp);
 			return state;
 		}
 		const whatsAppIndex = state.findIndex(s => s && s.id === whatsApp.id);
@@ -50,7 +48,6 @@ const reducer = (state, action) => {
 	if (action.type === "DELETE_WHATSAPPS") {
 		const whatsAppId = action.payload;
 		if (!whatsAppId) {
-			console.warn("DELETE_WHATSAPPS: payload inválido", whatsAppId);
 			return state;
 		}
 
@@ -122,7 +119,6 @@ const useWhatsApps = () => {
                 socket.on("whatsapp", data => {
                         if (!isMounted) return;
                         if (!data) {
-                                console.warn("Socket whatsapp: data es undefined");
                                 return;
                         }
                         if (data.action === "delete" && data.whatsappId) {
@@ -133,7 +129,6 @@ const useWhatsApps = () => {
                 socket.on("whatsappSession", data => {
                         if (!isMounted) return;
                         if (!data) {
-                                console.warn("Socket whatsappSession: data es undefined");
                                 return;
                         }
                         if (data.action === "update" && data.session) {

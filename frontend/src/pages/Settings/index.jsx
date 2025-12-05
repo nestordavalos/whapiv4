@@ -1,5 +1,5 @@
 /* eslint-disable no-unexpected-multiline, no-empty */
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import openSocket from "../../services/socket-io";
 import { useHistory } from "react-router-dom";
 
@@ -75,20 +75,21 @@ const useStyles = makeStyles(theme => ({
 		gap: theme.spacing(2),
 	},
 	paper: {
-		padding: theme.spacing(2, 2.5),
+		padding: theme.spacing(1.5, 2),
 		display: "flex",
 		alignItems: "center",
-		borderRadius: 10,
+		borderRadius: 8,
 		border: `1px solid ${theme.palette.divider}`,
-		boxShadow: "0 1px 4px rgba(0,0,0,0.03)",
+		boxShadow: "none",
 		transition: "all 0.2s ease",
+		backgroundColor: theme.palette.background.paper,
 		"&:hover": {
-			boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-			borderColor: theme.palette.primary.light,
+			boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+			borderColor: theme.palette.primary.main,
 		},
 	},
 	settingLabel: {
-		fontSize: "0.9rem",
+		fontSize: "0.875rem",
 		fontWeight: 500,
 		color: theme.palette.text.primary,
 	},
@@ -96,24 +97,25 @@ const useStyles = makeStyles(theme => ({
 		marginLeft: "auto",
 	},
 	selectPaper: {
-		padding: theme.spacing(2, 2.5),
+		padding: theme.spacing(1.5, 2),
 		display: "flex",
 		alignItems: "center",
 		justifyContent: "space-between",
-		borderRadius: 10,
+		borderRadius: 8,
 		border: `1px solid ${theme.palette.divider}`,
-		boxShadow: "0 1px 4px rgba(0,0,0,0.03)",
+		boxShadow: "none",
 		transition: "all 0.2s ease",
+		backgroundColor: theme.palette.background.paper,
 		"&:hover": {
-			boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-			borderColor: theme.palette.primary.light,
+			boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+			borderColor: theme.palette.primary.main,
 		},
 	},
 	selectLabel: {
-		fontSize: "0.9rem",
+		fontSize: "0.875rem",
 		fontWeight: 500,
 		color: theme.palette.text.primary,
-		maxWidth: 140,
+		maxWidth: 160,
 	},
 	select: {
 		borderRadius: 8,
@@ -132,16 +134,22 @@ const useStyles = makeStyles(theme => ({
 	},
 	storagePaper: {
 		padding: theme.spacing(2.5),
-		borderRadius: 12,
+		borderRadius: 10,
 		border: `1px solid ${theme.palette.divider}`,
-		boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+		boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
 		backgroundColor: theme.palette.background.paper,
+		transition: "all 0.2s ease",
+		"&:hover": {
+			boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+		},
 	},
 	storageTitleRow: {
 		display: "flex",
 		alignItems: "center",
 		justifyContent: "space-between",
 		marginBottom: theme.spacing(2),
+		paddingBottom: theme.spacing(1.5),
+		borderBottom: `1px solid ${theme.palette.divider}`,
 	},
 	storageTitle: {
 		display: "flex",
@@ -149,6 +157,7 @@ const useStyles = makeStyles(theme => ({
 		gap: theme.spacing(1),
 		fontWeight: 600,
 		fontSize: "1rem",
+		color: theme.palette.text.primary,
 	},
 	storageStats: {
 		display: "flex",
@@ -158,9 +167,47 @@ const useStyles = makeStyles(theme => ({
 	},
 	statusChip: {
 		fontWeight: 500,
+		borderRadius: 6,
+		height: 24,
+		fontSize: "0.75rem",
 	},
 	syncButton: {
+		borderRadius: 6,
+		padding: theme.spacing(0.75, 2),
+		fontWeight: 500,
+		textTransform: "none",
+		fontSize: "0.875rem",
+		boxShadow: "none",
+		"&:hover": {
+			boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+		},
+	},
+	localFilesBox: {
+		padding: theme.spacing(2),
+		backgroundColor: theme.palette.mode === "dark" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
 		borderRadius: 8,
+		border: `1px solid ${theme.palette.divider}`,
+		marginBottom: theme.spacing(2),
+	},
+	actionButton: {
+		borderRadius: 6,
+		padding: theme.spacing(0.75, 2),
+		fontWeight: 500,
+		textTransform: "none",
+		fontSize: "0.875rem",
+		boxShadow: "none",
+		transition: "all 0.2s ease",
+		"&:hover": {
+			boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+		},
+	},
+	loadingOverlay: {
+		display: "flex",
+		flexDirection: "column",
+		alignItems: "center",
+		justifyContent: "center",
+		padding: theme.spacing(2.5),
+		gap: theme.spacing(1.5),
 	},
 }));
 
@@ -221,6 +268,8 @@ const IOSSwitch = withStyles((theme) => ({
 const Settings = () => {
 	const classes = useStyles();
 	const history = useHistory();
+	const isMounted = useRef(true);
+	const migrationPollRef = useRef(null);
 
 	const [settings, setSettings] = useState([]);
 	
@@ -242,6 +291,7 @@ const Settings = () => {
 				api.get("/storage/status"),
 				api.get("/storage/sync/status")
 			]);
+			if (!isMounted.current) return;
 			setStorageStatus(statusRes.data);
 			setStorageSyncStats(syncRes.data);
 			
@@ -251,6 +301,7 @@ const Settings = () => {
 					api.get("/storage/local/files"),
 					api.get("/storage/migration/status")
 				]);
+				if (!isMounted.current) return;
 				setLocalFilesInfo({
 					count: localRes.data.count || 0,
 					needsMigration: localRes.data.needsMigration || 0,
@@ -262,10 +313,13 @@ const Settings = () => {
 			}
 		} catch (err) {
 			// Storage endpoints might not exist if not configured
+			if (!isMounted.current) return;
 			setStorageStatus(null);
 			setStorageSyncStats(null);
 		} finally {
-			setLoadingStorage(false);
+			if (isMounted.current) {
+				setLoadingStorage(false);
+			}
 		}
 	}, []);
 
@@ -274,6 +328,7 @@ const Settings = () => {
 		try {
 			setScanning(true);
 			const { data } = await api.get("/storage/local/files");
+			if (!isMounted.current) return;
 			setLocalFilesInfo({
 				count: data.count || 0,
 				needsMigration: data.needsMigration || 0,
@@ -283,7 +338,7 @@ const Settings = () => {
 		} catch (err) {
 			toast.error(i18n.t("settings.settings.storage.scanError"));
 		} finally {
-			setScanning(false);
+			if (isMounted.current) setScanning(false);
 		}
 	};
 
@@ -293,11 +348,13 @@ const Settings = () => {
 			setSyncing(true);
 			await api.post("/storage/sync/trigger");
 			toast.success(i18n.t("settings.settings.storage.syncSuccess"));
-			fetchStorageStatus();
+			if (isMounted.current) {
+				fetchStorageStatus();
+			}
 		} catch (err) {
 			toast.error(i18n.t("settings.settings.storage.syncError"));
 		} finally {
-			setSyncing(false);
+			if (isMounted.current) setSyncing(false);
 		}
 	};
 
@@ -307,29 +364,38 @@ const Settings = () => {
 			setMigrating(true);
 			const { data: startData } = await api.post("/storage/migration/to-s3", { dryRun: false });
 			toast.info(i18n.t("settings.settings.storage.migrationStarted"));
-			setMigrationStatus(startData);
+			if (isMounted.current) setMigrationStatus(startData);
 			
 			// Poll for status
+			if (migrationPollRef.current) {
+				clearInterval(migrationPollRef.current);
+			}
 			const pollInterval = setInterval(async () => {
 				try {
 					const { data } = await api.get("/storage/migration/status");
+					if (!isMounted.current) return;
 					setMigrationStatus(data);
 					
 					if (data.status === "completed" || data.status === "failed" || data.status === "cancelled") {
 						clearInterval(pollInterval);
+						migrationPollRef.current = null;
 						setMigrating(false);
 						
 						// Refresh local files count
 						try {
 							const localRes = await api.get("/storage/local/files");
-							setLocalFilesInfo({
-								count: localRes.data.count || 0,
-								needsMigration: localRes.data.needsMigration || 0,
-								alreadyInS3: localRes.data.alreadyInS3 || 0
-							});
+							if (isMounted.current) {
+								setLocalFilesInfo({
+									count: localRes.data.count || 0,
+									needsMigration: localRes.data.needsMigration || 0,
+									alreadyInS3: localRes.data.alreadyInS3 || 0
+								});
+							}
 						} catch (e) {}
 						
-						fetchStorageStatus();
+						if (isMounted.current) {
+							fetchStorageStatus();
+						}
 						
 						if (data.status === "completed") {
 							toast.success(
@@ -341,12 +407,14 @@ const Settings = () => {
 					}
 				} catch (e) {
 					clearInterval(pollInterval);
-					setMigrating(false);
+					migrationPollRef.current = null;
+					if (isMounted.current) setMigrating(false);
 				}
 			}, 1500);
+			migrationPollRef.current = pollInterval;
 		} catch (err) {
 			toast.error(i18n.t("settings.settings.storage.migrationError"));
-			setMigrating(false);
+			if (isMounted.current) setMigrating(false);
 		}
 	};
 
@@ -354,13 +422,20 @@ const Settings = () => {
 		const fetchSession = async () => {
 			try {
 				const { data } = await api.get("/settings");
-				setSettings(data);
+				if (isMounted.current) setSettings(data);
 			} catch (err) {
 				toastError(err);
 			}
 		};
 		fetchSession();
 		fetchStorageStatus();
+		return () => {
+			isMounted.current = false;
+			if (migrationPollRef.current) {
+				clearInterval(migrationPollRef.current);
+				migrationPollRef.current = null;
+			}
+		};
 	}, [fetchStorageStatus]);
 
        useEffect(() => {
@@ -391,8 +466,23 @@ const Settings = () => {
 			await api.put(`/settings/${settingKey}`, {
 				value: selectedValue,
 			});
+			
+			// Update state locally without page reload
+			setSettings(prevState => {
+				const aux = [...prevState];
+				const settingIndex = aux.findIndex(s => s.key === settingKey);
+				if (settingIndex !== -1) {
+					aux[settingIndex].value = selectedValue;
+				}
+				return aux;
+			});
+			
+			// Trigger theme change event if darkMode was changed
+			if (settingKey === 'darkMode') {
+				window.dispatchEvent(new Event('themeChanged'));
+			}
+			
 			toast.success(i18n.t("settings.success"));
-			history.go(0);
 		} catch (err) {
 			toastError(err);
 		}
@@ -575,10 +665,10 @@ const Settings = () => {
 					<div className={classes.storageSection}>
 						<Paper className={classes.storagePaper} variant="outlined">
 							<div className={classes.storageTitleRow}>
-								<Typography className={classes.storageTitle}>
-									<CloudUploadIcon color="primary" />
-									{i18n.t("settings.settings.storage.title")}
-								</Typography>
+							<Typography className={classes.storageTitle}>
+								<CloudUploadIcon color="primary" fontSize="medium" />
+								{i18n.t("settings.settings.storage.title")}
+							</Typography>
 								<Box display="flex" style={{ gap: 8 }}>
 									{storageStatus.deleteLocalAfterUpload && (
 										<Chip
@@ -600,40 +690,46 @@ const Settings = () => {
 								</Box>
 							</div>
 							
-							<Typography variant="body2" color="textSecondary" style={{ marginBottom: 16 }}>
-								{i18n.t("settings.settings.storage.note")}
+						<Typography variant="body2" color="textPrimary" style={{ marginBottom: 14, lineHeight: 1.5, opacity: 0.8 }}>
+							Gestión de archivos multimedia en storage externo (S3/MinIO)
+						</Typography>					{loadingStorage ? (
+						<Box className={classes.loadingOverlay}>
+							<CircularProgress size={32} thickness={4} />
+							<Typography variant="body2" style={{ fontSize: "0.875rem", opacity: 0.8 }}>
+								Cargando información...
 							</Typography>
-
-							{loadingStorage ? (
-								<Box display="flex" justifyContent="center" p={2}>
-									<CircularProgress size={24} />
+						</Box>
+					) : (
+							<>
+							{/* Local files section */}
+							<Box className={classes.localFilesBox}>
+								<Box display="flex" alignItems="center" justifyContent="space-between" mb={1.5}>
+								<Box display="flex" alignItems="center" style={{ gap: 8 }}>
+									<FolderIcon color="primary" fontSize="small" />
+									<Typography variant="subtitle2" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
+										{i18n.t("settings.settings.storage.localFiles")}
+									</Typography>
 								</Box>
-							) : (
-								<>
-									{/* Local files section */}
-									<Box mb={2} p={2} bgcolor="action.hover" borderRadius="8px">
-										<Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-											<Box display="flex" alignItems="center" style={{ gap: 8 }}>
-												<FolderIcon color="action" />
-												<Typography variant="subtitle2">
-													{i18n.t("settings.settings.storage.localFiles")}
-												</Typography>
-											</Box>
-											<Box display="flex" style={{ gap: 8 }}>
-												<Chip
-													size="small"
-													label={`${i18n.t("settings.settings.storage.inS3")}: ${localFilesInfo.alreadyInS3}`}
-													color="primary"
-													variant="outlined"
-												/>
-												<Chip
-													size="small"
-													label={`${i18n.t("settings.settings.storage.pendingMigration")}: ${localFilesInfo.needsMigration}`}
-													color={localFilesInfo.needsMigration > 0 ? "secondary" : "default"}
-												/>
+									<Box display="flex" style={{ gap: 6 }}>
+											<Chip
+												size="small"
+												label={`${i18n.t("settings.settings.storage.inS3")}: ${localFilesInfo.alreadyInS3}`}
+												color="primary"
+												variant="outlined"
+											/>
+										<Chip
+											size="small"
+											label={`${i18n.t("settings.settings.storage.pendingMigration")}: ${localFilesInfo.needsMigration}`}
+											style={{
+												backgroundColor: localFilesInfo.needsMigration > 0 ? "#1976d2" : "transparent",
+												color: "#ffffff",
+												fontWeight: 600,
+												border: localFilesInfo.needsMigration > 0 ? "none" : "1px solid rgba(0,0,0,0.23)"
+											}}
+										/>
 											</Box>
 										</Box>
-										<Typography variant="body2" color="textSecondary" style={{ marginBottom: 12 }}>
+										<Typography variant="body2" style={{ marginBottom: 12, opacity: 0.75 }}>
 											{i18n.t("settings.settings.storage.localFilesNote")} ({localFilesInfo.count} {i18n.t("settings.settings.storage.totalLocal")})
 										</Typography>
 										<Box display="flex" style={{ gap: 8 }}>
@@ -659,7 +755,7 @@ const Settings = () => {
 										</Box>
 										{migrationStatus && migrationStatus.status === "running" && (
 											<Box mt={1}>
-												<Typography variant="caption" color="textSecondary">
+												<Typography variant="caption" style={{ opacity: 0.75 }}>
 													{i18n.t("settings.settings.storage.migrating")}: {migrationStatus.migrated || 0}/{migrationStatus.total || 0}
 												</Typography>
 											</Box>
@@ -673,45 +769,53 @@ const Settings = () => {
 										)}
 									</Box>
 
-									{/* Sync stats */}
-									{storageSyncStats && (
-										<>
+								{/* Sync stats */}
+								{storageSyncStats && (
+									<>
+										<Box mb={2.5}>
+											<Typography variant="body2" style={{ marginBottom: 12, fontWeight: 600 }}>
+												Estadísticas de Sincronización
+											</Typography>
 											<div className={classes.storageStats}>
 												{/* S3 files count */}
 												<Chip
-													size="small"
+													size="medium"
 													icon={<CloudUploadIcon />}
 													label={`${i18n.t("settings.settings.storage.filesInS3")}: ${storageSyncStats.s3FilesCount || 0}`}
 													color="primary"
+													variant="filled"
+													className={classes.statusChip}
 												/>
 												{/* Only show pending/failed if there are any */}
 												{(storageSyncStats.pending > 0 || storageSyncStats.syncing > 0) && (
 													<Chip
-														size="small"
+														size="medium"
 														label={`${i18n.t("settings.settings.storage.pending")}: ${storageSyncStats.pending || 0}`}
 														variant="outlined"
 														color="secondary"
+														className={classes.statusChip}
 													/>
 												)}
 												{storageSyncStats.syncing > 0 && (
 													<Chip
-														size="small"
+														size="medium"
 														label={`${i18n.t("settings.settings.storage.syncing")}: ${storageSyncStats.syncing}`}
 														variant="outlined"
 														color="primary"
+														className={classes.statusChip}
 													/>
 												)}
 												{storageSyncStats.failed > 0 && (
 													<Chip
-														size="small"
+														size="medium"
 														label={`${i18n.t("settings.settings.storage.failed")}: ${storageSyncStats.failed}`}
-														variant="outlined"
+														variant="filled"
 														color="secondary"
+														className={classes.statusChip}
 													/>
 												)}
 											</div>
-
-											{/* Only show sync button if there are pending uploads */}
+										</Box>											{/* Only show sync button if there are pending uploads */}
 											{(storageSyncStats.pending > 0 || storageSyncStats.failed > 0) && (
 												<Button
 													variant="contained"

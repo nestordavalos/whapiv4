@@ -26,7 +26,6 @@ function connectToSocket() {
       return null;
     }
   } catch (err) {
-    console.error("Invalid token", err);
     localStorage.removeItem("token");
     return null;
   }
@@ -56,7 +55,6 @@ function connectToSocket() {
   });
 
   socket.on("session:expired", () => {
-    console.warn("Socket session expired, forcing logout");
     localStorage.removeItem("token");
     window.location.href = "/login";
   });

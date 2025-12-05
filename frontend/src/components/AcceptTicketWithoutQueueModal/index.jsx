@@ -94,7 +94,7 @@ const useStyles = makeStyles((theme) => ({
 	},
 }));
 
-const AcceptTicketWithouSelectQueue = ({ modalOpen, onClose, ticketId, onAccepted }) => {
+const AcceptTicketWithouSelectQueue = ({ modalOpen, onClose, ticketId, onAccepted, onTabChange }) => {
 	const history = useHistory();
 	const classes = useStyles();
 	const [selectedQueue, setSelectedQueue] = useState('');
@@ -133,7 +133,11 @@ const handleUpdateTicketStatus = async (queueId) => {
 		if (isMounted.current) {
 			setLoading(false);
 		}
-		history.push(`/tickets/${ticketId}`);
+		// Cambiar al tab "open" antes de redirigir
+		if (typeof onTabChange === "function") {
+			onTabChange("open");
+		}
+		history.push(`/tickets/${ticketId}`, { tab: "open" });
 		if (typeof onAccepted === "function") {
 			onAccepted();
 		}

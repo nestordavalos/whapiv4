@@ -86,12 +86,12 @@ const reducer = (state, action) => {
 const useStyles = makeStyles((theme) => ({
   mainPaper: {
     flex: 1,
-    padding: theme.spacing(2),
-    margin: theme.spacing(1),
+    padding: theme.spacing(2.5),
+    margin: theme.spacing(1.5),
     overflowY: "auto",
-    borderRadius: 12,
+    borderRadius: 16,
     border: `1px solid ${theme.palette.divider}`,
-    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+    boxShadow: "0 12px 32px rgba(15, 23, 42, 0.08)",
     ...theme.scrollbarStyles,
     [theme.breakpoints.down('md')]: {
       padding: theme.spacing(1),
@@ -108,8 +108,8 @@ const useStyles = makeStyles((theme) => ({
         textTransform: "uppercase",
         letterSpacing: "0.5px",
         borderBottom: `2px solid ${theme.palette.divider}`,
-        padding: "12px 16px",
-        backgroundColor: theme.palette.background.default,
+        padding: "12px 14px",
+        backgroundColor: theme.palette.background.paper,
         [theme.breakpoints.down('sm')]: {
           padding: "8px 10px",
           fontSize: "0.7rem",
@@ -122,10 +122,13 @@ const useStyles = makeStyles((theme) => ({
         "&:hover": {
           backgroundColor: theme.palette.action.hover,
         },
+        "&:nth-of-type(even)": {
+          backgroundColor: theme.palette.action.selected,
+        },
       },
       "& .MuiTableCell-body": {
         fontSize: "0.875rem",
-        padding: "12px 16px",
+        padding: "12px 14px",
         borderBottom: `1px solid ${theme.palette.divider}`,
         [theme.breakpoints.down('sm')]: {
           padding: "8px 10px",
@@ -139,8 +142,10 @@ const useStyles = makeStyles((theme) => ({
     color: theme.palette.primary.main,
     fontFamily: "monospace",
     fontSize: "0.9rem",
-    backgroundColor: theme.palette.primary.main + "0A",
-    padding: "4px 10px",
+    backgroundColor: theme.palette.mode === "dark"
+      ? theme.palette.primary.main + "1F"
+      : theme.palette.primary.main + "14",
+    padding: "6px 12px",
     borderRadius: 6,
     display: "inline-block",
   },
@@ -172,9 +177,17 @@ const useStyles = makeStyles((theme) => ({
       backgroundColor: theme.palette.error.main + "14",
     },
   },
+  actionsCell: {
+    whiteSpace: "nowrap",
+    [theme.breakpoints.down('sm')]: {
+      "& .MuiIconButton-root": {
+        padding: 6,
+      },
+    },
+  },
   searchField: {
     "& .MuiOutlinedInput-root": {
-      borderRadius: 10,
+      borderRadius: 12,
       backgroundColor: theme.palette.background.paper,
       "& fieldset": {
         borderColor: theme.palette.divider,
@@ -184,17 +197,17 @@ const useStyles = makeStyles((theme) => ({
       },
     },
     "& .MuiInputBase-input": {
-      padding: "10px 14px",
+      padding: "12px 14px",
       fontSize: "0.875rem",
     },
   },
   headerButton: {
-    borderRadius: 10,
-    padding: "8px 12px",
+    borderRadius: 12,
+    padding: "10px 12px",
     minWidth: 44,
     boxShadow: "none",
     "&:hover": {
-      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+      boxShadow: `0 10px 24px ${theme.palette.action.hover}`,
     },
     [theme.breakpoints.down('sm')]: {
       padding: "6px 10px",
@@ -231,7 +244,7 @@ const useStyles = makeStyles((theme) => ({
     width: "100%",
     maxWidth: 400,
     "& .MuiOutlinedInput-root": {
-      borderRadius: 10,
+      borderRadius: 12,
       backgroundColor: theme.palette.background.paper,
       "& fieldset": {
         borderColor: theme.palette.divider,
@@ -241,7 +254,7 @@ const useStyles = makeStyles((theme) => ({
       },
     },
     "& .MuiInputBase-input": {
-      padding: "10px 14px",
+      padding: "12px 14px",
       fontSize: "0.875rem",
     },
   },
@@ -480,7 +493,7 @@ const QuickAnswers = () => {
               <TableCell align="left">
                 {i18n.t("quickAnswers.table.message")}
               </TableCell>
-              <TableCell align="center">
+              <TableCell align="center" className={classes.actionsCell}>
                 {i18n.t("quickAnswers.table.actions")}
               </TableCell>
             </TableRow>
@@ -495,7 +508,7 @@ const QuickAnswers = () => {
                   <TableCell align="left">
                     <span className={classes.messageCell}>{quickAnswer.message}</span>
                   </TableCell>
-                  <TableCell align="center">
+                  <TableCell align="center" className={classes.actionsCell}>
                     <IconButton
                       size="small"
                       className={`${classes.actionButton} ${classes.editButton}`}

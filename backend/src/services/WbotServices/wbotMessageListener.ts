@@ -645,7 +645,6 @@ const verifyQueue = async (
   await handleMultipleQueues();
 };
 
-console.log();
 const isValidMsg = (msg: WbotMessage): boolean => {
   if (msg.from === "status@broadcast") return false;
   if (
@@ -756,7 +755,6 @@ const handleMessage = async (
 
       if (!isSync) {
         isBody = /\u200e/.test(msg.body[0]);
-        console.log(`ISBODY  ${isBody}`);
         if (isBody) return;
       }
       // media messages sent from me from cell phone, first comes with "hasMedia = false" and type = "image/ptt/etc"
@@ -836,7 +834,6 @@ const handleMessage = async (
       whatsapp.farewellMessage &&
       formatBody(whatsapp.farewellMessage, ticket) === msg.body
     ) {
-      console.log("entrou aquii IF 2193");
       return;
     }
 
@@ -894,7 +891,7 @@ const handleMessage = async (
       }
     } catch (e) {
       Sentry.captureException(e);
-      console.log(e);
+      logger.error(`Error in message listener: ${e}`);
     }
 
     // Verificar si el mensaje ya existe en la BD (evita duplicados de mensajes enviados desde el panel)
@@ -1002,7 +999,7 @@ const handleMessage = async (
       });
     } catch (e) {
       Sentry.captureException(e);
-      console.log(e);
+      logger.error(`Error in message processing: ${e}`);
     }
 
     // Handle integration with Typebot, n8n or webhooks
@@ -1098,7 +1095,7 @@ const handleMessage = async (
           });
         }
       } catch (error) {
-        console.log(error);
+        logger.error(`Error in webhook/integration: ${error}`);
       }
     }
 

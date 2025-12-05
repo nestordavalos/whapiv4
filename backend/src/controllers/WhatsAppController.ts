@@ -306,11 +306,11 @@ export const restart = async (
   }
 
   try {
-    console.log(`Iniciando restart para WhatsApp ID: ${whatsappId}`);
+    logger.info(`Iniciando restart para WhatsApp ID: ${whatsappId}`);
 
     await restartWbot(+whatsappId);
 
-    console.log(
+    logger.info(
       `Restart realizado com sucesso para WhatsApp ID: ${whatsappId}`
     );
 
@@ -327,7 +327,7 @@ export const restart = async (
       .status(200)
       .json({ message: "WhatsApp session restarted successfully." });
   } catch (error) {
-    console.error(`Erro ao reiniciar WhatsApp ID ${whatsappId}:`, error);
+    logger.error(`Erro ao reiniciar WhatsApp ID ${whatsappId}: ${error}`);
 
     return res.status(500).json({
       message: "Failed to restart WhatsApp session.",
@@ -347,10 +347,10 @@ export const shutdown = async (
   }
 
   try {
-    console.log(`Iniciando shutdown para WhatsApp ID: ${whatsappId}`);
+    logger.info(`Iniciando shutdown para WhatsApp ID: ${whatsappId}`);
 
     await shutdownWbot(whatsappId);
-    console.log(
+    logger.info(
       `Shutdown realizado com sucesso para WhatsApp ID: ${whatsappId}`
     );
 
@@ -362,13 +362,13 @@ export const shutdown = async (
       action: "update",
       whatsapp
     });
-    console.log("Evento emitido com sucesso via WebSocket.");
+    logger.info("Evento emitido com sucesso via WebSocket.");
 
     return res.status(200).json({
       message: "WhatsApp session shutdown successfully."
     });
   } catch (error) {
-    console.error("Erro ao desligar o WhatsApp:", error);
+    logger.error(`Erro ao desligar o WhatsApp: ${error}`);
 
     return res.status(500).json({
       message: "Failed to shutdown WhatsApp session.",

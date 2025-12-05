@@ -487,6 +487,7 @@ const messages = {
 
       },
       notifications: {
+        title: "Notificações",
         noTickets: "Nenhuma notificação.",
       },
       queues: {
@@ -730,6 +731,7 @@ const messages = {
         header: "Dados do contato",
         buttons: {
           edit: "Editar contato",
+          close: "Fechar painel",
         },
         extraInfo: "Outras informações",
       },

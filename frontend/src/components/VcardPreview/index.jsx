@@ -100,7 +100,6 @@ const VcardPreview = ({ contact, numbers }) => {
                     setContact(data)
 
                 } catch (err) {
-                    console.log(err)
                     toastError(err);
                 }
             };

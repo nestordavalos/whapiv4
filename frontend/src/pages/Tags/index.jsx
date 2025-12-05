@@ -88,12 +88,12 @@ const reducer = (state, action) => {
 const useStyles = makeStyles((theme) => ({
   mainPaper: {
     flex: 1,
-    padding: theme.spacing(2),
-    margin: theme.spacing(1),
+    padding: theme.spacing(2.5),
+    margin: theme.spacing(1.5),
     overflowY: "auto",
-    borderRadius: 12,
+    borderRadius: 16,
     border: `1px solid ${theme.palette.divider}`,
-    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+    boxShadow: "0 12px 32px rgba(15, 23, 42, 0.08)",
     ...theme.scrollbarStyles,
     [theme.breakpoints.down('md')]: {
       padding: theme.spacing(1),
@@ -113,8 +113,8 @@ const useStyles = makeStyles((theme) => ({
         textTransform: "uppercase",
         letterSpacing: "0.5px",
         borderBottom: `2px solid ${theme.palette.divider}`,
-        padding: "12px 16px",
-        backgroundColor: theme.palette.background.default,
+        padding: "12px 14px",
+        backgroundColor: theme.palette.background.paper,
         [theme.breakpoints.down('sm')]: {
           padding: "8px 10px",
           fontSize: "0.7rem",
@@ -127,10 +127,13 @@ const useStyles = makeStyles((theme) => ({
         "&:hover": {
           backgroundColor: theme.palette.action.hover,
         },
+        "&:nth-of-type(even)": {
+          backgroundColor: theme.palette.action.selected,
+        },
       },
       "& .MuiTableCell-body": {
         fontSize: "0.875rem",
-        padding: "12px 16px",
+        padding: "12px 14px",
         borderBottom: `1px solid ${theme.palette.divider}`,
         [theme.breakpoints.down('sm')]: {
           padding: "8px 10px",
@@ -148,26 +151,28 @@ const useStyles = makeStyles((theme) => ({
     height: 24,
     borderRadius: "50%",
     display: "inline-block",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.15)",
-    border: "2px solid #fff",
+    boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
+    border: `2px solid ${theme.palette.background.paper}`,
   },
   contactsBadge: {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     minWidth: 28,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: theme.palette.primary.main + "18",
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: theme.palette.mode === "dark"
+      ? theme.palette.primary.main + "26"
+      : theme.palette.primary.main + "14",
     color: theme.palette.primary.main,
-    fontWeight: 600,
-    fontSize: "0.75rem",
-    padding: "0 8px",
+    fontWeight: 700,
+    fontSize: "0.78rem",
+    padding: "0 10px",
   },
   actionButton: {
-    padding: 6,
+    padding: 8,
     marginLeft: 4,
-    borderRadius: 8,
+    borderRadius: 10,
     transition: "all 0.2s ease",
     "&:hover": {
       backgroundColor: theme.palette.action.hover,
@@ -188,7 +193,7 @@ const useStyles = makeStyles((theme) => ({
   },
   searchField: {
     "& .MuiOutlinedInput-root": {
-      borderRadius: 10,
+      borderRadius: 12,
       backgroundColor: theme.palette.background.paper,
       "& fieldset": {
         borderColor: theme.palette.divider,
@@ -200,20 +205,24 @@ const useStyles = makeStyles((theme) => ({
         borderColor: theme.palette.primary.main,
       },
     },
+    "& .MuiInputBase-input": {
+      padding: "12px 14px",
+      fontSize: "0.875rem",
+    },
   },
   headerButton: {
-    borderRadius: 8,
-    minWidth: 40,
-    height: 40,
-    boxShadow: "0 2px 8px rgba(25, 118, 210, 0.25)",
+    borderRadius: 12,
+    minWidth: 44,
+    height: 44,
+    boxShadow: "none",
     transition: "all 0.2s ease",
     "&:hover": {
-      transform: "translateY(-2px)",
-      boxShadow: "0 4px 12px rgba(25, 118, 210, 0.35)",
+      transform: "translateY(-1px)",
+      boxShadow: `0 10px 24px ${theme.palette.action.hover}`,
     },
     [theme.breakpoints.down('sm')]: {
-      minWidth: 36,
-      height: 36,
+      minWidth: 38,
+      height: 38,
     },
   },
   headerTopRow: {
@@ -246,7 +255,7 @@ const useStyles = makeStyles((theme) => ({
     width: "100%",
     maxWidth: 400,
     "& .MuiOutlinedInput-root": {
-      borderRadius: 10,
+      borderRadius: 12,
       backgroundColor: theme.palette.background.paper,
       "& fieldset": {
         borderColor: theme.palette.divider,
@@ -256,13 +265,21 @@ const useStyles = makeStyles((theme) => ({
       },
     },
     "& .MuiInputBase-input": {
-      padding: "10px 14px",
+      padding: "12px 14px",
       fontSize: "0.875rem",
     },
   },
   hideOnMobileSearch: {
     [theme.breakpoints.down('sm')]: {
       display: "none",
+    },
+  },
+  actionsCell: {
+    whiteSpace: "nowrap",
+    [theme.breakpoints.down('sm')]: {
+      "& .MuiIconButton-root": {
+        padding: 6,
+      },
     },
   },
 }));
@@ -527,7 +544,7 @@ const Tags = () => {
               <TableCell align="center">{i18n.t("tags.table.name")}</TableCell>
               <TableCell align="center">{i18n.t("tags.table.color")}</TableCell>
               <TableCell align="center">{i18n.t("tags.table.contacts")}</TableCell>
-              <TableCell align="center">{i18n.t("tags.table.actions")}</TableCell>
+              <TableCell align="center" className={classes.actionsCell}>{i18n.t("tags.table.actions")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -551,7 +568,7 @@ const Tags = () => {
                       {tag.contacttag.length || 0}
                     </span>
                   </TableCell>
-                  <TableCell align="center">
+                  <TableCell align="center" className={classes.actionsCell}>
                     <IconButton
                       size="small"
                       onClick={() => handleEditTag(tag)}

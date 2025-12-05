@@ -149,7 +149,7 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
         const { data } = await api.get(`/queue-integrations`);
         setIntegrations(data.queueIntegrations || []);
       } catch (err) {
-        console.error("Error loading integrations:", err);
+        // Error loading integrations
       }
     })();
   }, []);
@@ -194,7 +194,6 @@ const QueueModal = ({ open, onClose, queueId, onEdit }) => {
 
   const handleSaveQueue = async (values) => {
     try {
-      console.log(queueId);
       if (queueId) {
         await api.put(`/queue/${queueId}`, values);
       } else {

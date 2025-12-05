@@ -3,7 +3,9 @@ import { QueryInterface, DataTypes } from "sequelize";
 module.exports = {
   up: async (queryInterface: QueryInterface) => {
     // Verificar si la columna ya existe
-    const tableDescription = await queryInterface.describeTable("Messages");
+    const tableDescription: any = await queryInterface.describeTable(
+      "Messages"
+    );
 
     if (!tableDescription.bodySearch) {
       await queryInterface.addColumn("Messages", "bodySearch", {
@@ -13,7 +15,7 @@ module.exports = {
     }
 
     // Verificar si el índice ya existe
-    const indexes = await queryInterface.showIndex("Messages");
+    const indexes = (await queryInterface.showIndex("Messages")) as any[];
     const indexExists = indexes.some(
       (index: any) => index.name === "message_bodySearch_index"
     );

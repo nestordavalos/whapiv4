@@ -4,9 +4,15 @@ const path = require("path");
 const app = express();
 require('dotenv').config();
 
+// Serve static files from dist directory
 app.use(express.static(path.join(__dirname, "dist")));
-app.get("*", function (req, res) {
+
+// Handle all routes by serving index.html
+app.use((req, res) => {
 	res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
-app.listen(process.env.SERVER_PORT || 3000);
+const PORT = process.env.SERVER_PORT || 3000;
+app.listen(PORT, () => {
+	console.log(`Server running on port ${PORT}`);
+});

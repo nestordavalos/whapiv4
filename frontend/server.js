@@ -12,7 +12,7 @@ app.use((req, res) => {
 	res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
-const PORT = process.env.SERVER_PORT || 3000;
+const PORT = process.env.VITE_PORT || 3000;
 app.listen(PORT, () => {
 	console.log(`Server running on port ${PORT}`);
 });

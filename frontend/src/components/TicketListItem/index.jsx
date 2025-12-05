@@ -606,7 +606,7 @@ const handleAcepptTicket = async id => {
             userId: user?.id,
         });
         safeHandleChangeTab(null, "open");
-        history.push(`/tickets/${id}`);
+        history.push(`/tickets/${id}`, { tab: "open" });
     } catch (err) {
         toastError(err);
     } finally {
@@ -623,7 +623,8 @@ const handleReopenTicket = async id => {
             status: "open",
             userId: user?.id,
         });
-        history.push(`/tickets/${id}`);
+        safeHandleChangeTab(null, "open");
+        history.push(`/tickets/${id}`, { tab: "open" });
     } catch (err) {
         toastError(err);
     } finally {
@@ -639,6 +640,7 @@ const handleViewTicket = async id => {
         await api.put(`/tickets/${id}`, {
             status: "pending",
         });
+        // No cambiar el tab al mover a pending, mantener el tab actual
         history.push(`/tickets/${id}`);
     } catch (err) {
         toastError(err);
@@ -656,6 +658,7 @@ const handleClosedTicket = async id => {
             status: "closed",
             userId: user?.id,
         });
+        // No cambiar el tab al cerrar un ticket, mantener el tab actual
         history.push(`/tickets/${id}`);
     } catch (err) {
         toastError(err);
@@ -677,6 +680,7 @@ return (
             modalOpen={acceptTicketWithouSelectQueueOpen}
             onClose={() => isMounted.current && setAcceptTicketWithouSelectQueueOpen(false)}
             ticketId={ticket.id}
+            onTabChange={handleChangeTab}
             onAccepted={() => {
                 if (isMounted.current) {
                     setAcceptTicketWithouSelectQueueOpen(false);

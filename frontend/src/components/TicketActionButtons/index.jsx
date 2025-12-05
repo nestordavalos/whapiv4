@@ -103,8 +103,10 @@ const TicketActionButtons = ({ ticket }) => {
 
 			setLoading(false);
 			if (status === "open") {
-				history.push(`/tickets/${ticket.id}`);
+				// Pasar el tab deseado en el state para que TicketsManager lo detecte
+				history.push(`/tickets/${ticket.id}`, { tab: "open" });
 			} else {
+				// Para pending y closed, redirigir sin cambiar el tab
 				history.push("/tickets");
 			}
 		} catch (err) {

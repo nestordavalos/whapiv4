@@ -686,9 +686,6 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     const handleMessage = data => {
       // Verificar que el mensaje pertenece al ticket actual
       if (data.message && data.message.ticketId !== parseInt(ticketId)) {
-        console.debug(
-          `[MessagesList] Ignorando mensaje de ticket ${data.message.ticketId}, ticket actual: ${ticketId}`
-        );
         return;
       }
 
@@ -857,23 +854,6 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
       }
       return <VcardPreview contact={contact} numbers={obj[0].number} />;
     } else if (message.mediaType === "image") {
-    /*else if (message.mediaType === "multi_vcard") {
-      console.log("multi_vcard")
-      console.log(message)
-    	
-      if(message.body !== null && message.body !== "") {
-        let newBody = JSON.parse(message.body)
-        return (
-          <>
-            {
-            newBody.map(v => (
-              <VcardPreview contact={v.name} numbers={v.number} />
-            ))
-            }
-          </>
-        )
-      } else return (<></>)
-    }*/
       return <ModalImageCors imageUrl={message.mediaUrl} />
     } else if (message.mediaType === "audio") {
       return (

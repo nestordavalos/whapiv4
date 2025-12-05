@@ -53,15 +53,15 @@ const useStyles = makeStyles(theme => ({
     borderRadius: 10,
   },
   menuItemActive: {
-    backgroundColor: theme.palette.primary.main + "18",
+    backgroundColor: theme.palette.primary.main,
     "&:hover": {
-      backgroundColor: theme.palette.primary.main + "24",
+      backgroundColor: theme.palette.primary.dark,
     },
     "& $menuIcon": {
-      color: theme.palette.primary.dark || theme.palette.primary.main,
+      color: "#ffffff",
     },
     "& .MuiListItemText-primary": {
-      color: theme.palette.primary.dark || theme.palette.primary.main,
+      color: "#ffffff",
       fontWeight: 600,
     },
   },
@@ -69,7 +69,7 @@ const useStyles = makeStyles(theme => ({
     minWidth: 40,
     color: theme.palette.text.secondary,
     "& .MuiSvgIcon-root": {
-      fontSize: "1.25rem",
+      fontSize: "1.125rem",
     },
   },
   menuIconClosed: {
@@ -86,11 +86,11 @@ const useStyles = makeStyles(theme => ({
     display: "none",
   },
   sectionHeader: {
-    fontSize: "0.7rem",
-    fontWeight: 600,
+    fontSize: "0.688rem",
+    fontWeight: 700,
     color: theme.palette.text.secondary,
     textTransform: "uppercase",
-    letterSpacing: "0.5px",
+    letterSpacing: "0.8px",
     padding: "16px 14px 8px",
     lineHeight: 1.5,
     backgroundColor: "transparent",
@@ -110,7 +110,7 @@ const useStyles = makeStyles(theme => ({
     display: "none",
   },
   versionText: {
-    fontSize: "0.7rem",
+    fontSize: "0.688rem",
     color: theme.palette.text.primary,
     textAlign: "center",
     fontWeight: 700,

@@ -361,6 +361,7 @@ const messages = {
           password: "Contraseña",
           profile: "Perfil",
           admin: "Administrador",
+          user: "Usuario",
           whatsapp: "Conexión estándar",
           asistente: "Asistente",
           startWork: "Inicio",

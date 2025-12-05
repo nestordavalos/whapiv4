@@ -36,15 +36,27 @@ const useStyles = makeStyles((theme) => ({
     paddingRight: 24,
     color: "#ffffff",
     background: theme.palette.toolbar.main,
+    minHeight: "48px !important",
+    height: "48px",
     "& .MuiIconButton-root": {
       color: "#ffffff",
+      padding: 8,
     },
     "& .MuiSvgIcon-root": {
       color: "#ffffff",
+      fontSize: "1.25rem",
     },
     [theme.breakpoints.down('sm')]: {
-      paddingRight: 8,
-      paddingLeft: 8,
+      paddingRight: 12,
+      paddingLeft: 12,
+      minHeight: "56px !important",
+      height: "56px",
+      "& .MuiIconButton-root": {
+        padding: 10,
+      },
+      "& .MuiSvgIcon-root": {
+        fontSize: "1.4rem",
+      },
     },
   },
   toolbarIcon: {
@@ -52,7 +64,7 @@ const useStyles = makeStyles((theme) => ({
     alignItems: "center",
     justifyContent: "space-between",
     padding: "12px 16px",
-    minHeight: "64px",
+    minHeight: "48px",
     backgroundColor: theme.palette.toolbarIcon.main,
     borderBottom: `1px solid ${theme.palette.divider}`,
   },
@@ -66,7 +78,7 @@ const useStyles = makeStyles((theme) => ({
     gap: "8px",
     overflow: "hidden",
     "& img": {
-      height: 40,
+      height: 32,
       width: "auto",
       borderRadius: 8,
     }
@@ -102,7 +114,8 @@ const useStyles = makeStyles((theme) => ({
   },
   title: {
     flexGrow: 1,
-    fontSize: "0.9rem",
+    fontSize: "1rem",
+    fontWeight: 500,
     [theme.breakpoints.down('sm')]: {
       display: "none",
     },
@@ -112,7 +125,9 @@ const useStyles = makeStyles((theme) => ({
     [theme.breakpoints.down('sm')]: {
       display: "block",
       flexGrow: 1,
-      fontSize: "0.8rem",
+      fontSize: "1rem",
+      fontWeight: 600,
+      letterSpacing: "0.01em",
     },
   },
   drawerPaper: {
@@ -154,8 +169,8 @@ const useStyles = makeStyles((theme) => ({
   },
   appBarSpacer: {
     minHeight: "48px",
-    [theme.breakpoints.down('md')]: {
-      minHeight: "48px",
+    [theme.breakpoints.down('sm')]: {
+      minHeight: "56px",
     },
   },
   content: {

@@ -2,6 +2,7 @@ import { Message as WbotMessage } from "whatsapp-web.js";
 import AppError from "../errors/AppError";
 import Ticket from "../models/Ticket";
 import GetTicketWbot from "./GetTicketWbot";
+import { logger } from "../utils/logger";
 
 export const GetWbotMessage = async (
   ticket: Ticket,
@@ -29,7 +30,7 @@ export const GetWbotMessage = async (
 
       return msgFound;
     } catch (fetchError) {
-      console.error("Error fetching messages:", fetchError);
+      logger.error(`Error fetching messages: ${fetchError}`);
       return undefined;
     }
   };
@@ -42,13 +43,13 @@ export const GetWbotMessage = async (
         ? `Não foi possível encontrar a mensagem nas últimas ${maxLimit} mensagens do grupo`
         : `Não foi possível encontrar a mensagem nas últimas ${maxLimit} mensagens`;
 
-      console.error(errorMsg);
+      logger.error(errorMsg);
       throw new Error(errorMsg);
     }
 
     return msgFound;
   } catch (err) {
-    console.error("Error in GetWbotMessage:", err);
+    logger.error(`Error in GetWbotMessage: ${err}`);
     throw new AppError("ERR_FETCH_WAPP_MSG");
   }
 };

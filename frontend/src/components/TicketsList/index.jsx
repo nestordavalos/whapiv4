@@ -296,16 +296,6 @@ const TicketsList = (props) => {
 		};
 
 		const handleTicket = (data) => {
-			console.debug(`[TicketsList ${status}] Received ticket event:`, {
-				action: data.action,
-				ticketId: data.ticket?.id || data.ticketId,
-				ticketStatus: data.ticket?.status,
-				ticketUserId: data.ticket?.userId,
-				shouldUpdate: data.ticket ? shouldUpdateTicket(data.ticket) : "N/A",
-				isAdmin,
-				showAll,
-			});
-
 			if (data.action === "updateUnread") {
 				dispatch({
 					type: "RESET_UNREAD",
@@ -345,7 +335,6 @@ const TicketsList = (props) => {
 
 		if (status) {
 			handleAppMessage = (data) => {
-				console.debug("TicketsList received appMessage", data);
 				if (data.action === "create" && shouldUpdateTicket(data.ticket)) {
 					dispatch({
 						type: "UPDATE_TICKET_UNREAD_MESSAGES",

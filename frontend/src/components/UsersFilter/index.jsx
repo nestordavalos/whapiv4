@@ -96,7 +96,6 @@ export function UsersFilter({ onFiltered, initialUsers }) {
     try {
       const { data } = await api.get(`/users/`);
       const userList = data.users;
-      console.log(userList)
       setUsers(userList);
     } catch (err) {
       toastError(err);

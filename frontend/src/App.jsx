@@ -467,6 +467,8 @@ const App = () => {
 
         if (settingIndex[0].value === "enabled") {
           setTheme("dark")
+        } else {
+          setTheme("light")
         }
 
       } catch (err) {
@@ -476,6 +478,17 @@ const App = () => {
     };
 
     fetchDarkMode();
+    
+    // Listen for theme changes from Settings page
+    const handleThemeChange = () => {
+      fetchDarkMode();
+    };
+    
+    window.addEventListener('themeChanged', handleThemeChange);
+    
+    return () => {
+      window.removeEventListener('themeChanged', handleThemeChange);
+    };
 
   }, []);
 

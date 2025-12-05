@@ -234,7 +234,5 @@ export default async function DashboardDataService(
     plain: true
   });
 
-  console.log(responseData);
-
   return responseData;
 }

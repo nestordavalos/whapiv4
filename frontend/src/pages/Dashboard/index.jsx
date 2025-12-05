@@ -614,7 +614,6 @@ const Dashboard = () => {
     }
 
     const data = await find(params);
-    console.log("dashboard/find params", params, "response", data);
 
     let parsedCounters = {};
     try {

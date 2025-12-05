@@ -182,7 +182,7 @@ const NewTicketModal = ({ modalOpen, onClose }) => {
 		try {
 			const payload = {
 				contactId: contactId,
-				userId: user.id,
+				userId: user?.id,
 				status: "open",
 				queueId: selectedQueue
 			};
@@ -370,20 +370,20 @@ const NewTicketModal = ({ modalOpen, onClose }) => {
 						</Select>
 					</FormControl>
 
-					<FormControl variant="outlined" className={`${classes.maxWidth} ${classes.input}`}>
-						<InputLabel>{i18n.t("ticketsList.acceptModal.queue")}</InputLabel>
-						<Select
-							required
-							value={selectedQueue}
-							onChange={(e) => setSelectedQueue(e.target.value)}
-							label={i18n.t("ticketsList.acceptModal.queue")}
-						>
-							<MenuItem value={''}>&nbsp;</MenuItem>
-							{user.queues.map((queue) => (
-								<MenuItem key={queue.id} value={queue.id}>{queue.name}</MenuItem>
-							))}
-						</Select>
-					</FormControl>
+				<FormControl variant="outlined" className={`${classes.maxWidth} ${classes.input}`}>
+					<InputLabel>{i18n.t("ticketsList.acceptModal.queue")}</InputLabel>
+					<Select
+						required
+						value={selectedQueue}
+						onChange={(e) => setSelectedQueue(e.target.value)}
+						label={i18n.t("ticketsList.acceptModal.queue")}
+					>
+						<MenuItem value={''}>&nbsp;</MenuItem>
+						{user?.queues?.map((queue) => (
+							<MenuItem key={queue.id} value={queue.id}>{queue.name}</MenuItem>
+						))}
+					</Select>
+				</FormControl>
 				</DialogContent>
 				<DialogActions className={classes.dialogActions}>
 					<Button

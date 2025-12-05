@@ -2,6 +2,7 @@ import AppError from "../../errors/AppError";
 import GetWbotMessage from "../../helpers/GetWbotMessage";
 import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
+import { logger } from "../../utils/logger";
 
 // Tiempo máximo para editar un mensaje (15 minutos en milisegundos)
 const MAX_EDIT_TIME_MS = 15 * 60 * 1000;
@@ -62,7 +63,7 @@ const EditWhatsAppMessage = async ({
     // Editar el mensaje en WhatsApp usando la API de whatsapp-web.js
     await wbotMessage.edit(newBody);
   } catch (err: any) {
-    console.error("Error editing WhatsApp message:", err);
+    logger.error(`Error editing WhatsApp message: ${err}`);
     throw new AppError("ERR_EDIT_WAPP_MSG", 500);
   }
 

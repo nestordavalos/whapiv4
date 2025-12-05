@@ -117,6 +117,11 @@ class Ticket extends Model<Ticket> {
 
   @BelongsTo(() => QueueIntegrations)
   integration: QueueIntegrations;
+
+  // Virtual fields for tracking information
+  queuedAt?: Date;
+
+  queueAt?: Date;
 }
 
 export default Ticket;

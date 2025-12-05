@@ -182,10 +182,10 @@ const UpdateTicketService = async ({
   }
 
   await ticketTraking.save();
-  (ticket as any).queuedAt = ticketTraking.queuedAt;
-  (ticket as any).queueAt = ticketTraking.queuedAt;
-  ticket.setDataValue("queuedAt", ticketTraking.queuedAt);
-  ticket.setDataValue("queueAt", ticketTraking.queuedAt);
+
+  // Set virtual fields for frontend compatibility
+  ticket.queuedAt = ticketTraking.queuedAt;
+  ticket.queueAt = ticketTraking.queuedAt;
 
   if (ticket.status !== oldStatus || ticket.user?.id !== oldUserId) {
     ticketTraking.update({

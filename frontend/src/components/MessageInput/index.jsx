@@ -14,11 +14,11 @@ import {
   InputBase,
   Paper,
   FormControlLabel,
-  Hidden,
   Menu,
   MenuItem,
   Switch,
   Avatar,
+  Box,
 } from "@mui/material";
 import makeStyles from '@mui/styles/makeStyles';
 import { green } from "@mui/material/colors";
@@ -574,7 +574,7 @@ const MessageInput = ({ ticketStatus }) => {
         {replyingMessage && renderReplyingMessage(replyingMessage)}
         {renderMediaPreview(medias)}
         <div className={classes.newMessageBox}>
-          <Hidden only={["sm", "xs"]}>
+          <Box sx={{ display: { xs: "none", sm: "none", md: "flex" }, alignItems: "center" }}>
             <IconButton
               aria-label="emojiPicker"
               component="span"
@@ -631,8 +631,8 @@ const MessageInput = ({ ticketStatus }) => {
                 />
               }
             />
-          </Hidden>
-          <Hidden only={["md", "lg", "xl"]}>
+          </Box>
+          <Box sx={{ display: { xs: "flex", sm: "flex", md: "none" }, alignItems: "center" }}>
             <IconButton
               aria-controls="simple-menu"
               aria-haspopup="true"
@@ -695,7 +695,7 @@ const MessageInput = ({ ticketStatus }) => {
                 />
               </MenuItem>
             </Menu>
-          </Hidden>
+          </Box>
           <div className={classes.messageInputWrapper}>
             <InputBase
               inputRef={(input) => {
@@ -742,7 +742,7 @@ const MessageInput = ({ ticketStatus }) => {
         </div>
         {replyingMessage && renderReplyingMessage(replyingMessage)}
         <div className={classes.newMessageBox}>
-          <Hidden only={["sm", "xs"]}>
+          <Box sx={{ display: { xs: "none", sm: "none", md: "flex" }, alignItems: "center" }}>
             <IconButton
               aria-label="emojiPicker"
               component="span"
@@ -800,8 +800,8 @@ const MessageInput = ({ ticketStatus }) => {
                 />
               }
             />
-          </Hidden>
-          <Hidden only={["md", "lg", "xl"]}>
+          </Box>
+          <Box sx={{ display: { xs: "flex", sm: "flex", md: "none" }, alignItems: "center" }}>
             <IconButton
               aria-controls="simple-menu"
               aria-haspopup="true"
@@ -864,7 +864,7 @@ const MessageInput = ({ ticketStatus }) => {
                 />
               </MenuItem>
             </Menu>
-          </Hidden>
+          </Box>
           <div className={classes.messageInputWrapper}>
             <InputBase
               inputRef={(input) => {

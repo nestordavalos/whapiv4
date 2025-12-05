@@ -10,14 +10,18 @@ const useStyles = makeStyles((theme) => ({
 	ticketInfoContainer: {
 		display: "flex",
 		alignItems: "center",
-		gap: 10,
+		gap: 12,
 		padding: "4px 8px",
 		cursor: "pointer",
 		minWidth: 0,
 		flex: 1,
 		[theme.breakpoints.down('md')]: {
+			gap: 10,
+			padding: "4px",
+		},
+		[theme.breakpoints.down('sm')]: {
 			gap: 8,
-			padding: "4px 0",
+			padding: "2px",
 		},
 	},
 	avatar: {
@@ -42,8 +46,11 @@ const useStyles = makeStyles((theme) => ({
 	titleRow: {
 		display: "flex",
 		alignItems: "center",
-		gap: 8,
+		gap: 10,
 		minWidth: 0,
+		[theme.breakpoints.down('md')]: {
+			gap: 8,
+		},
 	},
 	contactName: {
 		fontWeight: 700,

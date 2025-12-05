@@ -28,34 +28,46 @@ const useStyles = makeStyles((theme) => ({
   root: {
     display: "flex",
     height: "100vh",
+    overflow: "hidden",
     [theme.breakpoints.down('md')]: {
-      height: "calc(100vh - 56px)",
+      height: "100vh",
+      flexDirection: "column",
     },
   },
   toolbar: {
-    paddingRight: 24,
+    paddingRight: 16,
+    paddingLeft: 16,
     color: "#ffffff",
     background: theme.palette.toolbar.main,
     minHeight: "48px !important",
     height: "48px",
+    gap: "8px",
     "& .MuiIconButton-root": {
       color: "#ffffff",
-      padding: 8,
+      padding: 10,
+      margin: "0 2px",
     },
     "& .MuiSvgIcon-root": {
       color: "#ffffff",
       fontSize: "1.25rem",
     },
-    [theme.breakpoints.down('sm')]: {
+    [theme.breakpoints.down('md')]: {
       paddingRight: 12,
       paddingLeft: 12,
       minHeight: "56px !important",
       height: "56px",
+      gap: "6px",
+    },
+    [theme.breakpoints.down('sm')]: {
+      paddingRight: 8,
+      paddingLeft: 8,
+      gap: "4px",
       "& .MuiIconButton-root": {
-        padding: 10,
+        padding: 8,
+        margin: 0,
       },
       "& .MuiSvgIcon-root": {
-        fontSize: "1.4rem",
+        fontSize: "1.3rem",
       },
     },
   },
@@ -107,7 +119,10 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   menuButton: {
-    marginRight: 36,
+    marginRight: 12,
+    [theme.breakpoints.down('sm')]: {
+      marginRight: 8,
+    },
   },
   menuButtonHidden: {
     display: "none",
@@ -116,6 +131,10 @@ const useStyles = makeStyles((theme) => ({
     flexGrow: 1,
     fontSize: "1rem",
     fontWeight: 500,
+    marginLeft: 8,
+    [theme.breakpoints.down('md')]: {
+      fontSize: "0.9rem",
+    },
     [theme.breakpoints.down('sm')]: {
       display: "none",
     },
@@ -128,6 +147,7 @@ const useStyles = makeStyles((theme) => ({
       fontSize: "1rem",
       fontWeight: 600,
       letterSpacing: "0.01em",
+      marginLeft: 8,
     },
   },
   drawerPaper: {
@@ -179,6 +199,10 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     flexDirection: "column",
     backgroundColor: theme.palette.background.default,
+    minWidth: 0,
+    [theme.breakpoints.down('md')]: {
+      width: "100%",
+    },
   },
   container: {
     paddingTop: theme.spacing(4),

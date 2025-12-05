@@ -17,20 +17,34 @@ import { toast } from "react-toastify";
 
 const useStyles = makeStyles(theme => ({
 	actionButtons: {
-		marginRight: 5,
+		marginRight: 8,
 		flex: "none",
 		alignSelf: "center",
 		marginLeft: "auto",
 		display: "flex",
 		alignItems: "center",
-		gap: 4,
+		gap: 8,
+		[theme.breakpoints.down('md')]: {
+			gap: 6,
+			marginRight: 4,
+		},
+		[theme.breakpoints.down('sm')]: {
+			gap: 4,
+			marginRight: 2,
+		},
 	},
 	actionButton: {
-		padding: 6,
+		padding: 8,
 		borderRadius: 8,
 		transition: "all 0.2s ease",
 		"&:hover": {
 			transform: "scale(1.05)",
+		},
+		[theme.breakpoints.down('md')]: {
+			padding: 6,
+		},
+		[theme.breakpoints.down('sm')]: {
+			padding: 5,
 		},
 	},
 	returnButton: {

@@ -684,6 +684,14 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     if (!socket) return undefined;
 
     const handleMessage = data => {
+      // Verificar que el mensaje pertenece al ticket actual
+      if (data.message && data.message.ticketId !== parseInt(ticketId)) {
+        console.debug(
+          `[MessagesList] Ignorando mensaje de ticket ${data.message.ticketId}, ticket actual: ${ticketId}`
+        );
+        return;
+      }
+
       if (data.action === "create") {
         dispatch({ type: "ADD_MESSAGE", payload: data.message });
         scrollToBottom();

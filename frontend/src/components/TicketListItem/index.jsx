@@ -9,7 +9,6 @@ import makeStyles from '@mui/styles/makeStyles';
 import ListItem from "@mui/material/ListItem";
 import Typography from "@mui/material/Typography";
 import Avatar from "@mui/material/Avatar";
-import Divider from "@mui/material/Divider";
 import Chip from "@mui/material/Chip";
 import { IconButton, Tooltip } from "@mui/material";
 import ButtonBase from "@mui/material/ButtonBase";

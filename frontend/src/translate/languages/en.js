@@ -485,6 +485,7 @@ const messages = {
 
       },
       notifications: {
+        title: "Notifications",
         noTickets: "No notifications.",
       },
       queues: {

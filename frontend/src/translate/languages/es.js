@@ -553,6 +553,7 @@ const messages = {
 
       },
       notifications: {
+        title: "Notificaciones",
         noTickets: "Sin notificaciones.",
       },
       queues: {

@@ -1,19 +1,23 @@
-import React, { useState, useRef, useEffect, useContext } from "react";
+import React, { useState, useRef, useEffect, useContext, useCallback } from "react";
 
 import { useHistory } from "react-router-dom";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import openSocket from "../../services/socket-io";
 
 import Popover from "@mui/material/Popover";
 import IconButton from "@mui/material/IconButton";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
-import ListItemText from "@mui/material/ListItemText";
 import makeStyles from '@mui/styles/makeStyles';
 import Badge from "@mui/material/Badge";
 import ChatIcon from "@mui/icons-material/Chat";
+import NotificationsOffIcon from "@mui/icons-material/NotificationsOff";
+import Tooltip from "@mui/material/Tooltip";
+import Avatar from "@mui/material/Avatar";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
 
-import TicketListItem from "../TicketListItem";
 import { i18n } from "../../translate/i18n";
 import useTickets from "../../hooks/useTickets";
 import alertSound from "../../assets/sound.mp3";
@@ -23,20 +27,122 @@ import { AuthContext } from "../../context/Auth/AuthContext";
 const useStyles = makeStyles(theme => ({
 	tabContainer: {
 		overflowY: "auto",
-		maxHeight: 350,
+		maxHeight: 450,
 		...theme.scrollbarStyles,
 	},
 	popoverPaper: {
 		width: "100%",
-		maxWidth: 350,
+		maxWidth: 380,
 		marginLeft: theme.spacing(2),
 		marginRight: theme.spacing(1),
+		borderRadius: 12,
+		boxShadow: theme.palette.mode === "dark"
+			? "0 8px 32px rgba(0,0,0,0.4)"
+			: "0 8px 32px rgba(0,0,0,0.15)",
 		[theme.breakpoints.down('md')]: {
-			maxWidth: 270,
+			maxWidth: 320,
 		},
 	},
 	noShadow: {
 		boxShadow: "none !important",
+	},
+	notificationHeader: {
+		padding: theme.spacing(2),
+		borderBottom: `1px solid ${theme.palette.divider}`,
+		backgroundColor: theme.palette.background.default,
+	},
+	notificationTitle: {
+		fontWeight: 600,
+		fontSize: "1rem",
+	},
+	compactTicketItem: {
+		padding: "10px 16px !important",
+		borderBottom: `1px solid ${theme.palette.divider}`,
+		cursor: "pointer",
+		transition: "background-color 0.2s ease",
+		"&:hover": {
+			backgroundColor: theme.palette.action.hover,
+		},
+		"&:last-child": {
+			borderBottom: "none",
+		},
+	},
+	ticketContent: {
+		display: "flex",
+		gap: 12,
+		alignItems: "flex-start",
+		width: "100%",
+	},
+	ticketAvatar: {
+		width: 40,
+		height: 40,
+		flexShrink: 0,
+	},
+	ticketInfo: {
+		flex: 1,
+		minWidth: 0,
+		display: "flex",
+		flexDirection: "column",
+		gap: 4,
+	},
+	ticketMainRow: {
+		display: "flex",
+		justifyContent: "space-between",
+		alignItems: "center",
+		gap: 8,
+	},
+	contactName: {
+		fontWeight: 600,
+		fontSize: "0.875rem",
+		overflow: "hidden",
+		textOverflow: "ellipsis",
+		whiteSpace: "nowrap",
+		color: theme.palette.text.primary,
+	},
+	ticketTime: {
+		fontSize: "0.7rem",
+		color: theme.palette.text.secondary,
+		flexShrink: 0,
+	},
+	lastMessage: {
+		fontSize: "0.8rem",
+		color: theme.palette.text.secondary,
+		overflow: "hidden",
+		textOverflow: "ellipsis",
+		whiteSpace: "nowrap",
+		display: "block",
+	},
+	ticketMetaRow: {
+		display: "flex",
+		gap: 6,
+		alignItems: "center",
+		flexWrap: "wrap",
+	},
+	compactChip: {
+		height: 20,
+		fontSize: "0.65rem",
+		fontWeight: 500,
+		"& .MuiChip-label": {
+			padding: "0 6px",
+		},
+	},
+	unreadBadge: {
+		backgroundColor: theme.palette.primary.main,
+		color: "white",
+		borderRadius: "50%",
+		width: 20,
+		height: 20,
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "center",
+		fontSize: "0.65rem",
+		fontWeight: 600,
+		flexShrink: 0,
+	},
+	emptyState: {
+		padding: theme.spacing(4, 2),
+		textAlign: "center",
+		color: theme.palette.text.secondary,
 	},
 }));
 
@@ -48,41 +154,58 @@ const NotificationsPopOver = () => {
         const anchorEl = useRef();
 	const [isOpen, setIsOpen] = useState(false);
 	const [notifications, setNotifications] = useState([]);
+	const [notificationPermission, setNotificationPermission] = useState(
+                typeof window !== "undefined" && "Notification" in window 
+                        ? Notification.permission 
+                        : "unsupported"
+        );
 	const { profile, queues } = user;
 
         const [, setDesktopNotifications] = useState([]);
 
         const { tickets } = useTickets({ withUnreadMessages: "true" });
-        const audioRef = useRef(new Audio(alertSound));
+        const audioRef = useRef(null);
 
         const historyRef = useRef(history);
 
-        const requestPermissionIfNeeded = () => {
-                if (!("Notification" in window)) return;
-                if (Notification.permission === "default") {
-                        Notification.requestPermission().catch(() => undefined);
-                }
-        };
+        useEffect(() => {
+                historyRef.current = history;
+        }, [history]);
 
         useEffect(() => {
-                audioRef.current.load();
+                // Inicializar el audio
+                const audio = new Audio(alertSound);
+                audio.preload = "auto";
+                audio.volume = 0.8; // Establecer volumen al 80%
+                audioRef.current = audio;
+                
+                // Pre-cargar el audio
+                audio.load();
         }, []);
 
         useEffect(() => {
+                // Desbloquear el audio después de la primera interacción del usuario
                 const unlock = () => {
+                        if (!audioRef.current) return;
+                        
                         const audio = audioRef.current;
                         audio.play()
                                 .then(() => {
                                         audio.pause();
                                         audio.currentTime = 0;
                                 })
-                                .catch(err =>
-                                        console.debug("Audio unlock failed", err)
-                                );
+                                .catch(() => {});
                         document.removeEventListener("click", unlock);
+                        document.removeEventListener("touchstart", unlock);
                 };
+                
                 document.addEventListener("click", unlock);
-                return () => document.removeEventListener("click", unlock);
+                document.addEventListener("touchstart", unlock);
+                
+                return () => {
+                        document.removeEventListener("click", unlock);
+                        document.removeEventListener("touchstart", unlock);
+                };
         }, []);
 
 	useEffect(() => {
@@ -94,7 +217,157 @@ const NotificationsPopOver = () => {
 		} else {
 			setNotifications(tickets);
 		}
-	}, [tickets, queues, profile]);
+        }, [tickets, queues, profile]);
+
+        // Función para reproducir el sonido de notificación
+        const playNotificationSound = useCallback(() => {
+                if (!audioRef.current) return;
+
+                try {
+                        const audio = audioRef.current;
+                        audio.currentTime = 0;
+                        audio.play().catch(() => {
+                                // Intentar una vez más
+                                setTimeout(() => audio.play().catch(() => {}), 100);
+                        });
+                } catch (err) {
+                        // Silencioso
+                }
+        }, []);
+
+        const handleReactionNotification = useCallback((data) => {
+                const { reaction, contact, ticket } = data;
+
+                const senderName = reaction.senderName || contact.name;
+                const options = {
+                        body: `${senderName} reaccionó ${reaction.emoji} - ${format(new Date(), "HH:mm")}`,
+                        icon: contact.profilePicUrl,
+                        tag: `reaction-${ticket.id}-${reaction.id}`,
+                        renotify: true,
+                        requireInteraction: false,
+                };
+
+                try {
+                        if (!("Notification" in window)) {
+                                playNotificationSound();
+                                return;
+                        }
+
+                        if (Notification.permission === "granted") {
+                                const notification = new Notification(
+                                        `${i18n.t("tickets.notification.reaction") || "Reacción de"} ${contact.name}`,
+                                        options
+                                );
+
+                                notification.onclick = e => {
+                                        e.preventDefault();
+                                        window.focus();
+                                        historyRef.current.push(`/tickets/${ticket.id}`);
+                                };
+
+                                setDesktopNotifications(prevState => {
+                                        const notfiticationIndex = prevState.findIndex(
+                                                n => n.tag === notification.tag
+                                        );
+                                        if (notfiticationIndex !== -1) {
+                                                prevState[notfiticationIndex] = notification;
+                                                return [...prevState];
+                                        }
+                                        return [notification, ...prevState];
+                                });
+
+                                playNotificationSound();
+                        } else if (Notification.permission === "default") {
+                                playNotificationSound();
+                                Notification.requestPermission().then(permission => {
+                                        setNotificationPermission(permission);
+                                        
+                                        if (permission === "granted") {
+                                                const notification = new Notification(
+                                                        `${i18n.t("tickets.notification.reaction") || "Reacción de"} ${contact.name}`,
+                                                        options
+                                                );
+                                                notification.onclick = e => {
+                                                        e.preventDefault();
+                                                        window.focus();
+                                                        historyRef.current.push(`/tickets/${ticket.id}`);
+                                                };
+                                        }
+                                });
+                        } else {
+                                playNotificationSound();
+                        }
+                } catch (err) {
+                        playNotificationSound();
+                }
+        }, [playNotificationSound]);
+
+        const handleNotifications = useCallback((data) => {
+                const { message, contact, ticket } = data;
+
+                const messageBody = message.body || "📎 Archivo multimedia";
+                const options = {
+                        body: `${messageBody} - ${format(new Date(), "HH:mm")}`,
+                        icon: contact.profilePicUrl,
+                        tag: String(ticket.id),
+                        renotify: true,
+                        requireInteraction: false,
+                };
+
+                try {
+                        if (!("Notification" in window)) {
+                                playNotificationSound();
+                                return;
+                        }
+
+                        if (Notification.permission === "granted") {
+                                const notification = new Notification(
+                                        `${i18n.t("tickets.notification.message")} ${contact.name}`,
+                                        options
+                                );
+
+                                notification.onclick = e => {
+                                        e.preventDefault();
+                                        window.focus();
+                                        historyRef.current.push(`/tickets/${ticket.id}`);
+                                };
+
+                                setDesktopNotifications(prevState => {
+                                        const notfiticationIndex = prevState.findIndex(
+                                                n => n.tag === notification.tag
+                                        );
+                                        if (notfiticationIndex !== -1) {
+                                                prevState[notfiticationIndex] = notification;
+                                                return [...prevState];
+                                        }
+                                        return [notification, ...prevState];
+                                });
+
+                                playNotificationSound();
+                        } else if (Notification.permission === "default") {
+                                playNotificationSound();
+                                Notification.requestPermission().then(permission => {
+                                        setNotificationPermission(permission);
+                                        
+                                        if (permission === "granted") {
+                                                const notification = new Notification(
+                                                        `${i18n.t("tickets.notification.message")} ${contact.name}`,
+                                                        options
+                                                );
+                                                notification.onclick = e => {
+                                                        e.preventDefault();
+                                                        window.focus();
+                                                        historyRef.current.push(`/tickets/${ticket.id}`);
+                                                };
+                                        }
+                                });
+                        } else {
+                                playNotificationSound();
+                        }
+                } catch (err) {
+                        playNotificationSound();
+                }
+        }, [playNotificationSound]);
 
         useEffect(() => {
                 const socket = openSocket();
@@ -135,8 +408,6 @@ const NotificationsPopOver = () => {
                 socket.on("ticket", handleTicketEvent);
 
                 const handleAppMessageEvent = data => {
-                        console.debug("appMessage event received", data);
-                        
                         // Manejar notificaciones de reacciones
                         if (data.action === "reactionUpdate" && !data.reaction.fromMe) {
                                 if (data.ticket && data.contact) {
@@ -162,10 +433,6 @@ const NotificationsPopOver = () => {
                                         data.ticket.queue &&
                                         queueIds.indexOf(data.ticket.queue.id) === -1
                                 ) {
-                                        console.debug(
-                                                "Skipping notification due to queue restriction",
-                                                data.ticket.queue?.id
-                                        );
                                         return;
                                 }
 
@@ -184,16 +451,7 @@ const NotificationsPopOver = () => {
                                         data.ticket.chatbot;
 
                                 if (!shouldNotNotificate) {
-                                        console.debug(
-                                                "Triggering notification for ticket",
-                                                data.ticket.id
-                                        );
                                         handleNotifications(data);
-                                } else {
-                                        console.debug(
-                                                "Skipping notification due to configuration",
-                                                { shouldNotNotificate, ticketId: data.ticket.id }
-                                        );
                                 }
                         }
                 };
@@ -204,114 +462,15 @@ const NotificationsPopOver = () => {
                         socket.off("ticket", handleTicketEvent);
                         socket.off("appMessage", handleAppMessageEvent);
                 };
-        }, [user, profile, queues]);
-
-        const handleReactionNotification = data => {
-                const { reaction, contact, ticket } = data;
-                console.debug("Preparing reaction notification for ticket", ticket.id);
-
-                const senderName = reaction.senderName || contact.name;
-                const options = {
-                        body: `${senderName} reaccionó ${reaction.emoji} - ${format(new Date(), "HH:mm")}`,
-                        icon: contact.profilePicUrl,
-                        tag: `reaction-${ticket.id}-${reaction.id}`,
-                        renotify: true,
-                };
-
-                try {
-                        if (Notification.permission === "granted") {
-                                const notification = new Notification(
-                                        `${i18n.t("tickets.notification.reaction") || "Reacción de"} ${contact.name}`,
-                                        options
-                                );
-
-                                notification.onclick = e => {
-                                        e.preventDefault();
-                                        window.focus();
-                                        historyRef.current.push(`/tickets/${ticket.id}`);
-                                };
-
-                                setDesktopNotifications(prevState => {
-                                        const notfiticationIndex = prevState.findIndex(
-                                                n => n.tag === notification.tag
-                                        );
-                                        if (notfiticationIndex !== -1) {
-                                                prevState[notfiticationIndex] = notification;
-                                                return [...prevState];
-                                        }
-                                        return [notification, ...prevState];
-                                });
-                        }
-                } catch (err) {
-                        console.error("Failed to show reaction notification", err);
-                }
-
-                try {
-                        const audio = audioRef.current;
-                        audio.currentTime = 0;
-                        audio
-                                .play()
-                                .then(() => console.debug("Reaction notification sound played"))
-                                .catch(err => console.error("Failed to play sound", err));
-                } catch (err) {
-                        console.error("Failed to play sound", err);
-                }
-        };
-
-        const handleNotifications = data => {
-                const { message, contact, ticket } = data;
-                console.debug("Preparing desktop and audio notification for ticket", ticket.id);
-
-                const options = {
-                        body: `${message.body} - ${format(new Date(), "HH:mm")}`,
-                        icon: contact.profilePicUrl,
-                        tag: ticket.id,
-                        renotify: true,
-                };
-
-                try {
-                        if (Notification.permission === "granted") {
-                                const notification = new Notification(
-                                        `${i18n.t("tickets.notification.message")} ${contact.name}`,
-                                        options
-                                );
-
-                                notification.onclick = e => {
-                                        e.preventDefault();
-                                        window.focus();
-                                        historyRef.current.push(`/tickets/${ticket.id}`);
-                                };
-
-                                setDesktopNotifications(prevState => {
-                                        const notfiticationIndex = prevState.findIndex(
-                                                n => n.tag === notification.tag
-                                        );
-                                        if (notfiticationIndex !== -1) {
-                                                prevState[notfiticationIndex] = notification;
-                                                return [...prevState];
-                                        }
-                                        return [notification, ...prevState];
-                                });
-                        }
-                } catch (err) {
-                        console.error("Failed to show notification", err);
-                }
-
-                try {
-                        const audio = audioRef.current;
-                        audio.currentTime = 0;
-                        console.debug("Attempting to play notification sound");
-                        audio
-                                .play()
-                                .then(() => console.debug("Notification sound played"))
-                                .catch(err => console.error("Failed to play sound", err));
-                } catch (err) {
-                        console.error("Failed to play sound", err);
-                }
-        };
+        }, [user, profile, queues, handleNotifications, handleReactionNotification]);
 
         const handleClick = () => {
-                requestPermissionIfNeeded();
+                if ("Notification" in window && Notification.permission === "default") {
+                        Notification.requestPermission().then(permission => {
+                                setNotificationPermission(permission);
+                        }).catch(() => {});
+                }
+                
                 setIsOpen(prevState => !prevState);
         };
 
@@ -319,22 +478,127 @@ const NotificationsPopOver = () => {
 		setIsOpen(false);
 	};
 
-	const NotificationTicket = ({ children }) => {
-		return <div onClick={handleClickAway}>{children}</div>;
+	const handleTicketClick = (ticketId) => {
+		history.push(`/tickets/${ticketId}`);
+		handleClickAway();
 	};
+
+	const formatTime = (timestamp) => {
+		try {
+			const date = parseISO(timestamp);
+			const now = new Date();
+			const diff = now - date;
+			const minutes = Math.floor(diff / 60000);
+			const hours = Math.floor(diff / 3600000);
+			
+			if (minutes < 1) return "Ahora";
+			if (minutes < 60) return `${minutes}m`;
+			if (hours < 24) return `${hours}h`;
+			return format(date, "dd/MM");
+		} catch {
+			return "";
+		}
+	};
+
+	const getLastMessage = (ticket) => {
+		if (!ticket.lastMessage) return "Sin mensajes";
+		const msg = ticket.lastMessage;
+		if (msg.mediaType) {
+			const mediaTypes = {
+				image: "📷 Imagen",
+				video: "🎥 Video",
+				audio: "🎵 Audio",
+				document: "📄 Documento",
+				sticker: "🎨 Sticker",
+			};
+			return mediaTypes[msg.mediaType] || "📎 Archivo";
+		}
+		return msg.body || "Sin texto";
+	};
+
+	const CompactTicketItem = ({ ticket }) => (
+		<ListItem 
+			className={classes.compactTicketItem}
+			onClick={() => handleTicketClick(ticket.id)}
+		>
+			<Box className={classes.ticketContent}>
+				<Avatar 
+					src={ticket.contact?.profilePicUrl} 
+					alt={ticket.contact?.name}
+					className={classes.ticketAvatar}
+				>
+					{ticket.contact?.name?.charAt(0).toUpperCase()}
+				</Avatar>
+				<Box className={classes.ticketInfo}>
+					<Box className={classes.ticketMainRow}>
+						<Typography className={classes.contactName}>
+							{ticket.contact?.name || "Sin nombre"}
+						</Typography>
+						<Typography className={classes.ticketTime}>
+							{formatTime(ticket.updatedAt)}
+						</Typography>
+					</Box>
+					<Typography className={classes.lastMessage}>
+						{getLastMessage(ticket)}
+					</Typography>
+					<Box className={classes.ticketMetaRow}>
+						{ticket.queue && (
+							<Chip 
+								label={ticket.queue.name} 
+								size="small"
+								className={classes.compactChip}
+								style={{ 
+									backgroundColor: ticket.queue.color + "20",
+									color: ticket.queue.color,
+								}}
+							/>
+						)}
+						{ticket.user && (
+							<Chip 
+								label={ticket.user.name} 
+								size="small"
+								className={classes.compactChip}
+							/>
+						)}
+						{ticket.unreadMessages > 0 && (
+							<Box className={classes.unreadBadge}>
+								{ticket.unreadMessages}
+							</Box>
+						)}
+					</Box>
+				</Box>
+			</Box>
+		</ListItem>
+	);
+
+        const getTooltipTitle = () => {
+                if (notificationPermission === "denied") {
+                        return "Notificaciones bloqueadas. Por favor, habilítalas en la configuración del navegador.";
+                }
+                if (notificationPermission === "unsupported") {
+                        return "Este navegador no soporta notificaciones";
+                }
+                return `Notificaciones: ${notifications.length} mensajes sin leer`;
+        };
 
 	return (
             <>
-                    <IconButton
-                            onClick={handleClick}
-                            ref={anchorEl}
-                            aria-label={`Notificaciones: ${notifications.length} mensajes sin leer`}
-                            color="inherit"
-                            size="large">
-                        <Badge badgeContent={notifications.length} color="secondary" overlap="rectangular" >
-                            <ChatIcon />
-                        </Badge>
-                    </IconButton>
+                    <Tooltip title={getTooltipTitle()} arrow>
+                            <IconButton
+                                    onClick={handleClick}
+                                    ref={anchorEl}
+                                    aria-label={getTooltipTitle()}
+                                    color="inherit"
+                                    size="large">
+                                <Badge badgeContent={notifications.length} color="secondary" overlap="rectangular" >
+                                    {notificationPermission === "denied" ? (
+                                            <NotificationsOffIcon />
+                                    ) : (
+                                            <ChatIcon />
+                                    )}
+                                </Badge>
+                            </IconButton>
+                    </Tooltip>
                     <Popover
                         disableScrollLock
                         open={isOpen}
@@ -350,16 +614,24 @@ const NotificationsPopOver = () => {
                         classes={{ paper: classes.popoverPaper }}
                         onClose={handleClickAway}
                     >
+                        <Box className={classes.notificationHeader}>
+                            <Typography className={classes.notificationTitle}>
+                                {i18n.t("notifications.title") || "Notificaciones"}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                                {notifications.length} {notifications.length === 1 ? "mensaje" : "mensajes"}
+                            </Typography>
+                        </Box>
                         <List dense className={classes.tabContainer}>
                             {notifications.length === 0 ? (
-                                <ListItem>
-                                    <ListItemText>{i18n.t("notifications.noTickets")}</ListItemText>
-                                </ListItem>
+                                <Box className={classes.emptyState}>
+                                    <Typography variant="body2">
+                                        {i18n.t("notifications.noTickets")}
+                                    </Typography>
+                                </Box>
                             ) : (
                                 notifications.map(ticket => (
-                                    <NotificationTicket key={ticket.id}>
-                                        <TicketListItem ticket={ticket} />
-                                    </NotificationTicket>
+                                    <CompactTicketItem key={ticket.id} ticket={ticket} />
                                 ))
                             )}
                         </List>

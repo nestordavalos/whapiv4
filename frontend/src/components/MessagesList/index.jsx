@@ -629,6 +629,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   const [loading, setLoading] = useState(false);
   const lastMessageRef = useRef();
   const loadingRef = useRef(false);
+  const isFirstLoad = useRef(true);
   // const { user } = useContext(AuthContext);
 
   const [selectedMessage, setSelectedMessage] = useState({});
@@ -649,6 +650,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     setPageNumber(1);
     setHasMore(false);
     setLoading(false);
+    isFirstLoad.current = true;
 
     currentTicketId.current = ticketId;
   }, [ticketId]);
@@ -656,6 +658,11 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   useEffect(() => {
     setLoading(true);
     loadingRef.current = true;
+    
+    // Usar delay solo para paginación (evitar múltiples llamadas rápidas al scroll)
+    // Primera carga sin delay para mejor UX
+    const delay = pageNumber === 1 ? 0 : 300;
+    
     const delayDebounceFn = setTimeout(() => {
       const fetchMessages = async () => {
         if (!hasMore && pageNumber > 1) {
@@ -684,14 +691,14 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                 const scrollDiff = newScrollHeight - previousScrollHeight;
                 messagesListDiv.scrollTop = previousScrollTop + scrollDiff;
               });
+            } else if (pageNumber === 1 && isFirstLoad.current && data.messages.length > 0) {
+              // Solo hacer scroll al fondo en la primera carga
+              isFirstLoad.current = false;
+              setTimeout(() => scrollToBottom(), 100);
             }
             
             setLoading(false);
             loadingRef.current = false;
-          }
-
-          if (pageNumber === 1 && data.messages.length > 1) {
-            setTimeout(() => scrollToBottom(), 100);
           }
         } catch (err) {
           setLoading(false);
@@ -700,7 +707,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
         }
       };
       fetchMessages();
-    }, 500);
+    }, delay);
     return () => {
       clearTimeout(delayDebounceFn);
     };

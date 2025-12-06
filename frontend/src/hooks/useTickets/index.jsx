@@ -44,7 +44,24 @@ const useTickets = ({
                     if (whatsappIds) params.whatsappIds = whatsappIds;
                     if (userIds) params.userIds = userIds;
 
+                    console.log('[useTickets] Fetching tickets:', {
+                        params,
+                        pageNumber,
+                        status,
+                        timestamp: new Date().toISOString()
+                    });
+
                     const { data } = await api.get("/tickets", { params });
+
+                    console.log('[useTickets] Response:', {
+                        ticketsCount: data.tickets.length,
+                        hasMore: data.hasMore,
+                        count: data.count,
+                        pageNumber,
+                        status,
+                        timestamp: new Date().toISOString()
+                    });
+
                     setTickets(data.tickets)
 
                     // let horasFecharAutomaticamente = getHoursCloseTicketsAuto(); 
@@ -68,6 +85,12 @@ const useTickets = ({
                     setCount(data.count)
                     setLoading(false)
                 } catch (err) {
+                    console.error('[useTickets] Error fetching tickets:', {
+                        error: err.message,
+                        status,
+                        pageNumber,
+                        timestamp: new Date().toISOString()
+                    });
                     setLoading(false)
                     toastError(err)
                 }

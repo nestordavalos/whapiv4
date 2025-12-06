@@ -88,6 +88,13 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const reducer = (state, action) => {
+	console.log('[TicketsList Reducer]', {
+		type: action.type,
+		currentStateLength: state.length,
+		payloadLength: Array.isArray(action.payload) ? action.payload.length : 'N/A',
+		timestamp: new Date().toISOString()
+	});
+
 	if (action.type === "LOAD_TICKETS") {
 		const newTickets = action.payload;
 		const updatedState = [...state];
@@ -252,13 +259,24 @@ const TicketsList = (props) => {
 		const isAdmin = (profile || "").toUpperCase() === "ADMIN";
 		const shouldShowAll = showAll || isAdmin || allticket;
 
-		// Função para identificação liberação da settings
+		console.log('[TicketsList Effect]', {
+			tickets: tickets.length,
+			filteredTickets: filteredTickets.length,
+			shouldShowAll,
+			pageNumber,
+			hasMore,
+			loading,
+			status,
+			timestamp: new Date().toISOString()
+		});
+
+		// Función para identificación liberación de la settings
 		if (shouldShowAll) {
 			dispatch({ type: "LOAD_TICKETS", payload: tickets });
 		} else {
 			dispatch({ type: "LOAD_TICKETS", payload: filteredTickets });
 		}
-	}, [tickets, status, searchParam, queues, profile, user.allTicket, showAll]);
+	}, [tickets, status, searchParam, queues, profile, user.allTicket, showAll, pageNumber, hasMore, loading]);
 
 	useEffect(() => {
 		const socket = openSocket();
@@ -385,16 +403,43 @@ const TicketsList = (props) => {
 	}, [status, searchParam, showAll, selectedQueueIds, selectedTagIds, selectedWhatsappIds, selectedUserIds, tags]);
 
 	const loadMore = useCallback(() => {
+		console.log('[TicketsList loadMore]', {
+			loading,
+			hasMore,
+			currentPage: pageNumber,
+			ticketCount: ticketsList.length,
+			timestamp: new Date().toISOString()
+		});
+
 		if (!loading && hasMore) {
-			setPageNumber((prevState) => prevState + 1);
+			setPageNumber((prevState) => {
+				console.log('[TicketsList] Incrementing page:', prevState, '->', prevState + 1);
+				return prevState + 1;
+			});
+		} else {
+			console.log('[TicketsList] loadMore blocked:', { loading, hasMore });
 		}
-	}, [loading, hasMore]);
+	}, [loading, hasMore, pageNumber, ticketsList.length]);
 
 	const handleItemsRendered = useCallback(
 		({ visibleStopIndex }) => {
-			if (!hasMore || loading) return;
+			console.log('[TicketsList handleItemsRendered]', {
+				visibleStopIndex,
+				ticketListLength: ticketsList.length,
+				threshold: ticketsList.length - 10,
+				shouldLoad: visibleStopIndex >= ticketsList.length - 10,
+				hasMore,
+				loading,
+				timestamp: new Date().toISOString()
+			});
+
+			if (!hasMore || loading) {
+				console.log('[TicketsList] Scroll load blocked:', { hasMore, loading });
+				return;
+			}
 			// Cargar más cuando estamos cerca del final (10 items antes)
 			if (visibleStopIndex >= ticketsList.length - 10) {
+				console.log('[TicketsList] Triggering loadMore from scroll');
 				loadMore();
 			}
 		},

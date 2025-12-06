@@ -24,8 +24,11 @@ const useTickets = ({
 
     useEffect(() => {
         setLoading(true);
+        // Reducir delay para closed, ya que no hay búsqueda activa frecuente
+        const delay = status === 'closed' ? 200 : 500;
         const delayDebounceFn = setTimeout(() => {
             const fetchTickets = async() => {
+                const startTime = performance.now();
                 try {
                     // Construir params solo con valores definidos
                     const params = {
@@ -44,7 +47,19 @@ const useTickets = ({
                 if (whatsappIds) params.whatsappIds = whatsappIds;
                 if (userIds) params.userIds = userIds;
 
+                console.log('[useTickets] Fetching tickets:', { status, pageNumber, timestamp: new Date().toISOString() });
+
                 const { data } = await api.get("/tickets", { params });
+
+                const endTime = performance.now();
+                console.log('[useTickets] Tickets loaded:', { 
+                    status, 
+                    pageNumber, 
+                    count: data.tickets.length,
+                    hasMore: data.hasMore,
+                    totalCount: data.count,
+                    loadTime: `${(endTime - startTime).toFixed(2)}ms`
+                });
 
                 setTickets(data.tickets)                    // let horasFecharAutomaticamente = getHoursCloseTicketsAuto(); 
 

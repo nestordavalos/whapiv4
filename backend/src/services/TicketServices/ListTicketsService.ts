@@ -206,23 +206,47 @@ const ListTicketsService = async ({
 
   settingCreated = settingCreated === "enabled" ? "createdAt" : "updatedAt";
 
-  const count = await Ticket.count({
-    where: whereCondition,
-    include: includeCondition,
-    distinct: true
-  });
-
+  // Optimización: Obtener tickets primero para verificar hasMore sin COUNT costoso
   const tickets = await Ticket.findAll({
     where: whereCondition,
     include: includeCondition,
     subQuery: false,
     distinct: true,
-    limit,
+    limit: limit + 1, // Fetch one extra to check if there are more
     offset,
     order: [[settingCreated, settingASC]]
   } as any);
 
-  const hasMore = count > offset + tickets.length;
+  // Determinar hasMore basándose en si obtuvimos más de 'limit' tickets
+  const hasMore = tickets.length > limit;
+  
+  // Si hay más, remover el ticket extra
+  if (hasMore) {
+    tickets.pop();
+  }
+
+  // Solo calcular count si es la primera página (para mostrar total)
+  // De lo contrario, estimarlo
+  let count: number;
+  if (+pageNumber === 1) {
+    // Primera página: calcular count real solo si no hay búsqueda pesada
+    if (!searchParam) {
+      count = await Ticket.count({
+        where: whereCondition,
+        include: includeCondition.filter(inc => 
+          // Excluir Message include del count para hacerlo más rápido
+          !(inc as any).model || (inc as any).model.name !== 'Message'
+        ),
+        distinct: true
+      });
+    } else {
+      // Con búsqueda, estimar basado en resultados
+      count = hasMore ? limit + 1 : tickets.length;
+    }
+  } else {
+    // Páginas subsecuentes: estimar count basado en offset + resultados
+    count = offset + tickets.length + (hasMore ? 1 : 0);
+  }
 
   return {
     tickets,

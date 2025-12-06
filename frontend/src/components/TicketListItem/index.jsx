@@ -640,9 +640,11 @@ const handleViewTicket = async id => {
         await api.put(`/tickets/${id}`, {
             status: "pending",
         });
-        // No cambiar el tab al mover a pending, mantener el tab actual
-        history.push(`/tickets/${id}`);
+        // Cerrar conversación y cambiar al tab de pendientes
+        // history.push("/tickets", { tab: "pending" });
+        history.push("/tickets");
     } catch (err) {
+        console.error('[TicketListItem] Error en handleViewTicket:', err);
         toastError(err);
     } finally {
         if (isMounted.current) {
@@ -658,9 +660,9 @@ const handleClosedTicket = async id => {
             status: "closed",
             userId: user?.id,
         });
-        // No cambiar el tab al cerrar un ticket, mantener el tab actual
-        history.push(`/tickets/${id}`);
+        history.push("/tickets");
     } catch (err) {
+        console.error('[TicketListItem] Error en handleClosedTicket:', err);
         toastError(err);
     } finally {
         if (isMounted.current) {

@@ -631,6 +631,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   const lastMessageRef = useRef();
   const loadingRef = useRef(false);
   const isFirstLoad = useRef(true);
+  const isMounted = useRef(true);
   // const { user } = useContext(AuthContext);
 
   const [selectedMessage, setSelectedMessage] = useState({});
@@ -647,13 +648,17 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   const [forwardModalOpen, setForwardModalOpen] = useState(false);
 
   useEffect(() => {
+    isMounted.current = true;
     dispatch({ type: "RESET" });
     setPageNumber(1);
-    setHasMore(true); // Iniciar como true para permitir la carga
+    setHasMore(true);
     setLoading(false);
     isFirstLoad.current = true;
-
     currentTicketId.current = ticketId;
+
+    return () => {
+      isMounted.current = false;
+    };
   }, [ticketId]);
 
   useEffect(() => {
@@ -675,30 +680,38 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
             params: { pageNumber },
           });
 
-          if (currentTicketId.current === ticketId) {
+          if (isMounted.current && currentTicketId.current === ticketId) {
             dispatch({ type: "LOAD_MESSAGES", payload: data.messages });
             setHasMore(data.hasMore);
             
             // Mantener la posición del scroll al cargar mensajes antiguos
             if (pageNumber > 1 && messagesListDiv && data.messages.length > 0) {
               requestAnimationFrame(() => {
-                const newScrollHeight = messagesListDiv.scrollHeight;
-                const scrollDiff = newScrollHeight - previousScrollHeight;
-                messagesListDiv.scrollTop = previousScrollTop + scrollDiff;
+                if (isMounted.current) {
+                  const newScrollHeight = messagesListDiv.scrollHeight;
+                  const scrollDiff = newScrollHeight - previousScrollHeight;
+                  messagesListDiv.scrollTop = previousScrollTop + scrollDiff;
+                }
               });
             } else if (pageNumber === 1 && isFirstLoad.current && data.messages.length > 0) {
               // Solo hacer scroll al fondo en la primera carga
               isFirstLoad.current = false;
-              setTimeout(() => scrollToBottom(), 100);
+              if (isMounted.current) {
+                setTimeout(() => {
+                  if (isMounted.current) scrollToBottom();
+                }, 100);
+              }
             }
             
             setLoading(false);
             loadingRef.current = false;
           }
         } catch (err) {
-          setLoading(false);
-          loadingRef.current = false;
-          toastError(err);
+          if (isMounted.current) {
+            setLoading(false);
+            loadingRef.current = false;
+            toastError(err);
+          }
         }
       };
       fetchMessages();

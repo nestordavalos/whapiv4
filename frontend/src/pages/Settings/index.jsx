@@ -1,7 +1,6 @@
 /* eslint-disable no-unexpected-multiline, no-empty */
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import openSocket from "../../services/socket-io";
-import { useHistory } from "react-router-dom";
 
 import makeStyles from '@mui/styles/makeStyles';
 import withStyles from '@mui/styles/withStyles';
@@ -267,7 +266,6 @@ const IOSSwitch = withStyles((theme) => ({
 
 const Settings = () => {
 	const classes = useStyles();
-	const history = useHistory();
 	const isMounted = useRef(true);
 	const migrationPollRef = useRef(null);
 

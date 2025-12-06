@@ -1,5 +1,6 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useCallback } from "react";
 import { useHistory } from "react-router-dom";
+import openSocket from "../../services/socket-io";
 
 import { Badge, Button, FormControlLabel, Paper, Tab, Tabs, Switch } from "@mui/material";
 
@@ -261,6 +262,15 @@ const TicketsManager = () => {
 
   const normalizedProfile = (user?.profile || "").toUpperCase();
 
+  // Callbacks estables para updateCount
+  const handleSetOpenCount = useCallback((val) => {
+    setOpenCount(val);
+  }, [openCount]);
+
+  const handleSetPendingCount = useCallback((val) => {
+    setPendingCount(val);
+  }, [pendingCount]);
+
   useEffect(() => {
     if (showAllInitialized) return;
     if (!normalizedProfile) return;
@@ -270,6 +280,22 @@ const TicketsManager = () => {
     }
     setShowAllInitialized(true);
   }, [normalizedProfile, showAllInitialized]);
+
+  // Socket listener para actualizar badges cuando cambien estados
+  useEffect(() => {
+    const socket = openSocket();
+    if (!socket) return;
+
+    const handleTicketUpdate = (data) => {
+      // Socket listener para monitoreo si se necesita en el futuro
+    };
+
+    socket.on("ticket", handleTicketUpdate);
+
+    return () => {
+      socket.off("ticket", handleTicketUpdate);
+    };
+  }, [openCount, pendingCount]);
 
   // Detectar cambios de tab desde el history state
   useEffect(() => {
@@ -337,7 +363,7 @@ const TicketsManager = () => {
       </Paper>
       <Paper elevation={0} square className={classes.tabsHeader}>
         <Tabs
-          value={tab}
+          value={tab === "search" ? false : tab}
           onChange={handleChangeTab}
           variant="fullWidth"
           indicatorColor="primary"
@@ -443,7 +469,7 @@ const TicketsManager = () => {
             selectedTagIds={selectedTags}
             selectedWhatsappIds={selectedWhatsappIds}
             selectedUserIds={selectedUserIds}
-            updateCount={(val) => setOpenCount(val)}
+            updateCount={handleSetOpenCount}
             style={applyPanelStyle("open")}
           />
           <TicketsList
@@ -453,7 +479,7 @@ const TicketsManager = () => {
             selectedTagIds={selectedTags}
             selectedWhatsappIds={selectedWhatsappIds}
             selectedUserIds={selectedUserIds}
-            updateCount={(val) => setPendingCount(val)}
+            updateCount={handleSetPendingCount}
             style={applyPanelStyle("pending")}
           />
           </Paper>
@@ -469,7 +495,7 @@ const TicketsManager = () => {
               selectedTagIds={selectedTags}
               selectedWhatsappIds={selectedWhatsappIds}
               selectedUserIds={selectedUserIds}
-              updateCount={(val) => setPendingCount(val)}
+              updateCount={handleSetPendingCount}
             />
           </Paper>
         </TabPanel>

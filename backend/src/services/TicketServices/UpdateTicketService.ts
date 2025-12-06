@@ -187,14 +187,14 @@ const UpdateTicketService = async ({
   ticket.queuedAt = ticketTraking.queuedAt;
   ticket.queueAt = ticketTraking.queuedAt;
 
+  // Solo actualizar el userId en el tracking si cambió
   if (ticket.status !== oldStatus || ticket.user?.id !== oldUserId) {
     ticketTraking.update({
       userId: ticket.userId
     });
-    io.to(oldStatus).emit("ticket", {
-      action: "delete",
-      ticketId: ticket.id
-    });
+    // ELIMINADO: No enviamos "delete" porque el evento "update" 
+    // ya maneja correctamente qué tickets mostrar en cada vista
+    // El frontend usa shouldUpdateTicket() para filtrar
   }
 
   io.to(ticket.status)

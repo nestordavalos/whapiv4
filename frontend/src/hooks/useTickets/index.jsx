@@ -39,32 +39,14 @@ const useTickets = ({
                         withUnreadMessages,
                     };
 
-                    // Solo agregar si tienen valores
-                    if (tags) params.tags = tags;
-                    if (whatsappIds) params.whatsappIds = whatsappIds;
-                    if (userIds) params.userIds = userIds;
+                // Solo agregar si tienen valores
+                if (tags) params.tags = tags;
+                if (whatsappIds) params.whatsappIds = whatsappIds;
+                if (userIds) params.userIds = userIds;
 
-                    console.log('[useTickets] Fetching tickets:', {
-                        params,
-                        pageNumber,
-                        status,
-                        timestamp: new Date().toISOString()
-                    });
+                const { data } = await api.get("/tickets", { params });
 
-                    const { data } = await api.get("/tickets", { params });
-
-                    console.log('[useTickets] Response:', {
-                        ticketsCount: data.tickets.length,
-                        hasMore: data.hasMore,
-                        count: data.count,
-                        pageNumber,
-                        status,
-                        timestamp: new Date().toISOString()
-                    });
-
-                    setTickets(data.tickets)
-
-                    // let horasFecharAutomaticamente = getHoursCloseTicketsAuto(); 
+                setTickets(data.tickets)                    // let horasFecharAutomaticamente = getHoursCloseTicketsAuto(); 
 
                     // if (status === "open" && horasFecharAutomaticamente && horasFecharAutomaticamente !== "" &&
                     //     horasFecharAutomaticamente !== "0" && Number(horasFecharAutomaticamente) > 0) {

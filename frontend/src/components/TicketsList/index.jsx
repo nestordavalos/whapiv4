@@ -331,23 +331,29 @@ const TicketsList = (props) => {
 	}, [ticketsList.length, status, updateCount]);
 
 	const handleScroll = useCallback((e) => {
-		console.log('[TicketsList] handleScroll triggered - hasMore:', hasMore, 'loading:', loading);
+		const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+		const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+		const scrollPercentage = ((scrollTop + clientHeight) / scrollHeight) * 100;
+		
+		console.log('[TicketsList] handleScroll triggered:', {
+			hasMore,
+			loading,
+			scrollTop: scrollTop.toFixed(0),
+			scrollHeight,
+			clientHeight,
+			distanceFromBottom: distanceFromBottom.toFixed(0),
+			scrollPercentage: scrollPercentage.toFixed(1) + '%'
+		});
 		
 		if (!hasMore || loading) {
 			console.log('[TicketsList] Scroll ignorado - hasMore:', hasMore, 'loading:', loading);
 			return;
 		}
-		const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
 		
-		// Calcular cuánto falta para llegar al final
-		const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
-		
-		// Cargar más cuando falten menos de 100px para llegar al final
-		// O cuando el scroll esté al 85% o más
-		const scrollPercentage = ((scrollTop + clientHeight) / scrollHeight) * 100;
-		
-		if (distanceFromBottom < 100 || scrollPercentage >= 85) {
-			console.log('[TicketsList] Cargando más tickets - página:', pageNumber + 1, 'distancia del final:', distanceFromBottom + 'px', 'scroll:', scrollPercentage.toFixed(2) + '%');
+		// Cargar más cuando falten menos de 300px para llegar al final
+		// O cuando el scroll esté al 80% o más
+		if (distanceFromBottom < 300 || scrollPercentage >= 80) {
+			console.log('[TicketsList] 🚀 Cargando más tickets - página:', pageNumber + 1);
 			setPageNumber((prev) => prev + 1);
 		}
 	}, [hasMore, loading, pageNumber]);

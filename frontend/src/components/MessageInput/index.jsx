@@ -386,6 +386,15 @@ const MessageInput = ({ ticketStatus }) => {
   const handleSendMessage = async () => {
     if (inputMessage.trim() === "") return;
     setLoading(true);
+    
+    console.log('[MessageInput] Sending message with reply:', replyingMessage ? {
+      id: replyingMessage.id,
+      body: replyingMessage.body?.substring(0, 100) + '...',
+      mediaType: replyingMessage.mediaType,
+      fromMe: replyingMessage.fromMe,
+      contact: replyingMessage.contact
+    } : 'null');
+    
     const message = {
       read: 1,
       fromMe: true,
@@ -395,6 +404,16 @@ const MessageInput = ({ ticketStatus }) => {
         : inputMessage.trim(),
       quotedMsg: replyingMessage,
     };
+    
+    console.log('[MessageInput] Message object being sent:', {
+      ...message,
+      body: message.body.substring(0, 50) + '...',
+      quotedMsg: message.quotedMsg ? {
+        id: message.quotedMsg.id,
+        mediaType: message.quotedMsg.mediaType
+      } : null
+    });
+    
     try {
       await api.post(`/messages/${ticketId}`, message);
     } catch (err) {
@@ -482,6 +501,68 @@ const MessageInput = ({ ticketStatus }) => {
   };
 
   const renderReplyingMessage = (message) => {
+    const renderMessageContent = () => {
+      if (message.mediaType === "location") {
+        const locationParts = (message.body || "").split("|");
+        const descriptionLocation = locationParts.length > 2 ? locationParts[2] : "Ubicación";
+        
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '16px' }}>📍</span>
+            <span style={{ fontSize: '0.875rem', color: '#667781' }}>
+              {descriptionLocation}
+            </span>
+          </div>
+        );
+      }
+      
+      if (message.mediaType === "vcard") {
+        const vcardLines = (message.body || "").split("\n");
+        let contactName = "Contacto";
+        let phoneNumber = "";
+        
+        vcardLines.forEach(line => {
+          const trimmedLine = line.trim();
+          if (trimmedLine.startsWith("FN:")) {
+            contactName = trimmedLine.substring(3);
+          } else if (trimmedLine.includes("FN") && trimmedLine.includes(":")) {
+            const parts = trimmedLine.split(":");
+            if (parts.length > 1) {
+              contactName = parts[parts.length - 1];
+            }
+          }
+          
+          if (trimmedLine.includes("TEL")) {
+            const parts = trimmedLine.split(":");
+            for (let i = 0; i < parts.length; i++) {
+              if (parts[i].includes("+") || /^\d{10,}/.test(parts[i])) {
+                phoneNumber = parts[i];
+                break;
+              }
+            }
+          }
+        });
+        
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '18px' }}>👤</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#303030' }}>
+                {contactName}
+              </span>
+              {phoneNumber && (
+                <span style={{ fontSize: '0.75rem', color: '#667781' }}>
+                  {phoneNumber}
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      }
+      
+      return message.body;
+    };
+
     return (
       <div className={classes.replyginMsgWrapper}>
         <div className={classes.replyginMsgContainer}>
@@ -496,7 +577,7 @@ const MessageInput = ({ ticketStatus }) => {
                 {message.contact?.name}
               </span>
             )}
-            {message.body}
+            {renderMessageContent()}
           </div>
         </div>
         <IconButton

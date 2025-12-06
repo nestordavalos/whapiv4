@@ -1154,9 +1154,158 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
             </div>
           )}
 
+          {message.quotedMsg.mediaType === "vcard" && (() => {
+            const vcardLines = (message.quotedMsg.body || "").split("\n");
+            let contactName = "Contacto";
+            let phoneNumber = "";
+            
+            vcardLines.forEach(line => {
+              const trimmedLine = line.trim();
+              if (trimmedLine.startsWith("FN:")) {
+                contactName = trimmedLine.substring(3);
+              } else if (trimmedLine.includes("FN") && trimmedLine.includes(":")) {
+                const parts = trimmedLine.split(":");
+                if (parts.length > 1) {
+                  contactName = parts[parts.length - 1];
+                }
+              }
+              
+              if (trimmedLine.includes("TEL")) {
+                const parts = trimmedLine.split(":");
+                for (let i = 0; i < parts.length; i++) {
+                  if (parts[i].includes("+") || /^\d{10,}/.test(parts[i])) {
+                    phoneNumber = parts[i];
+                    break;
+                  }
+                }
+              }
+            });
+            
+            return (
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px',
+                padding: '4px 0'
+              }}>
+                <div style={{
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '50%',
+                  backgroundColor: '#e0e0e0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <span style={{ fontSize: '24px' }}>👤</span>
+                </div>
+                <div style={{ 
+                  flex: 1, 
+                  minWidth: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px'
+                }}>
+                  <div style={{ 
+                    fontWeight: 500, 
+                    fontSize: '0.875em',
+                    color: '#303030',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {contactName}
+                  </div>
+                  {phoneNumber && (
+                    <div style={{ 
+                      fontSize: '0.8em',
+                      color: '#667781',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {phoneNumber}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {message.quotedMsg.mediaType === "location" && (() => {
+            const locationParts = (message.quotedMsg.body || "").split("|");
+            const imageLocation = locationParts[0];
+            const descriptionLocation = locationParts.length > 2 ? locationParts[2] : null;
+            
+            return (
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px',
+                padding: '4px 0'
+              }}>
+                <div style={{
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '4px',
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                  backgroundColor: '#e0e0e0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {imageLocation && imageLocation.startsWith('data:image') ? (
+                    <img 
+                      src={imageLocation} 
+                      alt="Mapa"
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover' 
+                      }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: '24px' }}>📍</span>
+                  )}
+                </div>
+                <div style={{ 
+                  flex: 1, 
+                  minWidth: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '2px'
+                }}>
+                  <div style={{ 
+                    fontWeight: 500, 
+                    fontSize: '0.875em',
+                    color: '#303030',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    📍 Ubicación
+                  </div>
+                  {descriptionLocation && (
+                    <div style={{ 
+                      fontSize: '0.8em',
+                      color: '#667781',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {descriptionLocation}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {message.quotedMsg.mediaType === "image" ? (
             <ModalImageCors imageUrl={message.quotedMsg.mediaUrl} />
-          ) : (
+          ) : (message.quotedMsg.mediaType === "location" || message.quotedMsg.mediaType === "vcard") ? null : (
             message.quotedMsg?.body
           )}
         </div>

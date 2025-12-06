@@ -44,6 +44,18 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     : undefined;
   const medias = req.files as Express.Multer.File[] | undefined;
 
+  console.log(
+    "[MessageController] store - quotedMsg received:",
+    quotedMsg
+      ? {
+          id: quotedMsg.id,
+          body: `${quotedMsg.body?.substring(0, 100)}...`,
+          mediaType: quotedMsg.mediaType,
+          fromMe: quotedMsg.fromMe
+        }
+      : "null"
+  );
+
   const ticket = await ShowTicketService(ticketId);
 
   SetTicketMessagesAsRead(ticket);

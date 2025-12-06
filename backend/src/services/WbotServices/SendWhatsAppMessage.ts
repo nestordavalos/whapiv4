@@ -83,8 +83,15 @@ const SendWhatsAppMessage = async ({
   const remoteJid = `${ticket.contact.number}@${ticket.isGroup ? "g" : "c"}.us`;
   let quotedMsgSerializedId: string | undefined;
   if (quotedMsg) {
+    console.log("[SendWhatsAppMessage] Processing quotedMsg:", {
+      id: quotedMsg.id,
+      body: `${quotedMsg.body?.substring(0, 100)}...`,
+      mediaType: quotedMsg.mediaType,
+      fromMe: quotedMsg.fromMe
+    });
     await GetWbotMessage(ticket, quotedMsg.id);
     quotedMsgSerializedId = SerializeWbotMsgId(ticket, quotedMsg);
+    console.log("[SendWhatsAppMessage] Serialized ID:", quotedMsgSerializedId);
   }
 
   const wbot = await GetTicketWbot(ticket);
@@ -100,9 +107,20 @@ const SendWhatsAppMessage = async ({
       }
 
       try {
+        console.log("[SendWhatsAppMessage] Sending with options:", {
+          remoteJid,
+          quotedMessageId: quotedMsgSerializedId,
+          bodyLength: formattedBody.length
+        });
+
         const sentMessage = await wbot.sendMessage(remoteJid, formattedBody, {
           quotedMessageId: quotedMsgSerializedId,
           linkPreview: false
+        });
+
+        console.log("[SendWhatsAppMessage] Message sent successfully:", {
+          id: sentMessage.id.id,
+          hasQuoted: !!sentMessage.hasQuotedMsg
         });
 
         await ticket.update({ lastMessage: body });

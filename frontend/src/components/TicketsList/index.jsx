@@ -331,7 +331,10 @@ const TicketsList = (props) => {
 	}, [ticketsList.length, status, updateCount]);
 
 	const handleScroll = useCallback((e) => {
+		console.log('[TicketsList] handleScroll triggered - hasMore:', hasMore, 'loading:', loading);
+		
 		if (!hasMore || loading) {
+			console.log('[TicketsList] Scroll ignorado - hasMore:', hasMore, 'loading:', loading);
 			return;
 		}
 		const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;

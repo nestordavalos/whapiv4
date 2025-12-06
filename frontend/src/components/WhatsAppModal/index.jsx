@@ -337,6 +337,45 @@ const useStyles = makeStyles(theme => ({
     },
   },
 
+  webhookEventChip: {
+    height: 28,
+    fontSize: "0.75rem",
+    padding: "0 10px",
+    fontWeight: 500,
+    transition: "all 0.2s ease-in-out",
+    border: "1px solid",
+    "&:hover": {
+      transform: "translateY(-1px)",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+    },
+  },
+
+  webhookEventChipSelected: {
+    backgroundColor: `${theme.palette.primary.main} !important`,
+    color: "#fff !important",
+    borderColor: `${theme.palette.primary.dark} !important`,
+    fontWeight: 600,
+    boxShadow: "0 2px 6px rgba(25, 118, 210, 0.3)",
+    "& .MuiChip-label": {
+      color: "#fff !important",
+    },
+    "&:hover": {
+      backgroundColor: `${theme.palette.primary.dark} !important`,
+      boxShadow: "0 3px 10px rgba(25, 118, 210, 0.4)",
+    },
+  },
+
+  webhookEventChipUnselected: {
+    backgroundColor: theme.palette.mode === 'dark' ? "rgba(255,255,255,0.05)" : "#f5f5f5",
+    color: theme.palette.text.secondary,
+    borderColor: theme.palette.divider,
+    "&:hover": {
+      backgroundColor: theme.palette.mode === 'dark' ? "rgba(255,255,255,0.1)" : "#e0e0e0",
+      borderColor: theme.palette.primary.light,
+      color: theme.palette.text.primary,
+    },
+  },
+
   syncInfoBox: {
     padding: theme.spacing(1.5),
     backgroundColor: theme.palette.mode === "dark" 
@@ -1890,11 +1929,11 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                                     </Grid>
                                   </Grid>
 
-                                  <Typography variant="subtitle2" style={{ marginTop: 8, marginBottom: 4, fontSize: '0.8rem', fontWeight: 600 }}>
+                                  <Typography variant="subtitle2" style={{ marginTop: 8, marginBottom: 8, fontSize: '0.8rem', fontWeight: 600 }}>
                                     {i18n.t("whatsappModal.form.webhookEvents")}
                                   </Typography>
 
-                                  <Box style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                  <Box style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                                     {[
                                       { value: 'message_received', label: i18n.t("whatsappModal.form.webhookEventMessageReceived") },
                                       { value: 'message_sent', label: i18n.t("whatsappModal.form.webhookEventMessageSent") },
@@ -1905,17 +1944,21 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                                       { value: 'ticket_closed', label: i18n.t("whatsappModal.form.webhookEventTicketClosed") },
                                       { value: 'contact_created', label: i18n.t("whatsappModal.form.webhookEventContactCreated") },
                                       { value: 'contact_updated', label: i18n.t("whatsappModal.form.webhookEventContactUpdated") },
-                                    ].map((event) => (
-                                      <Chip
-                                        key={event.value}
-                                        label={event.label}
-                                        size="small"
-                                        clickable
-                                        color={(webhook.events || []).includes(event.value) ? "primary" : "default"}
-                                        onClick={() => toggleWebhookEvent(webhook.id, event.value)}
-                                        style={{ height: 24, fontSize: '0.75rem', padding: '0 8px' }}
-                                      />
-                                    ))}
+                                    ].map((event) => {
+                                      const isSelected = (webhook.events || []).includes(event.value);
+                                      return (
+                                        <Chip
+                                          key={event.value}
+                                          label={event.label}
+                                          size="small"
+                                          clickable
+                                          onClick={() => toggleWebhookEvent(webhook.id, event.value)}
+                                          className={`${classes.webhookEventChip} ${
+                                            isSelected ? classes.webhookEventChipSelected : classes.webhookEventChipUnselected
+                                          }`}
+                                        />
+                                      );
+                                    })}
                                   </Box>
                                 </Box>
                               </Collapse>

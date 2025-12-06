@@ -321,9 +321,13 @@ const TicketsList = (props) => {
 	}, [ticketsList.length, status, updateCount]);
 
 	const handleScroll = (e) => {
-		if (!hasMore || loading) return;
+		if (!hasMore || loading) {
+			if (!hasMore) console.log('[TicketsList] No hay más tickets para cargar, hasMore:', hasMore);
+			return;
+		}
 		const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
 		if (scrollTop + clientHeight >= scrollHeight - 100) {
+			console.log('[TicketsList] Cargando página:', pageNumber + 1, 'status:', status);
 			setPageNumber((prev) => prev + 1);
 		}
 	};

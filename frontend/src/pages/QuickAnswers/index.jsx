@@ -100,6 +100,8 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   table: {
+    tableLayout: "fixed",
+    width: "100%",
     "& .MuiTableHead-root": {
       "& .MuiTableCell-head": {
         fontWeight: 600,
@@ -151,10 +153,11 @@ const useStyles = makeStyles((theme) => ({
   },
   messageCell: {
     color: theme.palette.text.secondary,
-    maxWidth: 400,
+    maxWidth: "100%",
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
+    display: "block",
   },
   actionButton: {
     padding: 8,
@@ -179,11 +182,23 @@ const useStyles = makeStyles((theme) => ({
   },
   actionsCell: {
     whiteSpace: "nowrap",
+    width: "120px",
     [theme.breakpoints.down('sm')]: {
+      width: "100px",
       "& .MuiIconButton-root": {
         padding: 6,
       },
     },
+  },
+  shortcutColumn: {
+    width: "180px",
+    [theme.breakpoints.down('sm')]: {
+      width: "120px",
+    },
+  },
+  messageColumn: {
+    width: "auto",
+    minWidth: 0,
   },
   searchField: {
     "& .MuiOutlinedInput-root": {
@@ -487,10 +502,10 @@ const QuickAnswers = () => {
         <Table size="small" className={classes.table}>
           <TableHead>
             <TableRow>
-              <TableCell align="left">
+              <TableCell align="left" className={classes.shortcutColumn}>
                 {i18n.t("quickAnswers.table.shortcut")}
               </TableCell>
-              <TableCell align="left">
+              <TableCell align="left" className={classes.messageColumn}>
                 {i18n.t("quickAnswers.table.message")}
               </TableCell>
               <TableCell align="center" className={classes.actionsCell}>
@@ -502,10 +517,10 @@ const QuickAnswers = () => {
             <>
               {quickAnswers.map((quickAnswer) => (
                 <TableRow key={quickAnswer.id}>
-                  <TableCell align="left">
+                  <TableCell align="left" className={classes.shortcutColumn}>
                     <span className={classes.shortcutCell}>{quickAnswer.shortcut}</span>
                   </TableCell>
-                  <TableCell align="left">
+                  <TableCell align="left" className={classes.messageColumn}>
                     <span className={classes.messageCell}>{quickAnswer.message}</span>
                   </TableCell>
                   <TableCell align="center" className={classes.actionsCell}>

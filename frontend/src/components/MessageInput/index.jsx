@@ -228,28 +228,57 @@ const useStyles = makeStyles((theme) => ({
     position: "absolute",
     bottom: "50px",
     background: theme.palette.background.paper,
-    padding: 0,
+    padding: "4px",
     border: `1px solid ${theme.palette.divider}`,
     borderRadius: 10,
     left: 0,
     width: "100%",
-    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+    maxHeight: "300px",
+    overflowY: "auto",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+    ...theme.scrollbarStyles,
     "& li": {
       listStyle: "none",
       "& a": {
-        display: "block",
+        display: "flex",
+        flexDirection: "column",
+        gap: "4px",
         padding: "10px 12px",
-        textOverflow: "ellipsis",
-        overflow: "hidden",
-        maxHeight: "36px",
         fontSize: "0.85rem",
         borderRadius: 8,
         margin: 4,
+        transition: "all 0.2s ease",
         "&:hover": {
           background: theme.palette.action.hover,
           cursor: "pointer",
+          transform: "translateX(4px)",
         },
       },
+    },
+  },
+  messageQuickAnswersWrapperItem: {
+    "& .shortcut": {
+      display: "inline-block",
+      fontWeight: 600,
+      color: theme.palette.primary.main,
+      fontFamily: "monospace",
+      fontSize: "0.9rem",
+      backgroundColor: theme.palette.mode === "dark"
+        ? theme.palette.primary.main + "1F"
+        : theme.palette.primary.main + "14",
+      padding: "2px 8px",
+      borderRadius: 4,
+      marginBottom: "2px",
+    },
+    "& .message": {
+      color: theme.palette.text.secondary,
+      fontSize: "0.8rem",
+      overflow: "hidden",
+      textOverflow: "ellipsis",
+      display: "-webkit-box",
+      WebkitLineClamp: 2,
+      WebkitBoxOrient: "vertical",
+      lineHeight: "1.3",
     },
   },
   signSwitch: {
@@ -441,11 +470,19 @@ const MessageInput = ({ ticketStatus }) => {
   const handleLoadQuickAnswer = async (value) => {
     if (value && value.indexOf("/") === 0) {
       try {
+        const searchTerm = inputMessage.substring(1).toLowerCase();
         const { data } = await api.get("/quickAnswers/", {
-          params: { searchParam: inputMessage.substring(1) },
+          params: { searchParam: searchTerm },
         });
-        setQuickAnswer(data.quickAnswers);
-        if (data.quickAnswers.length > 0) {
+        
+        // Filtrado adicional en el frontend para mejor precisión
+        const filteredQuickAnswers = data.quickAnswers.filter(qa => 
+          qa.shortcut.toLowerCase().includes(searchTerm) || 
+          qa.message.toLowerCase().includes(searchTerm)
+        );
+        
+        setQuickAnswer(filteredQuickAnswers);
+        if (filteredQuickAnswers.length > 0) {
           setTypeBar(true);
         } else {
           setTypeBar(false);
@@ -983,7 +1020,8 @@ const MessageInput = ({ ticketStatus }) => {
                     >
                       {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
                       <a onClick={() => handleQuickAnswersClick(value.message)}>
-                        {`${value.shortcut} - ${value.message}`}
+                        <span className="shortcut">/{value.shortcut}</span>
+                        <span className="message">{value.message}</span>
                       </a>
                     </li>
                   );

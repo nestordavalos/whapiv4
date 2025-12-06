@@ -61,7 +61,14 @@ const useTickets = ({
                     loadTime: `${(endTime - startTime).toFixed(2)}ms`
                 });
 
-                setTickets(data.tickets)                    // let horasFecharAutomaticamente = getHoursCloseTicketsAuto(); 
+                // Si es página 1, reemplazar. Si es página > 1, agregar
+                if (pageNumber === 1) {
+                    setTickets(data.tickets);
+                } else {
+                    setTickets((prevTickets) => [...prevTickets, ...data.tickets]);
+                }
+                
+                // let horasFecharAutomaticamente = getHoursCloseTicketsAuto(); 
 
                     // if (status === "open" && horasFecharAutomaticamente && horasFecharAutomaticamente !== "" &&
                     //     horasFecharAutomaticamente !== "0" && Number(horasFecharAutomaticamente) > 0) {
@@ -101,7 +108,7 @@ const useTickets = ({
             // }
 
             fetchTickets()
-        }, 500)
+        }, delay)
         return () => clearTimeout(delayDebounceFn)
     }, [
         searchParam,

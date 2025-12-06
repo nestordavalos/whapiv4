@@ -4,6 +4,7 @@ import React, {
   useReducer,
   useContext,
   useRef,
+  useCallback,
 } from "react";
 
 import { isSameDay, parseISO, format } from "date-fns";
@@ -625,7 +626,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
 
   const [messagesList, dispatch] = useReducer(reducer, []);
   const [pageNumber, setPageNumber] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const lastMessageRef = useRef();
   const loadingRef = useRef(false);
@@ -648,7 +649,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   useEffect(() => {
     dispatch({ type: "RESET" });
     setPageNumber(1);
-    setHasMore(false);
+    setHasMore(true); // Iniciar como true para permitir la carga
     setLoading(false);
     isFirstLoad.current = true;
 
@@ -665,12 +666,6 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     
     const delayDebounceFn = setTimeout(() => {
       const fetchMessages = async () => {
-        if (!hasMore && pageNumber > 1) {
-          setLoading(false);
-          loadingRef.current = false;
-          return;
-        }
-
         try {
           const messagesListDiv = document.getElementById("messagesList");
           const previousScrollHeight = messagesListDiv ? messagesListDiv.scrollHeight : 0;
@@ -711,13 +706,13 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     return () => {
       clearTimeout(delayDebounceFn);
     };
-  }, [pageNumber, ticketId]);
+  }, [pageNumber, ticketId, hasMore]);
 
   useEffect(() => {
     const socket = openSocket();
     if (!socket) return undefined;
 
-    const handleMessage = data => {
+    const handleMessage = (data) => {
       // Verificar que el mensaje pertenece al ticket actual
       if (data.message && data.message.ticketId !== parseInt(ticketId)) {
         return;
@@ -725,7 +720,9 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
 
       if (data.action === "create") {
         dispatch({ type: "ADD_MESSAGE", payload: data.message });
-        scrollToBottom();
+        if (lastMessageRef.current) {
+          lastMessageRef.current.scrollIntoView({});
+        }
       }
 
       if (data.action === "update") {
@@ -761,19 +758,13 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     };
   }, [ticketId]);
 
-  const loadMore = () => {
-    if (!loadingRef.current && hasMore) {
-      setPageNumber((prevPageNumber) => prevPageNumber + 1);
-    }
-  };
-
   const scrollToBottom = () => {
     if (lastMessageRef.current) {
       lastMessageRef.current.scrollIntoView({});
     }
   };
 
-  const handleScroll = (e) => {
+  const handleScroll = useCallback((e) => {
     if (!hasMore || loadingRef.current) return;
     
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -790,9 +781,11 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
 
     // Cargar más mensajes cuando estamos cerca del tope (dentro de los primeros 150px)
     if (scrollTop < 150) {
-      loadMore();
+      if (!loadingRef.current && hasMore) {
+        setPageNumber((prev) => prev + 1);
+      }
     }
-  };
+  }, [hasMore]);
 
   const handleOpenMessageOptionsMenu = (e, message) => {
     setAnchorEl(e.currentTarget);

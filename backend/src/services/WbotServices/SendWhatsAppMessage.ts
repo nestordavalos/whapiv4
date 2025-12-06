@@ -89,9 +89,25 @@ const SendWhatsAppMessage = async ({
       mediaType: quotedMsg.mediaType,
       fromMe: quotedMsg.fromMe
     });
-    await GetWbotMessage(ticket, quotedMsg.id);
-    quotedMsgSerializedId = SerializeWbotMsgId(ticket, quotedMsg);
-    console.log("[SendWhatsAppMessage] Serialized ID:", quotedMsgSerializedId);
+    try {
+      const wbotMessage = await GetWbotMessage(ticket, quotedMsg.id);
+      // Usar el ID serializado real de WhatsApp en lugar de construir uno personalizado
+      // eslint-disable-next-line no-underscore-dangle
+      quotedMsgSerializedId = wbotMessage.id._serialized;
+      console.log(
+        "[SendWhatsAppMessage] Using real WhatsApp serialized ID:",
+        quotedMsgSerializedId
+      );
+    } catch (err) {
+      console.log(
+        "[SendWhatsAppMessage] Could not fetch quoted message, trying with custom serialization"
+      );
+      quotedMsgSerializedId = SerializeWbotMsgId(ticket, quotedMsg);
+      console.log(
+        "[SendWhatsAppMessage] Using fallback serialized ID:",
+        quotedMsgSerializedId
+      );
+    }
   }
 
   const wbot = await GetTicketWbot(ticket);

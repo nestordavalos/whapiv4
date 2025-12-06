@@ -212,6 +212,8 @@ const TicketsList = (props) => {
 	const itemSizeMap = useRef({});
 	const [listHeight, setListHeight] = useState(0);
 	const previousTicketsCount = useRef(0);
+	const prefetchCacheRef = useRef({});
+	const usingCacheRef = useRef(false); // Flag para indicar que estamos mostrando datos del cache
 
 	const getItemSize = useCallback((index) => {
 		return itemSizeMap.current[index] || 148;
@@ -239,11 +241,42 @@ const TicketsList = (props) => {
 	}, []);
 
 	// Ref para detectar cambios en filtros y forzar carga limpia
-	const filterKeyRef = useRef("");
+	const previousStatusRef = useRef(status);
+	const previousSearchRef = useRef(searchParam);
+	const isInitialMount = useRef(true);
 	
 	useEffect(() => {
-		const newFilterKey = `${status}-${searchParam}-${showAll}-${JSON.stringify(selectedQueueIds)}-${JSON.stringify(selectedTagIds)}-${JSON.stringify(selectedWhatsappIds)}-${JSON.stringify(selectedUserIds)}-${JSON.stringify(tags)}`;
-		filterKeyRef.current = newFilterKey;
+		const statusChanged = previousStatusRef.current !== status;
+		const searchChanged = previousSearchRef.current !== searchParam;
+		
+		if (!isInitialMount.current && (statusChanged || searchChanged)) {
+			console.log('[TicketsList] Filter changed:', { 
+				from: previousStatusRef.current, 
+				to: status,
+				searchChanged 
+			});
+			
+			// Intentar cargar desde cache primero
+			const cacheKey = `${status || 'all'}-${searchParam || ''}`;
+			const cachedTickets = prefetchCacheRef.current[cacheKey];
+			
+			if (cachedTickets && cachedTickets.length > 0) {
+				console.log('[TicketsList] Loading from cache IMMEDIATELY:', cachedTickets.length);
+				usingCacheRef.current = true; // Marcar que estamos usando cache
+				dispatch({ 
+					type: "LOAD_TICKETS", 
+					payload: cachedTickets,
+					isReset: true 
+				});
+			} else {
+				// Si no hay cache, permitir que se vacíe (pero mostrar skeleton)
+				usingCacheRef.current = false;
+			}
+		}
+		
+		previousStatusRef.current = status;
+		previousSearchRef.current = searchParam;
+		isInitialMount.current = false;
 		setPageNumber(1);
 	}, [status, searchParam, showAll, selectedQueueIds, selectedTagIds, selectedWhatsappIds, selectedUserIds, tags]);
 
@@ -264,10 +297,19 @@ const TicketsList = (props) => {
 			: undefined,
 	});
 
-	// Prefetch cache: mantener primera página de cada tab en memoria
-	const prefetchCacheRef = useRef({});
-
 	useEffect(() => {
+		// PROTECCIÓN CRÍTICA: Si estamos usando cache y tickets aún está vacío, NO sobrescribir
+		if (usingCacheRef.current && tickets.length === 0 && loading) {
+			console.log('[TicketsList Effect] Using cache, waiting for fresh data...');
+			return;
+		}
+
+		// Si llegan datos reales, desactivar flag de cache
+		if (usingCacheRef.current && tickets.length > 0) {
+			console.log('[TicketsList Effect] Fresh data arrived, replacing cache');
+			usingCacheRef.current = false;
+		}
+
 		const queueIds = queues.map((q) => q.id);
 		const filteredTickets = tickets.filter((t) => queueIds.indexOf(t.queueId) > -1 || t.queueId === null || typeof t.queueId === "undefined");
 		const allticket = user.allTicket === "enabled";
@@ -282,20 +324,21 @@ const TicketsList = (props) => {
 			hasMore,
 			loading,
 			status,
+			currentListLength: ticketsList.length,
 			timestamp: new Date().toISOString()
 		});
 
 		const ticketsToUse = shouldShowAll ? tickets : filteredTickets;
 		
-		// Determinar si es un cambio de filtro (reset) o paginación
-		const isFirstPage = pageNumber === 1;
-		const isReset = isFirstPage && ticketsList.length > 0;
-
 		// Guardar en prefetch cache si es página 1
-		if (isFirstPage && ticketsToUse.length > 0) {
+		if (pageNumber === 1 && ticketsToUse.length > 0) {
 			const cacheKey = `${status || 'all'}-${searchParam || ''}`;
 			prefetchCacheRef.current[cacheKey] = ticketsToUse;
 		}
+
+		// Determinar si es reset (página 1 con datos nuevos) o paginación
+		const isFirstPage = pageNumber === 1;
+		const isReset = isFirstPage;
 
 		// Guardar el conteo anterior antes de actualizar (solo para paginación)
 		const previousCount = previousTicketsCount.current;
@@ -627,8 +670,8 @@ const TicketsList = (props) => {
 					</VirtualList>
 				)
 			)}
-			{loading && (
-				<div style={{ position: "absolute", inset: 0, pointerEvents: "none", display: "flex", alignItems: "flex-end" }}>
+			{loading && pageNumber === 1 && ticketsList.length === 0 && (
+				<div style={{ position: "absolute", inset: 0, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.7)", zIndex: 10 }}>
 					<TicketsListSkeleton />
 				</div>
 			)}

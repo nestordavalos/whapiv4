@@ -19,6 +19,7 @@ import TicketsListSkeleton from "../TicketsListSkeleton";
 import useTickets from "../../hooks/useTickets";
 import { i18n } from "../../translate/i18n";
 import { AuthContext } from "../../context/Auth/AuthContext";
+import api from "../../services/api";
 
 const useStyles = makeStyles((theme) => ({
 	ticketListWrapper: {
@@ -92,11 +93,19 @@ const reducer = (state, action) => {
 		type: action.type,
 		currentStateLength: state.length,
 		payloadLength: Array.isArray(action.payload) ? action.payload.length : 'N/A',
+		isReset: action.isReset,
 		timestamp: new Date().toISOString()
 	});
 
 	if (action.type === "LOAD_TICKETS") {
 		const newTickets = action.payload;
+		
+		// Si es un reset (cambio de filtro), reemplazar todo en lugar de vaciar primero
+		if (action.isReset) {
+			return newTickets;
+		}
+		
+		// Paginación normal - agregar nuevos tickets
 		const updatedState = [...state];
 
 		newTickets.forEach((ticket) => {
@@ -176,9 +185,7 @@ const reducer = (state, action) => {
 		return state.filter((t) => t.id !== ticketId);
 	}
 
-	if (action.type === "RESET") {
-		return [];
-	}
+	return state;
 };
 
 const TicketsList = (props) => {
@@ -231,10 +238,14 @@ const TicketsList = (props) => {
 		return () => resizeObserver.disconnect();
 	}, []);
 
+	// Ref para detectar cambios en filtros y forzar carga limpia
+	const filterKeyRef = useRef("");
+	
 	useEffect(() => {
-		dispatch({ type: "RESET" });
+		const newFilterKey = `${status}-${searchParam}-${showAll}-${JSON.stringify(selectedQueueIds)}-${JSON.stringify(selectedTagIds)}-${JSON.stringify(selectedWhatsappIds)}-${JSON.stringify(selectedUserIds)}-${JSON.stringify(tags)}`;
+		filterKeyRef.current = newFilterKey;
 		setPageNumber(1);
-	}, [status, searchParam, dispatch, showAll, selectedQueueIds, selectedTagIds, selectedWhatsappIds, selectedUserIds, tags]);
+	}, [status, searchParam, showAll, selectedQueueIds, selectedTagIds, selectedWhatsappIds, selectedUserIds, tags]);
 
 	const { tickets, hasMore, loading } = useTickets({
 		pageNumber,
@@ -252,6 +263,9 @@ const TicketsList = (props) => {
 			? JSON.stringify(selectedUserIds)
 			: undefined,
 	});
+
+	// Prefetch cache: mantener primera página de cada tab en memoria
+	const prefetchCacheRef = useRef({});
 
 	useEffect(() => {
 		const queueIds = queues.map((q) => q.id);
@@ -271,29 +285,43 @@ const TicketsList = (props) => {
 			timestamp: new Date().toISOString()
 		});
 
-		// Guardar el conteo anterior antes de actualizar
-		const previousCount = previousTicketsCount.current;
+		const ticketsToUse = shouldShowAll ? tickets : filteredTickets;
+		
+		// Determinar si es un cambio de filtro (reset) o paginación
+		const isFirstPage = pageNumber === 1;
+		const isReset = isFirstPage && ticketsList.length > 0;
 
-		// Función para identificación liberación de la settings
-		if (shouldShowAll) {
-			dispatch({ type: "LOAD_TICKETS", payload: tickets });
-		} else {
-			dispatch({ type: "LOAD_TICKETS", payload: filteredTickets });
+		// Guardar en prefetch cache si es página 1
+		if (isFirstPage && ticketsToUse.length > 0) {
+			const cacheKey = `${status || 'all'}-${searchParam || ''}`;
+			prefetchCacheRef.current[cacheKey] = ticketsToUse;
 		}
 
-		// Si se agregaron tickets y es paginación (no primera carga), mantener posición
-		if (pageNumber > 1 && previousCount > 0 && ticketsList.length > previousCount) {
+		// Guardar el conteo anterior antes de actualizar (solo para paginación)
+		const previousCount = previousTicketsCount.current;
+
+		dispatch({ 
+			type: "LOAD_TICKETS", 
+			payload: ticketsToUse,
+			isReset // Si es reset, reemplaza todo; si no, agrega
+		});
+
+		// Si es paginación (no reset), mantener posición de scroll suavemente
+		if (!isReset && pageNumber > 1 && previousCount > 0 && ticketsToUse.length > 0) {
 			// Pequeño delay para que react-window procese los nuevos items
 			setTimeout(() => {
-				if (listRef.current) {
-					// Scroll a donde estábamos más el offset de los nuevos items
-					listRef.current.scrollToItem(previousCount - 5, "start");
+				if (listRef.current && ticketsList.length > previousCount) {
+					// Mantener scroll cerca de donde estábamos (8 items antes del threshold)
+					const targetIndex = Math.max(0, previousCount - 12);
+					listRef.current.scrollToItem(targetIndex, "start");
 				}
-			}, 50);
+			}, 30);
 		}
 
 		// Actualizar el conteo anterior
-		previousTicketsCount.current = ticketsList.length;
+		if (!isReset) {
+			previousTicketsCount.current = ticketsList.length;
+		}
 	}, [tickets, status, searchParam, queues, profile, user.allTicket, showAll, pageNumber, hasMore, loading, ticketsList.length]);
 
 	useEffect(() => {
@@ -413,6 +441,52 @@ const TicketsList = (props) => {
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [ticketsList]);
+
+	// Prefetch: Precargar primera página de otros tabs en background
+	useEffect(() => {
+		if (loading || !status) return;
+
+		const prefetchOtherTabs = async () => {
+			const tabsToPrefetch = ['open', 'pending', 'closed'].filter(s => s !== status);
+			
+			for (const tabStatus of tabsToPrefetch) {
+				const cacheKey = `${tabStatus}-${searchParam || ''}`;
+				
+				// Solo precargar si no está en cache
+				if (!prefetchCacheRef.current[cacheKey]) {
+					try {
+						const params = {
+							searchParam,
+							pageNumber: 1,
+							status: tabStatus,
+							showAll,
+							queueIds: JSON.stringify(selectedQueueIds || []),
+						};
+
+						if (selectedTagIds && selectedTagIds.length > 0) {
+							params.tags = JSON.stringify(selectedTagIds);
+						}
+						if (selectedWhatsappIds && selectedWhatsappIds.length > 0) {
+							params.whatsappIds = JSON.stringify(selectedWhatsappIds);
+						}
+						if (selectedUserIds && selectedUserIds.length > 0) {
+							params.userIds = JSON.stringify(selectedUserIds);
+						}
+
+						const { data } = await api.get("/tickets", { params });
+						prefetchCacheRef.current[cacheKey] = data.tickets;
+						console.log(`[TicketsList Prefetch] Cached ${tabStatus}:`, data.tickets.length);
+					} catch (err) {
+						console.error(`[TicketsList Prefetch] Error prefetching ${tabStatus}:`, err.message);
+					}
+				}
+			}
+		};
+
+		// Delay de 800ms para no interferir con carga principal
+		const prefetchTimer = setTimeout(prefetchOtherTabs, 800);
+		return () => clearTimeout(prefetchTimer);
+	}, [loading, status, searchParam, showAll, selectedQueueIds, selectedTagIds, selectedWhatsappIds, selectedUserIds]);
 
 	// Reiniciar cache de alturas cuando cambian filtros relevantes
 	useEffect(() => {

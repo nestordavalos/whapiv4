@@ -204,6 +204,7 @@ const TicketsList = (props) => {
 	const wrapperRef = useRef(null);
 	const itemSizeMap = useRef({});
 	const [listHeight, setListHeight] = useState(0);
+	const previousTicketsCount = useRef(0);
 
 	const getItemSize = useCallback((index) => {
 		return itemSizeMap.current[index] || 148;
@@ -270,13 +271,30 @@ const TicketsList = (props) => {
 			timestamp: new Date().toISOString()
 		});
 
+		// Guardar el conteo anterior antes de actualizar
+		const previousCount = previousTicketsCount.current;
+
 		// Función para identificación liberación de la settings
 		if (shouldShowAll) {
 			dispatch({ type: "LOAD_TICKETS", payload: tickets });
 		} else {
 			dispatch({ type: "LOAD_TICKETS", payload: filteredTickets });
 		}
-	}, [tickets, status, searchParam, queues, profile, user.allTicket, showAll, pageNumber, hasMore, loading]);
+
+		// Si se agregaron tickets y es paginación (no primera carga), mantener posición
+		if (pageNumber > 1 && previousCount > 0 && ticketsList.length > previousCount) {
+			// Pequeño delay para que react-window procese los nuevos items
+			setTimeout(() => {
+				if (listRef.current) {
+					// Scroll a donde estábamos más el offset de los nuevos items
+					listRef.current.scrollToItem(previousCount - 5, "start");
+				}
+			}, 50);
+		}
+
+		// Actualizar el conteo anterior
+		previousTicketsCount.current = ticketsList.length;
+	}, [tickets, status, searchParam, queues, profile, user.allTicket, showAll, pageNumber, hasMore, loading, ticketsList.length]);
 
 	useEffect(() => {
 		const socket = openSocket();

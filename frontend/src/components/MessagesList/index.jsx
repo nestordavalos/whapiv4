@@ -525,17 +525,18 @@ const reducer = (state, action) => {
   if (action.type === "LOAD_MESSAGES") {
     const messages = action.payload;
     const newMessages = [];
+    const updatedState = [...state];
 
     messages.forEach((message) => {
-      const messageIndex = state.findIndex((m) => m.id === message.id);
+      const messageIndex = updatedState.findIndex((m) => m.id === message.id);
       if (messageIndex !== -1) {
-        state[messageIndex] = message;
+        updatedState[messageIndex] = message;
       } else {
         newMessages.push(message);
       }
     });
 
-    return [...newMessages, ...state];
+    return [...newMessages, ...updatedState];
   }
 
   if (action.type === "ADD_MESSAGE") {
@@ -543,12 +544,12 @@ const reducer = (state, action) => {
     const messageIndex = state.findIndex((m) => m.id === newMessage.id);
 
     if (messageIndex !== -1) {
-      state[messageIndex] = newMessage;
+      const updatedState = [...state];
+      updatedState[messageIndex] = newMessage;
+      return updatedState;
     } else {
-      state.push(newMessage);
+      return [...state, newMessage];
     }
-
-    return [...state];
   }
 
   function ToastDisplay(props) {
@@ -627,6 +628,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
   const lastMessageRef = useRef();
+  const loadingRef = useRef(false);
   // const { user } = useContext(AuthContext);
 
   const [selectedMessage, setSelectedMessage] = useState({});
@@ -645,22 +647,27 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   useEffect(() => {
     dispatch({ type: "RESET" });
     setPageNumber(1);
+    setHasMore(false);
+    setLoading(false);
 
     currentTicketId.current = ticketId;
   }, [ticketId]);
 
   useEffect(() => {
     setLoading(true);
+    loadingRef.current = true;
     const delayDebounceFn = setTimeout(() => {
       const fetchMessages = async () => {
         if (!hasMore && pageNumber > 1) {
           setLoading(false);
+          loadingRef.current = false;
           return;
         }
 
         try {
           const messagesListDiv = document.getElementById("messagesList");
           const previousScrollHeight = messagesListDiv ? messagesListDiv.scrollHeight : 0;
+          const previousScrollTop = messagesListDiv ? messagesListDiv.scrollTop : 0;
 
           const { data } = await api.get("/messages/" + ticketId, {
             params: { pageNumber },
@@ -669,22 +676,26 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
           if (currentTicketId.current === ticketId) {
             dispatch({ type: "LOAD_MESSAGES", payload: data.messages });
             setHasMore(data.hasMore);
-            setLoading(false);
-
+            
             // Mantener la posición del scroll al cargar mensajes antiguos
-            if (pageNumber > 1 && messagesListDiv) {
-              setTimeout(() => {
+            if (pageNumber > 1 && messagesListDiv && data.messages.length > 0) {
+              requestAnimationFrame(() => {
                 const newScrollHeight = messagesListDiv.scrollHeight;
-                messagesListDiv.scrollTop = newScrollHeight - previousScrollHeight;
-              }, 0);
+                const scrollDiff = newScrollHeight - previousScrollHeight;
+                messagesListDiv.scrollTop = previousScrollTop + scrollDiff;
+              });
             }
+            
+            setLoading(false);
+            loadingRef.current = false;
           }
 
           if (pageNumber === 1 && data.messages.length > 1) {
-            scrollToBottom();
+            setTimeout(() => scrollToBottom(), 100);
           }
         } catch (err) {
           setLoading(false);
+          loadingRef.current = false;
           toastError(err);
         }
       };
@@ -744,7 +755,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   }, [ticketId]);
 
   const loadMore = () => {
-    if (!loading && hasMore) {
+    if (!loadingRef.current && hasMore) {
       setPageNumber((prevPageNumber) => prevPageNumber + 1);
     }
   };
@@ -756,18 +767,22 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   };
 
   const handleScroll = (e) => {
-    if (!hasMore || loading) return;
+    if (!hasMore || loadingRef.current) return;
     
-    const { scrollTop } = e.currentTarget;
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
 
-    // Evitar que el scroll llegue exactamente a 0
+    // Evitar que el scroll llegue exactamente a 0 para prevenir rebotes
     if (scrollTop === 0) {
       e.currentTarget.scrollTop = 1;
       return;
     }
 
-    // Cargar más mensajes cuando estamos cerca del tope (dentro de los primeros 100px)
-    if (scrollTop < 100) {
+    // Verificar que no estamos en el fondo
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 10;
+    if (isAtBottom) return;
+
+    // Cargar más mensajes cuando estamos cerca del tope (dentro de los primeros 150px)
+    if (scrollTop < 150) {
       loadMore();
     }
   };

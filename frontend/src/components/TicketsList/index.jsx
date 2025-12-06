@@ -19,7 +19,6 @@ import TicketsListSkeleton from "../TicketsListSkeleton";
 import useTickets from "../../hooks/useTickets";
 import { i18n } from "../../translate/i18n";
 import { AuthContext } from "../../context/Auth/AuthContext";
-import api from "../../services/api";
 
 const useStyles = makeStyles((theme) => ({
 	ticketListWrapper: {
@@ -89,13 +88,14 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const reducer = (state, action) => {
-	console.log('[TicketsList Reducer]', {
-		type: action.type,
-		currentStateLength: state.length,
-		payloadLength: Array.isArray(action.payload) ? action.payload.length : 'N/A',
-		isReset: action.isReset,
-		timestamp: new Date().toISOString()
-	});
+	if (action.type !== "LOAD_TICKETS") {
+		console.log('[TicketsList Reducer - Socket]', {
+			type: action.type,
+			currentStateLength: state.length,
+			payload: action.payload,
+			timestamp: new Date().toISOString()
+		});
+	}
 
 	if (action.type === "LOAD_TICKETS") {
 		const newTickets = action.payload;
@@ -144,8 +144,21 @@ const reducer = (state, action) => {
 
 		const ticketIndex = updatedState.findIndex((t) => t.id === ticket.id);
 		if (ticketIndex !== -1) {
+			// Ticket ya existe - actualizar
 			updatedState[ticketIndex] = ticket;
-		} else {
+			
+			// Si tiene mensajes no leídos, mover al principio
+			if (ticket.unreadMessages > 0) {
+				const [movedTicket] = updatedState.splice(ticketIndex, 1);
+				updatedState.unshift(movedTicket);
+			}
+			
+			return updatedState;
+		}
+		
+		// Solo agregar al principio si viene de "create", no de "update"
+		// Para evitar duplicados cuando un ticket cambia de status
+		if (action.isNewTicket) {
 			updatedState.unshift(ticket);
 		}
 
@@ -182,6 +195,13 @@ const reducer = (state, action) => {
 
 	if (action.type === "DELETE_TICKET") {
 		const ticketId = action.payload;
+		const ticketExists = state.find((t) => t.id === ticketId);
+		console.log('[TicketsList Reducer] DELETE_TICKET:', {
+			ticketId,
+			existedInList: !!ticketExists,
+			beforeLength: state.length,
+			afterLength: state.filter((t) => t.id !== ticketId).length
+		});
 		return state.filter((t) => t.id !== ticketId);
 	}
 
@@ -211,9 +231,7 @@ const TicketsList = (props) => {
 	const wrapperRef = useRef(null);
 	const itemSizeMap = useRef({});
 	const [listHeight, setListHeight] = useState(0);
-	const previousTicketsCount = useRef(0);
-	const prefetchCacheRef = useRef({});
-	const usingCacheRef = useRef(false); // Flag para indicar que estamos mostrando datos del cache
+	const previousStatusRef = useRef(status);
 
 	const getItemSize = useCallback((index) => {
 		return itemSizeMap.current[index] || 148;
@@ -240,43 +258,13 @@ const TicketsList = (props) => {
 		return () => resizeObserver.disconnect();
 	}, []);
 
-	// Ref para detectar cambios en filtros y forzar carga limpia
-	const previousStatusRef = useRef(status);
-	const previousSearchRef = useRef(searchParam);
-	const isInitialMount = useRef(true);
-	
+	// Al cambiar filtros, solo resetear pageNumber (NO vaciar tickets)
 	useEffect(() => {
 		const statusChanged = previousStatusRef.current !== status;
-		const searchChanged = previousSearchRef.current !== searchParam;
-		
-		if (!isInitialMount.current && (statusChanged || searchChanged)) {
-			console.log('[TicketsList] Filter changed:', { 
-				from: previousStatusRef.current, 
-				to: status,
-				searchChanged 
-			});
-			
-			// Intentar cargar desde cache primero
-			const cacheKey = `${status || 'all'}-${searchParam || ''}`;
-			const cachedTickets = prefetchCacheRef.current[cacheKey];
-			
-			if (cachedTickets && cachedTickets.length > 0) {
-				console.log('[TicketsList] Loading from cache IMMEDIATELY:', cachedTickets.length);
-				usingCacheRef.current = true; // Marcar que estamos usando cache
-				dispatch({ 
-					type: "LOAD_TICKETS", 
-					payload: cachedTickets,
-					isReset: true 
-				});
-			} else {
-				// Si no hay cache, permitir que se vacíe (pero mostrar skeleton)
-				usingCacheRef.current = false;
-			}
+		if (statusChanged) {
+			console.log('[TicketsList] Status changed:', previousStatusRef.current, '->', status);
+			previousStatusRef.current = status;
 		}
-		
-		previousStatusRef.current = status;
-		previousSearchRef.current = searchParam;
-		isInitialMount.current = false;
 		setPageNumber(1);
 	}, [status, searchParam, showAll, selectedQueueIds, selectedTagIds, selectedWhatsappIds, selectedUserIds, tags]);
 
@@ -298,16 +286,11 @@ const TicketsList = (props) => {
 	});
 
 	useEffect(() => {
-		// PROTECCIÓN CRÍTICA: Si estamos usando cache y tickets aún está vacío, NO sobrescribir
-		if (usingCacheRef.current && tickets.length === 0 && loading) {
-			console.log('[TicketsList Effect] Using cache, waiting for fresh data...');
+		// Solo bloquear arrays vacíos durante carga inicial (pageNumber=1 + loading)
+		// Permitir vacíos si hasMore=false (no hay más datos legítimamente)
+		if (tickets.length === 0 && pageNumber === 1 && loading && ticketsList.length > 0) {
+			console.log('[TicketsList] Skipping empty update during initial load, keeping current tickets visible');
 			return;
-		}
-
-		// Si llegan datos reales, desactivar flag de cache
-		if (usingCacheRef.current && tickets.length > 0) {
-			console.log('[TicketsList Effect] Fresh data arrived, replacing cache');
-			usingCacheRef.current = false;
 		}
 
 		const queueIds = queues.map((q) => q.id);
@@ -315,57 +298,26 @@ const TicketsList = (props) => {
 		const allticket = user.allTicket === "enabled";
 		const isAdmin = (profile || "").toUpperCase() === "ADMIN";
 		const shouldShowAll = showAll || isAdmin || allticket;
+		const ticketsToUse = shouldShowAll ? tickets : filteredTickets;
 
 		console.log('[TicketsList Effect]', {
 			tickets: tickets.length,
-			filteredTickets: filteredTickets.length,
-			shouldShowAll,
 			pageNumber,
-			hasMore,
-			loading,
 			status,
-			currentListLength: ticketsList.length,
-			timestamp: new Date().toISOString()
+			currentList: ticketsList.length,
+			hasMore,
+			loading
 		});
 
-		const ticketsToUse = shouldShowAll ? tickets : filteredTickets;
-		
-		// Guardar en prefetch cache si es página 1
-		if (pageNumber === 1 && ticketsToUse.length > 0) {
-			const cacheKey = `${status || 'all'}-${searchParam || ''}`;
-			prefetchCacheRef.current[cacheKey] = ticketsToUse;
-		}
-
-		// Determinar si es reset (página 1 con datos nuevos) o paginación
-		const isFirstPage = pageNumber === 1;
-		const isReset = isFirstPage;
-
-		// Guardar el conteo anterior antes de actualizar (solo para paginación)
-		const previousCount = previousTicketsCount.current;
+		// isReset = página 1 (reemplazar), paginación = agregar
+		const isReset = pageNumber === 1;
 
 		dispatch({ 
 			type: "LOAD_TICKETS", 
 			payload: ticketsToUse,
-			isReset // Si es reset, reemplaza todo; si no, agrega
+			isReset
 		});
-
-		// Si es paginación (no reset), mantener posición de scroll suavemente
-		if (!isReset && pageNumber > 1 && previousCount > 0 && ticketsToUse.length > 0) {
-			// Pequeño delay para que react-window procese los nuevos items
-			setTimeout(() => {
-				if (listRef.current && ticketsList.length > previousCount) {
-					// Mantener scroll cerca de donde estábamos (8 items antes del threshold)
-					const targetIndex = Math.max(0, previousCount - 12);
-					listRef.current.scrollToItem(targetIndex, "start");
-				}
-			}, 30);
-		}
-
-		// Actualizar el conteo anterior
-		if (!isReset) {
-			previousTicketsCount.current = ticketsList.length;
-		}
-	}, [tickets, status, searchParam, queues, profile, user.allTicket, showAll, pageNumber, hasMore, loading, ticketsList.length]);
+	}, [tickets, status, queues, profile, user.allTicket, showAll, pageNumber, hasMore, loading, ticketsList.length]);
 
 	useEffect(() => {
 		const socket = openSocket();
@@ -396,19 +348,38 @@ const TicketsList = (props) => {
 
 		const shouldUpdateTicket = (ticket) => {
 			// Status must match if specified
-			if (status && ticket.status !== status) return false;
-
+			const statusMatch = !status || ticket.status === status;
+			
 			// Queue filter
-			if (!matchesQueueFilter(ticket)) return false;
-
+			const queueMatch = matchesQueueFilter(ticket);
+			
 			// Admin or showAll can see all tickets
-			if (isAdmin || showAll) return true;
-
-			// Non-admin users can only see their own tickets or unassigned
-			return !ticket.userId || ticket.userId === user?.id;
+			const hasPermission = isAdmin || showAll || !ticket.userId || ticket.userId === user?.id;
+			
+			const shouldUpdate = statusMatch && queueMatch && hasPermission;
+			
+			console.log('[TicketsList shouldUpdateTicket]', {
+				ticketId: ticket.id,
+				ticketStatus: ticket.status,
+				currentStatus: status,
+				statusMatch,
+				queueMatch,
+				hasPermission,
+				shouldUpdate
+			});
+			
+			return shouldUpdate;
 		};
 
 		const handleTicket = (data) => {
+			console.log('[TicketsList Socket] ticket event:', {
+				action: data.action,
+				ticketId: data.ticket?.id || data.ticketId,
+				ticketStatus: data.ticket?.status,
+				currentTabStatus: status,
+				userId: data.ticket?.userId
+			});
+
 			if (data.action === "updateUnread") {
 				dispatch({
 					type: "RESET_UNREAD",
@@ -418,26 +389,40 @@ const TicketsList = (props) => {
 			}
 
 			if (data.action === "create" && shouldUpdateTicket(data.ticket)) {
+				console.log('[TicketsList Socket] Adding new ticket');
 				dispatch({
 					type: "UPDATE_TICKET",
 					payload: data.ticket,
+					isNewTicket: true, // Marcar como nuevo para que se agregue
 				});
 				return;
 			}
 
 			if (data.action === "update") {
-				if (shouldUpdateTicket(data.ticket)) {
+				const shouldKeep = shouldUpdateTicket(data.ticket);
+				console.log('[TicketsList Socket] Update decision:', {
+					ticketId: data.ticket.id,
+					shouldKeep,
+					ticketStatus: data.ticket.status,
+					tabStatus: status
+				});
+				
+				if (shouldKeep) {
+					console.log('[TicketsList Socket] → Updating existing ticket');
 					dispatch({
 						type: "UPDATE_TICKET",
 						payload: data.ticket,
+						isNewTicket: false,
 					});
 				} else {
+					console.log('[TicketsList Socket] → DELETING ticket (status mismatch)');
 					dispatch({ type: "DELETE_TICKET", payload: data.ticket.id });
 				}
 				return;
 			}
 
 			if (data.action === "delete") {
+				console.log('[TicketsList Socket] Deleting ticket');
 				dispatch({ type: "DELETE_TICKET", payload: data.ticketId });
 			}
 		};
@@ -482,54 +467,14 @@ const TicketsList = (props) => {
 		if (typeof updateCount === "function") {
 			updateCount(ticketsList.length);
 		}
+		
+		// Forzar re-render de react-window cuando cambia la cantidad de tickets
+		// Esto asegura que los DELETE se reflejen visualmente
+		if (listRef.current) {
+			listRef.current.resetAfterIndex(0, false);
+		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [ticketsList]);
-
-	// Prefetch: Precargar primera página de otros tabs en background
-	useEffect(() => {
-		if (loading || !status) return;
-
-		const prefetchOtherTabs = async () => {
-			const tabsToPrefetch = ['open', 'pending', 'closed'].filter(s => s !== status);
-			
-			for (const tabStatus of tabsToPrefetch) {
-				const cacheKey = `${tabStatus}-${searchParam || ''}`;
-				
-				// Solo precargar si no está en cache
-				if (!prefetchCacheRef.current[cacheKey]) {
-					try {
-						const params = {
-							searchParam,
-							pageNumber: 1,
-							status: tabStatus,
-							showAll,
-							queueIds: JSON.stringify(selectedQueueIds || []),
-						};
-
-						if (selectedTagIds && selectedTagIds.length > 0) {
-							params.tags = JSON.stringify(selectedTagIds);
-						}
-						if (selectedWhatsappIds && selectedWhatsappIds.length > 0) {
-							params.whatsappIds = JSON.stringify(selectedWhatsappIds);
-						}
-						if (selectedUserIds && selectedUserIds.length > 0) {
-							params.userIds = JSON.stringify(selectedUserIds);
-						}
-
-						const { data } = await api.get("/tickets", { params });
-						prefetchCacheRef.current[cacheKey] = data.tickets;
-						console.log(`[TicketsList Prefetch] Cached ${tabStatus}:`, data.tickets.length);
-					} catch (err) {
-						console.error(`[TicketsList Prefetch] Error prefetching ${tabStatus}:`, err.message);
-					}
-				}
-			}
-		};
-
-		// Delay de 800ms para no interferir con carga principal
-		const prefetchTimer = setTimeout(prefetchOtherTabs, 800);
-		return () => clearTimeout(prefetchTimer);
-	}, [loading, status, searchParam, showAll, selectedQueueIds, selectedTagIds, selectedWhatsappIds, selectedUserIds]);
+	}, [ticketsList.length]);
 
 	// Reiniciar cache de alturas cuando cambian filtros relevantes
 	useEffect(() => {
@@ -538,43 +483,16 @@ const TicketsList = (props) => {
 	}, [status, searchParam, showAll, selectedQueueIds, selectedTagIds, selectedWhatsappIds, selectedUserIds, tags]);
 
 	const loadMore = useCallback(() => {
-		console.log('[TicketsList loadMore]', {
-			loading,
-			hasMore,
-			currentPage: pageNumber,
-			ticketCount: ticketsList.length,
-			timestamp: new Date().toISOString()
-		});
-
 		if (!loading && hasMore) {
-			setPageNumber((prevState) => {
-				console.log('[TicketsList] Incrementing page:', prevState, '->', prevState + 1);
-				return prevState + 1;
-			});
-		} else {
-			console.log('[TicketsList] loadMore blocked:', { loading, hasMore });
+			console.log('[TicketsList] Loading page:', pageNumber + 1);
+			setPageNumber((prev) => prev + 1);
 		}
-	}, [loading, hasMore, pageNumber, ticketsList.length]);
+	}, [loading, hasMore, pageNumber]);
 
 	const handleItemsRendered = useCallback(
 		({ visibleStopIndex }) => {
-			console.log('[TicketsList handleItemsRendered]', {
-				visibleStopIndex,
-				ticketListLength: ticketsList.length,
-				threshold: ticketsList.length - 10,
-				shouldLoad: visibleStopIndex >= ticketsList.length - 10,
-				hasMore,
-				loading,
-				timestamp: new Date().toISOString()
-			});
-
-			if (!hasMore || loading) {
-				console.log('[TicketsList] Scroll load blocked:', { hasMore, loading });
-				return;
-			}
-			// Cargar más cuando estamos cerca del final (10 items antes)
-			if (visibleStopIndex >= ticketsList.length - 10) {
-				console.log('[TicketsList] Triggering loadMore from scroll');
+			// Cargar más cuando estamos a 20 items del final (más anticipado)
+			if (hasMore && !loading && visibleStopIndex >= ticketsList.length - 20) {
 				loadMore();
 			}
 		},
@@ -670,10 +588,8 @@ const TicketsList = (props) => {
 					</VirtualList>
 				)
 			)}
-			{loading && pageNumber === 1 && ticketsList.length === 0 && (
-				<div style={{ position: "absolute", inset: 0, pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.7)", zIndex: 10 }}>
-					<TicketsListSkeleton />
-				</div>
+			{loading && ticketsList.length === 0 && (
+				<TicketsListSkeleton />
 			)}
 		</Paper>
 	);

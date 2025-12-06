@@ -653,7 +653,15 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     setLoading(true);
     const delayDebounceFn = setTimeout(() => {
       const fetchMessages = async () => {
+        if (!hasMore && pageNumber > 1) {
+          setLoading(false);
+          return;
+        }
+
         try {
+          const messagesListDiv = document.getElementById("messagesList");
+          const previousScrollHeight = messagesListDiv ? messagesListDiv.scrollHeight : 0;
+
           const { data } = await api.get("/messages/" + ticketId, {
             params: { pageNumber },
           });
@@ -662,6 +670,14 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
             dispatch({ type: "LOAD_MESSAGES", payload: data.messages });
             setHasMore(data.hasMore);
             setLoading(false);
+
+            // Mantener la posición del scroll al cargar mensajes antiguos
+            if (pageNumber > 1 && messagesListDiv) {
+              setTimeout(() => {
+                const newScrollHeight = messagesListDiv.scrollHeight;
+                messagesListDiv.scrollTop = newScrollHeight - previousScrollHeight;
+              }, 0);
+            }
           }
 
           if (pageNumber === 1 && data.messages.length > 1) {
@@ -728,7 +744,9 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   }, [ticketId]);
 
   const loadMore = () => {
-    setPageNumber((prevPageNumber) => prevPageNumber + 1);
+    if (!loading && hasMore) {
+      setPageNumber((prevPageNumber) => prevPageNumber + 1);
+    }
   };
 
   const scrollToBottom = () => {
@@ -738,18 +756,18 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   };
 
   const handleScroll = (e) => {
-    if (!hasMore) return;
+    if (!hasMore || loading) return;
+    
     const { scrollTop } = e.currentTarget;
 
+    // Evitar que el scroll llegue exactamente a 0
     if (scrollTop === 0) {
-      document.getElementById("messagesList").scrollTop = 1;
-    }
-
-    if (loading) {
+      e.currentTarget.scrollTop = 1;
       return;
     }
 
-    if (scrollTop < 50) {
+    // Cargar más mensajes cuando estamos cerca del tope (dentro de los primeros 100px)
+    if (scrollTop < 100) {
       loadMore();
     }
   };

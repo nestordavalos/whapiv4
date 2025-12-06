@@ -18,6 +18,9 @@ Sentry.init({ dsn: process.env.SENTRY_DSN });
 
 const app = express();
 
+// Trust proxy - necesario cuando está detrás de nginx
+app.set("trust proxy", 1);
+
 // CORS debe ir ANTES de Helmet para que funcione correctamente
 app.use(
   cors({

@@ -377,6 +377,11 @@ const TicketsList = (props) => {
 						/>
 					))}
 					{loading && <TicketsListSkeleton />}
+					{!loading && hasMore && (
+						<div style={{ padding: '10px', textAlign: 'center', color: '#999' }}>
+							Scroll para cargar más... ({ticketsList.length} de {ticketsList.length}+)
+						</div>
+					)}
 				</div>
 			)}
 		</Paper>

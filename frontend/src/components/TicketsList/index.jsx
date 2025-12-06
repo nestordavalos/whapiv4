@@ -4,6 +4,7 @@ import React, {
 	useReducer,
 	useContext,
 	useRef,
+	useCallback,
 } from "react";
 import openSocket from "../../services/socket-io";
 
@@ -329,19 +330,24 @@ const TicketsList = (props) => {
 		}
 	}, [ticketsList.length, status, updateCount]);
 
-	const handleScroll = (e) => {
+	const handleScroll = useCallback((e) => {
 		if (!hasMore || loading) {
 			return;
 		}
 		const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+		
+		// Calcular cuánto falta para llegar al final
+		const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+		
+		// Cargar más cuando falten menos de 100px para llegar al final
+		// O cuando el scroll esté al 85% o más
 		const scrollPercentage = ((scrollTop + clientHeight) / scrollHeight) * 100;
 		
-		// Cargar más cuando esté al 90% del scroll
-		if (scrollPercentage >= 90) {
-			console.log('[TicketsList] Cargando más tickets - página:', pageNumber + 1, 'scroll:', scrollPercentage.toFixed(2) + '%');
+		if (distanceFromBottom < 100 || scrollPercentage >= 85) {
+			console.log('[TicketsList] Cargando más tickets - página:', pageNumber + 1, 'distancia del final:', distanceFromBottom + 'px', 'scroll:', scrollPercentage.toFixed(2) + '%');
 			setPageNumber((prev) => prev + 1);
 		}
-	};
+	}, [hasMore, loading, pageNumber]);
 
 	return (
 		<Paper className={classes.ticketsListWrapper} style={style}>

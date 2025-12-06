@@ -240,7 +240,7 @@ const TicketsList = (props) => {
 			payload: ticketsToUse,
 			isReset: pageNumber === 1
 		});
-	}, [tickets, queues, profile, user.allTicket, showAll, pageNumber, loading]);
+	}, [tickets, queues, profile, user.allTicket, showAll, pageNumber, loading, hasMore]);
 
 	useEffect(() => {
 		const socket = openSocket();

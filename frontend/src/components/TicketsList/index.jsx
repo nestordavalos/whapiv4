@@ -225,6 +225,15 @@ const TicketsList = (props) => {
 		const shouldShowAll = showAll || isAdmin || allticket;
 		const ticketsToUse = shouldShowAll ? tickets : filteredTickets;
 
+		console.log('[TicketsList] Cargando tickets:', {
+			page: pageNumber,
+			ticketsReceived: tickets.length,
+			ticketsToUse: ticketsToUse.length,
+			currentTotal: ticketsList.length,
+			hasMore,
+			status
+		});
+
 		dispatch({ 
 			type: "LOAD_TICKETS", 
 			payload: ticketsToUse,
@@ -322,12 +331,14 @@ const TicketsList = (props) => {
 
 	const handleScroll = (e) => {
 		if (!hasMore || loading) {
-			if (!hasMore) console.log('[TicketsList] No hay más tickets para cargar, hasMore:', hasMore);
 			return;
 		}
 		const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-		if (scrollTop + clientHeight >= scrollHeight - 100) {
-			console.log('[TicketsList] Cargando página:', pageNumber + 1, 'status:', status);
+		const scrollPercentage = ((scrollTop + clientHeight) / scrollHeight) * 100;
+		
+		// Cargar más cuando esté al 90% del scroll
+		if (scrollPercentage >= 90) {
+			console.log('[TicketsList] Cargando más tickets - página:', pageNumber + 1, 'scroll:', scrollPercentage.toFixed(2) + '%');
 			setPageNumber((prev) => prev + 1);
 		}
 	};

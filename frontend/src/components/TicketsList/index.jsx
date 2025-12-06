@@ -90,77 +90,83 @@ const useStyles = makeStyles((theme) => ({
 const reducer = (state, action) => {
 	if (action.type === "LOAD_TICKETS") {
 		const newTickets = action.payload;
+		const updatedState = [...state];
 
 		newTickets.forEach((ticket) => {
-			const ticketIndex = state.findIndex((t) => t.id === ticket.id);
+			const ticketIndex = updatedState.findIndex((t) => t.id === ticket.id);
 			if (ticketIndex !== -1) {
-				state[ticketIndex] = ticket;
+				updatedState[ticketIndex] = ticket;
 				if (ticket.unreadMessages > 0) {
-					state.unshift(state.splice(ticketIndex, 1)[0]);
+					updatedState.unshift(updatedState.splice(ticketIndex, 1)[0]);
 				}
 			} else {
-				state.push(ticket);
+				updatedState.push(ticket);
 			}
 		});
 
-		return [...state];
+		return updatedState;
 	}
 
 	if (action.type === "RESET_UNREAD") {
 		const ticketId = action.payload;
+		const updatedState = [...state];
 
-		const ticketIndex = state.findIndex((t) => t.id === ticketId);
+		const ticketIndex = updatedState.findIndex((t) => t.id === ticketId);
 		if (ticketIndex !== -1) {
-			state[ticketIndex].unreadMessages = 0;
+			updatedState[ticketIndex] = {
+				...updatedState[ticketIndex],
+				unreadMessages: 0
+			};
 		}
 
-		return [...state];
+		return updatedState;
 	}
 
 	if (action.type === "UPDATE_TICKET") {
 		const ticket = action.payload;
+		const updatedState = [...state];
 
-		const ticketIndex = state.findIndex((t) => t.id === ticket.id);
+		const ticketIndex = updatedState.findIndex((t) => t.id === ticket.id);
 		if (ticketIndex !== -1) {
-			state[ticketIndex] = ticket;
+			updatedState[ticketIndex] = ticket;
 		} else {
-			state.unshift(ticket);
+			updatedState.unshift(ticket);
 		}
 
-		return [...state];
+		return updatedState;
 	}
 
 	if (action.type === "UPDATE_TICKET_UNREAD_MESSAGES") {
 		const ticket = action.payload;
+		const updatedState = [...state];
 
-		const ticketIndex = state.findIndex((t) => t.id === ticket.id);
+		const ticketIndex = updatedState.findIndex((t) => t.id === ticket.id);
 		if (ticketIndex !== -1) {
-			state[ticketIndex] = ticket;
-			state.unshift(state.splice(ticketIndex, 1)[0]);
+			updatedState[ticketIndex] = ticket;
+			updatedState.unshift(updatedState.splice(ticketIndex, 1)[0]);
 		} else {
-			state.unshift(ticket);
+			updatedState.unshift(ticket);
 		}
 
-		return [...state];
+		return updatedState;
 	}
 
 	if (action.type === "UPDATE_TICKET_CONTACT") {
 		const contact = action.payload;
-		const ticketIndex = state.findIndex((t) => t.contactId === contact.id);
+		const updatedState = [...state];
+		const ticketIndex = updatedState.findIndex((t) => t.contactId === contact.id);
 		if (ticketIndex !== -1) {
-			state[ticketIndex].contact = contact;
+			updatedState[ticketIndex] = {
+				...updatedState[ticketIndex],
+				contact
+			};
 		}
-		return [...state];
+		return updatedState;
 	}
 
 	if (action.type === "DELETE_TICKET") {
 		const ticketId = action.payload;
-		const ticketIndex = state.findIndex((t) => t.id === ticketId);
-		if (ticketIndex !== -1) {
-			state.splice(ticketIndex, 1);
-		}
-
-		return [...state];
+		return state.filter((t) => t.id !== ticketId);
 	}
 
 	if (action.type === "RESET") {
@@ -378,18 +384,21 @@ const TicketsList = (props) => {
 		listRef.current?.resetAfterIndex(0, true);
 	}, [status, searchParam, showAll, selectedQueueIds, selectedTagIds, selectedWhatsappIds, selectedUserIds, tags]);
 
-	const loadMore = () => {
-		setPageNumber((prevState) => prevState + 1);
-	};
+	const loadMore = useCallback(() => {
+		if (!loading && hasMore) {
+			setPageNumber((prevState) => prevState + 1);
+		}
+	}, [loading, hasMore]);
 
 	const handleItemsRendered = useCallback(
 		({ visibleStopIndex }) => {
 			if (!hasMore || loading) return;
-			if (visibleStopIndex >= ticketsList.length - 5) {
+			// Cargar más cuando estamos cerca del final (10 items antes)
+			if (visibleStopIndex >= ticketsList.length - 10) {
 				loadMore();
 			}
 		},
-		[hasMore, loading, ticketsList.length],
+		[hasMore, loading, ticketsList.length, loadMore],
 	);
 
 	const Row = ({ index, style, data }) => {

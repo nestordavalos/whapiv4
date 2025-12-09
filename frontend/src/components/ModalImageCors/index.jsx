@@ -16,6 +16,23 @@ const useStyles = makeStyles(theme => ({
 		"&:hover": {
 			transform: "scale(1.02)",
 		},
+		// Permitir selección y menú contextual
+		userSelect: "auto",
+		WebkitUserSelect: "auto",
+		MozUserSelect: "auto",
+		msUserSelect: "auto",
+	},
+	imageWrapper: {
+		position: "relative",
+		display: "inline-block",
+		// Permitir el menú contextual en el contenedor
+		"& img": {
+			userSelect: "auto !important",
+			WebkitUserSelect: "auto !important",
+			MozUserSelect: "auto !important",
+			msUserSelect: "auto !important",
+			pointerEvents: "auto",
+		},
 	},
 }));
 
@@ -78,14 +95,22 @@ const ModalImageCors = ({ imageUrl }) => {
 	}
 
 	return (
-		<ModalImage
-			className={classes.messageMedia}
-			smallSrcSet={fetching ? imageUrl : blobUrl}
-			medium={fetching ? imageUrl : blobUrl}
-			large={fetching ? imageUrl : blobUrl}
-			showRotate="true"
-			alt="image"
-		/>
+		<div 
+			className={classes.imageWrapper}
+			onContextMenu={(e) => {
+				// Permitir el menú contextual del navegador en imágenes
+				e.stopPropagation();
+			}}
+		>
+			<ModalImage
+				className={classes.messageMedia}
+				smallSrcSet={fetching ? imageUrl : blobUrl}
+				medium={fetching ? imageUrl : blobUrl}
+				large={fetching ? imageUrl : blobUrl}
+				showRotate="true"
+				alt="image"
+			/>
+		</div>
 	);
 };
 

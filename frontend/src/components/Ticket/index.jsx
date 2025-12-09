@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useHistory } from "react-router-dom";
 
 import { toast } from "react-toastify";
@@ -79,6 +79,9 @@ const Ticket = () => {
   const [loading, setLoading] = useState(true);
   const [contact, setContact] = useState({});
   const [ticket, setTicket] = useState({});
+  
+  // Usar ref para mantener el estado actual sin causar re-renders
+  const ticketRef = useRef(ticket);
 
   useEffect(() => {
     setLoading(true);
@@ -88,6 +91,7 @@ const Ticket = () => {
           const { data } = await api.get("/tickets/" + ticketId);
           setContact(data.contact);
           setTicket(data);
+          ticketRef.current = data; // Actualizar ref
           setLoading(false);
         } catch (err) {
           setLoading(false);
@@ -105,16 +109,21 @@ const Ticket = () => {
 
     const handleTicket = data => {
       if (data.action === "update") {
-        const previousStatus = ticket.status;
-        setTicket(data.ticket);
-        
-        // Solo redirigir si el estado cambió DE "open" A "pending" o "closed"
-        // Esto evita redirecciones cuando solo se actualizan otros campos del ticket
-        if (previousStatus === "open" && 
-            (data.ticket.status === "pending" || data.ticket.status === "closed")) {
-          history.push("/tickets");
-          return;
-        }
+        setTicket(prevTicket => {
+          const previousStatus = ticketRef.current.status;
+          // Fusionar datos nuevos con los existentes para mantener todas las propiedades
+          const updatedTicket = { ...prevTicket, ...data.ticket };
+          ticketRef.current = updatedTicket; // Actualizar ref
+          
+          // Solo redirigir si el estado cambió DE "open" A "pending" o "closed"
+          // Esto evita redirecciones cuando solo se actualizan otros campos del ticket
+          if (previousStatus === "open" && 
+              (updatedTicket.status === "pending" || updatedTicket.status === "closed")) {
+            setTimeout(() => history.push("/tickets"), 0);
+          }
+          
+          return updatedTicket;
+        });
       }
 
       if (data.action === "delete") {

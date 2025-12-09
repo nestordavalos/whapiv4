@@ -1391,8 +1391,12 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                   onDoubleClick={(e) => hanldeReplyMessage(e, message)}
                   onClick={(e) => handleMessageClick(e, message)}
                   onContextMenu={(e) => {
-                    e.preventDefault();
-                    handleOpenMessageOptionsMenu(e, message);
+                    // Permitir menú contextual nativo en imágenes para poder copiarlas
+                    const isImage = e.target.tagName === 'IMG' || e.target.closest('img');
+                    if (!isImage) {
+                      e.preventDefault();
+                      handleOpenMessageOptionsMenu(e, message);
+                    }
                   }}
                 >
                   <IconButton
@@ -1466,8 +1470,12 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                   onDoubleClick={(e) => hanldeReplyMessage(e, message)}
                   onClick={(e) => handleMessageClick(e, message)}
                   onContextMenu={(e) => {
-                    e.preventDefault();
-                    handleOpenMessageOptionsMenu(e, message);
+                    // Permitir menú contextual nativo en imágenes para poder copiarlas
+                    const isImage = e.target.tagName === 'IMG' || e.target.closest('img');
+                    if (!isImage) {
+                      e.preventDefault();
+                      handleOpenMessageOptionsMenu(e, message);
+                    }
                   }}
                 >
                   <IconButton

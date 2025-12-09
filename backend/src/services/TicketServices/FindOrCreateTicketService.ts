@@ -4,6 +4,8 @@ import Contact from "../../models/Contact";
 import Ticket from "../../models/Ticket";
 import ShowTicketService from "./ShowTicketService";
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
+import { sendTicketCreatedWebhook } from "../WebhookService/SendWebhookEvent";
+import { logger } from "../../utils/logger";
 
 interface FindOrCreateOptions {
   /** If true and no open ticket exists, create as closed (for synced read messages) */
@@ -113,6 +115,25 @@ const FindOrCreateTicketService = async (
       unreadMessages,
       whatsappId
     });
+
+    // Enviar webhook de ticket creado
+    try {
+      await sendTicketCreatedWebhook(whatsappId, {
+        ticketId: ticket.id,
+        contactId: ticket.contactId,
+        contactNumber: contact.number,
+        contactName: contact.name,
+        status: ticket.status,
+        isGroup: ticket.isGroup,
+        isBot: ticket.isBot,
+        unreadMessages: ticket.unreadMessages,
+        createdAt: ticket.createdAt,
+        queueId: queueId || null,
+        userId: userId || null
+      });
+    } catch (err) {
+      logger.error("Error sending ticket_created webhook:", err);
+    }
   }
 
   // Optimized: Single update instead of multiple separate updates

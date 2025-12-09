@@ -7,11 +7,17 @@ import Contact from "../../models/Contact";
 import User from "../../models/User";
 import Queue from "../../models/Queue";
 import Whatsapp from "../../models/Whatsapp";
+import Message from "../../models/Message";
 import SendWhatsAppMessage from "../WbotServices/SendWhatsAppMessage";
 import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
 import ShowTicketService from "./ShowTicketService";
 import FindOrCreateATicketTrakingService from "./FindOrCreateATicketTrakingService";
 import { verifyMessage } from "../WbotServices/wbotMessageListener";
+import { 
+  sendTicketUpdatedWebhook,
+  sendTicketClosedWebhook
+} from "../WebhookService/SendWebhookEvent";
+import { logger } from "../../utils/logger";
 
 interface TicketData {
   status?: string;
@@ -204,6 +210,54 @@ const UpdateTicketService = async ({
       action: "update",
       ticket
     });
+
+  // Enviar webhooks de ticket
+  try {
+    // Webhook específico para cierre de tickets
+    if (status === "closed" && oldStatus !== "closed") {
+      const messageCount = await Message.count({ where: { ticketId: ticket.id } });
+      const duration = Math.floor((new Date().getTime() - ticket.createdAt.getTime()) / 1000);
+      
+      await sendTicketClosedWebhook(ticket.whatsappId, {
+        ticketId: ticket.id,
+        contactId: ticket.contactId,
+        contactNumber: ticket.contact?.number,
+        contactName: ticket.contact?.name,
+        oldStatus,
+        newStatus: ticket.status,
+        userId: ticket.userId,
+        queueId: ticket.queueId,
+        isGroup: ticket.isGroup,
+        closedAt: new Date(),
+        closedBy: ticket.userId,
+        duration,
+        messageCount
+      });
+    } else if (oldStatus !== ticket.status || oldUserId !== ticket.userId) {
+      // Webhook general de actualización (para cualquier cambio que no sea cierre)
+      await sendTicketUpdatedWebhook(ticket.whatsappId, {
+        ticketId: ticket.id,
+        contactId: ticket.contactId,
+        contactNumber: ticket.contact?.number,
+        contactName: ticket.contact?.name,
+        oldStatus,
+        newStatus: ticket.status,
+        oldUserId,
+        newUserId: ticket.userId,
+        queueId: ticket.queueId,
+        isGroup: ticket.isGroup,
+        updatedAt: new Date(),
+        changes: {
+          status: status !== undefined,
+          userId: userId !== undefined,
+          queueId: queueId !== undefined,
+          useIntegration: useIntegration !== undefined
+        }
+      });
+    }
+  } catch (err) {
+    logger.error("Error sending ticket webhook:", err);
+  }
 
   return { ticket, oldStatus, oldUserId };
 };

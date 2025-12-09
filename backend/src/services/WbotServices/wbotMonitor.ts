@@ -28,6 +28,7 @@ const wbotMonitor = async (
         sendConnectionUpdateWebhook(whatsapp.id, {
           status: newState,
           sessionName,
+          sessionNumber: whatsapp.number || null,
           timestamp: new Date().toISOString()
         });
       } catch (err) {
@@ -49,6 +50,7 @@ const wbotMonitor = async (
         status: "DISCONNECTED",
         reason,
         sessionName,
+        sessionNumber: whatsapp.number || null,
         timestamp: new Date().toISOString()
       });
 

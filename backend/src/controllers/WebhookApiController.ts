@@ -181,7 +181,8 @@ export const createTicket = async (
     name: `${validNumber}`,
     number: validNumber,
     profilePicUrl,
-    isGroup: false
+    isGroup: false,
+    whatsappId: whatsapp.id
   };
 
   const contact = await CreateOrUpdateContactService(contactData);
@@ -516,7 +517,8 @@ export const createOrUpdateContact = async (
     number: validNumber,
     profilePicUrl,
     email: email || undefined,
-    isGroup: false
+    isGroup: false,
+    whatsappId
   };
 
   const contact = await CreateOrUpdateContactService(contactData);
@@ -660,7 +662,8 @@ export const sendDirectMessage = async (
     name: `${validNumber}`,
     number: validNumber,
     profilePicUrl,
-    isGroup: false
+    isGroup: false,
+    whatsappId: whatsapp.id
   };
 
   const contact = await CreateOrUpdateContactService(contactData);

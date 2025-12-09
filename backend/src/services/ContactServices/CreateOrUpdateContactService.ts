@@ -1,5 +1,10 @@
 import { getIO } from "../../libs/socket";
 import Contact from "../../models/Contact";
+import { 
+  sendContactCreatedWebhook,
+  sendContactUpdatedWebhook
+} from "../WebhookService/SendWebhookEvent";
+import { logger } from "../../utils/logger";
 
 interface ExtraInfo {
   name: string;
@@ -13,6 +18,7 @@ interface Request {
   email?: string;
   profilePicUrl?: string;
   extraInfo?: ExtraInfo[];
+  whatsappId?: number;
 }
 
 const CreateOrUpdateContactService = async ({
@@ -21,7 +27,8 @@ const CreateOrUpdateContactService = async ({
   profilePicUrl,
   isGroup,
   email = "",
-  extraInfo = []
+  extraInfo = [],
+  whatsappId
 }: Request): Promise<Contact> => {
   const number = isGroup ? rawNumber : rawNumber.replace(/[^0-9]/g, "");
 
@@ -37,6 +44,26 @@ const CreateOrUpdateContactService = async ({
       action: "update",
       contact
     });
+
+    // Enviar webhook de contacto actualizado
+    if (whatsappId) {
+      try {
+        await sendContactUpdatedWebhook(whatsappId, {
+          contactId: contact.id,
+          name: contact.name,
+          number: contact.number,
+          email: contact.email,
+          isGroup: contact.isGroup,
+          profilePicUrl: contact.profilePicUrl,
+          updatedAt: new Date(),
+          changes: {
+            profilePicUrl: true
+          }
+        });
+      } catch (err) {
+        logger.error("Error sending contact_updated webhook:", err);
+      }
+    }
   } else {
     contact = await Contact.create({
       name,
@@ -51,6 +78,24 @@ const CreateOrUpdateContactService = async ({
       action: "create",
       contact
     });
+
+    // Enviar webhook de contacto creado
+    if (whatsappId) {
+      try {
+        await sendContactCreatedWebhook(whatsappId, {
+          contactId: contact.id,
+          name: contact.name,
+          number: contact.number,
+          email: contact.email,
+          isGroup: contact.isGroup,
+          profilePicUrl: contact.profilePicUrl,
+          createdAt: contact.createdAt,
+          extraInfo: contact.extraInfo
+        });
+      } catch (err) {
+        logger.error("Error sending contact_created webhook:", err);
+      }
+    }
   }
 
   return contact;

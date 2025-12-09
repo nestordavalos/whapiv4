@@ -55,14 +55,15 @@ interface Session extends Client {
   id?: number;
 }
 
-const verifyContact = async (msgContact: WbotContact): Promise<Contact> => {
+const verifyContact = async (msgContact: WbotContact, whatsappId?: number): Promise<Contact> => {
   try {
     const profilePicUrl = await msgContact.getProfilePicUrl();
     const contactData = {
       name: msgContact.name || msgContact.pushname || msgContact.id.user,
       number: msgContact.id.user,
       profilePicUrl,
-      isGroup: msgContact.isGroup
+      isGroup: msgContact.isGroup,
+      whatsappId
     };
     const contact = CreateOrUpdateContactService(contactData);
     return contact;
@@ -72,7 +73,8 @@ const verifyContact = async (msgContact: WbotContact): Promise<Contact> => {
       name: msgContact.name || msgContact.pushname || msgContact.id.user,
       number: msgContact.id.user,
       profilePicUrl,
-      isGroup: msgContact.isGroup
+      isGroup: msgContact.isGroup,
+      whatsappId
     };
     const contact = CreateOrUpdateContactService(contactData);
     return contact;
@@ -796,13 +798,13 @@ const handleMessage = async (
         msgGroupContact = await wbot.getContactById(msg.from);
       }
 
-      groupContact = await verifyContact(msgGroupContact);
+      groupContact = await verifyContact(msgGroupContact, wbot.id);
     }
     const whatsapp = await ShowWhatsAppService(wbot.id!);
 
     const unreadMessages = msg.fromMe ? 0 : chat.unreadCount;
 
-    const contact = await verifyContact(msgContact);
+    const contact = await verifyContact(msgContact, wbot.id);
 
     // Determinar si crear ticket como cerrado (para sincronización de mensajes ya leídos)
     const shouldCreateAsClosed =
@@ -1138,7 +1140,8 @@ const handleMessage = async (
       name: msgContact.name || msgContact.pushname || msgContact.id.user,
       number: msgContact.id.user,
       profilePicUrl,
-      isGroup: msgContact.isGroup
+      isGroup: msgContact.isGroup,
+      whatsappId: wbot.id
     };
     // console.log(profilePicUrl)
     await CreateOrUpdateContactService(contactData);

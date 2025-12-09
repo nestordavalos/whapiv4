@@ -475,11 +475,36 @@ const MessageInput = ({ ticketStatus }) => {
           params: { searchParam: searchTerm },
         });
         
-        // Filtrado adicional en el frontend para mejor precisión
-        const filteredQuickAnswers = data.quickAnswers.filter(qa => 
+        // Filtrado y ordenamiento mejorado en el frontend
+        let filteredQuickAnswers = data.quickAnswers.filter(qa => 
           qa.shortcut.toLowerCase().includes(searchTerm) || 
           qa.message.toLowerCase().includes(searchTerm)
         );
+        
+        // Ordenar para priorizar coincidencias exactas en el atajo
+        filteredQuickAnswers.sort((a, b) => {
+          const aShortcut = a.shortcut.toLowerCase();
+          const bShortcut = b.shortcut.toLowerCase();
+          
+          // Coincidencia exacta del atajo tiene máxima prioridad
+          if (aShortcut === searchTerm && bShortcut !== searchTerm) return -1;
+          if (bShortcut === searchTerm && aShortcut !== searchTerm) return 1;
+          
+          // Coincidencia que empieza con el término en el atajo
+          const aStartsWith = aShortcut.startsWith(searchTerm);
+          const bStartsWith = bShortcut.startsWith(searchTerm);
+          if (aStartsWith && !bStartsWith) return -1;
+          if (bStartsWith && !aStartsWith) return 1;
+          
+          // Coincidencia en el atajo antes que en el mensaje
+          const aInShortcut = aShortcut.includes(searchTerm);
+          const bInShortcut = bShortcut.includes(searchTerm);
+          if (aInShortcut && !bInShortcut) return -1;
+          if (bInShortcut && !aInShortcut) return 1;
+          
+          // Por defecto, orden alfabético por atajo
+          return aShortcut.localeCompare(bShortcut);
+        });
         
         setQuickAnswer(filteredQuickAnswers);
         if (filteredQuickAnswers.length > 0) {
@@ -1006,7 +1031,13 @@ const MessageInput = ({ ticketStatus }) => {
               onKeyPress={(e) => {
                 if (loading || e.shiftKey) return;
                 else if (e.key === "Enter") {
-                  handleSendMessage();
+                  // Si hay respuestas rápidas visibles, seleccionar la primera en lugar de enviar
+                  if (typeBar && quickAnswers.length > 0) {
+                    e.preventDefault();
+                    handleQuickAnswersClick(quickAnswers[0].message);
+                  } else {
+                    handleSendMessage();
+                  }
                 }
               }}
             />

@@ -1,4 +1,6 @@
 import { Request, Response } from "express";
+import path from "path";
+import fs from "fs/promises";
 import { getWbot, removeWbot } from "../libs/wbot";
 import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
 import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
@@ -50,42 +52,40 @@ const remove = async (req: Request, res: Response): Promise<Response> => {
     );
     const wbot = getWbot(whatsapp.id);
 
-    if (wbot && typeof wbot.logout === "function") {
-      logger.info("[WhatsAppSession] Ejecutando logout con timeout...");
+    if (wbot) {
+      logger.info("[WhatsAppSession] Preparando para cerrar sesión...");
 
-      // Crear promesa con timeout para evitar que se quede colgado
-      const logoutWithTimeout = Promise.race([
-        wbot.logout(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Logout timeout")), 10000)
-        )
-      ]);
-
-      try {
-        await logoutWithTimeout;
-        logger.info("[WhatsAppSession] Logout completado exitosamente");
-      } catch (logoutError) {
-        logger.warn(
-          `[WhatsAppSession] Error/timeout en logout: ${logoutError}`
-        );
-        // Continuar con destroy aunque logout falle
+      // Limpiar intervalos antes de destroy
+      if (wbot.pingInterval) {
+        clearInterval(wbot.pingInterval);
+        wbot.pingInterval = undefined;
+        logger.info("[WhatsAppSession] Intervalos limpiados");
       }
 
-      // Forzar destroy del cliente
+      // El authStrategy.logout ya fue desactivado en initWbot (evento ready)
+      // Esto previene el error EBUSY en Windows cuando se llama a destroy
+
+      // Destruir el cliente (no intentará eliminar archivos bloqueados)
       try {
         logger.info("[WhatsAppSession] Destruyendo cliente...");
         await Promise.race([
           wbot.destroy(),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Destroy timeout")), 5000)
+            setTimeout(() => reject(new Error("Destroy timeout")), 10000)
           )
         ]);
-        logger.info("[WhatsAppSession] Cliente destruido");
+        logger.info("[WhatsAppSession] Cliente destruido exitosamente");
       } catch (destroyError) {
         logger.warn(
           `[WhatsAppSession] Error/timeout en destroy: ${destroyError}`
         );
       }
+
+      // Esperar para que Chrome/Puppeteer libere completamente los archivos (crítico en Windows)
+      logger.info(
+        "[WhatsAppSession] Esperando a que se liberen los archivos..."
+      );
+      await new Promise(resolve => setTimeout(resolve, 3000));
     }
   } catch (error) {
     logger.warn(`[WhatsAppSession] Instancia no encontrada o error: ${error}`);
@@ -97,6 +97,42 @@ const remove = async (req: Request, res: Response): Promise<Response> => {
     logger.info(`[WhatsAppSession] Sesión ${whatsapp.id} removida del array`);
   } catch (removeError) {
     logger.warn(`[WhatsAppSession] Error removiendo sesión: ${removeError}`);
+  }
+
+  // Intentar eliminar archivos de sesión con reintentos (manejo de archivos bloqueados en Windows)
+  const sessionPath = path.resolve(
+    __dirname,
+    `../../.wwebjs_auth/session-bd_${whatsapp.id}`
+  );
+  logger.info(`[WhatsAppSession] Intentando eliminar archivos: ${sessionPath}`);
+
+  let deleteSuccess = false;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      await fs.rm(sessionPath, { recursive: true, force: true });
+      logger.info(
+        "[WhatsAppSession] Archivos de sesión eliminados exitosamente"
+      );
+      deleteSuccess = true;
+      break;
+    } catch (rmError: any) {
+      logger.warn(
+        `[WhatsAppSession] Intento ${attempt}/3 falló al eliminar archivos: ${rmError.message}`
+      );
+      if (attempt < 3) {
+        // Esperar antes de reintentar (2s, luego 4s)
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+      }
+    }
+  }
+
+  if (!deleteSuccess) {
+    logger.error(
+      `[WhatsAppSession] No se pudieron eliminar archivos después de 3 intentos. Path: ${sessionPath}`
+    );
+    logger.error(
+      "[WhatsAppSession] Los archivos se eliminarán automáticamente en el próximo reinicio"
+    );
   }
 
   // Actualizar estado en BD

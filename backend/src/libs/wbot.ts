@@ -254,6 +254,28 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
             sessions.push(wbot);
           }
 
+          // CRÍTICO: Desactivar authStrategy.logout para evitar EBUSY en Windows
+          // Esto debe hacerse aquí para que aplique cuando se cierre la sesión
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const wbotAny = wbot as any;
+          if (
+            wbotAny.authStrategy &&
+            typeof wbotAny.authStrategy.logout === "function"
+          ) {
+            logger.info(
+              `[wbot] Desactivando authStrategy.logout para sesión ${sessionName} (prevenir EBUSY)`
+            );
+            const originalLogout = wbotAny.authStrategy.logout;
+            wbotAny.authStrategy.logout = async () => {
+              logger.info(
+                `[wbot] authStrategy.logout omitido para ${sessionName} (evitando archivos bloqueados)`
+              );
+              // No hacer nada - los archivos se eliminarán manualmente después
+            };
+            // Guardar referencia al logout original por si se necesita
+            wbotAny.authStrategy.originalLogout = originalLogout;
+          }
+
           wbot.sendPresenceAvailable();
           await syncUnreadMessages(wbot);
 
@@ -359,11 +381,14 @@ export const removeWbot = (whatsappId: number): void => {
   const index = sessions.findIndex(s => s.id === whatsappId);
   if (index !== -1) {
     const session = sessions[index];
+    // Solo limpiar recursos, el destroy ya se hizo antes
     if (session.pingInterval) {
       clearInterval(session.pingInterval);
+      session.pingInterval = undefined;
     }
-    session.destroy();
+    // Remover de la lista sin hacer destroy adicional
     sessions.splice(index, 1);
+    logger.info(`[removeWbot] Sesión ${whatsappId} removida exitosamente`);
   }
 };
 
@@ -453,9 +478,36 @@ export const shutdownWbot = async (whatsappId: string): Promise<void> => {
     await session.destroy();
     logger.info(`Sessão com ID ${whatsappIDNumber} desligada com sucesso.`);
 
+    // Esperar para que se liberen los archivos (especialmente en Windows)
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
     logger.info(`Removendo arquivos da sessão: ${sessionPath}`);
-    await fs.rm(sessionPath, { recursive: true, force: true });
-    logger.info(`Arquivos da sessão removidos com sucesso: ${sessionPath}`);
+
+    // Intentar eliminar los archivos con reintentos para manejar bloqueos en Windows
+    let deleteSuccess = false;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        await fs.rm(sessionPath, { recursive: true, force: true });
+        logger.info(`Arquivos da sessão removidos com sucesso: ${sessionPath}`);
+        deleteSuccess = true;
+        break;
+      } catch (rmError) {
+        logger.warn(
+          `Intento ${attempt}/3 falló al eliminar archivos: ${rmError.message}`
+        );
+        if (attempt < 3) {
+          // Esperar antes de reintentar (2s, luego 4s)
+          await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+        }
+      }
+    }
+
+    if (!deleteSuccess) {
+      logger.error(
+        `No se pudieron eliminar los archivos de sesión después de 3 intentos. Path: ${sessionPath}`
+      );
+      // No lanzar error, solo advertir - la sesión seguirá desconectada
+    }
 
     sessions.splice(sessionIndex, 1);
     logger.info(

@@ -109,16 +109,24 @@ const Ticket = () => {
 
     const handleTicket = data => {
       if (data.action === "update") {
+        // IMPORTANTE: Solo procesar si es el ticket actual que estamos viendo
+        // Esto evita redirecciones por actualizaciones de otros tickets
+        if (data.ticket.id !== parseInt(ticketId)) {
+          return;
+        }
+        
         setTicket(prevTicket => {
           const previousStatus = ticketRef.current.status;
+          const newStatus = data.ticket.status;
+          
           // Fusionar datos nuevos con los existentes para mantener todas las propiedades
           const updatedTicket = { ...prevTicket, ...data.ticket };
           ticketRef.current = updatedTicket; // Actualizar ref
           
-          // Solo redirigir si el estado cambió DE "open" A "pending" o "closed"
-          // Esto evita redirecciones cuando solo se actualizan otros campos del ticket
+          // Solo redirigir si el estado realmente cambió DE "open" A "pending" o "closed"
           if (previousStatus === "open" && 
-              (updatedTicket.status === "pending" || updatedTicket.status === "closed")) {
+              newStatus !== "open" &&
+              (newStatus === "pending" || newStatus === "closed")) {
             setTimeout(() => history.push("/tickets"), 0);
           }
           

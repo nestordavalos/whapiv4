@@ -105,9 +105,13 @@ const Ticket = () => {
 
     const handleTicket = data => {
       if (data.action === "update") {
+        const previousStatus = ticket.status;
         setTicket(data.ticket);
-        // Si el ticket cambia a pending o closed, redirigir a /tickets
-        if (data.ticket.status === "pending" || data.ticket.status === "closed") {
+        
+        // Solo redirigir si el estado cambió DE "open" A "pending" o "closed"
+        // Esto evita redirecciones cuando solo se actualizan otros campos del ticket
+        if (previousStatus === "open" && 
+            (data.ticket.status === "pending" || data.ticket.status === "closed")) {
           history.push("/tickets");
           return;
         }

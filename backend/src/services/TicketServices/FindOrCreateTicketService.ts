@@ -46,13 +46,20 @@ const FindOrCreateTicketService = async (
     });
 
     if (ticket) {
-      await ticket.update({
-        status: "pending",
-        userId: null,
+      // Solo actualizar a pending si el ticket NO está open
+      // Si está open, mantener ese estado para no interrumpir conversaciones activas
+      const updateData: any = {
         unreadMessages,
-        isBot: true,
-        queueId: null
-      });
+        isBot: true
+      };
+      
+      if (ticket.status !== "open") {
+        updateData.status = "pending";
+        updateData.userId = null;
+        updateData.queueId = null;
+      }
+      
+      await ticket.update(updateData);
     }
   }
 
@@ -77,13 +84,20 @@ const FindOrCreateTicketService = async (
     });
 
     if (ticket) {
-      await ticket.update({
-        status: "pending",
-        userId: null,
+      // Solo actualizar a pending si el ticket NO está open
+      // Si está open, mantener ese estado para no interrumpir conversaciones activas
+      const updateData: any = {
         unreadMessages,
-        isBot: true,
-        queueId: null
-      });
+        isBot: true
+      };
+      
+      if (ticket.status !== "open") {
+        updateData.status = "pending";
+        updateData.userId = null;
+        updateData.queueId = null;
+      }
+      
+      await ticket.update(updateData);
     }
   }
 

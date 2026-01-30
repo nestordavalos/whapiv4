@@ -806,6 +806,55 @@ const handleMessage = async (
 
     const contact = await verifyContact(msgContact, wbot.id);
 
+    // ============================================================
+    // VERIFICAR SI EL MENSAJE YA EXISTE EN LA BD (EVITA DUPLICADOS)
+    // Esta verificación se hace ANTES de FindOrCreateTicketService
+    // para evitar crear tickets nuevos cuando el mensaje ya fue
+    // procesado (ej: mensajes enviados desde API que se cierran)
+    // ============================================================
+    const existingMessage = await Message.findByPk(msg.id.id);
+
+    if (existingMessage) {
+      // El mensaje ya existe, solo actualizar el ack si es necesario
+      logger.debug(
+        `[handleMessage] Mensaje ${msg.id.id} ya existe en BD, ticketId: ${existingMessage.ticketId}, ack: ${msg.ack}`
+      );
+      if (existingMessage.ack !== msg.ack) {
+        await existingMessage.update({ ack: msg.ack });
+      }
+
+      // Emitir socket para actualizar el frontend en tiempo real
+      const io = getIO();
+      const messageWithIncludes = await Message.findByPk(existingMessage.id, {
+        include: [
+          "contact",
+          {
+            model: Message,
+            as: "quotedMsg",
+            include: ["contact"]
+          }
+        ]
+      });
+
+      // Obtener el ticket existente para emitir el evento correctamente
+      const existingTicket = await Ticket.findByPk(existingMessage.ticketId, {
+        include: [{ model: Contact, as: "contact" }]
+      });
+
+      if (messageWithIncludes && existingTicket) {
+        io.to(existingMessage.ticketId.toString())
+          .to("notification")
+          .emit("appMessage", {
+            action: "update",
+            message: messageWithIncludes,
+            ticket: existingTicket,
+            contact: existingTicket.contact
+          });
+      }
+
+      return;
+    }
+
     // Determinar si crear ticket como cerrado (para sincronización de mensajes ya leídos)
     const shouldCreateAsClosed =
       isSync &&
@@ -894,45 +943,6 @@ const handleMessage = async (
     } catch (e) {
       Sentry.captureException(e);
       logger.error(`Error in message listener: ${e}`);
-    }
-
-    // Verificar si el mensaje ya existe en la BD (evita duplicados de mensajes enviados desde el panel)
-    const existingMessage = await Message.findByPk(msg.id.id);
-
-    if (existingMessage) {
-      // El mensaje ya existe, solo actualizar el ack si es necesario
-      logger.debug(
-        `[handleMessage] Mensaje ${msg.id.id} ya existe en BD, ticketId: ${existingMessage.ticketId}`
-      );
-      if (existingMessage.ack !== msg.ack) {
-        await existingMessage.update({ ack: msg.ack });
-      }
-
-      // Emitir socket para actualizar el frontend en tiempo real
-      const io = getIO();
-      const messageWithIncludes = await Message.findByPk(existingMessage.id, {
-        include: [
-          "contact",
-          {
-            model: Message,
-            as: "quotedMsg",
-            include: ["contact"]
-          }
-        ]
-      });
-
-      if (messageWithIncludes) {
-        io.to(existingMessage.ticketId.toString())
-          .to("notification")
-          .emit("appMessage", {
-            action: "update",
-            message: messageWithIncludes,
-            ticket,
-            contact
-          });
-      }
-
-      return;
     }
 
     logger.info(

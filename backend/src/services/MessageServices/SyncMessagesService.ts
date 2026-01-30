@@ -11,6 +11,7 @@ import { logger } from "../../utils/logger";
 interface Request {
   ticketId: string;
   limit?: number;
+  userId?: string;
 }
 
 interface Response {
@@ -30,9 +31,12 @@ interface Response {
  */
 const SyncMessagesService = async ({
   ticketId,
-  limit = 50
+  limit = 50,
+  userId
 }: Request): Promise<Response> => {
-  const ticket = await ShowTicketService(ticketId);
+  const ticket = userId
+    ? await ShowTicketService({ id: ticketId, userId })
+    : await ShowTicketService(ticketId);
 
   if (!ticket) {
     throw new AppError("ERR_NO_TICKET_FOUND", 404);

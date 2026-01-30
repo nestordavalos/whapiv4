@@ -10,6 +10,7 @@ import Tag from "../../models/Tag";
 import ShowUserService from "../UserServices/ShowUserService";
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
 import User from "../../models/User";
+import AppError from "../../errors/AppError";
 
 interface Request {
   searchParam?: string;
@@ -44,6 +45,37 @@ const ListTicketsService = async ({
   userId,
   withUnreadMessages
 }: Request): Promise<Response> => {
+  // Cargar usuario con sus queues para validar permisos
+  const user = await ShowUserService(userId);
+  const userQueueIds = user.queues.map(queue => queue.id);
+  const isAdmin = user.profile === "admin";
+  const canShowAll = isAdmin || user.allTicket === "enabled";
+
+  // Validar permiso para showAll
+  if (showAll === "true" && !canShowAll) {
+    throw new AppError("ERR_NO_PERMISSION", 403);
+  }
+
+  // Filtrar queueIds recibidos para incluir solo aquellos que pertenecen al usuario
+  let allowedQueueIds: number[] | undefined;
+  if (showAll === "true" && canShowAll) {
+    // Si tiene permiso para ver todos, usar los queueIds especificados o ninguno (ver todos)
+    allowedQueueIds = queueIds && queueIds.length > 0 ? queueIds : undefined;
+  } else {
+    // Si no tiene permiso para showAll, validar que los queueIds pertenecen al usuario
+    if (queueIds && queueIds.length > 0) {
+      // Filtrar solo los queueIds que el usuario tiene asignados
+      allowedQueueIds = queueIds.filter(qid => userQueueIds.includes(qid));
+      if (allowedQueueIds.length === 0) {
+        // Si ninguno de los queueIds pertenece al usuario, usar sus queues
+        allowedQueueIds = userQueueIds;
+      }
+    } else {
+      // Si no se especificaron queueIds, usar las queues del usuario
+      allowedQueueIds = userQueueIds;
+    }
+  }
+
   let whereCondition: Filterable["where"] = {
     [Op.or]: [{ userId }, { status: "pending" }]
   };
@@ -80,27 +112,20 @@ const ListTicketsService = async ({
     }
   ];
 
-  // Aplicar filtro de sectores solo si se especifican
-  if (queueIds && queueIds.length > 0) {
+  // Aplicar filtro de sectores validados
+  if (allowedQueueIds && allowedQueueIds.length > 0) {
     whereCondition = {
       ...whereCondition,
       queueId: {
-        [Op.or]: [{ [Op.in]: queueIds }, { [Op.is]: null }]
+        [Op.or]: [{ [Op.in]: allowedQueueIds }, { [Op.is]: null }]
       }
     };
-  }
-
-  if (showAll === "true") {
-    // En modo showAll, si hay queueIds los aplicamos, sino mostramos todos
-    if (queueIds && queueIds.length > 0) {
-      whereCondition = {
-        queueId: {
-          [Op.or]: [{ [Op.in]: queueIds }, { [Op.is]: null }]
-        }
-      };
-    } else {
-      whereCondition = {};
-    }
+  } else if (showAll !== "true") {
+    // Si no hay allowedQueueIds y no es showAll, no mostrar nada
+    whereCondition = {
+      ...whereCondition,
+      queueId: { [Op.is]: null }
+    };
   }
 
   // Filtro por etiquetas

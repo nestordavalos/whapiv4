@@ -24,7 +24,8 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   const { pageNumber } = req.query as IndexQuery;
   const { count, messages, ticket, hasMore } = await ListMessagesService({
     pageNumber,
-    ticketId
+    ticketId,
+    userId: req.user.id
   });
 
   SetTicketMessagesAsRead(ticket);
@@ -56,7 +57,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
       : "null"
   );
 
-  const ticket = await ShowTicketService(ticketId);
+  const ticket = await ShowTicketService({ id: ticketId, userId: req.user.id });
 
   SetTicketMessagesAsRead(ticket);
 
@@ -165,7 +166,8 @@ export const sync = async (req: Request, res: Response): Promise<Response> => {
 
   const result = await SyncMessagesService({
     ticketId,
-    limit: limit ? parseInt(limit, 10) : 100
+    limit: limit ? parseInt(limit, 10) : 100,
+    userId: req.user.id
   });
 
   return res.json(result);
@@ -186,7 +188,7 @@ export const forward = async (
     return res.status(404).json({ error: "Message not found" });
   }
 
-  const ticket = await ShowTicketService(message.ticketId.toString());
+  const ticket = await ShowTicketService({ id: message.ticketId.toString(), userId: req.user.id });
 
   const result = await ForwardWhatsAppMessage({
     message,

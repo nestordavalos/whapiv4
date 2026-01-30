@@ -21,6 +21,7 @@ import SendWhatsAppMediaFromBase64 from "../services/WbotServices/SendWhatsAppMe
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import { getWbot } from "../libs/wbot";
 import ListSettingsServiceOne from "../services/SettingServices/ListSettingsServiceOne";
+import { logger } from "../utils/logger";
 
 // ==========================================
 // HELPER FUNCTIONS
@@ -35,15 +36,20 @@ const handleAutoCloseTicket = async (ticketId: string | number): Promise<void> =
       key: "closeTicketApi"
     });
 
+    logger.info(`[API] handleAutoCloseTicket - ticketId: ${ticketId}, closeTicketApi: ${closeTicketApiSetting?.value}`);
+
     if (closeTicketApiSetting?.value === "enabled") {
+      logger.info(`[API] Cerrando ticket ${ticketId} automáticamente`);
       await UpdateTicketService({
         ticketId: String(ticketId),
         ticketData: { status: "closed" }
       });
+      logger.info(`[API] Ticket ${ticketId} cerrado exitosamente`);
+    } else {
+      logger.info(`[API] No se cierra ticket ${ticketId} - closeTicketApi no está habilitado`);
     }
   } catch (err) {
-    // No lanzar error si falla el cierre, solo registrar
-    console.error("Error al intentar cerrar ticket automáticamente:", err);
+    logger.error(`[API] Error al intentar cerrar ticket automáticamente: ${err}`);
   }
 };
 
@@ -283,23 +289,33 @@ export const sendMessage = async (
     throw new AppError("ERR_TICKET_NOT_FOUND", 404);
   }
 
-  // Actualizar ticket: cambiar estado y asignar cola si se proporciona
-  const updateData: any = {};
+  logger.info(`[API] Enviando mensaje - ticketId: ${ticketId}, status: ${ticket.status}, queueId: ${queueId}`);
 
-  if (ticket.status === "pending") {
-    updateData.status = "open";
-  }
+  // Actualizar ticket solo si NO está cerrado
+  if (ticket.status !== "closed") {
+    const updateData: any = {};
 
-  if (queueId !== undefined && queueId !== null) {
-    updateData.queueId = queueId;
-  }
+    if (ticket.status === "pending") {
+      updateData.status = "open";
+      logger.info(`[API] Cambiando ticket ${ticketId} de pending a open`);
+    }
 
-  if (Object.keys(updateData).length > 0) {
-    await UpdateTicketService({
-      ticketId: ticket.id,
-      ticketData: updateData
-    });
-    await ticket.reload();
+    if (queueId !== undefined && queueId !== null) {
+      updateData.queueId = queueId;
+      logger.info(`[API] Asignando queueId ${queueId} al ticket ${ticketId}`);
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      logger.info(`[API] Actualizando ticket ${ticketId}:`, updateData);
+      await UpdateTicketService({
+        ticketId: ticket.id,
+        ticketData: updateData
+      });
+      await ticket.reload();
+      logger.info(`[API] Ticket ${ticketId} actualizado. Nuevo status: ${ticket.status}`);
+    }
+  } else {
+    logger.info(`[API] Ticket ${ticketId} está cerrado - no se actualiza`);
   }
 
   let quotedMsg: Message | null = null;
@@ -319,8 +335,10 @@ export const sendMessage = async (
   // Obtener el mensaje creado en la BD
   const message = await Message.findByPk(sentMessage.id.id);
 
-  // Verificar configuración de cierre automático
-  await handleAutoCloseTicket(ticket.id);
+  // Verificar configuración de cierre automático (solo si no está ya cerrado)
+  if (ticket.status !== "closed") {
+    await handleAutoCloseTicket(ticket.id);
+  }
 
   return res.status(201).json({
     message: "Message sent successfully",
@@ -357,23 +375,33 @@ export const sendMediaMessage = async (
     throw new AppError("ERR_TICKET_NOT_FOUND", 404);
   }
 
-  // Actualizar ticket: cambiar estado y asignar cola si se proporciona
-  const updateData: any = {};
+  logger.info(`[API] Enviando mensaje - ticketId: ${ticketId}, status: ${ticket.status}, queueId: ${queueId}`);
 
-  if (ticket.status === "pending") {
-    updateData.status = "open";
-  }
+  // Actualizar ticket solo si NO está cerrado
+  if (ticket.status !== "closed") {
+    const updateData: any = {};
 
-  if (queueId !== undefined && queueId !== null) {
-    updateData.queueId = queueId;
-  }
+    if (ticket.status === "pending") {
+      updateData.status = "open";
+      logger.info(`[API] Cambiando ticket ${ticketId} de pending a open`);
+    }
 
-  if (Object.keys(updateData).length > 0) {
-    await UpdateTicketService({
-      ticketId: ticket.id,
-      ticketData: updateData
-    });
-    await ticket.reload();
+    if (queueId !== undefined && queueId !== null) {
+      updateData.queueId = queueId;
+      logger.info(`[API] Asignando queueId ${queueId} al ticket ${ticketId}`);
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      logger.info(`[API] Actualizando ticket ${ticketId}:`, updateData);
+      await UpdateTicketService({
+        ticketId: ticket.id,
+        ticketData: updateData
+      });
+      await ticket.reload();
+      logger.info(`[API] Ticket ${ticketId} actualizado. Nuevo status: ${ticket.status}`);
+    }
+  } else {
+    logger.info(`[API] Ticket ${ticketId} está cerrado - no se actualiza`);
   }
 
   let quotedMsg: Message | null = null;
@@ -410,8 +438,10 @@ export const sendMediaMessage = async (
     });
   }
 
-  // Verificar configuración de cierre automático
-  await handleAutoCloseTicket(ticket.id);
+  // Verificar configuración de cierre automático (solo si no está ya cerrado)
+  if (ticket.status !== "closed") {
+    await handleAutoCloseTicket(ticket.id);
+  }
 
   return res.status(201).json({
     message: "Media message(s) sent successfully",
@@ -453,23 +483,33 @@ export const sendMediaFromUrl = async (
     throw new AppError("ERR_TICKET_NOT_FOUND", 404);
   }
 
-  // Actualizar ticket: cambiar estado y asignar cola si se proporciona
-  const updateData: any = {};
+  logger.info(`[API] Enviando mensaje - ticketId: ${ticketId}, status: ${ticket.status}, queueId: ${queueId}`);
 
-  if (ticket.status === "pending") {
-    updateData.status = "open";
-  }
+  // Actualizar ticket solo si NO está cerrado
+  if (ticket.status !== "closed") {
+    const updateData: any = {};
 
-  if (queueId !== undefined && queueId !== null) {
-    updateData.queueId = queueId;
-  }
+    if (ticket.status === "pending") {
+      updateData.status = "open";
+      logger.info(`[API] Cambiando ticket ${ticketId} de pending a open`);
+    }
 
-  if (Object.keys(updateData).length > 0) {
-    await UpdateTicketService({
-      ticketId: ticket.id,
-      ticketData: updateData
-    });
-    await ticket.reload();
+    if (queueId !== undefined && queueId !== null) {
+      updateData.queueId = queueId;
+      logger.info(`[API] Asignando queueId ${queueId} al ticket ${ticketId}`);
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      logger.info(`[API] Actualizando ticket ${ticketId}:`, updateData);
+      await UpdateTicketService({
+        ticketId: ticket.id,
+        ticketData: updateData
+      });
+      await ticket.reload();
+      logger.info(`[API] Ticket ${ticketId} actualizado. Nuevo status: ${ticket.status}`);
+    }
+  } else {
+    logger.info(`[API] Ticket ${ticketId} está cerrado - no se actualiza`);
   }
 
   let quotedMsg: Message | null = null;
@@ -491,8 +531,10 @@ export const sendMediaFromUrl = async (
   // Obtener el mensaje creado en la BD
   const message = await Message.findByPk(sentMessage.id.id);
 
-  // Verificar configuración de cierre automático
-  await handleAutoCloseTicket(ticket.id);
+  // Verificar configuración de cierre automático (solo si no está ya cerrado)
+  if (ticket.status !== "closed") {
+    await handleAutoCloseTicket(ticket.id);
+  }
 
   return res.status(201).json({
     message: "Media message sent successfully",
@@ -536,23 +578,33 @@ export const sendMediaFromBase64 = async (
     throw new AppError("ERR_TICKET_NOT_FOUND", 404);
   }
 
-  // Actualizar ticket: cambiar estado y asignar cola si se proporciona
-  const updateData: any = {};
+  logger.info(`[API] Enviando mensaje - ticketId: ${ticketId}, status: ${ticket.status}, queueId: ${queueId}`);
 
-  if (ticket.status === "pending") {
-    updateData.status = "open";
-  }
+  // Actualizar ticket solo si NO está cerrado
+  if (ticket.status !== "closed") {
+    const updateData: any = {};
 
-  if (queueId !== undefined && queueId !== null) {
-    updateData.queueId = queueId;
-  }
+    if (ticket.status === "pending") {
+      updateData.status = "open";
+      logger.info(`[API] Cambiando ticket ${ticketId} de pending a open`);
+    }
 
-  if (Object.keys(updateData).length > 0) {
-    await UpdateTicketService({
-      ticketId: ticket.id,
-      ticketData: updateData
-    });
-    await ticket.reload();
+    if (queueId !== undefined && queueId !== null) {
+      updateData.queueId = queueId;
+      logger.info(`[API] Asignando queueId ${queueId} al ticket ${ticketId}`);
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      logger.info(`[API] Actualizando ticket ${ticketId}:`, updateData);
+      await UpdateTicketService({
+        ticketId: ticket.id,
+        ticketData: updateData
+      });
+      await ticket.reload();
+      logger.info(`[API] Ticket ${ticketId} actualizado. Nuevo status: ${ticket.status}`);
+    }
+  } else {
+    logger.info(`[API] Ticket ${ticketId} está cerrado - no se actualiza`);
   }
 
   let quotedMsg: Message | null = null;
@@ -575,8 +627,10 @@ export const sendMediaFromBase64 = async (
   // Obtener el mensaje creado en la BD
   const message = await Message.findByPk(sentMessage.id.id);
 
-  // Verificar configuración de cierre automático
-  await handleAutoCloseTicket(ticket.id);
+  // Verificar configuración de cierre automático (solo si no está ya cerrado)
+  if (ticket.status !== "closed") {
+    await handleAutoCloseTicket(ticket.id);
+  }
 
   return res.status(201).json({
     message: "Media message sent successfully from base64",
@@ -859,7 +913,7 @@ export const sendDirectMessage = async (
   const fullTicket = await ShowTicketService(ticket.id);
   SetTicketMessagesAsRead(fullTicket);
 
-  // Si el ticket está en pending, cambiarlo a open porque estamos enviando desde la API
+  // Si el ticket está en pending, cambiarlo a open (solo si NO está cerrado)
   if (fullTicket.status === "pending") {
     await UpdateTicketService({
       ticketId: fullTicket.id,
@@ -970,15 +1024,17 @@ export const sendDirectMessage = async (
     throw new AppError("Message body or media is required", 400);
   }
 
-  // Cerrar ticket si se solicita explícitamente o si la configuración lo indica
-  if (closeTicket) {
-    await UpdateTicketService({
-      ticketId: fullTicket.id,
-      ticketData: { status: "closed" }
-    });
-  } else {
-    // Si no se especificó closeTicket, verificar la configuración global
-    await handleAutoCloseTicket(fullTicket.id);
+  // Cerrar ticket si se solicita explícitamente o si la configuración lo indica (solo si NO está ya cerrado)
+  if (fullTicket.status !== "closed") {
+    if (closeTicket) {
+      await UpdateTicketService({
+        ticketId: fullTicket.id,
+        ticketData: { status: "closed" }
+      });
+    } else {
+      // Si no se especificó closeTicket, verificar la configuración global
+      await handleAutoCloseTicket(fullTicket.id);
+    }
   }
 
   return res.status(201).json({

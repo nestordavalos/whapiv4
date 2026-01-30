@@ -24,6 +24,8 @@ const FindOrCreateTicketService = async (
 ): Promise<Ticket> => {
   const { createAsClosed = false } = options || {};
 
+  logger.info(`[FindOrCreateTicket] Iniciando búsqueda - contactId: ${contact.id}, whatsappId: ${whatsappId}`);
+
   let ticket = await Ticket.findOne({
     where: {
       status: {
@@ -35,6 +37,7 @@ const FindOrCreateTicketService = async (
   });
 
   if (ticket) {
+    logger.info(`[FindOrCreateTicket] Encontrado ticket open/pending: ${ticket.id}, status: ${ticket.status}`);
     await ticket.update({ unreadMessages });
   }
 
@@ -48,20 +51,27 @@ const FindOrCreateTicketService = async (
     });
 
     if (ticket) {
-      // Solo actualizar a pending si el ticket NO está open
-      // Si está open, mantener ese estado para no interrumpir conversaciones activas
-      const updateData: any = {
-        unreadMessages,
-        isBot: true
-      };
-      
-      if (ticket.status !== "open") {
-        updateData.status = "pending";
-        updateData.userId = null;
-        updateData.queueId = null;
+      logger.info(`[FindOrCreateTicket] Encontrado ticket de grupo: ${ticket.id}, status: ${ticket.status}`);
+      // NO actualizar tickets cerrados - ignorarlos y crear uno nuevo
+      if (ticket.status === "closed") {
+        logger.info(`[FindOrCreateTicket] Ticket ${ticket.id} está cerrado - se ignorará y creará uno nuevo`);
+        ticket = null;
+      } else {
+        // Solo actualizar si el ticket está open o pending
+        const updateData: any = {
+          unreadMessages,
+          isBot: true
+        };
+
+        if (ticket.status !== "open") {
+          updateData.status = "pending";
+          updateData.userId = null;
+          updateData.queueId = null;
+        }
+
+        logger.info(`[FindOrCreateTicket] Actualizando ticket ${ticket.id} de grupo:`, updateData);
+        await ticket.update(updateData);
       }
-      
-      await ticket.update(updateData);
     }
   }
 
@@ -86,26 +96,34 @@ const FindOrCreateTicketService = async (
     });
 
     if (ticket) {
-      // Solo actualizar a pending si el ticket NO está open
-      // Si está open, mantener ese estado para no interrumpir conversaciones activas
-      const updateData: any = {
-        unreadMessages,
-        isBot: true
-      };
-      
-      if (ticket.status !== "open") {
-        updateData.status = "pending";
-        updateData.userId = null;
-        updateData.queueId = null;
+      logger.info(`[FindOrCreateTicket] Encontrado ticket reciente: ${ticket.id}, status: ${ticket.status}`);
+      // NO actualizar tickets cerrados - ignorarlos y crear uno nuevo
+      if (ticket.status === "closed") {
+        logger.info(`[FindOrCreateTicket] Ticket ${ticket.id} está cerrado - se ignorará y creará uno nuevo`);
+        ticket = null;
+      } else {
+        // Solo actualizar si el ticket está open o pending
+        const updateData: any = {
+          unreadMessages,
+          isBot: true
+        };
+
+        if (ticket.status !== "open") {
+          updateData.status = "pending";
+          updateData.userId = null;
+          updateData.queueId = null;
+        }
+
+        logger.info(`[FindOrCreateTicket] Actualizando ticket ${ticket.id}:`, updateData);
+        await ticket.update(updateData);
       }
-      
-      await ticket.update(updateData);
     }
   }
 
   if (!ticket) {
     // Determine initial status based on options
     const initialStatus = createAsClosed ? "closed" : "pending";
+    logger.info(`[FindOrCreateTicket] Creando nuevo ticket con status: ${initialStatus}`);
 
     ticket = await Ticket.create({
       contactId: groupContact ? groupContact.id : contact.id,

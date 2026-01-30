@@ -907,7 +907,7 @@ const handleMessage = async (
       if (existingMessage.ack !== msg.ack) {
         await existingMessage.update({ ack: msg.ack });
       }
-      
+
       // Emitir socket para actualizar el frontend en tiempo real
       const io = getIO();
       const messageWithIncludes = await Message.findByPk(existingMessage.id, {
@@ -920,10 +920,9 @@ const handleMessage = async (
           }
         ]
       });
-      
+
       if (messageWithIncludes) {
         io.to(existingMessage.ticketId.toString())
-          .to(existingMessage.ticketId.toString())
           .to("notification")
           .emit("appMessage", {
             action: "update",
@@ -932,7 +931,7 @@ const handleMessage = async (
             contact
           });
       }
-      
+
       return;
     }
 

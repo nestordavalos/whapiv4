@@ -66,6 +66,13 @@ webhookApiRoutes.post(
   WebhookApiController.sendMediaFromUrl
 );
 
+// Enviar mensaje con multimedia desde base64 a un ticket existente
+webhookApiRoutes.post(
+  "/tickets/:ticketId/messages/media-base64",
+  isAuthApi,
+  WebhookApiController.sendMediaFromBase64
+);
+
 // Responder a un mensaje específico (quote/reply)
 webhookApiRoutes.post(
   "/messages/:messageId/reply",

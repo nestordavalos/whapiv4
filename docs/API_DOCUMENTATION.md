@@ -18,6 +18,54 @@ El token API se configura en **Configuraciones > API Token** del panel de admini
 
 ---
 
+## Configuraciones Importantes
+
+### Cierre Automático de Tickets (closeTicketApi)
+
+El sistema permite configurar el cierre automático de tickets cuando se envían mensajes a través de la API.
+
+**Ubicación:** Configuraciones > Sistema
+
+**Valores posibles:**
+- `disabled` (deshabilitado) - Los tickets permanecen abiertos después de enviar mensajes por API
+- `enabled` (habilitado) - Los tickets se cierran automáticamente después de enviar mensajes por API
+
+**Comportamiento:**
+
+1. **Cuando está deshabilitado:**
+   - Los tickets creados desde mensajes del cliente quedan en estado "pending" (esperando)
+   - Al enviar un mensaje por API, el ticket cambia a "open" (abierto)
+   - El ticket permanece abierto hasta que un agente lo cierre manualmente
+
+2. **Cuando está habilitado:**
+   - Al enviar un mensaje por API, el ticket se cierra automáticamente después del envío
+   - Útil para respuestas automáticas o notificaciones donde no se requiere seguimiento
+
+3. **Parámetro `closeTicket` en `/send`:**
+   - El endpoint `/api/v1/send` acepta un parámetro `closeTicket: true/false`
+   - Si se especifica `closeTicket: true`, cierra el ticket independientemente de la configuración
+   - Si no se especifica, respeta la configuración global `closeTicketApi`
+
+**Ejemplo de uso:**
+```json
+{
+  "number": "595991234567",
+  "body": "Tu pedido ha sido enviado",
+  "closeTicket": true
+}
+```
+
+### Asignación de Cola (queueId)
+
+Todos los endpoints de envío de mensajes aceptan el parámetro `queueId` para asignar automáticamente el ticket a una cola específica.
+
+**Beneficios:**
+- Organización automática de tickets por departamento
+- Enrutamiento directo a equipos específicos
+- Mejor gestión del flujo de trabajo
+
+---
+
 # API Original (`/api`)
 
 ## Enviar Mensaje
@@ -307,6 +355,7 @@ POST /api/v1/tickets/:ticketId/messages
 |-------|------|-------------|-----------|
 | body | string | Texto del mensaje | ✅ |
 | quotedMsgId | string | ID del mensaje a citar | ❌ |
+| queueId | number | ID de la cola a asignar al ticket | ❌ |
 
 ### Ejemplo
 ```bash
@@ -314,7 +363,8 @@ curl -X POST "http://localhost:8080/api/v1/tickets/123/messages" \
   -H "Authorization: Bearer TU_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "body": "Gracias por contactarnos"
+    "body": "Gracias por contactarnos",
+    "queueId": 1
   }'
 ```
 
@@ -349,13 +399,15 @@ POST /api/v1/tickets/:ticketId/messages/media
 | medias | file[] | Archivos a enviar | ✅ |
 | body | string | Texto/caption del mensaje | ❌ |
 | quotedMsgId | string | ID del mensaje a citar | ❌ |
+| queueId | number | ID de la cola a asignar al ticket | ❌ |
 
 ### Ejemplo
 ```bash
 curl -X POST "http://localhost:8080/api/v1/tickets/123/messages/media" \
   -H "Authorization: Bearer TU_TOKEN" \
   -F "medias=@/path/to/image.jpg" \
-  -F "body=Aquí está la imagen que solicitaste"
+  -F "body=Aquí está la imagen que solicitaste" \
+  -F "queueId=1"
 ```
 
 ### Respuesta
@@ -395,6 +447,7 @@ POST /api/v1/tickets/:ticketId/messages/media-url
 | body | string | Texto/caption del mensaje | ❌ |
 | quotedMsgId | string | ID del mensaje a citar | ❌ |
 | filename | string | Nombre del archivo | ❌ |
+| queueId | number | ID de la cola a asignar al ticket | ❌ |
 
 ### Ejemplo
 ```bash
@@ -404,7 +457,8 @@ curl -X POST "http://localhost:8080/api/v1/tickets/123/messages/media-url" \
   -d '{
     "mediaUrl": "https://example.com/image.jpg",
     "body": "Esta imagen es de internet",
-    "filename": "imagen_descargada.jpg"
+    "filename": "imagen_descargada.jpg",
+    "queueId": 1
   }'
 ```
 
@@ -429,6 +483,60 @@ curl -X POST "http://localhost:8080/api/v1/tickets/123/messages/media-url" \
 
 ---
 
+### Enviar Multimedia desde Base64
+
+Envía multimedia desde datos en formato base64.
+
+```
+POST /api/v1/tickets/:ticketId/messages/media-base64
+```
+
+### Body
+| Campo | Tipo | Descripción | Requerido |
+|-------|------|-------------|-----------|
+| base64Data | string | Datos del archivo en base64 | ✅ |
+| mimeType | string | Tipo MIME del archivo (ej: image/jpeg, application/pdf) | ✅ |
+| body | string | Texto/caption del mensaje | ❌ |
+| quotedMsgId | string | ID del mensaje a citar | ❌ |
+| filename | string | Nombre del archivo | ❌ |
+| queueId | number | ID de la cola a asignar al ticket | ❌ |
+
+### Ejemplo
+```bash
+curl -X POST "http://localhost:8080/api/v1/tickets/123/messages/media-base64" \
+  -H "Authorization: Bearer TU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "base64Data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    "mimeType": "image/png",
+    "body": "Esta imagen está en base64",
+    "filename": "imagen.png",
+    "queueId": 1
+  }'
+```
+
+**Nota:** El campo `base64Data` puede incluir o no el prefijo `data:image/png;base64,`. El sistema lo detectará y limpiará automáticamente.
+
+### Respuesta
+```json
+{
+  "message": "Media message sent successfully from base64",
+  "data": {
+    "messageId": "3EB0MNO345",
+    "body": "Esta imagen está en base64",
+    "ticketId": 123,
+    "timestamp": 1701432600,
+    "fromMe": true,
+    "hasMedia": true,
+    "mediaUrl": "http://localhost:8080/public/1701432600000.png",
+    "mediaType": "image",
+    "filename": "imagen.png"
+  }
+}
+```
+
+---
+
 ### Responder a un Mensaje (Reply)
 
 Responde a un mensaje específico citándolo.
@@ -443,7 +551,9 @@ POST /api/v1/messages/:messageId/reply
 | body | string | Texto del mensaje | ❌ (requerido si no hay media) |
 | medias | file[] | Archivos multimedia | ❌ |
 | mediaUrl | string | URL de multimedia | ❌ |
-| filename | string | Nombre del archivo (para URL) | ❌ |
+| base64Data | string | Datos del archivo en base64 | ❌ |
+| mimeType | string | Tipo MIME (requerido si hay base64Data) | ❌ |
+| filename | string | Nombre del archivo | ❌ |
 
 ### Ejemplo - Respuesta de texto
 ```bash
@@ -475,6 +585,19 @@ curl -X POST "http://localhost:8080/api/v1/messages/3EB0ABC123/reply" \
   -F "medias=@/path/to/image.jpg"
 ```
 
+### Ejemplo - Respuesta con base64
+```bash
+curl -X POST "http://localhost:8080/api/v1/messages/3EB0ABC123/reply" \
+  -H "Authorization: Bearer TU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "body": "Aquí está la imagen en base64",
+    "base64Data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    "mimeType": "image/png",
+    "filename": "imagen.png"
+  }'
+```
+
 ---
 
 ## 📤 ENVÍO DIRECTO
@@ -500,7 +623,9 @@ POST /api/v1/send
 | closeTicket | boolean | Cerrar ticket después de enviar | ❌ |
 | medias | file[] | Archivos multimedia | ❌ |
 | mediaUrl | string | URL de multimedia | ❌ |
-| filename | string | Nombre del archivo (para URL) | ❌ |
+| base64Data | string | Datos del archivo en base64 | ❌ |
+| mimeType | string | Tipo MIME (requerido si hay base64Data) | ❌ |
+| filename | string | Nombre del archivo | ❌ |
 
 ### Ejemplo - Mensaje de texto
 ```bash
@@ -538,6 +663,21 @@ curl -X POST "http://localhost:8080/api/v1/send" \
   -F "whatsappId=2" \
   -F "queueId=1" \
   -F "medias=@/path/to/contract.pdf"
+```
+
+### Ejemplo - Con base64
+```bash
+curl -X POST "http://localhost:8080/api/v1/send" \
+  -H "Authorization: Bearer TU_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "number": "595991234567",
+    "body": "Te envío esta imagen en base64",
+    "base64Data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    "mimeType": "image/png",
+    "filename": "imagen.png",
+    "whatsappId": 2
+  }'
 ```
 
 ### Respuesta
@@ -916,6 +1056,7 @@ Los webhooks incluyen headers adicionales para identificación:
 | POST | /tickets/:ticketId/messages | Enviar texto |
 | POST | /tickets/:ticketId/messages/media | Enviar archivo |
 | POST | /tickets/:ticketId/messages/media-url | Enviar desde URL |
+| POST | /tickets/:ticketId/messages/media-base64 | Enviar desde base64 |
 | POST | /messages/:messageId/reply | Responder mensaje |
 
 ### Envío Directo

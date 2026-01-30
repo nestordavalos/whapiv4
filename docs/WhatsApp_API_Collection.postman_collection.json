@@ -1,0 +1,683 @@
+{
+  "info": {
+    "name": "WhatsApp Integration API",
+    "description": "Colección completa de la API de WhatsApp con soporte para multimedia (archivos, URL y base64)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "whatsapp-api"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{API_TOKEN}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "API_TOKEN",
+      "value": "TU_TOKEN_AQUI",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "API Original (/api)",
+      "item": [
+        {
+          "name": "Enviar Mensaje de Texto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"595991234567\",\n  \"body\": \"Hola, este es un mensaje de prueba\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/send",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "send"]
+            }
+          }
+        },
+        {
+          "name": "Enviar Mensaje con Multimedia",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "number",
+                  "value": "595991234567",
+                  "type": "text"
+                },
+                {
+                  "key": "body",
+                  "value": "Mira esta imagen",
+                  "type": "text"
+                },
+                {
+                  "key": "medias",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/send",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "send"]
+            }
+          }
+        },
+        {
+          "name": "Listar Colas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/queue/list",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "queue", "list"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tickets",
+      "item": [
+        {
+          "name": "Listar Tickets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/tickets?status=open&page=1&limit=10",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "tickets"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "open",
+                  "description": "open, pending, closed"
+                },
+                {
+                  "key": "whatsappId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "queueId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Ticket",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/tickets/:ticketId",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "tickets", ":ticketId"],
+              "variable": [
+                {
+                  "key": "ticketId",
+                  "value": "123"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Crear Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"595991234567\",\n  \"whatsappId\": 2,\n  \"queueId\": 1,\n  \"userId\": null,\n  \"tagsId\": null\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/tickets",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "tickets"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Ticket",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"closed\",\n  \"userId\": null,\n  \"queueId\": null\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/tickets/:ticketId",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "tickets", ":ticketId"],
+              "variable": [
+                {
+                  "key": "ticketId",
+                  "value": "123"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mensajes",
+      "item": [
+        {
+          "name": "Listar Mensajes de Ticket",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/tickets/:ticketId/messages?page=1",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "tickets", ":ticketId", "messages"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "ticketId",
+                  "value": "123"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Enviar Mensaje de Texto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Gracias por contactarnos\",\n  \"quotedMsgId\": null\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/tickets/:ticketId/messages",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "tickets", ":ticketId", "messages"],
+              "variable": [
+                {
+                  "key": "ticketId",
+                  "value": "123"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Enviar Multimedia (Archivo)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "medias",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "body",
+                  "value": "Aquí está la imagen que solicitaste",
+                  "type": "text"
+                },
+                {
+                  "key": "quotedMsgId",
+                  "value": "",
+                  "type": "text",
+                  "disabled": true
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/tickets/:ticketId/messages/media",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "tickets", ":ticketId", "messages", "media"],
+              "variable": [
+                {
+                  "key": "ticketId",
+                  "value": "123"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Enviar Multimedia desde URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mediaUrl\": \"https://example.com/image.jpg\",\n  \"body\": \"Esta imagen es de internet\",\n  \"filename\": \"imagen_descargada.jpg\",\n  \"quotedMsgId\": null\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/tickets/:ticketId/messages/media-url",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "tickets", ":ticketId", "messages", "media-url"],
+              "variable": [
+                {
+                  "key": "ticketId",
+                  "value": "123"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Enviar Multimedia desde Base64",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"base64Data\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==\",\n  \"mimeType\": \"image/png\",\n  \"body\": \"Esta imagen está en base64\",\n  \"filename\": \"imagen.png\",\n  \"quotedMsgId\": null\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/tickets/:ticketId/messages/media-base64",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "tickets", ":ticketId", "messages", "media-base64"],
+              "variable": [
+                {
+                  "key": "ticketId",
+                  "value": "123"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Responder Mensaje (Texto)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Esta es mi respuesta a tu mensaje\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/messages/:messageId/reply",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "messages", ":messageId", "reply"],
+              "variable": [
+                {
+                  "key": "messageId",
+                  "value": "3EB0ABC123"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Responder Mensaje (URL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Aquí está el documento\",\n  \"mediaUrl\": \"https://example.com/document.pdf\",\n  \"filename\": \"documento.pdf\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/messages/:messageId/reply",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "messages", ":messageId", "reply"],
+              "variable": [
+                {
+                  "key": "messageId",
+                  "value": "3EB0ABC123"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Responder Mensaje (Archivo)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "body",
+                  "value": "Aquí está la imagen",
+                  "type": "text"
+                },
+                {
+                  "key": "medias",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/messages/:messageId/reply",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "messages", ":messageId", "reply"],
+              "variable": [
+                {
+                  "key": "messageId",
+                  "value": "3EB0ABC123"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Responder Mensaje (Base64)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"body\": \"Aquí está la imagen en base64\",\n  \"base64Data\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==\",\n  \"mimeType\": \"image/png\",\n  \"filename\": \"imagen.png\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/messages/:messageId/reply",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "messages", ":messageId", "reply"],
+              "variable": [
+                {
+                  "key": "messageId",
+                  "value": "3EB0ABC123"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Envío Directo",
+      "item": [
+        {
+          "name": "Enviar a Número (Texto)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"595991234567\",\n  \"body\": \"Hola, te contactamos desde el sistema\",\n  \"whatsappId\": 2,\n  \"queueId\": 1,\n  \"userId\": null,\n  \"tagsId\": null,\n  \"closeTicket\": false\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/send",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "send"]
+            }
+          }
+        },
+        {
+          "name": "Enviar a Número (URL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"595991234567\",\n  \"body\": \"Te envío esta imagen\",\n  \"mediaUrl\": \"https://example.com/promo.jpg\",\n  \"whatsappId\": 2,\n  \"closeTicket\": true\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/send",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "send"]
+            }
+          }
+        },
+        {
+          "name": "Enviar a Número (Archivo)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "number",
+                  "value": "595991234567",
+                  "type": "text"
+                },
+                {
+                  "key": "body",
+                  "value": "Aquí está el contrato",
+                  "type": "text"
+                },
+                {
+                  "key": "whatsappId",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "queueId",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "medias",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/send",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "send"]
+            }
+          }
+        },
+        {
+          "name": "Enviar a Número (Base64)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"595991234567\",\n  \"body\": \"Te envío esta imagen en base64\",\n  \"base64Data\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==\",\n  \"mimeType\": \"image/png\",\n  \"filename\": \"imagen.png\",\n  \"whatsappId\": 2\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/send",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "send"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contactos",
+      "item": [
+        {
+          "name": "Obtener Contacto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/contacts/:number",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "contacts", ":number"],
+              "variable": [
+                {
+                  "key": "number",
+                  "value": "595991234567"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Validar Contacto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"595991234567\",\n  \"whatsappId\": 2\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/contacts/validate",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "contacts", "validate"]
+            }
+          }
+        },
+        {
+          "name": "Crear o Actualizar Contacto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"595991234567\",\n  \"name\": \"María García\",\n  \"email\": \"maria@example.com\",\n  \"whatsappId\": null\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/contacts",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "contacts"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Conexiones",
+      "item": [
+        {
+          "name": "Listar Conexiones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/connections",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "connections"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Estado de Conexión",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/connections/:connectionId",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "connections", ":connectionId"],
+              "variable": [
+                {
+                  "key": "connectionId",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

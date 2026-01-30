@@ -17,8 +17,35 @@ import CheckContactNumber from "../services/WbotServices/CheckNumber";
 import GetProfilePicUrl from "../services/WbotServices/GetProfilePicUrl";
 import SendWhatsAppMedia from "../services/WbotServices/SendWhatsAppMedia";
 import SendWhatsAppMediaFromUrl from "../services/WbotServices/SendWhatsAppMediaFromUrl";
+import SendWhatsAppMediaFromBase64 from "../services/WbotServices/SendWhatsAppMediaFromBase64";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import { getWbot } from "../libs/wbot";
+import ListSettingsServiceOne from "../services/SettingServices/ListSettingsServiceOne";
+
+// ==========================================
+// HELPER FUNCTIONS
+// ==========================================
+
+/**
+ * Verifica la configuración closeTicketApi y cierra el ticket si está habilitado
+ */
+const handleAutoCloseTicket = async (ticketId: string | number): Promise<void> => {
+  try {
+    const closeTicketApiSetting = await ListSettingsServiceOne({
+      key: "closeTicketApi"
+    });
+
+    if (closeTicketApiSetting?.value === "enabled") {
+      await UpdateTicketService({
+        ticketId: String(ticketId),
+        ticketData: { status: "closed" }
+      });
+    }
+  } catch (err) {
+    // No lanzar error si falla el cierre, solo registrar
+    console.error("Error al intentar cerrar ticket automáticamente:", err);
+  }
+};
 
 // ==========================================
 // TICKETS API
@@ -244,7 +271,7 @@ export const sendMessage = async (
   res: Response
 ): Promise<Response> => {
   const { ticketId } = req.params;
-  const { body, quotedMsgId } = req.body;
+  const { body, quotedMsgId, queueId } = req.body;
 
   if (!body || body.trim() === "") {
     throw new AppError("Message body is required", 400);
@@ -254,6 +281,25 @@ export const sendMessage = async (
 
   if (!ticket) {
     throw new AppError("ERR_TICKET_NOT_FOUND", 404);
+  }
+
+  // Actualizar ticket: cambiar estado y asignar cola si se proporciona
+  const updateData: any = {};
+
+  if (ticket.status === "pending") {
+    updateData.status = "open";
+  }
+
+  if (queueId !== undefined && queueId !== null) {
+    updateData.queueId = queueId;
+  }
+
+  if (Object.keys(updateData).length > 0) {
+    await UpdateTicketService({
+      ticketId: ticket.id,
+      ticketData: updateData
+    });
+    await ticket.reload();
   }
 
   let quotedMsg: Message | null = null;
@@ -272,6 +318,9 @@ export const sendMessage = async (
 
   // Obtener el mensaje creado en la BD
   const message = await Message.findByPk(sentMessage.id.id);
+
+  // Verificar configuración de cierre automático
+  await handleAutoCloseTicket(ticket.id);
 
   return res.status(201).json({
     message: "Message sent successfully",
@@ -295,7 +344,7 @@ export const sendMediaMessage = async (
   res: Response
 ): Promise<Response> => {
   const { ticketId } = req.params;
-  const { body, quotedMsgId } = req.body;
+  const { body, quotedMsgId, queueId } = req.body;
   const medias = req.files as Express.Multer.File[] | undefined;
 
   if (!medias || medias.length === 0) {
@@ -306,6 +355,25 @@ export const sendMediaMessage = async (
 
   if (!ticket) {
     throw new AppError("ERR_TICKET_NOT_FOUND", 404);
+  }
+
+  // Actualizar ticket: cambiar estado y asignar cola si se proporciona
+  const updateData: any = {};
+
+  if (ticket.status === "pending") {
+    updateData.status = "open";
+  }
+
+  if (queueId !== undefined && queueId !== null) {
+    updateData.queueId = queueId;
+  }
+
+  if (Object.keys(updateData).length > 0) {
+    await UpdateTicketService({
+      ticketId: ticket.id,
+      ticketData: updateData
+    });
+    await ticket.reload();
   }
 
   let quotedMsg: Message | null = null;
@@ -342,6 +410,9 @@ export const sendMediaMessage = async (
     });
   }
 
+  // Verificar configuración de cierre automático
+  await handleAutoCloseTicket(ticket.id);
+
   return res.status(201).json({
     message: "Media message(s) sent successfully",
     data: sentMessages
@@ -357,7 +428,7 @@ export const sendMediaFromUrl = async (
   res: Response
 ): Promise<Response> => {
   const { ticketId } = req.params;
-  const { body, quotedMsgId, mediaUrl, filename } = req.body;
+  const { body, quotedMsgId, mediaUrl, filename, queueId } = req.body;
 
   if (!mediaUrl) {
     throw new AppError("Media URL is required", 400);
@@ -382,6 +453,25 @@ export const sendMediaFromUrl = async (
     throw new AppError("ERR_TICKET_NOT_FOUND", 404);
   }
 
+  // Actualizar ticket: cambiar estado y asignar cola si se proporciona
+  const updateData: any = {};
+
+  if (ticket.status === "pending") {
+    updateData.status = "open";
+  }
+
+  if (queueId !== undefined && queueId !== null) {
+    updateData.queueId = queueId;
+  }
+
+  if (Object.keys(updateData).length > 0) {
+    await UpdateTicketService({
+      ticketId: ticket.id,
+      ticketData: updateData
+    });
+    await ticket.reload();
+  }
+
   let quotedMsg: Message | null = null;
   if (quotedMsgId) {
     quotedMsg = await Message.findByPk(quotedMsgId);
@@ -401,6 +491,9 @@ export const sendMediaFromUrl = async (
   // Obtener el mensaje creado en la BD
   const message = await Message.findByPk(sentMessage.id.id);
 
+  // Verificar configuración de cierre automático
+  await handleAutoCloseTicket(ticket.id);
+
   return res.status(201).json({
     message: "Media message sent successfully",
     data: {
@@ -413,6 +506,89 @@ export const sendMediaFromUrl = async (
       mediaUrl: message?.mediaUrl || null,
       mediaType: message?.mediaType || null,
       sourceUrl: mediaUrl,
+      filename: filename || null
+    }
+  });
+};
+
+/**
+ * Enviar mensaje con multimedia desde base64
+ * POST /api/v1/tickets/:ticketId/messages/media-base64
+ */
+export const sendMediaFromBase64 = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { ticketId } = req.params;
+  const { body, quotedMsgId, base64Data, mimeType, filename, queueId } = req.body;
+
+  if (!base64Data) {
+    throw new AppError("Base64 data is required", 400);
+  }
+
+  if (!mimeType) {
+    throw new AppError("MIME type is required", 400);
+  }
+
+  const ticket = await ShowTicketService(ticketId);
+
+  if (!ticket) {
+    throw new AppError("ERR_TICKET_NOT_FOUND", 404);
+  }
+
+  // Actualizar ticket: cambiar estado y asignar cola si se proporciona
+  const updateData: any = {};
+
+  if (ticket.status === "pending") {
+    updateData.status = "open";
+  }
+
+  if (queueId !== undefined && queueId !== null) {
+    updateData.queueId = queueId;
+  }
+
+  if (Object.keys(updateData).length > 0) {
+    await UpdateTicketService({
+      ticketId: ticket.id,
+      ticketData: updateData
+    });
+    await ticket.reload();
+  }
+
+  let quotedMsg: Message | null = null;
+  if (quotedMsgId) {
+    quotedMsg = await Message.findByPk(quotedMsgId);
+    if (!quotedMsg) {
+      throw new AppError("Quoted message not found", 404);
+    }
+  }
+
+  const sentMessage = await SendWhatsAppMediaFromBase64({
+    base64Data,
+    mimeType,
+    ticket,
+    body,
+    quotedMsg: quotedMsg || undefined,
+    filename
+  });
+
+  // Obtener el mensaje creado en la BD
+  const message = await Message.findByPk(sentMessage.id.id);
+
+  // Verificar configuración de cierre automático
+  await handleAutoCloseTicket(ticket.id);
+
+  return res.status(201).json({
+    message: "Media message sent successfully from base64",
+    data: {
+      messageId: sentMessage.id.id,
+      body,
+      ticketId: ticket.id,
+      timestamp: sentMessage.timestamp,
+      fromMe: true,
+      hasMedia: true,
+      mediaUrl: message?.mediaUrl || null,
+      mediaType: message?.mediaType || null,
       filename: filename || null
     }
   });
@@ -625,7 +801,9 @@ export const sendDirectMessage = async (
     quotedMsgId,
     closeTicket = false,
     mediaUrl,
-    filename
+    filename,
+    base64Data,
+    mimeType
   } = req.body;
   const medias = req.files as Express.Multer.File[] | undefined;
 
@@ -681,6 +859,14 @@ export const sendDirectMessage = async (
   const fullTicket = await ShowTicketService(ticket.id);
   SetTicketMessagesAsRead(fullTicket);
 
+  // Si el ticket está en pending, cambiarlo a open porque estamos enviando desde la API
+  if (fullTicket.status === "pending") {
+    await UpdateTicketService({
+      ticketId: fullTicket.id,
+      ticketData: { status: "open" }
+    });
+  }
+
   // Obtener mensaje citado si existe
   let quotedMsg: Message | null = null;
   if (quotedMsgId) {
@@ -711,6 +897,30 @@ export const sendDirectMessage = async (
       mediaUrl: message?.mediaUrl || null,
       mediaType: message?.mediaType || null,
       sourceUrl: mediaUrl,
+      filename: filename || null
+    });
+  } else if (base64Data && mimeType) {
+    // Enviar media desde base64 si se proporciona
+    const sentMessage = await SendWhatsAppMediaFromBase64({
+      base64Data,
+      mimeType,
+      ticket: fullTicket,
+      body,
+      quotedMsg: quotedMsg || undefined,
+      filename
+    });
+
+    const message = await Message.findByPk(sentMessage.id.id);
+
+    sentMessages.push({
+      messageId: sentMessage.id.id,
+      body,
+      ticketId: fullTicket.id,
+      timestamp: sentMessage.timestamp,
+      fromMe: true,
+      hasMedia: true,
+      mediaUrl: message?.mediaUrl || null,
+      mediaType: message?.mediaType || null,
       filename: filename || null
     });
   } else if (medias && medias.length > 0) {
@@ -760,12 +970,15 @@ export const sendDirectMessage = async (
     throw new AppError("Message body or media is required", 400);
   }
 
-  // Cerrar ticket si se solicita
+  // Cerrar ticket si se solicita explícitamente o si la configuración lo indica
   if (closeTicket) {
     await UpdateTicketService({
       ticketId: fullTicket.id,
       ticketData: { status: "closed" }
     });
+  } else {
+    // Si no se especificó closeTicket, verificar la configuración global
+    await handleAutoCloseTicket(fullTicket.id);
   }
 
   return res.status(201).json({
@@ -789,7 +1002,7 @@ export const replyToMessage = async (
   res: Response
 ): Promise<Response> => {
   const { messageId } = req.params;
-  const { body, mediaUrl, filename } = req.body;
+  const { body, mediaUrl, filename, base64Data, mimeType } = req.body;
   const medias = req.files as Express.Multer.File[] | undefined;
 
   // Encontrar el mensaje original
@@ -831,6 +1044,31 @@ export const replyToMessage = async (
       mediaUrl: message?.mediaUrl || null,
       mediaType: message?.mediaType || null,
       sourceUrl: mediaUrl,
+      filename: filename || null,
+      quotedMsgId: messageId
+    });
+  } else if (base64Data && mimeType) {
+    // Enviar media desde base64 si se proporciona
+    const sentMessage = await SendWhatsAppMediaFromBase64({
+      base64Data,
+      mimeType,
+      ticket,
+      body,
+      quotedMsg: originalMessage,
+      filename
+    });
+
+    const message = await Message.findByPk(sentMessage.id.id);
+
+    sentMessages.push({
+      messageId: sentMessage.id.id,
+      body,
+      ticketId: ticket.id,
+      timestamp: sentMessage.timestamp,
+      fromMe: true,
+      hasMedia: true,
+      mediaUrl: message?.mediaUrl || null,
+      mediaType: message?.mediaType || null,
       filename: filename || null,
       quotedMsgId: messageId
     });

@@ -56,6 +56,7 @@ import {
   getContactJid,
   sendMessageWithLidFallback
 } from "../../helpers/GetContactJid";
+import GetProfilePicUrl from "./GetProfilePicUrl";
 
 interface Session extends Client {
   id?: number;
@@ -68,7 +69,10 @@ const verifyContact = async (
 ): Promise<Contact> => {
   let profilePicUrl: string;
   try {
-    profilePicUrl = await msgContact.getProfilePicUrl();
+    // Use our multi-strategy GetProfilePicUrl that handles LID contacts
+    // Pass isGroup so groups use @g.us instead of @c.us
+    const contactNumber = msgContact.id.user;
+    profilePicUrl = await GetProfilePicUrl(contactNumber, whatsappId, msgContact.isGroup);
   } catch {
     profilePicUrl = "/default-profile.png";
   }
@@ -1196,15 +1200,6 @@ const handleMessage = async (
       );
       await verifyMessage(sentMessage, ticket, contact);
     }
-    let profilePicUrl: string | undefined;
-    try {
-      profilePicUrl = await msgContact.getProfilePicUrl();
-    } catch (err) {
-      logger.warn(
-        `Could not get profile pic for ${msgContact.id.user}: ${err.message}`
-      );
-      profilePicUrl = "/default-profile.png";
-    }
 
     // Resolve LID contacts to real phone numbers for final contact update
     let finalNumber = msgContact.id.user;
@@ -1217,6 +1212,18 @@ const handleMessage = async (
       } else if (msgContact.number) {
         finalNumber = msgContact.number;
       }
+    }
+
+    // Fetch avatar AFTER resolving the real phone number
+    let profilePicUrl: string | undefined;
+    try {
+      // Use our multi-strategy GetProfilePicUrl that handles LID contacts
+      profilePicUrl = await GetProfilePicUrl(finalNumber, wbot.id, msgContact.isGroup);
+    } catch (err) {
+      logger.warn(
+        `Could not get profile pic for ${finalNumber} (original: ${msgContact.id.user}): ${err.message}`
+      );
+      profilePicUrl = "/default-profile.png";
     }
 
     const contactData = {

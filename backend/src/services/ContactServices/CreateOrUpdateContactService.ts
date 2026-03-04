@@ -38,7 +38,11 @@ const CreateOrUpdateContactService = async ({
   contact = await Contact.findOne({ where: { number } });
 
   if (contact) {
-    contact.update({ profilePicUrl });
+    // Don't overwrite a real avatar URL with the default placeholder
+    const isDefaultPic = profilePicUrl === "/default-profile.png";
+    const hasRealPic = contact.profilePicUrl && contact.profilePicUrl !== "/default-profile.png";
+    const updatePic = isDefaultPic && hasRealPic ? contact.profilePicUrl : profilePicUrl;
+    contact.update({ profilePicUrl: updatePic });
 
     io.emit("contact", {
       action: "update",

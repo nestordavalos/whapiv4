@@ -50,35 +50,70 @@ import {
 import typebotListener from "../TypebotServices/typebotListener";
 import ShowQueueIntegrationService from "../QueueIntegrationServices/ShowQueueIntegrationService";
 import { getStorageService } from "../StorageServices/StorageService";
+import {
+  isLikelyLid,
+  resolvePhoneFromLid,
+  getContactJid,
+  sendMessageWithLidFallback
+} from "../../helpers/GetContactJid";
 
 interface Session extends Client {
   id?: number;
 }
 
-const verifyContact = async (msgContact: WbotContact, whatsappId?: number): Promise<Contact> => {
+const verifyContact = async (
+  msgContact: WbotContact,
+  whatsappId?: number,
+  wbot?: Session
+): Promise<Contact> => {
+  let profilePicUrl: string;
   try {
-    const profilePicUrl = await msgContact.getProfilePicUrl();
-    const contactData = {
-      name: msgContact.name || msgContact.pushname || msgContact.id.user,
-      number: msgContact.id.user,
-      profilePicUrl,
-      isGroup: msgContact.isGroup,
-      whatsappId
-    };
-    const contact = CreateOrUpdateContactService(contactData);
-    return contact;
-  } catch (err) {
-    const profilePicUrl = "/default-profile.png"; // Foto de perfil padrão
-    const contactData = {
-      name: msgContact.name || msgContact.pushname || msgContact.id.user,
-      number: msgContact.id.user,
-      profilePicUrl,
-      isGroup: msgContact.isGroup,
-      whatsappId
-    };
-    const contact = CreateOrUpdateContactService(contactData);
-    return contact;
+    profilePicUrl = await msgContact.getProfilePicUrl();
+  } catch {
+    profilePicUrl = "/default-profile.png";
   }
+
+  // Determine the real phone number — LID contacts store a non-phone identifier
+  let contactNumber = msgContact.id.user;
+  const isLid = msgContact.id.server === "lid" || isLikelyLid(contactNumber);
+
+  if (isLid) {
+    // Priority 1: The library's Contact.number (comes from ContactMethods.getUserid)
+    // often already has the real phone number even for LID contacts
+    if (msgContact.number && !isLikelyLid(String(msgContact.number))) {
+      logger.info(
+        `[verifyContact] LID ${contactNumber} → using msgContact.number: ${msgContact.number}`
+      );
+      contactNumber = String(msgContact.number);
+    }
+    // Priority 2: Use browser-side resolution (multiple strategies including server query)
+    else if (wbot) {
+      const resolved = await resolvePhoneFromLid(wbot, contactNumber);
+      if (resolved) {
+        logger.info(
+          `[verifyContact] Resolved LID ${contactNumber} → phone ${resolved}`
+        );
+        contactNumber = resolved;
+      } else {
+        logger.warn(
+          `[verifyContact] Could not resolve phone for LID ${contactNumber}. ` +
+            `Contact will be stored with LID number temporarily.`
+        );
+        // Keep the LID as number — the bulk fix endpoint can correct it later
+      }
+    }
+  }
+
+  const contactData = {
+    name: msgContact.name || msgContact.pushname || contactNumber,
+    number: contactNumber,
+    profilePicUrl: profilePicUrl || "/default-profile.png",
+    isGroup: msgContact.isGroup,
+    whatsappId
+  };
+
+  const contact = CreateOrUpdateContactService(contactData);
+  return contact;
 };
 
 export const verifyQuotedMessage = async (
@@ -442,14 +477,17 @@ const verifyQueue = async (
   const now = new Date();
   const scheduleStatus = evaluateSchedule(now, schedules[now.getDay()]);
   const currentSeconds = secondsFromDate(now);
-  const remoteJid = `${contact.number}@${
-    ticket.isGroup ? "g.us" : "s.whatsapp.net"
-  }`;
+  const remoteJid = getContactJid(contact.number, ticket.isGroup);
 
   const sendDebouncedText = (body: string) => {
     const debouncedSentMessage = debounce(
       async () => {
-        const sentMessage = await wbot.sendMessage(remoteJid, body);
+        const sentMessage = await sendMessageWithLidFallback(
+          wbot,
+          contact.number,
+          ticket.isGroup,
+          body
+        );
         verifyMessage(sentMessage, ticket, contact);
       },
       3000,
@@ -525,7 +563,12 @@ const verifyQueue = async (
         `\u200e${header}\n\n${options}\n*#* *Para volver al menu principal*`,
         ticket
       );
-      const sentMessage = await wbot.sendMessage(remoteJid, body);
+      const sentMessage = await sendMessageWithLidFallback(
+        wbot,
+        contact.number,
+        ticket.isGroup,
+        body
+      );
       await verifyMessage(sentMessage, ticket, contact);
       return;
     }
@@ -535,7 +578,12 @@ const verifyQueue = async (
         `\u200e${queue.greetingMessage}\n\n*#* *Para volver al menu principal*`,
         ticket
       );
-      const sentMessage = await wbot.sendMessage(remoteJid, body);
+      const sentMessage = await sendMessageWithLidFallback(
+        wbot,
+        contact.number,
+        ticket.isGroup,
+        body
+      );
       await verifyMessage(sentMessage, ticket, contact);
     }
   };
@@ -798,13 +846,13 @@ const handleMessage = async (
         msgGroupContact = await wbot.getContactById(msg.from);
       }
 
-      groupContact = await verifyContact(msgGroupContact, wbot.id);
+      groupContact = await verifyContact(msgGroupContact, wbot.id, wbot);
     }
     const whatsapp = await ShowWhatsAppService(wbot.id!);
 
     const unreadMessages = msg.fromMe ? 0 : chat.unreadCount;
 
-    const contact = await verifyContact(msgContact, wbot.id);
+    const contact = await verifyContact(msgContact, wbot.id, wbot);
 
     // ============================================================
     // VERIFICAR SI EL MENSAJE YA EXISTE EN LA BD (EVITA DUPLICADOS)
@@ -1085,8 +1133,10 @@ const handleMessage = async (
       });
 
       const body = formatBody(`\u200e${greetingMessage}\n\n${options}`, ticket);
-      const sentMessage = await wbot.sendMessage(
-        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
+      const sentMessage = await sendMessageWithLidFallback(
+        wbot,
+        contact.number,
+        ticket.isGroup,
         body
       );
       await verifyMessage(sentMessage, ticket, contact);
@@ -1138,21 +1188,44 @@ const handleMessage = async (
 
     // eslint-disable-next-line block-scoped-var
     if (msg.type === "call_log" && callSetting === "disabled") {
-      const sentMessage = await wbot.sendMessage(
-        `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
+      const sentMessage = await sendMessageWithLidFallback(
+        wbot,
+        contact.number,
+        ticket.isGroup,
         "*Mensagem Automática:*\nLas llamadas de voz y video están deshabilitadas para este WhatsApp, envíe un mensaje de texto. Gracias"
       );
       await verifyMessage(sentMessage, ticket, contact);
     }
-    const profilePicUrl = await msgContact.getProfilePicUrl();
+    let profilePicUrl: string | undefined;
+    try {
+      profilePicUrl = await msgContact.getProfilePicUrl();
+    } catch (err) {
+      logger.warn(
+        `Could not get profile pic for ${msgContact.id.user}: ${err.message}`
+      );
+      profilePicUrl = "/default-profile.png";
+    }
+
+    // Resolve LID contacts to real phone numbers for final contact update
+    let finalNumber = msgContact.id.user;
+    const isMsgContactLid =
+      msgContact.id.server === "lid" || isLikelyLid(finalNumber);
+    if (isMsgContactLid) {
+      const resolved = await resolvePhoneFromLid(wbot, finalNumber);
+      if (resolved) {
+        finalNumber = resolved;
+      } else if (msgContact.number) {
+        finalNumber = msgContact.number;
+      }
+    }
+
     const contactData = {
-      name: msgContact.name || msgContact.pushname || msgContact.id.user,
-      number: msgContact.id.user,
+      name: msgContact.name || msgContact.pushname || finalNumber,
+      number: finalNumber,
       profilePicUrl,
       isGroup: msgContact.isGroup,
       whatsappId: wbot.id
     };
-    // console.log(profilePicUrl)
     await CreateOrUpdateContactService(contactData);
   } catch (err) {
     Sentry.captureException(err);

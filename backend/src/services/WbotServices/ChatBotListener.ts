@@ -13,6 +13,7 @@ import formatBody from "../../helpers/Mustache";
 import UpdateTicketService from "../TicketServices/UpdateTicketService";
 import Chatbot from "../../models/Chatbot";
 import { logger } from "../../utils/logger";
+import { sendMessageWithLidFallback } from "../../helpers/GetContactJid";
 
 type Session = Client & {
   id?: number;
@@ -146,8 +147,10 @@ const sendMessage = async (
   ticket: Ticket,
   body: string
 ) => {
-  const sentMessage = await wbot.sendMessage(
-    `${contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
+  const sentMessage = await sendMessageWithLidFallback(
+    wbot,
+    contact.number,
+    ticket.isGroup,
     formatBody(body, ticket)
   );
   verifyMessage(sentMessage, ticket, contact);

@@ -8,6 +8,10 @@ import Ticket from "../../models/Ticket";
 
 import formatBody from "../../helpers/Mustache";
 import { logger } from "../../utils/logger";
+import {
+  getContactJid,
+  sendMessageWithLidFallback
+} from "../../helpers/GetContactJid";
 
 interface Request {
   media: Express.Multer.File;
@@ -33,8 +37,10 @@ const SendWhatsAppMedia = async ({
 
   try {
     const newMedia = MessageMedia.fromFilePath(media.path);
-    const sentMessage = await wbot.sendMessage(
-      `${ticket.contact.number}@${ticket.isGroup ? "g" : "c"}.us`,
+    const sentMessage = await sendMessageWithLidFallback(
+      wbot,
+      ticket.contact.number,
+      ticket.isGroup,
       newMedia,
       {
         caption: hasBody,
@@ -51,7 +57,7 @@ const SendWhatsAppMedia = async ({
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       const chat = await wbot.getChatById(
-        `${ticket.contact.number}@${ticket.isGroup ? "g" : "c"}.us`
+        getContactJid(ticket.contact.number, ticket.isGroup)
       );
       const [lastMessage] = await chat.fetchMessages({ limit: 1 });
       if (lastMessage && lastMessage.fromMe && lastMessage.hasMedia) {

@@ -24,6 +24,7 @@ import {
   handleMessage
 } from "../services/WbotServices/wbotMessageListener";
 import Message from "../models/Message";
+import FixLidContactsService from "../services/ContactServices/FixLidContactsService";
 // import { getWhatsAppConfig } from "../config/whatsapp";
 // import {
 //   getCircuitBreaker,
@@ -36,6 +37,7 @@ import Message from "../models/Message";
 interface Session extends Client {
   id?: number;
   pingInterval?: NodeJS.Timeout;
+  lidFixInterval?: NodeJS.Timeout;
   lastHealthCheck?: Date;
   consecutiveFailedChecks?: number;
   healthCheckActive?: boolean;
@@ -279,7 +281,27 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
           wbot.sendPresenceAvailable();
           await syncUnreadMessages(wbot);
 
-          // 🔁 Verificar conexión cada 60s
+          // � Auto-fix contactos con números LID en background
+          // Se ejecuta sin await para no bloquear la inicialización
+          setTimeout(async () => {
+            try {
+              logger.info(
+                `[wbot] Iniciando auto-fix de contactos LID para sesión ${sessionName}`
+              );
+              const fixResult = await FixLidContactsService(whatsapp.id);
+              if (fixResult.totalLidContacts > 0) {
+                logger.info(
+                  `[wbot] Auto-fix LID completado: ${fixResult.resolved} resueltos, ` +
+                    `${fixResult.merged} fusionados, ${fixResult.failed} fallidos ` +
+                    `de ${fixResult.totalLidContacts} totales`
+                );
+              }
+            } catch (fixErr) {
+              logger.warn(`[wbot] Auto-fix LID falló (no crítico): ${fixErr.message}`);
+            }
+          }, 15000); // Esperar 15s para que Store esté completamente cargado
+
+          // �🔁 Verificar conexión cada 60s
           wbot.pingInterval = setInterval(async () => {
             try {
               // Verificar si el cliente aún existe y está inicializado
@@ -310,6 +332,27 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
               logger.error(`[wbot] Error al hacer ping: ${pingErr.message}`);
             }
           }, 60000);
+
+          // 🔄 Re-escanear contactos LID cada 30 minutos
+          wbot.lidFixInterval = setInterval(async () => {
+            try {
+              if (!wbot.pupPage || wbot.pupPage.isClosed()) {
+                if (wbot.lidFixInterval) clearInterval(wbot.lidFixInterval);
+                return;
+              }
+              const fixResult = await FixLidContactsService(whatsapp.id);
+              if (fixResult.totalLidContacts > 0 && fixResult.resolved > 0) {
+                logger.info(
+                  `[wbot] LID periodic fix: ${fixResult.resolved} resueltos de ${fixResult.totalLidContacts}`
+                );
+              }
+            } catch (err) {
+              // No crítico — el fix periódico es best-effort
+              if (err.message?.includes("Session closed")) {
+                if (wbot.lidFixInterval) clearInterval(wbot.lidFixInterval);
+              }
+            }
+          }, 30 * 60 * 1000); // cada 30 minutos
 
           resolve(wbot);
         } catch (err) {
@@ -345,6 +388,10 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
           if (wbot.pingInterval) {
             clearInterval(wbot.pingInterval);
             wbot.pingInterval = null;
+          }
+          if (wbot.lidFixInterval) {
+            clearInterval(wbot.lidFixInterval);
+            wbot.lidFixInterval = null;
           }
 
           await whatsapp.update({ status: "DISCONNECTED" });
@@ -386,6 +433,10 @@ export const removeWbot = (whatsappId: number): void => {
       clearInterval(session.pingInterval);
       session.pingInterval = undefined;
     }
+    if (session.lidFixInterval) {
+      clearInterval(session.lidFixInterval);
+      session.lidFixInterval = undefined;
+    }
     // Remover de la lista sin hacer destroy adicional
     sessions.splice(index, 1);
     logger.info(`[removeWbot] Sesión ${whatsappId} removida exitosamente`);
@@ -418,6 +469,10 @@ export const restartWbot = async (whatsappId: number): Promise<Session> => {
     if (session.pingInterval) {
       clearInterval(session.pingInterval);
       session.pingInterval = undefined;
+    }
+    if (session.lidFixInterval) {
+      clearInterval(session.lidFixInterval);
+      session.lidFixInterval = undefined;
     }
 
     logger.info(`[restartWbot] Destruyendo sesión para ID: ${whatsappId}`);
@@ -473,6 +528,10 @@ export const shutdownWbot = async (whatsappId: string): Promise<void> => {
     if (session.pingInterval) {
       clearInterval(session.pingInterval);
       session.pingInterval = undefined;
+    }
+    if (session.lidFixInterval) {
+      clearInterval(session.lidFixInterval);
+      session.lidFixInterval = undefined;
     }
 
     await session.destroy();

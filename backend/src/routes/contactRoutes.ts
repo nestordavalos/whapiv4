@@ -11,6 +11,11 @@ contactRoutes.post(
   isAuth,
   ImportPhoneContactsController.store
 );
+contactRoutes.post(
+  "/contacts/fix-lid",
+  isAuth,
+  ContactController.fixLidContacts
+);
 contactRoutes.get("/contacts", isAuth, ContactController.index);
 contactRoutes.get("/contacts/:contactId", isAuth, ContactController.show);
 contactRoutes.post("/contacts", isAuth, ContactController.store);

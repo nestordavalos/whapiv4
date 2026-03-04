@@ -10,6 +10,10 @@ import formatBody from "../../helpers/Mustache";
 import { logger } from "../../utils/logger";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import { getStorageService } from "../StorageServices/StorageService";
+import {
+  getContactJid,
+  sendMessageWithLidFallback
+} from "../../helpers/GetContactJid";
 
 interface Request {
   base64Data: string;
@@ -69,8 +73,10 @@ const SendWhatsAppMediaFromBase64 = async ({
     // Crear MessageMedia desde base64
     const newMedia = new MessageMedia(mimeType, cleanBase64, finalFilename);
 
-    const sentMessage = await wbot.sendMessage(
-      `${ticket.contact.number}@${ticket.isGroup ? "g" : "c"}.us`,
+    const sentMessage = await sendMessageWithLidFallback(
+      wbot,
+      ticket.contact.number,
+      ticket.isGroup,
       newMedia,
       {
         caption: hasBody,
@@ -129,7 +135,7 @@ const SendWhatsAppMediaFromBase64 = async ({
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       const chat = await wbot.getChatById(
-        `${ticket.contact.number}@${ticket.isGroup ? "g" : "c"}.us`
+        getContactJid(ticket.contact.number, ticket.isGroup)
       );
       const [lastMessage] = await chat.fetchMessages({ limit: 1 });
       if (lastMessage && lastMessage.fromMe && lastMessage.hasMedia) {

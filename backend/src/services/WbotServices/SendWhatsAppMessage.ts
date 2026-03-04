@@ -9,6 +9,10 @@ import Ticket from "../../models/Ticket";
 import formatBody from "../../helpers/Mustache";
 import { logger } from "../../utils/logger";
 import { getIO } from "../../libs/socket";
+import {
+  getContactJid,
+  sendMessageWithLidFallback
+} from "../../helpers/GetContactJid";
 
 const MAX_SEND_ATTEMPTS = 3;
 const BASE_BACKOFF_MS = 500;
@@ -80,7 +84,6 @@ const SendWhatsAppMessage = async ({
   ticket,
   quotedMsg
 }: Request): Promise<WbotMessage> => {
-  const remoteJid = `${ticket.contact.number}@${ticket.isGroup ? "g" : "c"}.us`;
   let quotedMsgSerializedId: string | undefined;
   if (quotedMsg) {
     console.log("[SendWhatsAppMessage] Processing quotedMsg:", {
@@ -113,6 +116,13 @@ const SendWhatsAppMessage = async ({
   const wbot = await GetTicketWbot(ticket);
   const formattedBody = formatBody(body, ticket);
   const { whatsappId } = ticket;
+  const { number } = ticket.contact;
+  const { isGroup } = ticket;
+
+  const sendOptions = {
+    quotedMessageId: quotedMsgSerializedId,
+    linkPreview: false
+  };
 
   const attemptSend = async (): Promise<WbotMessage> => {
     let lastError: Error | undefined;
@@ -123,16 +133,27 @@ const SendWhatsAppMessage = async ({
       }
 
       try {
-        console.log("[SendWhatsAppMessage] Sending with options:", {
-          remoteJid,
+        console.log("[SendWhatsAppMessage] Sending attempt %d:", attempt, {
+          number,
+          isGroup,
           quotedMessageId: quotedMsgSerializedId,
           bodyLength: formattedBody.length
         });
 
-        const sentMessage = await wbot.sendMessage(remoteJid, formattedBody, {
-          quotedMessageId: quotedMsgSerializedId,
-          linkPreview: false
-        });
+        // sendMessageWithLidFallback already tries @c.us then @lid internally
+        const sentMessage = await sendMessageWithLidFallback(
+          wbot,
+          number,
+          isGroup,
+          formattedBody,
+          sendOptions
+        );
+
+        if (!sentMessage || !sentMessage.id) {
+          throw new Error(
+            `sendMessage returned invalid result for contact ${number}`
+          );
+        }
 
         console.log("[SendWhatsAppMessage] Message sent successfully:", {
           id: sentMessage.id.id,
@@ -144,10 +165,26 @@ const SendWhatsAppMessage = async ({
         return sentMessage;
       } catch (error: any) {
         lastError = error;
+        const errMsg = error?.message || String(error);
+
+        // If the error is LID-related and the fallback also failed,
+        // don't retry — additional attempts won't help
+        if (
+          errMsg.includes("No LID for user") ||
+          errMsg.includes("isNewsletter") ||
+          errMsg.includes("commonGid")
+        ) {
+          logger.warn(
+            `LID-related send failure for ticket ${ticket.id} (whatsapp ${whatsappId}), skipping retries: ${errMsg}`
+          );
+          recordFailure(whatsappId, error);
+          break;
+        }
+
         recordFailure(whatsappId, error);
         const delayMs = addJitter(BASE_BACKOFF_MS * attempt);
         logger.warn(
-          `Attempt ${attempt} to send WhatsApp message failed (ticket ${ticket.id}): ${error.message}`
+          `Attempt ${attempt} to send WhatsApp message failed (ticket ${ticket.id}): ${errMsg}`
         );
 
         if (attempt < MAX_SEND_ATTEMPTS) {
@@ -166,17 +203,30 @@ const SendWhatsAppMessage = async ({
   try {
     return await attemptSend();
   } catch (err) {
+    // Last resort: check if the message was actually delivered despite errors
     try {
       await delay(1000);
-      const chat = await wbot.getChatById(remoteJid);
-      const [lastMessage] = await chat.fetchMessages({ limit: 1 });
-      if (
-        lastMessage &&
-        lastMessage.fromMe &&
-        lastMessage.body === formattedBody
-      ) {
-        await ticket.update({ lastMessage: body });
-        return lastMessage as WbotMessage;
+      // Try both JID formats when verifying delivery
+      let chat;
+      const primaryJid = getContactJid(number, isGroup);
+      try {
+        chat = await wbot.getChatById(primaryJid);
+      } catch {
+        // If @c.us failed, try @lid for verification
+        if (!isGroup && !primaryJid.endsWith("@lid")) {
+          chat = await wbot.getChatById(`${number}@lid`);
+        }
+      }
+      if (chat) {
+        const [lastMessage] = await chat.fetchMessages({ limit: 1 });
+        if (
+          lastMessage &&
+          lastMessage.fromMe &&
+          lastMessage.body === formattedBody
+        ) {
+          await ticket.update({ lastMessage: body });
+          return lastMessage as WbotMessage;
+        }
       }
     } catch (checkErr) {
       logger.warn(

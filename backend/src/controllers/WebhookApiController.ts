@@ -20,6 +20,7 @@ import SendWhatsAppMediaFromUrl from "../services/WbotServices/SendWhatsAppMedia
 import SendWhatsAppMediaFromBase64 from "../services/WbotServices/SendWhatsAppMediaFromBase64";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import { getWbot } from "../libs/wbot";
+import { getIO } from "../libs/socket";
 import ListSettingsServiceOne from "../services/SettingServices/ListSettingsServiceOne";
 import { logger } from "../utils/logger";
 
@@ -1022,6 +1023,21 @@ export const sendDirectMessage = async (
     });
   } else {
     throw new AppError("Message body or media is required", 400);
+  }
+
+  // Emitir evento de ticket actualizado al frontend para asegurar visibilidad
+  try {
+    const updatedTicket = await ShowTicketService(fullTicket.id);
+    const io = getIO();
+    io.to(updatedTicket.status)
+      .to("notification")
+      .to(fullTicket.id.toString())
+      .emit("ticket", {
+        action: "update",
+        ticket: updatedTicket
+      });
+  } catch (socketErr) {
+    logger.warn(`[sendDirectMessage] Failed to emit ticket update: ${socketErr}`);
   }
 
   // Cerrar ticket si se solicita explícitamente o si la configuración lo indica (solo si NO está ya cerrado)

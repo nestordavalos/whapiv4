@@ -8,6 +8,7 @@ import ShowContactService from "../services/ContactServices/ShowContactService";
 import UpdateContactService from "../services/ContactServices/UpdateContactService";
 import DeleteContactService from "../services/ContactServices/DeleteContactService";
 import DeleteAllContactService from "../services/ContactServices/DeleteAllContactService";
+import FixLidContactsService from "../services/ContactServices/FixLidContactsService";
 
 import CheckContactNumber from "../services/WbotServices/CheckNumber";
 import CheckIsValidContact from "../services/WbotServices/CheckIsValidContact";
@@ -179,4 +180,25 @@ export const removeAll = async (
   await DeleteAllContactService();
 
   return res.send();
+};
+
+/**
+ * POST /contacts/fix-lid
+ * Scans all contacts in the database that have LID numbers (>15 digits)
+ * and attempts to resolve them to real phone numbers using the active
+ * WhatsApp session.
+ *
+ * Optional body: { whatsappId: number }
+ */
+export const fixLidContacts = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  try {
+    const { whatsappId } = req.body || {};
+    const result = await FixLidContactsService(whatsappId);
+    return res.status(200).json(result);
+  } catch (err: any) {
+    return res.status(400).json({ error: err.message });
+  }
 };

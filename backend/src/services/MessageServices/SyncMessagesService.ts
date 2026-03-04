@@ -7,6 +7,7 @@ import ShowTicketService from "../TicketServices/ShowTicketService";
 import GetTicketWbot from "../../helpers/GetTicketWbot";
 import { handleMessage } from "../WbotServices/wbotMessageListener";
 import { logger } from "../../utils/logger";
+import { getContactJid } from "../../helpers/GetContactJid";
 
 interface Request {
   ticketId: string;
@@ -43,7 +44,7 @@ const SyncMessagesService = async ({
   }
 
   const wbot = await GetTicketWbot(ticket);
-  const chatId = `${ticket.contact.number}@${ticket.isGroup ? "g" : "c"}.us`;
+  const chatId = getContactJid(ticket.contact.number, ticket.isGroup);
 
   // Obtener el inicio del día actual (medianoche)
   const todayStart = new Date();

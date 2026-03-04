@@ -1136,7 +1136,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <TextField
                               className={classes.hora}
                               type="time"
-                              label={<span dangerouslySetInnerHTML={{ __html: `<mark>${i18n.t("whatsappModal.form.startWorkHourLunch")}</mark>` }} />}
+                              label={<span><mark>{i18n.t("whatsappModal.form.startWorkHourLunch")}</mark></span>}
                               name="StartDefineWorkHoursMondayLunch"
                               value={StartDefineWorkHoursMondayLunch}
                               onChange={(e) =>
@@ -1151,7 +1151,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <TextField
                               className={classes.hora}
                               type="time"
-                              label={<span dangerouslySetInnerHTML={{ __html: `<mark>${i18n.t("whatsappModal.form.endWorkHourLunch")}</mark>` }} />}
+                              label={<span><mark>{i18n.t("whatsappModal.form.endWorkHourLunch")}</mark></span>}
                               name="EndDefineWorkHoursMondayLunch"
                               value={EndDefineWorkHoursMondayLunch}
                               onChange={(e) =>
@@ -1210,7 +1210,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <TextField
                               className={classes.hora}
                               type="time"
-                              label={<span dangerouslySetInnerHTML={{ __html: `<mark>${i18n.t("whatsappModal.form.startWorkHourLunch")}</mark>` }} />}
+                              label={<span><mark>{i18n.t("whatsappModal.form.startWorkHourLunch")}</mark></span>}
                               name="StartDefineWorkHoursTuesdayLunch"
                               value={StartDefineWorkHoursTuesdayLunch}
                               onChange={(e) =>
@@ -1225,7 +1225,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <TextField
                               className={classes.hora}
                               type="time"
-                              label={<span dangerouslySetInnerHTML={{ __html: `<mark>${i18n.t("whatsappModal.form.endWorkHourLunch")}</mark>` }} />}
+                              label={<span><mark>{i18n.t("whatsappModal.form.endWorkHourLunch")}</mark></span>}
                               name="EndDefineWorkHoursTuesdayLunch"
                               value={EndDefineWorkHoursTuesdayLunch}
                               onChange={(e) =>
@@ -1281,7 +1281,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <TextField
                               className={classes.hora}
                               type="time"
-                              label={<span dangerouslySetInnerHTML={{ __html: `<mark>${i18n.t("whatsappModal.form.startWorkHourLunch")}</mark>` }} />}
+                              label={<span><mark>{i18n.t("whatsappModal.form.startWorkHourLunch")}</mark></span>}
                               name="StartDefineWorkHoursWednesdayLunch"
                               value={StartDefineWorkHoursWednesdayLunch}
                               onChange={(e) =>
@@ -1296,7 +1296,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <TextField
                               className={classes.hora}
                               type="time"
-                              label={<span dangerouslySetInnerHTML={{ __html: `<mark>${i18n.t("whatsappModal.form.endWorkHourLunch")}</mark>` }} />}
+                              label={<span><mark>{i18n.t("whatsappModal.form.endWorkHourLunch")}</mark></span>}
                               name="EndDefineWorkHoursWednesdayLunch"
                               value={EndDefineWorkHoursWednesdayLunch}
                               onChange={(e) =>
@@ -1352,7 +1352,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <TextField
                               className={classes.hora}
                               type="time"
-                              label={<span dangerouslySetInnerHTML={{ __html: `<mark>${i18n.t("whatsappModal.form.startWorkHourLunch")}</mark>` }} />}
+                              label={<span><mark>{i18n.t("whatsappModal.form.startWorkHourLunch")}</mark></span>}
                               name="StartDefineWorkHoursThursdayLunch"
                               value={StartDefineWorkHoursThursdayLunch}
                               onChange={(e) =>
@@ -1367,7 +1367,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <TextField
                               className={classes.hora}
                               type="time"
-                              label={<span dangerouslySetInnerHTML={{ __html: `<mark>${i18n.t("whatsappModal.form.endWorkHourLunch")}</mark>` }} />}
+                              label={<span><mark>{i18n.t("whatsappModal.form.endWorkHourLunch")}</mark></span>}
                               name="EndDefineWorkHoursThursdayLunch"
                               value={EndDefineWorkHoursThursdayLunch}
                               onChange={(e) =>
@@ -1423,7 +1423,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <TextField
                               className={classes.hora}
                               type="time"
-                              label={<span dangerouslySetInnerHTML={{ __html: `<mark>${i18n.t("whatsappModal.form.startWorkHourLunch")}</mark>` }} />}
+                              label={<span><mark>{i18n.t("whatsappModal.form.startWorkHourLunch")}</mark></span>}
                               name="StartDefineWorkHoursFridayLunch"
                               value={StartDefineWorkHoursFridayLunch}
                               onChange={(e) =>
@@ -1438,7 +1438,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <TextField
                               className={classes.hora}
                               type="time"
-                              label={<span dangerouslySetInnerHTML={{ __html: `<mark>${i18n.t("whatsappModal.form.endWorkHourLunch")}</mark>` }} />}
+                              label={<span><mark>{i18n.t("whatsappModal.form.endWorkHourLunch")}</mark></span>}
                               name="EndDefineWorkHoursFridayLunch"
                               value={EndDefineWorkHoursFridayLunch}
                               onChange={(e) =>
@@ -1494,7 +1494,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <TextField
                               className={classes.hora}
                               type="time"
-                              label={<span dangerouslySetInnerHTML={{ __html: `<mark>${i18n.t("whatsappModal.form.startWorkHourLunch")}</mark>` }} />}
+                              label={<span><mark>{i18n.t("whatsappModal.form.startWorkHourLunch")}</mark></span>}
                               name="StartDefineWorkHoursSaturdayLunch"
                               value={StartDefineWorkHoursSaturdayLunch}
                               onChange={(e) =>
@@ -1509,7 +1509,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <TextField
                               className={classes.hora}
                               type="time"
-                              label={<span dangerouslySetInnerHTML={{ __html: `<mark>${i18n.t("whatsappModal.form.endWorkHourLunch")}</mark>` }} />}
+                              label={<span><mark>{i18n.t("whatsappModal.form.endWorkHourLunch")}</mark></span>}
                               name="EndDefineWorkHoursSaturdayLunch"
                               value={EndDefineWorkHoursSaturdayLunch}
                               onChange={(e) =>
@@ -1564,7 +1564,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <TextField
                               className={classes.hora}
                               type="time"
-                              label={<span dangerouslySetInnerHTML={{ __html: `<mark>${i18n.t("whatsappModal.form.startWorkHourLunch")}</mark>` }} />}
+                              label={<span><mark>{i18n.t("whatsappModal.form.startWorkHourLunch")}</mark></span>}
                               name="StartDefineWorkHoursSundayLunch"
                               value={StartDefineWorkHoursSundayLunch}
                               onChange={(e) =>
@@ -1579,7 +1579,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                             <TextField
                               className={classes.hora}
                               type="time"
-                              label={<span dangerouslySetInnerHTML={{ __html: `<mark>${i18n.t("whatsappModal.form.endWorkHourLunch")}</mark>` }} />}
+                              label={<span><mark>{i18n.t("whatsappModal.form.endWorkHourLunch")}</mark></span>}
                               name="EndDefineWorkHoursSundayLunch"
                               value={EndDefineWorkHoursSundayLunch}
                               onChange={(e) =>

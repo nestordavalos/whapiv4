@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import toastError from "../../errors/toastError";
 
 import Typography from "@mui/material/Typography";
@@ -10,6 +11,10 @@ const LocationPreview = ({ image, link, description }) => {
 
     const handleLocation = async() => {
         try {
+            // Validate URL scheme to prevent javascript: protocol attacks
+            if (link && !/^https?:\/\//i.test(link)) {
+                return;
+            }
             window.open(link);
         } catch (err) {
             toastError(err);
@@ -28,7 +33,7 @@ const LocationPreview = ({ image, link, description }) => {
 					{ description && (
 					<div style={{ display: "flex", flexWrap: "wrap" }}>
 						<Typography component="div" style={{ marginTop: "12px", marginLeft: "15px", marginRight: "15px", float: "left" }} variant="body2" color="primary" gutterBottom>
-							<div dangerouslySetInnerHTML={{ __html: description.replace('\\n', '<br />') }}></div>
+							<div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(description.replace('\\n', '<br />')) }}></div>
 						</Typography>
 					</div>
 					)}

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import isAuth from "../middleware/isAuth";
+import isAdmin from "../middleware/isAdmin";
 
 import * as StorageController from "../controllers/StorageController";
 
@@ -21,16 +22,19 @@ storageRoutes.get(
 storageRoutes.post(
   "/storage/migration/to-s3",
   isAuth,
+  isAdmin,
   StorageController.startMigrationToS3
 );
 storageRoutes.post(
   "/storage/migration/to-local",
   isAuth,
+  isAdmin,
   StorageController.startMigrationToLocal
 );
 storageRoutes.post(
   "/storage/migration/cancel",
   isAuth,
+  isAdmin,
   StorageController.cancelMigration
 );
 storageRoutes.get(
@@ -41,6 +45,7 @@ storageRoutes.get(
 storageRoutes.post(
   "/storage/migration/cleanup",
   isAuth,
+  isAdmin,
   StorageController.cleanupLocalFiles
 );
 
@@ -53,6 +58,7 @@ storageRoutes.get(
 storageRoutes.post(
   "/storage/sync/trigger",
   isAuth,
+  isAdmin,
   StorageController.triggerSync
 );
 storageRoutes.post(
@@ -68,6 +74,7 @@ storageRoutes.get(
 storageRoutes.delete(
   "/storage/sync/completed",
   isAuth,
+  isAdmin,
   StorageController.clearCompletedUploads
 );
 

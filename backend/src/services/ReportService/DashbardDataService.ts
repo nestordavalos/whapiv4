@@ -173,9 +173,19 @@ export default async function DashboardDataService(
   }
 
   if (_.has(params, "date_from") && _.has(params, "date_to")) {
-    where += ` and date(tt.createdAt) between '${params.date_from}' and '${params.date_to}'`;
-    // replacements.push(`${params.date_from}`);
-    // console.log(replacements)
+    // Validate date format (YYYY-MM-DD) to prevent SQL injection
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (
+      !dateRegex.test(`${params.date_from}`) ||
+      !dateRegex.test(`${params.date_to}`)
+    ) {
+      throw new Error(
+        "Invalid date format. Expected YYYY-MM-DD for date_from and date_to."
+      );
+    }
+    where += ` and date(tt.createdAt) between ? and ?`;
+    replacements.push(`${params.date_from}`);
+    replacements.push(`${params.date_to}`);
   }
 
   if (_.has(params, "userId")) {

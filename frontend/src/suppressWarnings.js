@@ -1,11 +1,10 @@
-// Suppress non-critical console warnings
+// Suppress non-critical console warnings (MUI/DOM noise only)
 const originalWarn = console.warn;
-const originalError = console.error;
 
 console.warn = (...args) => {
   const message = args[0]?.toString() || '';
   
-  // Suppress specific warnings
+  // Only suppress known non-actionable MUI/DOM warnings
   const suppressedWarnings = [
     'aria-hidden',
     'Blocked aria-hidden',
@@ -22,26 +21,10 @@ console.warn = (...args) => {
   originalWarn.apply(console, args);
 };
 
-console.error = (...args) => {
-  const message = args[0]?.toString() || '';
-  
-  // Suppress specific errors that are actually warnings
-  const suppressedErrors = [
-    'aria-hidden',
-    'Blocked aria-hidden',
-    'pps.whatsapp.net',
-    '403 (Forbidden)',
-    'Failed to load resource'
-  ];
-  
-  if (suppressedErrors.some(error => message.includes(error))) {
-    return;
-  }
-  
-  originalError.apply(console, args);
-};
+// NOTE: console.error is NOT suppressed — real errors must always be visible
+// for debugging, security monitoring, and production issue detection.
 
-// Suppress image loading errors from WhatsApp CDN
+// Suppress image loading errors from WhatsApp CDN (expected 403s for expired media)
 window.addEventListener('error', function(e) {
   if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'IMAGE')) {
     const src = e.target.src || e.target.href?.baseVal;

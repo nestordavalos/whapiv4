@@ -17,8 +17,14 @@ const options = {
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs, options));
 
-const server = app.listen(process.env.PORT, () => {
-  logger.info(`Servidor iniciado na porta: ${process.env.PORT}`);
+const PORT = parseInt(process.env.PORT || "3333", 10);
+if (isNaN(PORT) || PORT < 1 || PORT > 65535) {
+  logger.error(`Invalid PORT: ${process.env.PORT}. Must be a number between 1 and 65535.`);
+  process.exit(1);
+}
+
+const server = app.listen(PORT, () => {
+  logger.info(`Server started on port ${PORT}`);
 });
 
 cron.schedule("*/1 * * * *", async () => {

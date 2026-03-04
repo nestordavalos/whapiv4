@@ -1,10 +1,14 @@
-FROM node:14 as build-deps
+FROM node:20-alpine as build
 WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm install
+COPY index.html ./
+COPY vite.config.js ./
+COPY patches/ ./patches/
 COPY .env* ./
 COPY src/ ./src/
 COPY public/ ./public/
+COPY config/ ./config/
 RUN npm run build
 
 FROM nginx:alpine
@@ -18,11 +22,8 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
 ENV PUBLIC_HTML=/var/www/public/
 
 COPY .docker/nginx /etc/nginx/
-COPY --from=build-deps /usr/src/app/build ${PUBLIC_HTML}
+COPY --from=build /usr/src/app/dist ${PUBLIC_HTML}
 EXPOSE 80
-
-# COPY .docker/add-env-vars.sh /docker-entrypoint.d/01-add-env-vars.sh
-# RUN chmod +x /docker-entrypoint.d/01-add-env-vars.sh
 
 COPY .docker/add-env-vars.sh /docker-entrypoint.d/01-add-env-vars.sh
 RUN chmod +x /docker-entrypoint.d/01-add-env-vars.sh

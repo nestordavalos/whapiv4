@@ -23,7 +23,7 @@ const connections = new Map<number, number>();
 export const initIO = (httpServer: Server): SocketIO => {
   io = new SocketIO(httpServer, {
     cors: {
-      origin: process.env.FRONTEND_URL
+      origin: process.env.FRONTEND_URL || "http://localhost:3000"
     },
     transports: ["websocket", "polling"]
   });

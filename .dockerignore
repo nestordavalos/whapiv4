@@ -1,0 +1,19 @@
+# BMAD framework (dev tooling only)
+_bmad
+_bmad-output
+.agents
+
+# Git
+.git
+.gitignore
+
+# Docker files
+*Dockerfile*
+*docker-compose*
+
+# IDE
+.vscode
+
+# Documentation (not needed in production)
+docs
+*.md

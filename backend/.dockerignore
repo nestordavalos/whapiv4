@@ -4,3 +4,8 @@
 node_modules
 dist
 .wwebjs_auth
+
+# BMAD framework
+_bmad
+_bmad-output
+.agents

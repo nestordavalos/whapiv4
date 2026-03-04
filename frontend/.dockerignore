@@ -3,3 +3,8 @@
 *docker-compose*
 node_modules
 build
+
+# BMAD framework
+_bmad
+_bmad-output
+.agents

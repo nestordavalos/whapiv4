@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
+import { compare } from "bcryptjs";
 
 import AppError from "../errors/AppError";
-import ListSettingByValueService from "../services/SettingServices/ListSettingByValueService";
+import Setting from "../models/Setting";
 import { logger } from "../utils/logger";
 
 const isAuthApi = async (
@@ -18,15 +19,25 @@ const isAuthApi = async (
   const [, token] = authHeader.split(" ");
 
   try {
-    const getToken = await ListSettingByValueService(token);
-    if (!getToken) {
+    const setting = await Setting.findOne({
+      where: { key: "userApiToken" }
+    });
+
+    if (!setting || !setting.value) {
       throw new AppError("ERR_SESSION_EXPIRED", 401);
     }
 
-    if (getToken.value !== token) {
+    // Support both hashed and legacy plaintext tokens
+    const isHashed = setting.value.startsWith("$2");
+    const isValid = isHashed
+      ? await compare(token, setting.value)
+      : token === setting.value;
+
+    if (!isValid) {
       throw new AppError("ERR_SESSION_EXPIRED", 401);
     }
   } catch (err) {
+    if (err instanceof AppError) throw err;
     logger.error(`API auth error: ${err}`);
     throw new AppError(
       "Invalid token. We'll try to assign a new one on next request",

@@ -16,6 +16,7 @@
     "@testing-library/user-event": "^12.1.7",
     "axios": "^1.13.2",
     "date-fns": "^2.16.1",
+    "dompurify": "^3.3.1",
     "echarts": "5.2.2",
     "echarts-for-react": "3.0.2",
     "emoji-mart": "^3.0.1",

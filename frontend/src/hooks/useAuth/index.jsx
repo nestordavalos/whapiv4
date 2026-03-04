@@ -44,15 +44,26 @@ const useAuth = () => {
                                 ) {
                                         originalRequest._retry = true;
 
-                                        const { data } = await api.post("/auth/refresh_token");
-                                        if (data) {
-                                                localStorage.setItem(
-                                                        "token",
-                                                        JSON.stringify(data.token)
-                                                );
-                                                api.defaults.headers.Authorization = `Bearer ${data.token}`;
+                                        try {
+                                                const { data } = await api.post("/auth/refresh_token");
+                                                if (data) {
+                                                        localStorage.setItem(
+                                                                "token",
+                                                                JSON.stringify(data.token)
+                                                        );
+                                                        api.defaults.headers.Authorization = `Bearer ${data.token}`;
+                                                }
+                                                return api(originalRequest);
+                                        } catch (refreshError) {
+                                                // Refresh token failed — clear auth state and redirect to login
+                                                localStorage.removeItem("token");
+                                                api.defaults.headers.Authorization = undefined;
+                                                if (isMounted.current) {
+                                                        setIsAuth(false);
+                                                        setUser({});
+                                                }
+                                                return Promise.reject(refreshError);
                                         }
-                                        return api(originalRequest);
                                 }
                                 if (error?.response?.status === 401 && isMounted.current) {
                                         localStorage.removeItem("token");

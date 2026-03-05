@@ -99,6 +99,12 @@ export default defineConfig(({ mode }) => {
       jsx: "automatic"
     },
     optimizeDeps: {
+      include: [
+        '@emotion/react',
+        '@emotion/styled',
+        '@mui/material',
+        '@mui/material/styles',
+      ],
       esbuildOptions: {
         loader: {
           ".js": "jsx",

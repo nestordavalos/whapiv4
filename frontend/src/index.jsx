@@ -1,23 +1,13 @@
 import React from "react";
-import ReactDOM from "react-dom";
+import { createRoot } from "react-dom/client";
 import CssBaseline from "@mui/material/CssBaseline";
 
 import "./suppressWarnings";
 import App from "./App.jsx";
 
-ReactDOM.render(
+const root = createRoot(document.getElementById("root"));
+root.render(
 	<CssBaseline>
 		<App />
-	</CssBaseline>,
-	document.getElementById("root")
+	</CssBaseline>
 );
-
-// ReactDOM.render(
-// 	<React.StrictMode>
-// 		<CssBaseline>
-// 			<App />
-// 		</CssBaseline>,
-//   </React.StrictMode>
-
-// 	document.getElementById("root")
-// );

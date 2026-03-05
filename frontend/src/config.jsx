@@ -32,6 +32,11 @@ function getConfig(name, defaultValue = null) {
 
 export function getBackendUrl() {
   const url = getConfig("VITE_BACKEND_URL");
+  if (!url) {
+    throw new Error(
+      "VITE_BACKEND_URL is not configured. Set it via window.ENV or the VITE_BACKEND_URL environment variable."
+    );
+  }
   return url;
 }
 

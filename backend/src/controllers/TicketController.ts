@@ -12,6 +12,7 @@ import ShowQueueService from "../services/QueueService/ShowQueueService";
 import formatBody from "../helpers/Mustache";
 import { getWbot } from "../libs/wbot";
 import { logger } from "../utils/logger";
+import AppError from "../errors/AppError";
 
 type IndexQuery = {
   searchParam: string;
@@ -57,20 +58,28 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
   let whatsappIds: number[] = [];
   let userIds: number[] = [];
 
+  const safeParse = (value: string, label: string): number[] => {
+    try {
+      return JSON.parse(value);
+    } catch {
+      throw new AppError(`Invalid JSON for parameter "${label}"`, 400);
+    }
+  };
+
   if (queueIdsStringified) {
-    queueIds = JSON.parse(queueIdsStringified);
+    queueIds = safeParse(queueIdsStringified, "queueIds");
   }
 
   if (tagsStringified) {
-    tags = JSON.parse(tagsStringified);
+    tags = safeParse(tagsStringified, "tags");
   }
 
   if (whatsappIdsStringified) {
-    whatsappIds = JSON.parse(whatsappIdsStringified);
+    whatsappIds = safeParse(whatsappIdsStringified, "whatsappIds");
   }
 
   if (userIdsStringified) {
-    userIds = JSON.parse(userIdsStringified);
+    userIds = safeParse(userIdsStringified, "userIds");
   }
 
   const { tickets, count, hasMore } = await ListTicketsService({

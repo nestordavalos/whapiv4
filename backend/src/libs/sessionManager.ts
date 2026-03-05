@@ -1,3 +1,11 @@
+/**
+ * In-memory session activity tracker.
+ *
+ * LIMITATION: This store lives in process memory and is NOT shared across
+ * multiple instances.  If horizontal scaling is needed in the future, replace
+ * the Map with a shared store (e.g. Redis, which is already available via
+ * the Bull queue connection).
+ */
 const sessions = new Map<number, number>();
 const INACTIVITY_LIMIT_MS = 8 * 60 * 60 * 1000; // 8 hours
 

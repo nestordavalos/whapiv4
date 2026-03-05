@@ -173,22 +173,14 @@ const NotificationsPopOver = () => {
         }, [history]);
 
         useEffect(() => {
-                console.log('[NotificationsPopOver] Initializing audio, alertSound path:', alertSound);
                 // Inicializar el audio
                 const audio = new Audio(alertSound);
                 audio.preload = "auto";
-                audio.volume = 0.8; // Establecer volumen al 80%
+                audio.volume = 0.8;
                 audioRef.current = audio;
                 
                 // Pre-cargar el audio
                 audio.load();
-                
-                audio.addEventListener('canplaythrough', () => {
-                        console.log('[NotificationsPopOver] Audio loaded and ready to play');
-                });
-                audio.addEventListener('error', (e) => {
-                        console.log('[NotificationsPopOver] Audio load error:', e);
-                });
         }, []);
 
         useEffect(() => {
@@ -229,21 +221,18 @@ const NotificationsPopOver = () => {
 
         // Función para reproducir el sonido de notificación
         const playNotificationSound = useCallback(() => {
-                console.log('[NotificationsPopOver] playNotificationSound called, audioRef:', !!audioRef.current);
                 if (!audioRef.current) return;
 
                 try {
                         const audio = audioRef.current;
                         audio.currentTime = 0;
                         audio.play()
-                                .then(() => console.log('[NotificationsPopOver] Sound played successfully'))
                                 .catch((err) => {
-                                        console.log('[NotificationsPopOver] First play failed, retrying...', err.message);
                                         // Intentar una vez más
-                                        setTimeout(() => audio.play().catch((e) => console.log('[NotificationsPopOver] Retry failed:', e.message)), 100);
+                                        setTimeout(() => audio.play().catch(() => {}), 100);
                                 });
                 } catch (err) {
-                        console.log('[NotificationsPopOver] playNotificationSound error:', err);
+                        // sound playback failed silently
                 }
         }, []);
 
@@ -315,7 +304,6 @@ const NotificationsPopOver = () => {
         }, [playNotificationSound]);
 
         const handleNotifications = useCallback((data) => {
-                console.log('[NotificationsPopOver] handleNotifications called with data:', data);
                 const { message, contact, ticket } = data;
 
                 const messageBody = message.body || "📎 Archivo multimedia";
@@ -329,12 +317,9 @@ const NotificationsPopOver = () => {
 
                 try {
                         if (!("Notification" in window)) {
-                                console.log('[NotificationsPopOver] Notifications not supported in this browser');
                                 playNotificationSound();
                                 return;
                         }
-
-                        console.log('[NotificationsPopOver] Notification.permission:', Notification.permission);
 
                         if (Notification.permission === "granted") {
                                 const notification = new Notification(
@@ -359,10 +344,8 @@ const NotificationsPopOver = () => {
                                         return [notification, ...prevState];
                                 });
 
-                                console.log('[NotificationsPopOver] Notification created, playing sound...');
                                 playNotificationSound();
                         } else if (Notification.permission === "default") {
-                                console.log('[NotificationsPopOver] Requesting notification permission...');
                                 playNotificationSound();
                                 Notification.requestPermission().then(permission => {
                                         setNotificationPermission(permission);
@@ -380,11 +363,9 @@ const NotificationsPopOver = () => {
                                         }
                                 });
                         } else {
-                                console.log('[NotificationsPopOver] Notification permission denied, only playing sound');
                                 playNotificationSound();
                         }
                 } catch (err) {
-                        console.log('[NotificationsPopOver] Error in handleNotifications:', err);
                         playNotificationSound();
                 }
         }, [playNotificationSound]);
@@ -428,8 +409,6 @@ const NotificationsPopOver = () => {
                 socket.on("ticket", handleTicketEvent);
 
                 const handleAppMessageEvent = data => {
-                        console.log('[NotificationsPopOver] appMessage event received:', data.action, 'fromMe:', data.message?.fromMe);
-                        
                         // Manejar notificaciones de reacciones
                         if (data.action === "reactionUpdate" && !data.reaction.fromMe) {
                                 if (data.ticket && data.contact) {
@@ -450,14 +429,11 @@ const NotificationsPopOver = () => {
                                 !data.message.read &&
                                 (data.ticket.userId === user?.id || !data.ticket.userId)
                         ) {
-                                console.log('[NotificationsPopOver] New message for notification, profile:', profile, 'queueId:', data.ticket.queue?.id);
-                                
                                 if (
                                         profile === "user" &&
                                         data.ticket.queue &&
                                         queueIds.indexOf(data.ticket.queue.id) === -1
                                 ) {
-                                        console.log('[NotificationsPopOver] Queue not allowed for user profile');
                                         return;
                                 }
 
@@ -474,8 +450,6 @@ const NotificationsPopOver = () => {
                                         (data.ticket.userId && data.ticket.userId !== user?.id) ||
                                         data.ticket.isGroup ||
                                         data.ticket.chatbot;
-
-                                console.log('[NotificationsPopOver] shouldNotNotificate:', shouldNotNotificate, 'userId:', data.ticket.userId, 'currentUser:', user?.id);
 
                                 if (!shouldNotNotificate) {
                                         handleNotifications(data);

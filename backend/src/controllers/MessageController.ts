@@ -14,6 +14,7 @@ import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import ForwardWhatsAppMessage from "../services/WbotServices/ForwardWhatsAppMessage";
 import CreateMessageService from "../services/MessageServices/CreateMessageService";
 import Message from "../models/Message";
+import { logger } from "../utils/logger";
 
 type IndexQuery = {
   pageNumber: string;
@@ -45,17 +46,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     : undefined;
   const medias = req.files as Express.Multer.File[] | undefined;
 
-  console.log(
-    "[MessageController] store - quotedMsg received:",
-    quotedMsg
-      ? {
-          id: quotedMsg.id,
-          body: `${quotedMsg.body?.substring(0, 100)}...`,
-          mediaType: quotedMsg.mediaType,
-          fromMe: quotedMsg.fromMe
-        }
-      : "null"
-  );
+  logger.debug({ quotedMsgId: quotedMsg?.id, mediaType: quotedMsg?.mediaType }, "MessageController store");
 
   const ticket = await ShowTicketService({ id: ticketId, userId: req.user.id });
 

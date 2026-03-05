@@ -86,30 +86,17 @@ const SendWhatsAppMessage = async ({
 }: Request): Promise<WbotMessage> => {
   let quotedMsgSerializedId: string | undefined;
   if (quotedMsg) {
-    console.log("[SendWhatsAppMessage] Processing quotedMsg:", {
-      id: quotedMsg.id,
-      body: `${quotedMsg.body?.substring(0, 100)}...`,
-      mediaType: quotedMsg.mediaType,
-      fromMe: quotedMsg.fromMe
-    });
+    logger.debug({ id: quotedMsg.id, mediaType: quotedMsg.mediaType, fromMe: quotedMsg.fromMe }, "Processing quotedMsg");
     try {
       const wbotMessage = await GetWbotMessage(ticket, quotedMsg.id);
       // Usar el ID serializado real de WhatsApp en lugar de construir uno personalizado
       // eslint-disable-next-line no-underscore-dangle
       quotedMsgSerializedId = wbotMessage.id._serialized;
-      console.log(
-        "[SendWhatsAppMessage] Using real WhatsApp serialized ID:",
-        quotedMsgSerializedId
-      );
+      logger.debug("Using real WhatsApp serialized ID: %s", quotedMsgSerializedId);
     } catch (err) {
-      console.log(
-        "[SendWhatsAppMessage] Could not fetch quoted message, trying with custom serialization"
-      );
+      logger.debug("Could not fetch quoted message, trying with custom serialization");
       quotedMsgSerializedId = SerializeWbotMsgId(ticket, quotedMsg);
-      console.log(
-        "[SendWhatsAppMessage] Using fallback serialized ID:",
-        quotedMsgSerializedId
-      );
+      logger.debug("Using fallback serialized ID: %s", quotedMsgSerializedId);
     }
   }
 
@@ -133,12 +120,7 @@ const SendWhatsAppMessage = async ({
       }
 
       try {
-        console.log("[SendWhatsAppMessage] Sending attempt %d:", attempt, {
-          number,
-          isGroup,
-          quotedMessageId: quotedMsgSerializedId,
-          bodyLength: formattedBody.length
-        });
+        logger.debug({ attempt, number, isGroup, bodyLength: formattedBody.length }, "Sending WhatsApp message");
 
         // sendMessageWithLidFallback already tries @c.us then @lid internally
         const sentMessage = await sendMessageWithLidFallback(
@@ -155,10 +137,7 @@ const SendWhatsAppMessage = async ({
           );
         }
 
-        console.log("[SendWhatsAppMessage] Message sent successfully:", {
-          id: sentMessage.id.id,
-          hasQuoted: !!sentMessage.hasQuotedMsg
-        });
+        logger.debug({ id: sentMessage.id.id, hasQuoted: !!sentMessage.hasQuotedMsg }, "Message sent successfully");
 
         await ticket.update({ lastMessage: body });
         resetFailures(whatsappId);

@@ -2,12 +2,16 @@ import express from "express";
 import multer from "multer";
 import uploadConfig from "../config/upload";
 import isAuthApi from "../middleware/isAuthApi";
+import { apiLimiter } from "../middleware/rateLimiters";
 
 import * as WebhookApiController from "../controllers/WebhookApiController";
 
 const upload = multer(uploadConfig);
 
 const webhookApiRoutes = express.Router();
+
+// Apply rate limiter to all webhook API routes
+webhookApiRoutes.use(apiLimiter);
 
 // ==========================================
 // TICKETS

@@ -31,8 +31,9 @@ export default {
   storage: multer.diskStorage({
     destination: publicFolder,
     filename(req, file, cb) {
-      // Extraer extensión del mimetype, igual que lo hace wbotMessageListener
-      const ext = file.mimetype.split("/")[1].split(";")[0];
+      // Prefer original file extension; fall back to mimetype for edge cases
+      const originalExt = path.extname(file.originalname).slice(1);
+      const ext = originalExt || file.mimetype.split("/")[1].split(";")[0];
       const fileName = `${new Date().getTime()}.${ext}`;
 
       return cb(null, fileName);

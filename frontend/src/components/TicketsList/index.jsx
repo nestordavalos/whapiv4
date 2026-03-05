@@ -226,15 +226,6 @@ const TicketsList = (props) => {
 		const shouldShowAll = showAll || isAdmin || allticket;
 		const ticketsToUse = shouldShowAll ? tickets : filteredTickets;
 
-		console.log('[TicketsList] Cargando tickets:', {
-			page: pageNumber,
-			ticketsReceived: tickets.length,
-			ticketsToUse: ticketsToUse.length,
-			currentTotal: ticketsList.length,
-			hasMore,
-			status
-		});
-
 		dispatch({ 
 			type: "LOAD_TICKETS", 
 			payload: ticketsToUse,
@@ -335,25 +326,11 @@ const TicketsList = (props) => {
 		const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
 		const scrollPercentage = ((scrollTop + clientHeight) / scrollHeight) * 100;
 		
-		console.log('[TicketsList] handleScroll triggered:', {
-			hasMore,
-			loading,
-			scrollTop: scrollTop.toFixed(0),
-			scrollHeight,
-			clientHeight,
-			distanceFromBottom: distanceFromBottom.toFixed(0),
-			scrollPercentage: scrollPercentage.toFixed(1) + '%'
-		});
-		
-		if (!hasMore || loading) {
-			console.log('[TicketsList] Scroll ignorado - hasMore:', hasMore, 'loading:', loading);
-			return;
-		}
+		if (!hasMore || loading) return;
 		
 		// Cargar más cuando falten menos de 300px para llegar al final
 		// O cuando el scroll esté al 80% o más
 		if (distanceFromBottom < 300 || scrollPercentage >= 80) {
-			console.log('[TicketsList] 🚀 Cargando más tickets - página:', pageNumber + 1);
 			setPageNumber((prev) => prev + 1);
 		}
 	}, [hasMore, loading, pageNumber]);

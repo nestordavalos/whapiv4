@@ -861,7 +861,6 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   };
 
   const checkMessageMedia = (message) => {
-    // console.log(message);
     if (
       message.mediaType === "location" &&
       message.body.split("|").length >= 2

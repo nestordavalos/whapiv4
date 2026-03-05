@@ -12,11 +12,11 @@ export const authLimiter = rateLimit({
   skipSuccessfulRequests: true // No contar requests exitosos
 });
 
-// Rate limiter para creación de recursos
+// Rate limiter para creación de recursos (signup)
 export const createLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minuto
   max: parseInt(
-    process.env.RATE_LIMIT_CREATE || (isDevelopment ? "500" : "200")
+    process.env.RATE_LIMIT_CREATE || (isDevelopment ? "50" : "5")
   ),
   message: "Too many resource creation requests, please slow down.",
   standardHeaders: true,

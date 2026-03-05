@@ -332,7 +332,7 @@ const LoggedInLayout = ({ children }) => {
             {drawerOpen ? <ChevronLeftIcon /> : <MenuIcon />}
           </IconButton>
         </div>
-        <nav aria-label="MenÃº principal">
+        <nav aria-label="Menú principal">
           <List
             component="ul"
             className={clsx(classes.drawerList, !drawerOpen && classes.drawerListClosed)}

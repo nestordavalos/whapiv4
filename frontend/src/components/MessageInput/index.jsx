@@ -416,14 +416,6 @@ const MessageInput = ({ ticketStatus }) => {
     if (inputMessage.trim() === "") return;
     setLoading(true);
     
-    console.log('[MessageInput] Sending message with reply:', replyingMessage ? {
-      id: replyingMessage.id,
-      body: replyingMessage.body?.substring(0, 100) + '...',
-      mediaType: replyingMessage.mediaType,
-      fromMe: replyingMessage.fromMe,
-      contact: replyingMessage.contact
-    } : 'null');
-    
     const message = {
       read: 1,
       fromMe: true,
@@ -433,15 +425,6 @@ const MessageInput = ({ ticketStatus }) => {
         : inputMessage.trim(),
       quotedMsg: replyingMessage,
     };
-    
-    console.log('[MessageInput] Message object being sent:', {
-      ...message,
-      body: message.body.substring(0, 50) + '...',
-      quotedMsg: message.quotedMsg ? {
-        id: message.quotedMsg.id,
-        mediaType: message.quotedMsg.mediaType
-      } : null
-    });
     
     try {
       await api.post(`/messages/${ticketId}`, message);

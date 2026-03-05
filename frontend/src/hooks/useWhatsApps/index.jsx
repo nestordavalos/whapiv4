@@ -20,8 +20,7 @@ const reducer = (state, action) => {
 		const whatsAppIndex = state.findIndex(s => s && s.id === whatsApp.id);
 
 		if (whatsAppIndex !== -1) {
-			state[whatsAppIndex] = whatsApp;
-			return [...state];
+			return state.map((item, idx) => idx === whatsAppIndex ? whatsApp : item);
 		} else {
 			return [whatsApp, ...state];
 		}
@@ -35,11 +34,11 @@ const reducer = (state, action) => {
 		const whatsAppIndex = state.findIndex(s => s && s.id === whatsApp.id);
 
 		if (whatsAppIndex !== -1) {
-			state[whatsAppIndex].status = whatsApp.status;
-			state[whatsAppIndex].updatedAt = whatsApp.updatedAt;
-			state[whatsAppIndex].qrcode = whatsApp.qrcode;
-			state[whatsAppIndex].retries = whatsApp.retries;
-			return [...state];
+			return state.map((item, idx) =>
+				idx === whatsAppIndex
+					? { ...item, status: whatsApp.status, updatedAt: whatsApp.updatedAt, qrcode: whatsApp.qrcode, retries: whatsApp.retries }
+					: item
+			);
 		} else {
 			return [...state];
 		}
@@ -51,11 +50,7 @@ const reducer = (state, action) => {
 			return state;
 		}
 
-		const whatsAppIndex = state.findIndex(s => s && s.id === whatsAppId);
-		if (whatsAppIndex !== -1) {
-			state.splice(whatsAppIndex, 1);
-		}
-		return [...state];
+		return state.filter(s => s && s.id !== whatsAppId);
 	}
 
 	if (action.type === "RESET") {
@@ -103,23 +98,12 @@ const useWhatsApps = () => {
                 if (!socket) return undefined;
 
                 socket.on("whatsapp", data => {
-                        if (!isMounted) return;
-                        if (!data) {
-                                console.warn("Socket whatsapp: data es undefined");
-                                return;
-                        }
+                        if (!isMounted || !data) return;
                         if (data.action === "update" && data.whatsapp) {
                                 dispatch({
                                         type: "UPDATE_WHATSAPPS",
                                         payload: data.whatsapp,
                                 });
-                        }
-                });
-
-                socket.on("whatsapp", data => {
-                        if (!isMounted) return;
-                        if (!data) {
-                                return;
                         }
                         if (data.action === "delete" && data.whatsappId) {
                                 dispatch({ type: "DELETE_WHATSAPPS", payload: data.whatsappId });

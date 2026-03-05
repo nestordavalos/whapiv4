@@ -38,12 +38,12 @@ const Routes = () => {
               <Route exact path="/contacts" component={Contacts} isPrivate />
               <Route exact path="/users" component={Users} isPrivate />
               <Route exact path="/quickAnswers" component={QuickAnswers} isPrivate />
-              <Route exact path="/Settings" component={Settings} isPrivate />
+              <Route exact path="/settings" component={Settings} isPrivate />
               <Route exact path="/api" component={Api} isPrivate />
               <Route exact path="/apidocs" component={ApiDocs} isPrivate />
               <Route exact path="/apikey" component={ApiKey} isPrivate />
-              <Route exact path="/Queues" component={Queues} isPrivate />
-              <Route exact path="/Tags" component={Tags} isPrivate />
+              <Route exact path="/queues" component={Queues} isPrivate />
+              <Route exact path="/tags" component={Tags} isPrivate />
               <Route exact path="/queue-integrations" component={QueueIntegration} isPrivate />
             </LoggedInLayout>
           </WhatsAppsProvider>

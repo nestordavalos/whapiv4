@@ -2,7 +2,7 @@ import express from "express";
 import isAuth from "../middleware/isAuth";
 import isAdmin from "../middleware/isAdmin";
 
-import * as DashboardController from "../controllers/DashbardController";
+import * as DashboardController from "../controllers/DashboardController";
 
 const routes = express.Router();
 

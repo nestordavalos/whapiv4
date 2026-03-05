@@ -72,6 +72,10 @@ app.get("/health", (_req: Request, res: Response) => {
 
 app.use(Sentry.Handlers.requestHandler());
 app.use("/public", express.static(uploadConfig.directory));
+// Explicit 404 for missing media — ensures CORS headers are present on the response
+app.use("/public", (_req: Request, res: Response) => {
+  res.status(404).json({ error: "File not found" });
+});
 app.use(routes);
 
 app.use(Sentry.Handlers.errorHandler());

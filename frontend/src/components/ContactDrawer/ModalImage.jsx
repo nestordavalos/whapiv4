@@ -62,9 +62,8 @@ const ModalImageContatc = ({ imageUrl }) => {
 				setFetching(false);
 				setImageError(false);
 			} catch (err) {
-				if (err.response && err.response.status === 404) {
-					setImageError(true);
-				}
+				// Treat any fetch error (404, CORS, network) as unavailable image
+				setImageError(true);
 				setFetching(false);
 			}
 		};
@@ -80,12 +79,20 @@ const ModalImageContatc = ({ imageUrl }) => {
 		);
 	}
 
+	if (fetching) {
+		return (
+			<Avatar className={classes.fallbackAvatar} variant="rounded">
+				<PersonIcon className={classes.fallbackIcon} />
+			</Avatar>
+		);
+	}
+
 	return (
 		<ModalImage
 			className={classes.messageMedia}
-			smallSrcSet={fetching ? imageUrl : blobUrl}
-			medium={fetching ? imageUrl : blobUrl}
-			large={fetching ? imageUrl : blobUrl}
+			smallSrcSet={blobUrl}
+			medium={blobUrl}
+			large={blobUrl}
 			showRotate="true"
 			alt="image"
 		/>

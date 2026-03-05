@@ -151,19 +151,22 @@ export function TagsContainer({ contact }) {
                 onChange={(e, v, r) => onChange(v, r)}
                 getOptionLabel={(option) => option.name}
                 renderTags={(value, getTagProps) =>
-                    value.map((option, index) => (
-                        <Chip
-                            key={option.id || index}
-                            className={classes.tagChip}
-                            style={{ 
-                                backgroundColor: option.color || '#3b82f6', 
-                                color: 'white',
-                            }}
-                            label={option.name}
-                            {...(isRemoveTags && getTagProps({ index }))}
-                            size="small"
-                        />
-                    ))
+                    value.map((option, index) => {
+                        const { key, ...tagProps } = getTagProps({ index });
+                        return (
+                            <Chip
+                                key={option.id || key}
+                                className={classes.tagChip}
+                                style={{ 
+                                    backgroundColor: option.color || '#3b82f6', 
+                                    color: 'white',
+                                }}
+                                label={option.name}
+                                {...(isRemoveTags && tagProps)}
+                                size="small"
+                            />
+                        );
+                    })
                 }
                 renderInput={(params) => (
                     <TextField 

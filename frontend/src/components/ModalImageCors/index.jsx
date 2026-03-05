@@ -34,6 +34,17 @@ const useStyles = makeStyles(theme => ({
 			pointerEvents: "auto",
 		},
 	},
+	loadingPlaceholder: {
+		width: 250,
+		height: 200,
+		borderRadius: 12,
+		backgroundColor: theme.palette.grey[200],
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "center",
+		color: theme.palette.grey[400],
+		fontSize: "0.85rem",
+	},
 }));
 
 const ModalImageCors = ({ imageUrl }) => {
@@ -66,10 +77,8 @@ const ModalImageCors = ({ imageUrl }) => {
 			} catch (err) {
 				if (axios.isCancel(err)) return;
 				if (isMounted) {
-					// Si es 404, marcar como error y no mostrar nada
-					if (err.response && err.response.status === 404) {
-						setImageError(true);
-					}
+					// Treat any fetch error (404, CORS, network) as unavailable image
+					setImageError(true);
 					setFetching(false);
 				}
 			}
@@ -94,6 +103,10 @@ const ModalImageCors = ({ imageUrl }) => {
 		return null;
 	}
 
+	if (fetching) {
+		return <div className={classes.loadingPlaceholder}>⏳</div>;
+	}
+
 	return (
 		<div 
 			className={classes.imageWrapper}
@@ -104,9 +117,9 @@ const ModalImageCors = ({ imageUrl }) => {
 		>
 			<ModalImage
 				className={classes.messageMedia}
-				smallSrcSet={fetching ? imageUrl : blobUrl}
-				medium={fetching ? imageUrl : blobUrl}
-				large={fetching ? imageUrl : blobUrl}
+				smallSrcSet={blobUrl}
+				medium={blobUrl}
+				large={blobUrl}
 				showRotate="true"
 				alt="image"
 			/>

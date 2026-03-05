@@ -1,4 +1,3 @@
-import { hash } from "bcryptjs";
 import AppError from "../../errors/AppError";
 import Setting from "../../models/Setting";
 
@@ -19,13 +18,7 @@ const UpdateSettingService = async ({
     throw new AppError("ERR_NO_SETTING_FOUND", 404);
   }
 
-  // Hash API tokens before storing
-  let storedValue = value;
-  if (key === "userApiToken" && value) {
-    storedValue = await hash(value, 10);
-  }
-
-  await setting.update({ value: storedValue });
+  await setting.update({ value });
 
   return setting;
 };

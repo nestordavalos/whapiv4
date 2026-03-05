@@ -38,7 +38,7 @@ import { isArray } from "lodash";
 import useDashboard from "../../hooks/useDashboard";
 
 import { isEmpty } from "lodash";
-import moment from "moment";
+import { format, subDays, isValid, parseISO, startOfDay, addMinutes } from "date-fns";
 
 const useStyles = makeStyles((theme) => ({
   page: {
@@ -519,9 +519,9 @@ const Dashboard = () => {
   const [selectedQueues, setSelectedQueues] = useState([]);
   const [period, setPeriod] = useState(7);
   const [dateFrom, setDateFrom] = useState(
-    moment().subtract(7, "days").format("YYYY-MM-DD")
+    format(subDays(new Date(), 7), "yyyy-MM-dd")
   );
-  const [dateTo, setDateTo] = useState(moment().format("YYYY-MM-DD"));
+  const [dateTo, setDateTo] = useState(format(new Date(), "yyyy-MM-dd"));
   const [loading, setLoading] = useState(false);
   const { find } = useDashboard();
   const totalTickets = (Number(counters.supportPending) || 0) + (Number(counters.supportHappening) || 0) + (Number(counters.supportFinished) || 0);
@@ -577,17 +577,17 @@ const Dashboard = () => {
     }
 
     if (filterType === 1) {
-      if (!isEmpty(dateFrom) && moment(dateFrom).isValid()) {
+      if (!isEmpty(dateFrom) && isValid(parseISO(dateFrom))) {
         params = {
           ...params,
-          date_from: moment(dateFrom).format("YYYY-MM-DD"),
+          date_from: format(parseISO(dateFrom), "yyyy-MM-dd"),
         };
       }
 
-      if (!isEmpty(dateTo) && moment(dateTo).isValid()) {
+      if (!isEmpty(dateTo) && isValid(parseISO(dateTo))) {
         params = {
           ...params,
-          date_to: moment(dateTo).format("YYYY-MM-DD"),
+          date_to: format(parseISO(dateTo), "yyyy-MM-dd"),
         };
       }
     }
@@ -683,10 +683,12 @@ const Dashboard = () => {
   }, []);
   
   function formatTime(minutes) {
-    return moment()
-      .startOf("day")
-      .add(minutes, "minutes")
-      .format("HH[h] mm[m]");
+    const mins = Number(minutes);
+    if (!Number.isFinite(mins)) return "0h 00m";
+    return format(
+      addMinutes(startOfDay(new Date()), mins),
+      "HH'h' mm'm'"
+    );
   }
 
   return (

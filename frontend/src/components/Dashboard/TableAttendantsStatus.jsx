@@ -14,7 +14,7 @@ import { green, red } from '@mui/material/colors';
 
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
-import moment from 'moment';
+import { format, startOfDay, addMinutes } from 'date-fns';
 
 import Rating from '@mui/material/Rating';
 
@@ -117,7 +117,9 @@ export default function TableAttendantsStatus(props) {
     }
 
 	function formatTime(minutes){
-		return moment().startOf('day').add(minutes, 'minutes').format('HH[h] mm[m]');
+		const mins = Number(minutes);
+		if (!Number.isFinite(mins)) return "0h 00m";
+		return format(addMinutes(startOfDay(new Date()), mins), "HH'h' mm'm'");
 	}
 
     return (!loading ? <TableContainer 

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { compare } from "bcryptjs";
+import { timingSafeEqual } from "crypto";
 
 import AppError from "../errors/AppError";
 import Setting from "../models/Setting";
@@ -27,11 +27,12 @@ const isAuthApi = async (
       throw new AppError("ERR_SESSION_EXPIRED", 401);
     }
 
-    // Support both hashed and legacy plaintext tokens
-    const isHashed = setting.value.startsWith("$2");
-    const isValid = isHashed
-      ? await compare(token, setting.value)
-      : token === setting.value;
+    // Timing-safe comparison to prevent timing attacks
+    const expected = Buffer.from(setting.value);
+    const received = Buffer.from(token || "");
+    const isValid =
+      expected.length === received.length &&
+      timingSafeEqual(expected, received);
 
     if (!isValid) {
       throw new AppError("ERR_SESSION_EXPIRED", 401);

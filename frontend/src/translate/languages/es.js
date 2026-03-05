@@ -301,6 +301,7 @@ const messages = {
         },
         buttons: {
           add: "Agregar",
+          download: "Descargar",
           deleteAll: "Borrar todo",
         },
         confirmationModal: {
@@ -592,6 +593,7 @@ const messages = {
         },
         buttons: {
           add: "Agregar respuesta rápida",
+          deleteAll: "Eliminar todas las respuestas rápidas",
           deletedAll: "Eliminar todas las respuestas rápidas",
         },
         toasts: {

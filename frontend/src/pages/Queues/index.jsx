@@ -44,6 +44,7 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(2),
     margin: theme.spacing(1),
     overflowY: "auto",
+    overflowX: "auto",
     borderRadius: 12,
     border: `1px solid ${theme.palette.divider}`,
     boxShadow: "0 2px 8px rgba(0,0,0,0.04)",

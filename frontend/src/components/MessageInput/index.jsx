@@ -104,6 +104,8 @@ const useStyles = makeStyles((theme) => ({
     padding: "10px 12px",
     alignItems: "center",
     gap: 4,
+    flexWrap: "nowrap",
+    minWidth: 0,
   },
   messageInputWrapper: {
     padding: "8px 12px",
@@ -113,6 +115,7 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     borderRadius: 24,
     flex: 1,
+    minWidth: 120,
     position: "relative",
     border: `1px solid ${theme.palette.divider}`,
     transition: "all 0.2s ease",
@@ -285,7 +288,12 @@ const useStyles = makeStyles((theme) => ({
     "& .MuiFormControlLabel-label": {
       fontSize: "0.75rem",
       color: theme.palette.text.secondary,
+      whiteSpace: "nowrap",
     },
+    marginRight: 4,
+    flexShrink: 1,
+    minWidth: 0,
+    overflow: "hidden",
   },
 }));
 
@@ -742,7 +750,7 @@ const MessageInput = ({ ticketStatus }) => {
               </IconButton>
             </label>
             <FormControlLabel
-              style={{ marginRight: 7, color: "primary" }}
+              className={classes.signSwitch}
               label={i18n.t("messagesInput.signMessage")}
               labelPlacement="start"
               control={
@@ -804,7 +812,7 @@ const MessageInput = ({ ticketStatus }) => {
               </MenuItem>
               <MenuItem onClick={handleMenuItemClick}>
                 <FormControlLabel
-                  style={{ marginRight: 7 }}
+                  className={classes.signSwitch}
                   label={i18n.t("messagesInput.signMessage")}
                   labelPlacement="start"
                   control={
@@ -911,7 +919,7 @@ const MessageInput = ({ ticketStatus }) => {
               </IconButton>
             </label>
             <FormControlLabel
-              style={{ marginRight: 7, color: "primary" }}
+              className={classes.signSwitch}
               label={i18n.t("messagesInput.signMessage")}
               labelPlacement="start"
               control={
@@ -973,7 +981,7 @@ const MessageInput = ({ ticketStatus }) => {
               </MenuItem>
               <MenuItem onClick={handleMenuItemClick}>
                 <FormControlLabel
-                  style={{ marginRight: 7 }}
+                  className={classes.signSwitch}
                   label={i18n.t("messagesInput.signMessage")}
                   labelPlacement="start"
                   control={

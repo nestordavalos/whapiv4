@@ -186,12 +186,20 @@ const useStyles = makeStyles(theme => ({
 		justifyContent: "space-between",
 		marginTop: theme.spacing(1),
 		flexWrap: "nowrap",
+		[theme.breakpoints.down('sm')]: {
+			flexWrap: "wrap",
+			gap: theme.spacing(0.5),
+		},
 	},
 	actionButtons: {
 		display: "flex",
 		gap: theme.spacing(1),
 		flex: 1,
 		minWidth: 0,
+		[theme.breakpoints.down('sm')]: {
+			flexWrap: "wrap",
+			gap: theme.spacing(0.5),
+		},
 	},
 	actionButton: {
 		minWidth: 0,

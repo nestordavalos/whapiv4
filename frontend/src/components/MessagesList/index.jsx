@@ -1437,7 +1437,9 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                     [classes.textContentItemEdited]: message.isEdited,
                   })}>
                     {message.quotedMsg && renderQuotedMessage(message)}
-                    <MarkdownWrapper>{message.body}</MarkdownWrapper>
+                    {message.mediaType !== "vcard" && (
+                      <MarkdownWrapper>{message.body}</MarkdownWrapper>
+                    )}
                     <span className={classes.timestamp}>
                       {message.isEdited && (
                         <span className={classes.editedIndicator}>
@@ -1509,7 +1511,9 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                       />
                     )}
                     {message.quotedMsg && renderQuotedMessage(message)}
-                    <MarkdownWrapper>{message.body}</MarkdownWrapper>
+                    {message.mediaType !== "vcard" && (
+                      <MarkdownWrapper>{message.body}</MarkdownWrapper>
+                    )}
                     <span className={classes.timestamp}>
                       {message.isEdited && (
                         <span className={classes.editedIndicator}>

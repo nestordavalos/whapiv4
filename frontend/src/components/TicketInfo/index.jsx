@@ -45,11 +45,12 @@ const useStyles = makeStyles((theme) => ({
 	},
 	titleRow: {
 		display: "flex",
-		alignItems: "center",
-		gap: 10,
+		alignItems: "baseline",
+		gap: 8,
 		minWidth: 0,
+		overflow: "hidden",
 		[theme.breakpoints.down('md')]: {
-			gap: 8,
+			gap: 6,
 		},
 	},
 	contactName: {
@@ -60,16 +61,25 @@ const useStyles = makeStyles((theme) => ({
 		overflow: "hidden",
 		textOverflow: "ellipsis",
 		lineHeight: 1.3,
+		flexShrink: 1,
+		minWidth: 0,
+		maxWidth: "50%",
 		[theme.breakpoints.down('md')]: {
 			fontSize: "0.8rem",
+			maxWidth: "40%",
+		},
+		[theme.breakpoints.down('sm')]: {
+			maxWidth: "60%",
 		},
 	},
 	ticketNumber: {
 		fontSize: "0.75rem",
 		color: theme.palette.primary.main,
 		fontWeight: 600,
-		[theme.breakpoints.down('md')]: {
-			display: "none",
+		whiteSpace: "nowrap",
+		flexShrink: 0,
+		[theme.breakpoints.down('sm')]: {
+			fontSize: "0.65rem",
 		},
 	},
 	metaRow: {
@@ -77,6 +87,9 @@ const useStyles = makeStyles((theme) => ({
 		flexWrap: "wrap",
 		gap: 6,
 		alignItems: "center",
+		[theme.breakpoints.down('sm')]: {
+			gap: 4,
+		},
 	},
 	chip: {
 		height: 20,

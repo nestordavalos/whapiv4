@@ -98,6 +98,7 @@ const useStyles = makeStyles((theme) => ({
     padding: theme.spacing(2.5),
     margin: theme.spacing(1.5),
     overflowY: "auto",
+    overflowX: "auto",
     borderRadius: 16,
     border: `1px solid ${theme.palette.divider}`,
     boxShadow: "0 12px 32px rgba(15, 23, 42, 0.08)",

@@ -20,7 +20,14 @@ module.exports = {
   collectCoverage: true,
 
   // An array of glob patterns indicating a set of files for which coverage information should be collected
-  collectCoverageFrom: ["<rootDir>/src/services/**/*.ts"],
+  collectCoverageFrom: [
+    "<rootDir>/src/services/**/*.ts",
+    "<rootDir>/src/middleware/**/*.ts",
+    "<rootDir>/src/helpers/**/*.ts",
+    "<rootDir>/src/config/upload.ts",
+    "<rootDir>/src/libs/sessionManager.ts",
+    "!<rootDir>/src/**/*.d.ts"
+  ],
 
   // The directory where Jest should output its coverage files
   coverageDirectory: "coverage",
@@ -34,10 +41,17 @@ module.exports = {
   coverageProvider: "v8",
 
   // A list of reporter names that Jest uses when writing coverage reports
-  coverageReporters: ["text", "lcov"],
+  coverageReporters: ["text", "lcov", "clover"],
 
   // An object that configures minimum threshold enforcement for coverage results
-  // coverageThreshold: undefined,
+  coverageThreshold: {
+    global: {
+      statements: 30,
+      branches: 20,
+      functions: 30,
+      lines: 30
+    }
+  },
 
   // A path to a custom dependency extractor
   // dependencyExtractor: undefined,
@@ -76,7 +90,9 @@ module.exports = {
   // ],
 
   // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
-  // moduleNameMapper: {},
+  moduleNameMapper: {
+    "^node:(.*)$": "$1"
+  },
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
   // modulePathIgnorePatterns: [],

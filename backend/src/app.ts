@@ -13,6 +13,7 @@ import uploadConfig from "./config/upload";
 import AppError from "./errors/AppError";
 import routes from "./routes";
 import { logger } from "./utils/logger";
+import requestId from "./middleware/requestId";
 
 Sentry.init({ dsn: process.env.SENTRY_DSN });
 
@@ -56,6 +57,7 @@ const generalLimiter = rateLimit({
 });
 
 app.use(generalLimiter);
+app.use(requestId);
 app.use(cookieParser());
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ limit: "5mb", extended: true }));
@@ -76,11 +78,11 @@ app.use(Sentry.Handlers.errorHandler());
 
 app.use(async (err: Error, req: Request, res: Response, _: NextFunction) => {
   if (err instanceof AppError) {
-    logger.warn(err);
+    logger.warn({ requestId: req.id, statusCode: err.statusCode, error: err.message }, "AppError");
     return res.status(err.statusCode).json({ error: err.message });
   }
 
-  logger.error(err);
+  logger.error({ requestId: req.id, err }, "Unhandled error");
   return res.status(500).json({ error: "Internal server error" });
 });
 

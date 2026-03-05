@@ -13,6 +13,10 @@
     "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix",
     "pretest": "cross-env NODE_ENV=test sequelize db:migrate && cross-env NODE_ENV=test sequelize db:seed:all",
     "test": "cross-env NODE_ENV=test jest",
+    "test:watch": "cross-env NODE_ENV=test jest --watch",
+    "test:coverage": "cross-env NODE_ENV=test jest --coverage",
+    "test:ci": "cross-env NODE_ENV=test jest --ci --coverage --reporters=default",
+    "test:unit": "cross-env NODE_ENV=test jest --testPathPattern=__tests__/unit",
     "posttest": "cross-env NODE_ENV=test sequelize db:migrate:undo:all"
   },
   "author": "",

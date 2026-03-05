@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import DashboardDataService, {
   DashboardData,
   Params
-} from "../services/ReportService/DashbardDataService";
+} from "../services/ReportService/DashboardDataService";
 
 export const index = async (req: Request, res: Response): Promise<Response> => {
   const params: Params = req.query;

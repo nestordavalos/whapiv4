@@ -76,9 +76,13 @@ const ListTicketsService = async ({
     }
   }
 
-  let whereCondition: Filterable["where"] = {
-    [Op.or]: [{ userId }, { status: "pending" }]
-  };
+  const shouldShowAll = showAll === "true" && canShowAll;
+
+  let whereCondition: Filterable["where"] = shouldShowAll
+    ? {}
+    : {
+        [Op.or]: [{ userId }, { status: "pending" }]
+      };
   let includeCondition: Includeable[];
 
   includeCondition = [
@@ -201,6 +205,7 @@ const ListTicketsService = async ({
 
   if (date) {
     whereCondition = {
+      ...whereCondition,
       createdAt: {
         [Op.between]: [+startOfDay(parseISO(date)), +endOfDay(parseISO(date))]
       }

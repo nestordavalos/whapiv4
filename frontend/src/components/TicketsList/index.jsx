@@ -256,8 +256,11 @@ const TicketsList = (props) => {
 		const shouldUpdateTicket = (ticket) => {
 			const statusMatch = !status || ticket.status === status;
 			const queueMatch = !selectedQueueIds?.length || !ticket.queueId || selectedQueueIds.indexOf(ticket.queueId) > -1;
+			const tagMatch = !selectedTagIds?.length || ticket.contact?.tags?.some((tag) => selectedTagIds.includes(tag.id));
+			const whatsappMatch = !selectedWhatsappIds?.length || selectedWhatsappIds.includes(ticket.whatsappId);
+			const userMatch = !selectedUserIds?.length || selectedUserIds.includes(ticket.userId);
 			const hasPermission = isAdmin || showAll || !ticket.userId || ticket.userId === user?.id;
-			return statusMatch && queueMatch && hasPermission;
+			return statusMatch && queueMatch && tagMatch && whatsappMatch && userMatch && hasPermission;
 	};
 
 	const handleTicket = (data) => {
@@ -313,7 +316,7 @@ const TicketsList = (props) => {
 				socket.off("contact", handleContact);
 			}
 		};
-	}, [status, showAll, user, selectedQueueIds, profile]);
+	}, [status, showAll, user, selectedQueueIds, selectedTagIds, selectedWhatsappIds, selectedUserIds, profile]);
 
 	useEffect(() => {
 		if (typeof updateCount === "function") {

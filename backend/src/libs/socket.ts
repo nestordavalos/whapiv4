@@ -19,6 +19,7 @@ let io: SocketIO;
 // Track active socket connections per user so a single disconnect
 // doesn't mark the user offline when other tabs are still connected
 const connections = new Map<number, number>();
+const socketTicketRooms = new Map<string, string>();
 
 export const initIO = (httpServer: Server): SocketIO => {
   io = new SocketIO(httpServer, {
@@ -58,24 +59,48 @@ export const initIO = (httpServer: Server): SocketIO => {
     const count = connections.get(userId) || 0;
     connections.set(userId, count + 1);
 
-    socket.onAny((event, ...args) => {
-      logger.info({ event, args }, "socket event");
+    socket.onAny(event => {
+      logger.debug({ event, socketId: socket.id, userId }, "socket event");
       updateActivity(user.id);
     });
 
     socket.on("joinChatBox", (ticketId: string) => {
-      logger.info("A client joined a ticket channel");
-      socket.join(ticketId);
+      const ticketRoom = String(ticketId);
+      const previousTicketRoom = socketTicketRooms.get(socket.id);
+
+      if (previousTicketRoom && previousTicketRoom !== ticketRoom) {
+        socket.leave(previousTicketRoom);
+      }
+
+      socketTicketRooms.set(socket.id, ticketRoom);
+      logger.debug({ ticketId: ticketRoom, userId }, "client joined ticket channel");
+      socket.join(ticketRoom);
+    });
+
+    socket.on("leaveChatBox", (ticketId: string) => {
+      const ticketRoom = String(ticketId);
+      socket.leave(ticketRoom);
+
+      if (socketTicketRooms.get(socket.id) === ticketRoom) {
+        socketTicketRooms.delete(socket.id);
+      }
+
+      logger.debug({ ticketId: ticketRoom, userId }, "client left ticket channel");
     });
 
     socket.on("joinNotification", () => {
-      logger.info("A client joined notification channel");
+      logger.debug({ userId }, "client joined notification channel");
       socket.join("notification");
     });
 
     socket.on("joinTickets", (status: string) => {
-      logger.info(`A client joined to ${status} tickets channel.`);
+      logger.debug({ status, userId }, "client joined tickets channel");
       socket.join(status);
+    });
+
+    socket.on("leaveTickets", (status: string) => {
+      logger.debug({ status, userId }, "client left tickets channel");
+      socket.leave(status);
     });
 
     socket.on("userStatus", async status => {
@@ -91,6 +116,7 @@ export const initIO = (httpServer: Server): SocketIO => {
     });
 
     socket.on("disconnect", async () => {
+      socketTicketRooms.delete(socket.id);
       const current = connections.get(userId) || 1;
       if (current <= 1) {
         connections.delete(userId);

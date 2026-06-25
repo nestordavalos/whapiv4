@@ -314,6 +314,7 @@ const TicketsList = (props) => {
 			if (status) {
 				socket.off("appMessage", handleAppMessage);
 				socket.off("contact", handleContact);
+				socket.emit("leaveTickets", status);
 			}
 		};
 	}, [status, showAll, user, selectedQueueIds, selectedTagIds, selectedWhatsappIds, selectedUserIds, profile]);

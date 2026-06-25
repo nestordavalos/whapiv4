@@ -151,7 +151,6 @@ const Ticket = () => {
       }
     };
 
-    socket.emit("joinChatBox", ticketId);
     socket.on("ticket", handleTicket);
     socket.on("contact", handleContact);
 

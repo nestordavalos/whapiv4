@@ -12,6 +12,7 @@ import CreateMessageService from "../MessageServices/CreateMessageService";
 import { getStorageService } from "../StorageServices/StorageService";
 import {
   getContactJid,
+  resolveLidFromPhone,
   sendMessageWithLidFallback
 } from "../../helpers/GetContactJid";
 
@@ -134,9 +135,21 @@ const SendWhatsAppMediaFromBase64 = async ({
   } catch (err) {
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      const chat = await wbot.getChatById(
-        getContactJid(ticket.contact.number, ticket.isGroup)
-      );
+      let chat;
+      const primaryJid = getContactJid(ticket.contact.number, ticket.isGroup);
+      try {
+        chat = await wbot.getChatById(primaryJid);
+      } catch {
+        if (!ticket.isGroup && !primaryJid.endsWith("@lid")) {
+          const lidNumber = await resolveLidFromPhone(
+            wbot,
+            ticket.contact.number
+          );
+          if (lidNumber) {
+            chat = await wbot.getChatById(`${lidNumber}@lid`);
+          }
+        }
+      }
       const [lastMessage] = await chat.fetchMessages({ limit: 1 });
       if (lastMessage && lastMessage.fromMe && lastMessage.hasMedia) {
         await ticket.update({

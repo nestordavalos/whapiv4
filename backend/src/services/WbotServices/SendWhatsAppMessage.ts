@@ -11,6 +11,7 @@ import { logger } from "../../utils/logger";
 import { getIO } from "../../libs/socket";
 import {
   getContactJid,
+  resolveLidFromPhone,
   sendMessageWithLidFallback
 } from "../../helpers/GetContactJid";
 
@@ -150,6 +151,7 @@ const SendWhatsAppMessage = async ({
         // don't retry — additional attempts won't help
         if (
           errMsg.includes("No LID for user") ||
+          errMsg.includes("Lid is missing in chat table") ||
           errMsg.includes("isNewsletter") ||
           errMsg.includes("commonGid")
         ) {
@@ -185,15 +187,17 @@ const SendWhatsAppMessage = async ({
     // Last resort: check if the message was actually delivered despite errors
     try {
       await delay(1000);
-      // Try both JID formats when verifying delivery
+      // Try the primary JID first, then the resolved LID if WhatsApp migrated it.
       let chat;
       const primaryJid = getContactJid(number, isGroup);
       try {
         chat = await wbot.getChatById(primaryJid);
       } catch {
-        // If @c.us failed, try @lid for verification
         if (!isGroup && !primaryJid.endsWith("@lid")) {
-          chat = await wbot.getChatById(`${number}@lid`);
+          const lidNumber = await resolveLidFromPhone(wbot, number);
+          if (lidNumber) {
+            chat = await wbot.getChatById(`${lidNumber}@lid`);
+          }
         }
       }
       if (chat) {

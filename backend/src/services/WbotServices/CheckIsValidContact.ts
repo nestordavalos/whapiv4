@@ -2,6 +2,10 @@ import AppError from "../../errors/AppError";
 import GetDefaultWhatsApp from "../../helpers/GetDefaultWhatsApp";
 import { getWbot } from "../../libs/wbot";
 import Whatsapp from "../../models/Whatsapp";
+import {
+  cacheLidPhoneMapping,
+  isLikelyLid
+} from "../../helpers/GetContactJid";
 
 const CheckIsValidContact = async (
   number: string,
@@ -21,9 +25,13 @@ const CheckIsValidContact = async (
   const wbot = getWbot(whatsapp.id);
 
   try {
-    const isValidNumber = await wbot.isRegisteredUser(`${number}@c.us`);
-    if (!isValidNumber) {
+    const validNumber: any = await wbot.getNumberId(`${number}@c.us`);
+    if (!validNumber) {
       throw new AppError("invalidNumber");
+    }
+
+    if (validNumber.server === "lid" || isLikelyLid(validNumber.user)) {
+      cacheLidPhoneMapping(validNumber.user, number);
     }
   } catch (err) {
     if (err.message === "invalidNumber") {

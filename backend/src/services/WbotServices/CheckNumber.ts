@@ -2,7 +2,10 @@ import GetDefaultWhatsApp from "../../helpers/GetDefaultWhatsApp";
 import { getWbot } from "../../libs/wbot";
 import Whatsapp from "../../models/Whatsapp";
 import AppError from "../../errors/AppError";
-import { isLikelyLid } from "../../helpers/GetContactJid";
+import {
+  cacheLidPhoneMapping,
+  isLikelyLid
+} from "../../helpers/GetContactJid";
 import { logger } from "../../utils/logger";
 
 const CheckContactNumber = async (
@@ -35,6 +38,7 @@ const CheckContactNumber = async (
     validNumber.server === "lid" ||
     isLikelyLid(validNumber.user)
   ) {
+    cacheLidPhoneMapping(validNumber.user, number);
     logger.info(
       `CheckContactNumber: getNumberId returned LID ${validNumber.user} for phone ${number}, using original number`
     );

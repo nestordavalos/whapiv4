@@ -768,6 +768,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     return () => {
       socket.off("connect", join);
       socket.off("appMessage", handleMessage);
+      socket.emit("leaveChatBox", ticketId);
     };
   }, [ticketId]);
 

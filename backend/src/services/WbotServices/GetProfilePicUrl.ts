@@ -13,6 +13,7 @@ const getErrorMessage = (err: unknown): string =>
 const isKnownWhatsAppWebProfilePicError = (message: string): boolean =>
   message.includes("isNewsletter") ||
   message.includes("No LID for user") ||
+  message.includes("Lid is missing in chat table") ||
   message.includes("commonGid");
 
 const getProfilePicUrlDirect = async (

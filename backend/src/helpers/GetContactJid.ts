@@ -12,6 +12,32 @@ const MAX_PHONE_NUMBER_LENGTH = 15;
  * Avoids repeated browser evaluate calls for the same LID.
  */
 const lidPhoneCache = new Map<string, string>();
+const phoneLidCache = new Map<string, string>();
+
+const jidUser = (value?: string | null): string | null => {
+  if (!value) return null;
+  return value.split("@")[0].replace(/\D/g, "");
+};
+
+export const cacheLidPhoneMapping = (
+  lidValue?: string | null,
+  phoneValue?: string | null
+): void => {
+  const lidNumber = jidUser(lidValue);
+  const phoneNumber = jidUser(phoneValue);
+
+  if (
+    !lidNumber ||
+    !phoneNumber ||
+    !isLikelyLid(lidNumber) ||
+    isLikelyLid(phoneNumber)
+  ) {
+    return;
+  }
+
+  lidPhoneCache.set(lidNumber, phoneNumber);
+  phoneLidCache.set(phoneNumber, lidNumber);
+};
 
 /**
  * Checks if a number string looks like a WhatsApp LID rather than a phone number.
@@ -192,8 +218,7 @@ export const resolvePhoneFromLid = async (
         logger.info(
           `Resolved LID ${lidNumber} → phone ${phone} (via ${result.strategy})`
         );
-        // Cache the result
-        lidPhoneCache.set(lidNumber, phone);
+        cacheLidPhoneMapping(lidNumber, phone);
         return phone;
       }
       logger.warn(
@@ -210,16 +235,90 @@ export const resolvePhoneFromLid = async (
   }
 };
 
+export const resolveLidFromPhone = async (
+  wbot: Client,
+  phoneNumber: string
+): Promise<string | null> => {
+  const normalizedPhone = jidUser(phoneNumber);
+  if (!normalizedPhone || isLikelyLid(normalizedPhone)) {
+    return null;
+  }
+
+  const cached = phoneLidCache.get(normalizedPhone);
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const mappings = await (wbot as any).getContactLidAndPhone([
+      `${normalizedPhone}@c.us`
+    ]);
+    const mapping = Array.isArray(mappings) ? mappings[0] : null;
+    if (mapping?.lid && mapping?.pn) {
+      cacheLidPhoneMapping(mapping.lid, mapping.pn);
+      const lidNumber = jidUser(mapping.lid);
+      if (lidNumber && isLikelyLid(lidNumber)) {
+        logger.info(
+          `Resolved phone ${normalizedPhone} → LID ${lidNumber} (via getContactLidAndPhone)`
+        );
+        return lidNumber;
+      }
+    }
+  } catch (err: any) {
+    logger.debug(
+      `getContactLidAndPhone failed for ${normalizedPhone}: ${err.message}`
+    );
+  }
+
+  try {
+    const result = await (wbot as any).pupPage.evaluate(
+      async (phone: string) => {
+        try {
+          const resolved = await (window as any).WWebJS
+            ?.enforceLidAndPnRetrieval(`${phone}@c.us`);
+          return {
+            lid: resolved?.lid?._serialized,
+            pn: resolved?.phone?._serialized
+          };
+        } catch {
+          return null;
+        }
+      },
+      normalizedPhone
+    );
+
+    if (result?.lid && result?.pn) {
+      cacheLidPhoneMapping(result.lid, result.pn);
+      const lidNumber = jidUser(result.lid);
+      if (lidNumber && isLikelyLid(lidNumber)) {
+        logger.info(
+          `Resolved phone ${normalizedPhone} → LID ${lidNumber} (via enforceLidAndPnRetrieval)`
+        );
+        return lidNumber;
+      }
+    }
+  } catch (err: any) {
+    logger.debug(
+      `Browser LID lookup failed for ${normalizedPhone}: ${err.message}`
+    );
+  }
+
+  return null;
+};
+
 /**
  * Returns the current LID→phone cache (useful for diagnostics).
  */
 export const getLidPhoneCache = (): Map<string, string> => lidPhoneCache;
+
+export const getPhoneLidCache = (): Map<string, string> => phoneLidCache;
 
 /**
  * Clears entries from the LID→phone cache.
  */
 export const clearLidPhoneCache = (): void => {
   lidPhoneCache.clear();
+  phoneLidCache.clear();
 };
 
 /**
@@ -287,15 +386,19 @@ export const sendMessageWithLidFallback = async (
       else if (primaryJid.endsWith("@lid")) {
         fallbackJids.push(`${number}@c.us`);
       }
-      // If @c.us failed with LID errors, try @lid
+      // If @c.us failed with LID errors, try the real LID mapped to this phone.
       else if (
         !primaryJid.endsWith("@lid") &&
         (errMsg.includes("No LID for user") ||
+          errMsg.includes("Lid is missing in chat table") ||
           errMsg.includes("isNewsletter") ||
           errMsg.includes("commonGid") ||
           errMsg.includes("returned empty result"))
       ) {
-        fallbackJids.push(`${number}@lid`);
+        const lidNumber = await resolveLidFromPhone(wbot, resolvedNumber);
+        if (lidNumber) {
+          fallbackJids.push(`${lidNumber}@lid`);
+        }
       }
 
       for (const fallbackJid of fallbackJids) {

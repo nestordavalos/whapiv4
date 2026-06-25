@@ -137,7 +137,8 @@ export const update = async (
 
   const { ticket } = await UpdateTicketService({
     ticketData,
-    ticketId
+    ticketId,
+    userId: req.user.id
   });
 
   if (ticketData.transf) {

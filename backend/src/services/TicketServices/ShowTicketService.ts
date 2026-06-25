@@ -67,9 +67,11 @@ const ShowTicketService = async (
     // Verificar si el usuario tiene permiso para ver este ticket
     const isAssignedToUser = ticket.userId === parseInt(requestUserId);
     const isInUserQueue = ticket.queueId && userQueueIds.includes(ticket.queueId);
-    const isPending = ticket.status === "pending";
+    const isPendingAllowed =
+      ticket.status === "pending" && (!ticket.queueId || isInUserQueue);
 
-    const hasPermission = canViewAll || isAssignedToUser || isInUserQueue || isPending;
+    const hasPermission =
+      canViewAll || isAssignedToUser || isInUserQueue || isPendingAllowed;
 
     if (!hasPermission) {
       throw new AppError("ERR_NO_PERMISSION", 403);

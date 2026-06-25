@@ -490,7 +490,7 @@ const TicketsManager = () => {
             <TicketsList
               handleChangeTab={handleChangeTab}
               status="pending"
-              showAll={true}
+              showAll={showAllTickets}
               selectedQueueIds={selectedQueueIds}
               selectedTagIds={selectedTags}
               selectedWhatsappIds={selectedWhatsappIds}
@@ -504,7 +504,7 @@ const TicketsManager = () => {
           <Paper className={classes.tabPanelContent}>
             <TicketsList
               status="closed"
-              showAll={true}
+              showAll={showAllTickets}
               selectedQueueIds={selectedQueueIds}
               selectedTagIds={selectedTags}
               selectedWhatsappIds={selectedWhatsappIds}
@@ -517,7 +517,7 @@ const TicketsManager = () => {
             <TicketsList
               searchParam={searchParam}
               tags={selectedTags}
-              showAll={true}
+              showAll={showAllTickets}
               selectedQueueIds={selectedQueueIds}
               selectedTagIds={selectedTags}
               selectedWhatsappIds={selectedWhatsappIds}

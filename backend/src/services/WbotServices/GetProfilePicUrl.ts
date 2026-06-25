@@ -19,32 +19,47 @@ const getProfilePicUrlDirect = async (
   wbot: any,
   contactId: string
 ): Promise<string | undefined> => {
-  return wbot.pupPage.evaluate(async (id: string) => {
+  return wbot.pupPage.evaluate((id: string) => {
     const win = window as any;
     const widFactory = win.require("WAWebWidFactory");
     const profilePicBridge = win.require("WAWebContactProfilePicThumbBridge");
     const collections = win.require("WAWebCollections");
     const wid = widFactory.createWid(id);
 
-    try {
-      const profilePic = await profilePicBridge.requestProfilePicFromServer(
-        wid
-      );
-      if (profilePic?.eurl) return profilePic.eurl;
-      if (profilePic?.img) return profilePic.img;
-    } catch (err) {
-      if (err?.name !== "ServerStatusCodeError") {
-        throw err;
-      }
-    }
+    const getUrl = (profilePic: any) => {
+      if (profilePic && profilePic.eurl) return profilePic.eurl;
+      if (profilePic && profilePic.img) return profilePic.img;
+      return undefined;
+    };
 
-    const profilePicThumb =
-      collections.ProfilePicThumb.get(id) ||
-      collections.ProfilePicThumb.get(wid) ||
-      (await collections.ProfilePicThumb.find(wid).catch(() => undefined)) ||
-      (await collections.ProfilePicThumb.find(id).catch(() => undefined));
+    const findProfilePicThumb = () => {
+      const cachedThumb =
+        collections.ProfilePicThumb.get(id) ||
+        collections.ProfilePicThumb.get(wid);
+      const cachedUrl = getUrl(cachedThumb);
+      if (cachedUrl) return Promise.resolve(cachedUrl);
 
-    return profilePicThumb?.eurl || profilePicThumb?.img || undefined;
+      return collections.ProfilePicThumb.find(wid)
+        .catch(() => undefined)
+        .then((thumbByWid: any) => {
+          const thumbByWidUrl = getUrl(thumbByWid);
+          if (thumbByWidUrl) return thumbByWidUrl;
+
+          return collections.ProfilePicThumb.find(id)
+            .catch(() => undefined)
+            .then((thumbById: any) => getUrl(thumbById));
+        });
+    };
+
+    return profilePicBridge
+      .requestProfilePicFromServer(wid)
+      .then((profilePic: any) => getUrl(profilePic) || findProfilePicThumb())
+      .catch((err: any) => {
+        if (err && err.name !== "ServerStatusCodeError") {
+          throw err;
+        }
+        return findProfilePicThumb();
+      });
   }, contactId);
 };
 

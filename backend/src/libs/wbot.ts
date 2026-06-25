@@ -48,7 +48,9 @@ const sessions: Session[] = [];
 
 const getChatLabel = (chat: any): string => {
   if (typeof chat?.id === "string") return chat.id;
-  if (typeof chat?.id?.toString === "function") return chat.id.toString();
+  if (chat?.id?.user && chat?.id?.server) {
+    return `${chat.id.user}@${chat.id.server}`;
+  }
   return chat?.name || "unknown";
 };
 

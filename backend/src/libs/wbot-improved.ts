@@ -249,7 +249,7 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
       authStrategy: new LocalAuth({ clientId: `bd_${whatsapp.id}` }),
       restartOnAuthFail: false,
       puppeteer: getPuppeteerConfig()
-    });
+    } as any);
 
     // Timeout de inicialización
     const initializationTimeout = setTimeout(() => {

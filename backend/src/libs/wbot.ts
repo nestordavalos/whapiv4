@@ -46,16 +46,33 @@ interface Session extends Client {
 
 const sessions: Session[] = [];
 
+const getChatLabel = (chat: any): string => {
+  if (typeof chat?.id === "string") return chat.id;
+  if (typeof chat?.id?.toString === "function") return chat.id.toString();
+  return chat?.name || "unknown";
+};
+
 // eslint-disable-next-line no-restricted-syntax
 const syncUnreadMessages = async (wbot: Session) => {
   const chats = await wbot.getChats();
   // eslint-disable-next-line no-restricted-syntax
   for (const chat of chats) {
     if (chat.unreadCount > 0) {
-      // eslint-disable-next-line no-await-in-loop
-      const unreadMessages = await chat.fetchMessages({
-        limit: chat.unreadCount
-      });
+      let unreadMessages;
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        unreadMessages = await chat.fetchMessages({
+          limit: chat.unreadCount
+        });
+      } catch (err: any) {
+        logger.warn(
+          `[wbot] No se pudieron sincronizar mensajes no leídos de ${getChatLabel(
+            chat
+          )}: ${err.message}`
+        );
+        // eslint-disable-next-line no-continue
+        continue;
+      }
 
       const ids = unreadMessages.map(msg => msg.id.id);
       // eslint-disable-next-line no-await-in-loop
@@ -188,7 +205,7 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
           ignoreDefaultArgs: ["--disable-automation"],
           executablePath: process.env.CHROME_BIN || undefined
         }
-      });
+      } as any);
 
       wbot.on("qr", async qr => {
         try {
@@ -279,7 +296,13 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
           }
 
           wbot.sendPresenceAvailable();
-          await syncUnreadMessages(wbot);
+          try {
+            await syncUnreadMessages(wbot);
+          } catch (syncErr: any) {
+            logger.warn(
+              `[wbot] Sincronización inicial de no leídos falló para ${sessionName} (no crítico): ${syncErr.message}`
+            );
+          }
 
           // � Auto-fix contactos con números LID en background
           // Se ejecuta sin await para no bloquear la inicialización
@@ -297,7 +320,9 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
                 );
               }
             } catch (fixErr) {
-              logger.warn(`[wbot] Auto-fix LID falló (no crítico): ${fixErr.message}`);
+              logger.warn(
+                `[wbot] Auto-fix LID falló (no crítico): ${fixErr.message}`
+              );
             }
           }, 15000); // Esperar 15s para que Store esté completamente cargado
 
@@ -307,7 +332,7 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
               // Verificar si el cliente aún existe y está inicializado
               if (!wbot.pupPage || wbot.pupPage.isClosed()) {
                 logger.warn(
-                  `[wbot] Página cerrada, limpiando intervalo de ping`
+                  "[wbot] Página cerrada, limpiando intervalo de ping"
                 );
                 if (wbot.pingInterval) clearInterval(wbot.pingInterval);
                 return;
@@ -324,7 +349,7 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
                 pingErr.message.includes("Session closed")
               ) {
                 logger.warn(
-                  `[wbot] Sesión cerrada detectada, limpiando intervalo de ping`
+                  "[wbot] Sesión cerrada detectada, limpiando intervalo de ping"
                 );
                 if (wbot.pingInterval) clearInterval(wbot.pingInterval);
                 return;

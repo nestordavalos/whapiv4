@@ -183,7 +183,8 @@ export default async function DashboardDataService(
         "Invalid date format. Expected YYYY-MM-DD for date_from and date_to."
       );
     }
-    where += ` and date(tt.createdAt) between ? and ?`;
+    where +=
+      " and tt.createdAt >= ? and tt.createdAt < date_add(?, interval 1 day)";
     replacements.push(`${params.date_from}`);
     replacements.push(`${params.date_to}`);
   }

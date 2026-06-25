@@ -31,32 +31,32 @@ const CreateMessageService = async ({
     defaults: messageData
   });
 
-  // Recargar las asociaciones necesarias
-  await message.reload({
-    include: [
-      "contact",
-      {
-        model: Ticket,
-        as: "ticket",
-        include: [
-          "contact",
-          "queue",
-          {
-            model: Whatsapp,
-            as: "whatsapp",
-            attributes: ["name"]
-          }
-        ]
-      },
-      {
-        model: Message,
-        as: "quotedMsg",
-        include: ["contact"]
-      }
-    ]
-  });
-
   if (created) {
+    // Recargar asociaciones solo cuando se emitirá el evento.
+    await message.reload({
+      include: [
+        "contact",
+        {
+          model: Ticket,
+          as: "ticket",
+          include: [
+            "contact",
+            "queue",
+            {
+              model: Whatsapp,
+              as: "whatsapp",
+              attributes: ["name"]
+            }
+          ]
+        },
+        {
+          model: Message,
+          as: "quotedMsg",
+          include: ["contact"]
+        }
+      ]
+    });
+
     const io = getIO();
     logger.info(
       `[CreateMessage] Emitiendo socket para mensaje ${message.id} en ticket ${message.ticketId} (status: ${message.ticket.status})`

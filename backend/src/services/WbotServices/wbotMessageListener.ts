@@ -53,7 +53,6 @@ import { getStorageService } from "../StorageServices/StorageService";
 import {
   isLikelyLid,
   resolvePhoneFromLid,
-  getContactJid,
   sendMessageWithLidFallback
 } from "../../helpers/GetContactJid";
 import GetProfilePicUrl from "./GetProfilePicUrl";
@@ -61,6 +60,8 @@ import GetProfilePicUrl from "./GetProfilePicUrl";
 interface Session extends Client {
   id?: number;
 }
+
+type WhatsappConnection = Awaited<ReturnType<typeof ShowWhatsAppService>>;
 
 const verifyContact = async (
   msgContact: WbotContact,
@@ -104,8 +105,7 @@ const verifyContact = async (
         contactNumber = resolved;
       } else {
         logger.warn(
-          `[verifyContact] Could not resolve phone for LID ${contactNumber}. ` +
-            `Contact will be stored with LID number temporarily.`
+          `[verifyContact] Could not resolve phone for LID ${contactNumber}. Contact will be stored with LID number temporarily.`
         );
         // Keep the LID as number — the bulk fix endpoint can correct it later
       }
@@ -380,9 +380,10 @@ const verifyQueue = async (
   wbot: Session,
   msg: WbotMessage,
   ticket: Ticket,
-  contact: Contact
+  contact: Contact,
+  whatsappConnection?: WhatsappConnection
 ) => {
-  const whatsapp = await ShowWhatsAppService(wbot.id!);
+  const whatsapp = whatsappConnection || (await ShowWhatsAppService(wbot.id!));
   const queues: Queue[] = whatsapp.queues || [];
   const { greetingMessage, isDisplay } = whatsapp;
 
@@ -485,7 +486,6 @@ const verifyQueue = async (
   const now = new Date();
   const scheduleStatus = evaluateSchedule(now, schedules[now.getDay()]);
   const currentSeconds = secondsFromDate(now);
-  const remoteJid = getContactJid(contact.number, ticket.isGroup);
 
   const sendDebouncedText = (body: string) => {
     const debouncedSentMessage = debounce(
@@ -753,9 +753,9 @@ const handleMessage = async (
     );
     return;
   }
-  const showMessageGroupConnection = await ShowWhatsAppService(wbot.id!);
+  const whatsapp = await ShowWhatsAppService(wbot.id!);
 
-  const selfJid = `${showMessageGroupConnection.number}@c.us`;
+  const selfJid = `${whatsapp.number}@c.us`;
   if (msg.from === selfJid && msg.to === selfJid) {
     logger.debug(
       `[handleMessage] Mensaje ${msg.id.id} ignorado - es mensaje a sí mismo`
@@ -767,11 +767,8 @@ const handleMessage = async (
   const Settingdb = await Settings.findOne({
     where: { key: "CheckMsgIsGroup" }
   });
-  if (showMessageGroupConnection.isGroup) {
-  } else if (
-    Settingdb?.value === "enabled" ||
-    !showMessageGroupConnection.isGroup
-  ) {
+  if (whatsapp.isGroup) {
+  } else if (Settingdb?.value === "enabled" || !whatsapp.isGroup) {
     const chat = await msg.getChat();
 
     // Log detallado para debug
@@ -856,8 +853,6 @@ const handleMessage = async (
 
       groupContact = await verifyContact(msgGroupContact, wbot.id, wbot);
     }
-    const whatsapp = await ShowWhatsAppService(wbot.id!);
-
     const unreadMessages = msg.fromMe ? 0 : chat.unreadCount;
 
     const contact = await verifyContact(msgContact, wbot.id, wbot);
@@ -1072,7 +1067,7 @@ const handleMessage = async (
       !ticket.userId &&
       whatsapp.queues.length >= 1
     ) {
-      await verifyQueue(wbot, msg, ticket, contact);
+      await verifyQueue(wbot, msg, ticket, contact, whatsapp);
       // Reload ticket to get updated status after queue assignment
       await ticket.reload();
       // If a queue was assigned during verifyQueue, stop processing

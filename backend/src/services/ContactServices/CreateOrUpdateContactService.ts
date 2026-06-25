@@ -1,6 +1,6 @@
 import { getIO } from "../../libs/socket";
 import Contact from "../../models/Contact";
-import { 
+import {
   sendContactCreatedWebhook,
   sendContactUpdatedWebhook
 } from "../WebhookService/SendWebhookEvent";
@@ -40,32 +40,37 @@ const CreateOrUpdateContactService = async ({
   if (contact) {
     // Don't overwrite a real avatar URL with the default placeholder
     const isDefaultPic = profilePicUrl === "/default-profile.png";
-    const hasRealPic = contact.profilePicUrl && contact.profilePicUrl !== "/default-profile.png";
-    const updatePic = isDefaultPic && hasRealPic ? contact.profilePicUrl : profilePicUrl;
-    contact.update({ profilePicUrl: updatePic });
+    const hasRealPic =
+      contact.profilePicUrl && contact.profilePicUrl !== "/default-profile.png";
+    const updatePic =
+      isDefaultPic && hasRealPic ? contact.profilePicUrl : profilePicUrl;
 
-    io.emit("contact", {
-      action: "update",
-      contact
-    });
+    if (updatePic !== undefined && updatePic !== contact.profilePicUrl) {
+      await contact.update({ profilePicUrl: updatePic });
 
-    // Enviar webhook de contacto actualizado
-    if (whatsappId) {
-      try {
-        await sendContactUpdatedWebhook(whatsappId, {
-          contactId: contact.id,
-          name: contact.name,
-          number: contact.number,
-          email: contact.email,
-          isGroup: contact.isGroup,
-          profilePicUrl: contact.profilePicUrl,
-          updatedAt: new Date(),
-          changes: {
-            profilePicUrl: true
-          }
-        });
-      } catch (err) {
-        logger.error("Error sending contact_updated webhook:", err);
+      io.emit("contact", {
+        action: "update",
+        contact
+      });
+
+      // Enviar webhook de contacto actualizado
+      if (whatsappId) {
+        try {
+          await sendContactUpdatedWebhook(whatsappId, {
+            contactId: contact.id,
+            name: contact.name,
+            number: contact.number,
+            email: contact.email,
+            isGroup: contact.isGroup,
+            profilePicUrl: contact.profilePicUrl,
+            updatedAt: new Date(),
+            changes: {
+              profilePicUrl: true
+            }
+          });
+        } catch (err) {
+          logger.error("Error sending contact_updated webhook:", err);
+        }
       }
     }
   } else {

@@ -213,9 +213,6 @@ const ListTicketsService = async ({
   }
 
   if (withUnreadMessages === "true") {
-    const user = await ShowUserService(userId);
-    const userQueueIds = user.queues.map(queue => queue.id);
-
     whereCondition = {
       [Op.or]: [{ userId }, { status: "pending" }],
       queueId: { [Op.or]: [userQueueIds, null] },
@@ -226,12 +223,14 @@ const ListTicketsService = async ({
   const limit = 100;
   const offset = limit * (+pageNumber - 1);
 
-  const listSettingsService = await ListSettingsServiceOne({ key: "ASC" });
+  const [listSettingsService, listSettingsService2] = await Promise.all([
+    ListSettingsServiceOne({ key: "ASC" }),
+    ListSettingsServiceOne({ key: "created" })
+  ]);
   let settingASC = listSettingsService?.value;
 
   settingASC = settingASC === "enabled" ? "ASC" : "DESC";
 
-  const listSettingsService2 = await ListSettingsServiceOne({ key: "created" });
   let settingCreated = listSettingsService2?.value;
 
   settingCreated = settingCreated === "enabled" ? "createdAt" : "updatedAt";
@@ -249,7 +248,7 @@ const ListTicketsService = async ({
 
   // Determinar hasMore basándose en si obtuvimos más de 'limit' tickets
   const hasMore = tickets.length > limit;
-  
+
   // Si hay más, remover el ticket extra
   if (hasMore) {
     tickets.pop();
@@ -263,9 +262,10 @@ const ListTicketsService = async ({
     if (!searchParam) {
       count = await Ticket.count({
         where: whereCondition,
-        include: includeCondition.filter(inc => 
-          // Excluir Message include del count para hacerlo más rápido
-          !(inc as any).model || (inc as any).model.name !== 'Message'
+        include: includeCondition.filter(
+          inc =>
+            // Excluir Message include del count para hacerlo más rápido
+            !(inc as any).model || (inc as any).model.name !== "Message"
         ),
         distinct: true
       });

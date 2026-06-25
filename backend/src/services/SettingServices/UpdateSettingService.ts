@@ -1,5 +1,6 @@
 import AppError from "../../errors/AppError";
 import Setting from "../../models/Setting";
+import { invalidateSettingCache } from "./ListSettingsServiceOne";
 
 interface Request {
   key: string;
@@ -19,6 +20,7 @@ const UpdateSettingService = async ({
   }
 
   await setting.update({ value });
+  invalidateSettingCache(key);
 
   return setting;
 };

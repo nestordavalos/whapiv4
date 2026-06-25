@@ -36,7 +36,7 @@ const ListMessagesService = async ({
 
   // Optimized: Use subquery instead of separate query + IN clause
   // This reduces database round trips and is more efficient
-  const { count, rows: messages } = await Message.findAndCountAll({
+  const messages = await Message.findAll({
     where: {
       ticketId: {
         [Op.in]: Sequelize.literal(`(
@@ -46,7 +46,7 @@ const ListMessagesService = async ({
         )`)
       }
     },
-    limit,
+    limit: limit + 1,
     include: [
       "contact",
       "ticket",
@@ -64,11 +64,15 @@ const ListMessagesService = async ({
     order: [["createdAt", "DESC"]]
   });
 
-  const hasMore = count > offset + messages.length;
+  const hasMore = messages.length > limit;
+  if (hasMore) {
+    messages.pop();
+  }
+
   return {
     messages: messages.reverse(),
     ticket,
-    count,
+    count: offset + messages.length + (hasMore ? 1 : 0),
     hasMore
   };
 };

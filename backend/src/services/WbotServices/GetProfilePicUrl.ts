@@ -29,6 +29,8 @@ const getProfilePicUrlDirect = async (
     const getUrl = (profilePic: any) => {
       if (profilePic && profilePic.eurl) return profilePic.eurl;
       if (profilePic && profilePic.img) return profilePic.img;
+      if (profilePic?.attributes?.eurl) return profilePic.attributes.eurl;
+      if (profilePic?.attributes?.img) return profilePic.attributes.img;
       return undefined;
     };
 
@@ -51,15 +53,37 @@ const getProfilePicUrlDirect = async (
         });
     };
 
-    return profilePicBridge
-      .requestProfilePicFromServer(wid)
-      .then((profilePic: any) => getUrl(profilePic) || findProfilePicThumb())
-      .catch((err: any) => {
-        if (err && err.name !== "ServerStatusCodeError") {
-          throw err;
-        }
-        return findProfilePicThumb();
-      });
+    const findChatOrContactModel = () => {
+      const cachedModel =
+        collections.Chat.get(wid) ||
+        collections.Chat.get(id) ||
+        collections.Contact.get(wid) ||
+        collections.Contact.get(id);
+
+      if (cachedModel) return Promise.resolve(cachedModel);
+
+      return collections.Chat.find(wid)
+        .catch(() => undefined)
+        .then((chatModel: any) => {
+          if (chatModel) return chatModel;
+
+          return collections.Contact.find(wid).catch(() => undefined);
+        });
+    };
+
+    return findChatOrContactModel()
+      .then((model: any) => {
+        if (!model) return findProfilePicThumb();
+
+        return profilePicBridge
+          .requestProfilePicFromServer(model)
+          .then((profilePic: any) => getUrl(profilePic))
+          .catch(() => undefined)
+          .then((profilePicUrl: string | undefined) => {
+            return profilePicUrl || findProfilePicThumb();
+          });
+      })
+      .catch(() => findProfilePicThumb());
   }, contactId);
 };
 

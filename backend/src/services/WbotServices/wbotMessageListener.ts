@@ -72,7 +72,11 @@ const verifyContact = async (
     // Use our multi-strategy GetProfilePicUrl that handles LID contacts
     // Pass isGroup so groups use @g.us instead of @c.us
     const contactNumber = msgContact.id.user;
-    profilePicUrl = await GetProfilePicUrl(contactNumber, whatsappId, msgContact.isGroup);
+    profilePicUrl = await GetProfilePicUrl(
+      contactNumber,
+      whatsappId,
+      msgContact.isGroup
+    );
   } catch {
     profilePicUrl = "/default-profile.png";
   }
@@ -1214,14 +1218,28 @@ const handleMessage = async (
       }
     }
 
-    // Fetch avatar AFTER resolving the real phone number
+    const remoteJidForAvatar = msg.fromMe ? msg.to : msg.from;
+    const remoteLidNumber =
+      !msgContact.isGroup && remoteJidForAvatar?.endsWith("@lid")
+        ? remoteJidForAvatar.split("@")[0]
+        : undefined;
+
+    // Fetch avatar using the original chat id when WhatsApp gives us a LID.
+    // The contact is stored with the resolved phone number below.
+    const avatarLookupNumber =
+      remoteLidNumber || (isMsgContactLid ? msgContact.id.user : finalNumber);
     let profilePicUrl: string | undefined;
     try {
       // Use our multi-strategy GetProfilePicUrl that handles LID contacts
-      profilePicUrl = await GetProfilePicUrl(finalNumber, wbot.id, msgContact.isGroup);
+      profilePicUrl = await GetProfilePicUrl(
+        avatarLookupNumber,
+        wbot.id,
+        msgContact.isGroup
+      );
     } catch (err) {
       logger.warn(
-        `Could not get profile pic for ${finalNumber} (original: ${msgContact.id.user}): ${err.message}`
+        `Could not get profile pic for ${finalNumber} ` +
+          `(avatar lookup: ${avatarLookupNumber}): ${err.message}`
       );
       profilePicUrl = "/default-profile.png";
     }

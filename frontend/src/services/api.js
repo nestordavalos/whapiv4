@@ -6,4 +6,13 @@ const api = axios.create({
   withCredentials: true,
 });
 
+try {
+  const storedToken = localStorage.getItem("token");
+  if (storedToken) {
+    api.defaults.headers.Authorization = `Bearer ${JSON.parse(storedToken)}`;
+  }
+} catch {
+  localStorage.removeItem("token");
+}
+
 export default api;

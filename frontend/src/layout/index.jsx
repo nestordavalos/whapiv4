@@ -234,7 +234,7 @@ const LoggedInLayout = ({ children }) => {
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { handleLogout, loading } = useContext(AuthContext);
+  const { handleLogout, loading, isAuth } = useContext(AuthContext);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerVariant, setDrawerVariant] = useState("permanent");
   const { user } = useContext(AuthContext);
@@ -242,7 +242,7 @@ const LoggedInLayout = ({ children }) => {
   useEffect(() => {
     let isMounted = true;
 
-    if (document.body.offsetWidth > 600) {
+    if (!loading && isAuth && document.body.offsetWidth > 600) {
       const fetchDrawerState = async () => {
         try {
           const { data } = await api.get("/settings");
@@ -257,7 +257,9 @@ const LoggedInLayout = ({ children }) => {
           if (isMounted) {
             setDrawerOpen(true);
           }
-          toastError(err);
+          if (err?.response?.status !== 401) {
+            toastError(err);
+          }
         }
       };
       fetchDrawerState();
@@ -266,7 +268,7 @@ const LoggedInLayout = ({ children }) => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [loading, isAuth]);
 
   useEffect(() => {
     if (document.body.offsetWidth < 600) {

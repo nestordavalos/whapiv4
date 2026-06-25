@@ -461,6 +461,12 @@ const App = () => {
   useEffect(() => {
 
     const fetchDarkMode = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setTheme("light");
+        return;
+      }
+
       try {
         const { data } = await api.get("/settings");
         const settingIndex = data.filter(s => s.key === 'darkMode');
@@ -473,7 +479,9 @@ const App = () => {
 
       } catch (err) {
         setTheme("light")
-        toastError(err);
+        if (err?.response?.status !== 401) {
+          toastError(err);
+        }
       }
     };
 

@@ -8,6 +8,10 @@ import GetTicketWbot from "../../helpers/GetTicketWbot";
 import { handleMessage } from "../WbotServices/wbotMessageListener";
 import { logger } from "../../utils/logger";
 import { getContactJid } from "../../helpers/GetContactJid";
+import {
+  getFirstErrorLine,
+  isFetchMessagesStoreError
+} from "../../helpers/WhatsAppWebErrors";
 
 interface Request {
   ticketId: string;
@@ -51,13 +55,39 @@ const SyncMessagesService = async ({
   todayStart.setHours(0, 0, 0, 0);
   const todayStartTimestamp = Math.floor(todayStart.getTime() / 1000);
 
-  // Obtener el chat y los mensajes de WhatsApp
-  const wbotChat = await wbot.getChatById(chatId);
+  let wbotMessages: WbotMessage[];
 
-  // Cargar mensajes del chat (límite reducido para evitar saturación)
-  const wbotMessages: WbotMessage[] = await wbotChat.fetchMessages({
-    limit
-  });
+  try {
+    // Obtener el chat y los mensajes de WhatsApp
+    const wbotChat = await wbot.getChatById(chatId);
+
+    // Cargar mensajes del chat (límite reducido para evitar saturación)
+    wbotMessages = await wbotChat.fetchMessages({
+      limit
+    });
+  } catch (err) {
+    if (!isFetchMessagesStoreError(err)) {
+      throw err;
+    }
+
+    logger.warn(
+      {
+        ticketId: ticket.id,
+        whatsappId: ticket.whatsappId,
+        chatId,
+        error: getFirstErrorLine(err)
+      },
+      "[SyncMessages] WhatsApp Web no pudo exponer el historial del chat"
+    );
+
+    return {
+      synced: 0,
+      total: 0,
+      todayOnly: true,
+      message:
+        "WhatsApp Web no permitio leer el historial en este momento. El envio de mensajes puede continuar."
+    };
+  }
 
   // Filtrar solo mensajes de hoy
   const todayMessages = wbotMessages.filter(

@@ -15,9 +15,12 @@ import {
   resolveLidFromPhone,
   sendMessageWithLidFallback
 } from "../../helpers/GetContactJid";
+import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
 
 const MAX_SEND_ATTEMPTS = 3;
 const BASE_BACKOFF_MS = 500;
+const STORED_MESSAGE_CHECK_ATTEMPTS = 8;
+const STORED_MESSAGE_CHECK_DELAY_MS = 750;
 const failureTracker = new Map<number, { count: number; lastError: string }>();
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -36,6 +39,29 @@ const buildSentMessageFromStoredMessage = (
     hasMedia: false,
     ack: message.ack
   } as unknown as WbotMessage);
+
+const findStoredSentMessage = async (
+  ticketId: number,
+  formattedBody: string,
+  sendStartedAt: Date
+): Promise<Message | null> => {
+  const storedMessage = await Message.findOne({
+    where: {
+      ticketId,
+      fromMe: true,
+      body: formattedBody,
+      mediaUrl: null,
+      createdAt: { [Op.gte]: sendStartedAt }
+    },
+    order: [["createdAt", "DESC"]]
+  });
+
+  if (storedMessage && storedMessage.ack > 0) {
+    return storedMessage;
+  }
+
+  return null;
+};
 
 const errorToString = (error: unknown): string => {
   if (error instanceof Error) {
@@ -218,18 +244,24 @@ const SendWhatsAppMessage = async ({
     return await attemptSend();
   } catch (err) {
     try {
-      await delay(1000);
+      let storedSentMessage: Message | null = null;
 
-      const storedSentMessage = await Message.findOne({
-        where: {
-          ticketId: ticket.id,
-          fromMe: true,
-          body: formattedBody,
-          mediaUrl: null,
-          createdAt: { [Op.gte]: sendStartedAt }
-        },
-        order: [["createdAt", "DESC"]]
-      });
+      for (
+        let attempt = 1;
+        attempt <= STORED_MESSAGE_CHECK_ATTEMPTS;
+        attempt += 1
+      ) {
+        await delay(STORED_MESSAGE_CHECK_DELAY_MS);
+        storedSentMessage = await findStoredSentMessage(
+          ticket.id,
+          formattedBody,
+          sendStartedAt
+        );
+
+        if (storedSentMessage) {
+          break;
+        }
+      }
 
       if (storedSentMessage) {
         logger.warn(
@@ -237,9 +269,10 @@ const SendWhatsAppMessage = async ({
             ticketId: ticket.id,
             whatsappId,
             messageId: storedSentMessage.id,
+            ack: storedSentMessage.ack,
             err
           },
-          "WhatsApp text send reported an error, but outgoing message was stored"
+          "WhatsApp text send reported an error, but outgoing message was acknowledged"
         );
 
         await ticket.update({ lastMessage: body });
@@ -271,7 +304,22 @@ const SendWhatsAppMessage = async ({
         }
       }
       if (chat) {
-        const [lastMessage] = await chat.fetchMessages({ limit: 1 });
+        let lastMessage: WbotMessage | undefined;
+
+        try {
+          [lastMessage] = await chat.fetchMessages({ limit: 1 });
+        } catch (fetchErr) {
+          if (isFetchMessagesStoreError(fetchErr)) {
+            logger.warn(
+              `WhatsApp text send verification could not read chat history for ticket ${
+                ticket.id
+              } (whatsapp ${whatsappId}): ${errorToString(fetchErr)}`
+            );
+          } else {
+            throw fetchErr;
+          }
+        }
+
         if (
           lastMessage &&
           lastMessage.fromMe &&

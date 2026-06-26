@@ -309,6 +309,25 @@ export const resolveLidFromPhone = async (
   }
 
   try {
+    const validNumber = await (wbot as any).getNumberId(
+      `${normalizedPhone}@c.us`
+    );
+
+    if (
+      validNumber &&
+      (validNumber.server === "lid" || isLikelyLid(validNumber.user))
+    ) {
+      cacheLidPhoneMapping(validNumber.user, normalizedPhone);
+      logger.info(
+        `Resolved phone ${normalizedPhone} → LID ${validNumber.user} (via getNumberId)`
+      );
+      return validNumber.user;
+    }
+  } catch (err: any) {
+    logger.debug(`getNumberId failed for ${normalizedPhone}: ${err.message}`);
+  }
+
+  try {
     const mappings = await (wbot as any).getContactLidAndPhone([
       `${normalizedPhone}@c.us`
     ]);

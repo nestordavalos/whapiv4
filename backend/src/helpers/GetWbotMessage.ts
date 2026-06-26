@@ -3,6 +3,8 @@ import AppError from "../errors/AppError";
 import Ticket from "../models/Ticket";
 import GetTicketWbot from "./GetTicketWbot";
 import { logger } from "../utils/logger";
+import { getContactJid } from "./GetContactJid";
+import { getFirstErrorLine } from "./WhatsAppWebErrors";
 
 const getErrorMessage = (err: unknown): string => {
   if (err instanceof Error) return err.message.split("\n")[0];
@@ -14,9 +16,7 @@ export const GetWbotMessage = async (
   messageId: string
 ): Promise<WbotMessage> => {
   const wbot = await GetTicketWbot(ticket);
-  const targetChatId = `${ticket.contact.number}@${
-    ticket.isGroup ? "g" : "c"
-  }.us`;
+  const targetChatId = getContactJid(ticket.contact.number, ticket.isGroup);
 
   const wbotChat = await wbot.getChatById(targetChatId);
 
@@ -49,7 +49,7 @@ export const GetWbotMessage = async (
           ...logContext,
           limit,
           maxLimit,
-          error: getErrorMessage(fetchError)
+          error: getFirstErrorLine(fetchError)
         },
         "[GetWbotMessage] Error fetching messages"
       );

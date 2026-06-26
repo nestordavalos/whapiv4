@@ -13,6 +13,7 @@ import {
   resolveLidFromPhone,
   sendMessageWithLidFallback
 } from "../../helpers/GetContactJid";
+import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
 
 interface Request {
   media: Express.Multer.File;
@@ -78,7 +79,20 @@ const SendWhatsAppMedia = async ({
           }
         }
       }
-      const [lastMessage] = await chat.fetchMessages({ limit: 1 });
+      let lastMessage: WbotMessage | undefined;
+
+      try {
+        [lastMessage] = await chat.fetchMessages({ limit: 1 });
+      } catch (fetchErr) {
+        if (isFetchMessagesStoreError(fetchErr)) {
+          logger.warn(
+            `WhatsApp media send verification could not read chat history for ticket ${ticket.id}: ${fetchErr}`
+          );
+        } else {
+          throw fetchErr;
+        }
+      }
+
       if (lastMessage && lastMessage.fromMe && lastMessage.hasMedia) {
         await ticket.update({ lastMessage: body || media.filename });
         // NO borrar el archivo - se necesita para mostrarlo en el panel

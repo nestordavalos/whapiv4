@@ -13,6 +13,7 @@ import {
   resolveLidFromPhone,
   sendMessageWithLidFallback
 } from "../../helpers/GetContactJid";
+import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
 
 interface Request {
   mediaUrl: string;
@@ -86,7 +87,20 @@ const SendWhatsAppMediaFromUrl = async ({
           }
         }
       }
-      const [lastMessage] = await chat.fetchMessages({ limit: 1 });
+      let lastMessage: WbotMessage | undefined;
+
+      try {
+        [lastMessage] = await chat.fetchMessages({ limit: 1 });
+      } catch (fetchErr) {
+        if (isFetchMessagesStoreError(fetchErr)) {
+          logger.warn(
+            `WhatsApp URL media send verification could not read chat history for ticket ${ticket.id}: ${fetchErr}`
+          );
+        } else {
+          throw fetchErr;
+        }
+      }
+
       if (lastMessage && lastMessage.fromMe && lastMessage.hasMedia) {
         await ticket.update({
           lastMessage: body || filename || "Media from URL"

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import path from "path";
 import fs from "fs/promises";
 import { getWbot, removeWbot } from "../libs/wbot";
+import { getIO } from "../libs/socket";
 import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
 import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
 import UpdateWhatsAppService from "../services/WhatsappService/UpdateWhatsAppService";
@@ -10,15 +11,113 @@ import {
   getSyncConfigForWhatsApp
 } from "../services/WbotServices/MessageSyncService";
 import { logger } from "../utils/logger";
+import Whatsapp from "../models/Whatsapp";
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+const getSessionPath = (whatsappId: number): string =>
+  path.resolve(__dirname, `../../.wwebjs_auth/session-bd_${whatsappId}`);
+
+const wait = (ms: number): Promise<void> =>
+  new Promise(resolve => setTimeout(resolve, ms));
+
+const cleanupSessionResources = async (
+  whatsapp: Whatsapp,
+  options: { deleteAuthFiles?: boolean } = {}
+): Promise<void> => {
+  const { deleteAuthFiles = false } = options;
+
+  try {
+    const wbot = getWbot(whatsapp.id);
+
+    if (wbot.pingInterval) {
+      clearInterval(wbot.pingInterval);
+      wbot.pingInterval = undefined;
+    }
+    if (wbot.lidFixInterval) {
+      clearInterval(wbot.lidFixInterval);
+      wbot.lidFixInterval = undefined;
+    }
+
+    try {
+      await Promise.race([
+        wbot.destroy(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Destroy timeout")), 10000)
+        )
+      ]);
+    } catch (destroyError) {
+      logger.warn(
+        { whatsappId: whatsapp.id, err: destroyError },
+        "[WhatsAppSession] Error/timeout destruyendo cliente"
+      );
+    }
+  } catch (error) {
+    logger.debug(
+      { whatsappId: whatsapp.id, err: error },
+      "[WhatsAppSession] No había cliente activo para limpiar"
+    );
+  }
+
+  try {
+    removeWbot(whatsapp.id);
+  } catch (removeError) {
+    logger.warn(
+      { whatsappId: whatsapp.id, err: removeError },
+      "[WhatsAppSession] Error removiendo sesión del array"
+    );
+  }
+
+  if (!deleteAuthFiles) {
+    return;
+  }
+
+  await wait(3000);
+  const sessionPath = getSessionPath(whatsapp.id);
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      await fs.rm(sessionPath, { recursive: true, force: true });
+      logger.info(
+        { whatsappId: whatsapp.id, sessionPath },
+        "[WhatsAppSession] Archivos de sesión eliminados"
+      );
+      return;
+    } catch (rmError) {
+      logger.warn(
+        { whatsappId: whatsapp.id, attempt, sessionPath, err: rmError },
+        "[WhatsAppSession] Falló eliminar archivos de sesión"
+      );
+      if (attempt < 3) {
+        await wait(2000 * attempt);
+      }
+    }
+  }
+
+  logger.error(
+    { whatsappId: whatsapp.id, sessionPath },
+    "[WhatsAppSession] No se pudieron eliminar archivos de sesión"
+  );
+};
 
 const store = async (req: Request, res: Response): Promise<Response> => {
   const { whatsappId } = req.params;
   const whatsapp = await ShowWhatsAppService(whatsappId);
 
+  await cleanupSessionResources(whatsapp);
+
   try {
     await StartWhatsAppSession(whatsapp);
   } catch (err) {
-    logger.error(err);
+    logger.warn(
+      { whatsappId: whatsapp.id, error: getErrorMessage(err) },
+      "[WhatsAppSession] No se pudo iniciar sesión"
+    );
+    return res.status(500).json({
+      message: "No se pudo iniciar la sesión de WhatsApp.",
+      error: getErrorMessage(err)
+    });
   }
 
   return res.status(200).json({ message: "Starting session." });
@@ -26,16 +125,27 @@ const store = async (req: Request, res: Response): Promise<Response> => {
 
 const update = async (req: Request, res: Response): Promise<Response> => {
   const { whatsappId } = req.params;
+  const currentWhatsapp = await ShowWhatsAppService(whatsappId);
+
+  await cleanupSessionResources(currentWhatsapp, { deleteAuthFiles: true });
 
   const { whatsapp } = await UpdateWhatsAppService({
     whatsappId,
     whatsappData: { session: "" }
   });
+  await whatsapp.update({ qrcode: "" });
 
   try {
     await StartWhatsAppSession(whatsapp);
   } catch (err) {
-    logger.error(err);
+    logger.warn(
+      { whatsappId: whatsapp.id, error: getErrorMessage(err) },
+      "[WhatsAppSession] No se pudo iniciar sesión con nuevo QR"
+    );
+    return res.status(500).json({
+      message: "No se pudo generar un nuevo código QR.",
+      error: getErrorMessage(err)
+    });
   }
 
   return res.status(200).json({ message: "Starting session." });
@@ -46,94 +156,7 @@ const remove = async (req: Request, res: Response): Promise<Response> => {
   const { whatsappId } = req.params;
   const whatsapp = await ShowWhatsAppService(whatsappId);
 
-  try {
-    logger.info(
-      `[WhatsAppSession] Obteniendo instancia de WhatsApp ${whatsapp.id}...`
-    );
-    const wbot = getWbot(whatsapp.id);
-
-    if (wbot) {
-      logger.info("[WhatsAppSession] Preparando para cerrar sesión...");
-
-      // Limpiar intervalos antes de destroy
-      if (wbot.pingInterval) {
-        clearInterval(wbot.pingInterval);
-        wbot.pingInterval = undefined;
-        logger.info("[WhatsAppSession] Intervalos limpiados");
-      }
-
-      // El authStrategy.logout ya fue desactivado en initWbot (evento ready)
-      // Esto previene el error EBUSY en Windows cuando se llama a destroy
-
-      // Destruir el cliente (no intentará eliminar archivos bloqueados)
-      try {
-        logger.info("[WhatsAppSession] Destruyendo cliente...");
-        await Promise.race([
-          wbot.destroy(),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Destroy timeout")), 10000)
-          )
-        ]);
-        logger.info("[WhatsAppSession] Cliente destruido exitosamente");
-      } catch (destroyError) {
-        logger.warn(
-          `[WhatsAppSession] Error/timeout en destroy: ${destroyError}`
-        );
-      }
-
-      // Esperar para que Chrome/Puppeteer libere completamente los archivos (crítico en Windows)
-      logger.info(
-        "[WhatsAppSession] Esperando a que se liberen los archivos..."
-      );
-      await new Promise(resolve => setTimeout(resolve, 3000));
-    }
-  } catch (error) {
-    logger.warn(`[WhatsAppSession] Instancia no encontrada o error: ${error}`);
-  }
-
-  // Siempre limpiar la sesión del array
-  try {
-    removeWbot(whatsapp.id);
-    logger.info(`[WhatsAppSession] Sesión ${whatsapp.id} removida del array`);
-  } catch (removeError) {
-    logger.warn(`[WhatsAppSession] Error removiendo sesión: ${removeError}`);
-  }
-
-  // Intentar eliminar archivos de sesión con reintentos (manejo de archivos bloqueados en Windows)
-  const sessionPath = path.resolve(
-    __dirname,
-    `../../.wwebjs_auth/session-bd_${whatsapp.id}`
-  );
-  logger.info(`[WhatsAppSession] Intentando eliminar archivos: ${sessionPath}`);
-
-  let deleteSuccess = false;
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
-    try {
-      await fs.rm(sessionPath, { recursive: true, force: true });
-      logger.info(
-        "[WhatsAppSession] Archivos de sesión eliminados exitosamente"
-      );
-      deleteSuccess = true;
-      break;
-    } catch (rmError: any) {
-      logger.warn(
-        `[WhatsAppSession] Intento ${attempt}/3 falló al eliminar archivos: ${rmError.message}`
-      );
-      if (attempt < 3) {
-        // Esperar antes de reintentar (2s, luego 4s)
-        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
-      }
-    }
-  }
-
-  if (!deleteSuccess) {
-    logger.error(
-      `[WhatsAppSession] No se pudieron eliminar archivos después de 3 intentos. Path: ${sessionPath}`
-    );
-    logger.error(
-      "[WhatsAppSession] Los archivos se eliminarán automáticamente en el próximo reinicio"
-    );
-  }
+  await cleanupSessionResources(whatsapp, { deleteAuthFiles: true });
 
   // Actualizar estado en BD
   try {
@@ -144,7 +167,7 @@ const remove = async (req: Request, res: Response): Promise<Response> => {
     });
     logger.info("[WhatsAppSession] Estado actualizado en BD");
     // Emitir evento por WebSocket para actualizar el frontend
-    const io = require("../libs/socket").getIO();
+    const io = getIO();
     io.emit("whatsappSession", { action: "update", session: whatsapp });
   } catch (updateError) {
     logger.error(`[WhatsAppSession] Error actualizando BD: ${updateError}`);

@@ -344,7 +344,7 @@ export const getLocalFiles = async (
   let needsMigration = 0;
   let alreadyInS3 = 0;
 
-  if (service.isS3Available()) {
+  if (await service.isS3Available()) {
     const verifyResult = await service.verifyMigration();
     needsMigration = verifyResult.missing.length;
     alreadyInS3 = verifyResult.verified - needsMigration;

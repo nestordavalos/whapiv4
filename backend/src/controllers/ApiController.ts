@@ -102,11 +102,15 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
     : undefined;
   const medias = req.files as Express.Multer.File[] | undefined;
 
-  newContact.number = newContact.number.replace("-", "").replace(" ", "");
+  newContact.number =
+    typeof newContact.number === "string"
+      ? newContact.number.replace("-", "").replace(" ", "")
+      : newContact.number;
 
   const schema = Yup.object().shape({
     number: Yup.string()
-      .required()
+      .nullable()
+      .required("Number is required")
       .matches(/^\d+$/, "Invalid number format. Only numbers is allowed.")
   });
 

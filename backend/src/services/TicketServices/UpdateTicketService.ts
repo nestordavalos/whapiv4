@@ -13,16 +13,17 @@ import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
 import ShowTicketService from "./ShowTicketService";
 import FindOrCreateATicketTrakingService from "./FindOrCreateATicketTrakingService";
 import { verifyMessage } from "../WbotServices/wbotMessageListener";
-import { 
+import {
   sendTicketUpdatedWebhook,
   sendTicketClosedWebhook
 } from "../WebhookService/SendWebhookEvent";
 import { logger } from "../../utils/logger";
+import normalizeOptionalId from "../../helpers/NormalizeOptionalId";
 
 interface TicketData {
   status?: string;
-  userId?: number | null;
-  queueId?: number | null;
+  userId?: number | string | null;
+  queueId?: number | string | null;
   whatsappId?: number;
   fromMe?: boolean;
   isMsgGroup?: boolean;
@@ -56,11 +57,14 @@ const UpdateTicketService = async ({
   const io = getIO();
 
   const ticket = requestUserId
-    ? await ShowTicketService({ id: ticketId, userId: requestUserId.toString() })
+    ? await ShowTicketService({
+        id: ticketId,
+        userId: requestUserId.toString()
+      })
     : await ShowTicketService(ticketId);
   const {
-    userId,
-    queueId,
+    userId: rawUserId,
+    queueId: rawQueueId,
     whatsappId,
     fromMe,
     isMsgGroup,
@@ -71,6 +75,8 @@ const UpdateTicketService = async ({
     typebotStatus,
     isBot
   } = ticketData;
+  const queueId = normalizeOptionalId(rawQueueId);
+  const userId = normalizeOptionalId(rawUserId);
 
   await SetTicketMessagesAsRead(ticket);
 
@@ -202,7 +208,7 @@ const UpdateTicketService = async ({
     ticketTraking.update({
       userId: ticket.userId
     });
-    // ELIMINADO: No enviamos "delete" porque el evento "update" 
+    // ELIMINADO: No enviamos "delete" porque el evento "update"
     // ya maneja correctamente qué tickets mostrar en cada vista
     // El frontend usa shouldUpdateTicket() para filtrar
   }
@@ -219,9 +225,13 @@ const UpdateTicketService = async ({
   try {
     // Webhook específico para cierre de tickets
     if (status === "closed" && oldStatus !== "closed") {
-      const messageCount = await Message.count({ where: { ticketId: ticket.id } });
-      const duration = Math.floor((new Date().getTime() - ticket.createdAt.getTime()) / 1000);
-      
+      const messageCount = await Message.count({
+        where: { ticketId: ticket.id }
+      });
+      const duration = Math.floor(
+        (new Date().getTime() - ticket.createdAt.getTime()) / 1000
+      );
+
       await sendTicketClosedWebhook(ticket.whatsappId, {
         ticketId: ticket.id,
         contactId: ticket.contactId,

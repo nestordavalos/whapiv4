@@ -31,7 +31,13 @@ const SendWhatsAppMediaFromUrl = async ({
 }: Request): Promise<WbotMessage> => {
   let quotedMsgSerializedId: string | undefined;
   if (quotedMsg) {
-    await GetWbotMessage(ticket, quotedMsg.id);
+    try {
+      await GetWbotMessage(ticket, quotedMsg.id);
+    } catch (err) {
+      logger.debug(
+        "Could not fetch quoted URL media message, using fallback serialization"
+      );
+    }
     quotedMsgSerializedId = SerializeWbotMsgId(ticket, quotedMsg);
   }
 

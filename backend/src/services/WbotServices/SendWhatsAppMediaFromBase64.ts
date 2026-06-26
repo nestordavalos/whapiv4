@@ -35,7 +35,13 @@ const SendWhatsAppMediaFromBase64 = async ({
 }: Request): Promise<WbotMessage> => {
   let quotedMsgSerializedId: string | undefined;
   if (quotedMsg) {
-    await GetWbotMessage(ticket, quotedMsg.id);
+    try {
+      await GetWbotMessage(ticket, quotedMsg.id);
+    } catch (err) {
+      logger.debug(
+        "Could not fetch quoted base64 message, using fallback serialization"
+      );
+    }
     quotedMsgSerializedId = SerializeWbotMsgId(ticket, quotedMsg);
   }
 
@@ -46,9 +52,9 @@ const SendWhatsAppMediaFromBase64 = async ({
     // Remover el prefijo data:...;base64, si existe
     let cleanBase64 = base64Data;
     if (base64Data.includes("base64,")) {
-      cleanBase64 = base64Data.split("base64,")[1];
+      [, cleanBase64] = base64Data.split("base64,");
     } else if (base64Data.includes(",")) {
-      cleanBase64 = base64Data.split(",")[1];
+      [, cleanBase64] = base64Data.split(",");
     }
 
     // Generar nombre de archivo único si no se proporciona
@@ -118,7 +124,7 @@ const SendWhatsAppMediaFromBase64 = async ({
       fromMe: true,
       read: true,
       mediaUrl: finalFilename,
-      mediaType: mediaType,
+      mediaType,
       quotedMsgId: quotedMsg?.id,
       ack: sentMessage.ack,
       createdAt: new Date(sentMessage.timestamp * 1000),

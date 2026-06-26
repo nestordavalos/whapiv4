@@ -66,19 +66,23 @@ export const getContact = async (
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const newContact: ContactData = req.body;
-  newContact.number = newContact.number
-    .replace("-", "")
-    .replace(" ", "")
-    .replace("(", "")
-    .replace(")", "")
-    .replace("+", "")
-    .replace(".", "")
-    .replace("_", "");
+  newContact.number =
+    typeof newContact.number === "string"
+      ? newContact.number
+          .replace("-", "")
+          .replace(" ", "")
+          .replace("(", "")
+          .replace(")", "")
+          .replace("+", "")
+          .replace(".", "")
+          .replace("_", "")
+      : newContact.number;
 
   const schema = Yup.object().shape({
     name: Yup.string().required(),
     number: Yup.string()
-      .required()
+      .nullable()
+      .required("Number is required")
       .matches(/^\d+$/, "Invalid number format. Only numbers is allowed.")
   });
 

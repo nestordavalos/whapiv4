@@ -5,12 +5,13 @@ import Ticket from "../../models/Ticket";
 import User from "../../models/User";
 import ShowContactService from "../ContactServices/ShowContactService";
 import Whatsapp from "../../models/Whatsapp";
+import normalizeOptionalId from "../../helpers/NormalizeOptionalId";
 
 interface Request {
   contactId: number;
   status: string;
   userId: number;
-  queueId?: number;
+  queueId?: number | string | null;
   whatsappId?: number;
   fromMe?: boolean;
   isMsgGroup?: boolean;
@@ -41,6 +42,8 @@ const CreateTicketService = async ({
 
   const { isGroup } = await ShowContactService(contactId);
 
+  queueId = normalizeOptionalId(queueId);
+
   if (queueId === undefined) {
     const user = await User.findByPk(userId, { include: ["queues"] });
     queueId = user?.queues.length === 1 ? user.queues[0].id : undefined;
@@ -51,7 +54,7 @@ const CreateTicketService = async ({
     status,
     isGroup,
     userId,
-    queueId,
+    queueId: queueId || null,
     fromMe,
     isMsgGroup,
     isBot: false

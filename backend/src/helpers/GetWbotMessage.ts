@@ -43,12 +43,16 @@ export const GetWbotMessage = async (
         ? `Não foi possível encontrar a mensagem nas últimas ${maxLimit} mensagens do grupo`
         : `Não foi possível encontrar a mensagem nas últimas ${maxLimit} mensagens`;
 
-      logger.error(errorMsg);
-      throw new Error(errorMsg);
+      logger.warn(errorMsg);
+      throw new AppError("ERR_FETCH_WAPP_MSG");
     }
 
     return msgFound;
   } catch (err) {
+    if (err instanceof AppError) {
+      throw err;
+    }
+
     logger.error(`Error in GetWbotMessage: ${err}`);
     throw new AppError("ERR_FETCH_WAPP_MSG");
   }

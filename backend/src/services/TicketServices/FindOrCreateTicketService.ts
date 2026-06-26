@@ -6,6 +6,7 @@ import ShowTicketService from "./ShowTicketService";
 import ListSettingsServiceOne from "../SettingServices/ListSettingsServiceOne";
 import { sendTicketCreatedWebhook } from "../WebhookService/SendWebhookEvent";
 import { logger } from "../../utils/logger";
+import normalizeOptionalId from "../../helpers/NormalizeOptionalId";
 
 interface FindOrCreateOptions {
   /** If true and no open ticket exists, create as closed (for synced read messages) */
@@ -16,13 +17,16 @@ const FindOrCreateTicketService = async (
   contact: Contact,
   whatsappId: number,
   unreadMessages: number,
-  queueId?: number,
-  tagsId?: number,
-  userId?: number,
+  queueId?: number | string | null,
+  tagsId?: number | string | null,
+  userId?: number | string | null,
   groupContact?: Contact,
   options?: FindOrCreateOptions
 ): Promise<Ticket> => {
   const { createAsClosed = false } = options || {};
+  const normalizedQueueId = normalizeOptionalId(queueId);
+  const normalizedTagsId = normalizeOptionalId(tagsId);
+  const normalizedUserId = normalizeOptionalId(userId);
 
   let ticket = await Ticket.findOne({
     where: {
@@ -54,13 +58,13 @@ const FindOrCreateTicketService = async (
         unreadMessages,
         isBot: true
       };
-      
+
       if (ticket.status !== "open") {
         updateData.status = "pending";
         updateData.userId = null;
         updateData.queueId = null;
       }
-      
+
       await ticket.update(updateData);
     }
   }
@@ -92,13 +96,13 @@ const FindOrCreateTicketService = async (
         unreadMessages,
         isBot: true
       };
-      
+
       if (ticket.status !== "open") {
         updateData.status = "pending";
         updateData.userId = null;
         updateData.queueId = null;
       }
-      
+
       await ticket.update(updateData);
     }
   }
@@ -128,8 +132,8 @@ const FindOrCreateTicketService = async (
         isBot: ticket.isBot,
         unreadMessages: ticket.unreadMessages,
         createdAt: ticket.createdAt,
-        queueId: queueId || null,
-        userId: userId || null
+        queueId: normalizedQueueId || null,
+        userId: normalizedUserId || null
       });
     } catch (err) {
       logger.error("Error sending ticket_created webhook:", err);
@@ -139,16 +143,16 @@ const FindOrCreateTicketService = async (
   // Optimized: Single update instead of multiple separate updates
   const updateFields: Partial<Ticket> = {};
 
-  if (queueId != 0 && queueId != undefined) {
-    updateFields.queueId = queueId;
+  if (normalizedQueueId) {
+    updateFields.queueId = normalizedQueueId;
   }
 
-  if (tagsId != 0 && tagsId != undefined) {
-    (updateFields as any).tagsId = tagsId;
+  if (normalizedTagsId) {
+    (updateFields as any).tagsId = normalizedTagsId;
   }
 
-  if (userId != 0 && userId != undefined) {
-    updateFields.userId = userId;
+  if (normalizedUserId) {
+    updateFields.userId = normalizedUserId;
   }
 
   if (Object.keys(updateFields).length > 0) {

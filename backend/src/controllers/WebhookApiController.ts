@@ -31,13 +31,17 @@ import { logger } from "../utils/logger";
 /**
  * Verifica la configuración closeTicketApi y cierra el ticket si está habilitado
  */
-const handleAutoCloseTicket = async (ticketId: string | number): Promise<void> => {
+const handleAutoCloseTicket = async (
+  ticketId: string | number
+): Promise<void> => {
   try {
     const closeTicketApiSetting = await ListSettingsServiceOne({
       key: "closeTicketApi"
     });
 
-    logger.info(`[API] handleAutoCloseTicket - ticketId: ${ticketId}, closeTicketApi: ${closeTicketApiSetting?.value}`);
+    logger.info(
+      `[API] handleAutoCloseTicket - ticketId: ${ticketId}, closeTicketApi: ${closeTicketApiSetting?.value}`
+    );
 
     if (closeTicketApiSetting?.value === "enabled") {
       logger.info(`[API] Cerrando ticket ${ticketId} automáticamente`);
@@ -47,10 +51,14 @@ const handleAutoCloseTicket = async (ticketId: string | number): Promise<void> =
       });
       logger.info(`[API] Ticket ${ticketId} cerrado exitosamente`);
     } else {
-      logger.info(`[API] No se cierra ticket ${ticketId} - closeTicketApi no está habilitado`);
+      logger.info(
+        `[API] No se cierra ticket ${ticketId} - closeTicketApi no está habilitado`
+      );
     }
   } catch (err) {
-    logger.error(`[API] Error al intentar cerrar ticket automáticamente: ${err}`);
+    logger.error(
+      `[API] Error al intentar cerrar ticket automáticamente: ${err}`
+    );
   }
 };
 
@@ -184,6 +192,7 @@ export const createTicket = async (
 
   const schema = Yup.object().shape({
     number: Yup.string()
+      .nullable()
       .required("Number is required")
       .matches(/^\d+$/, "Invalid number format. Only numbers allowed.")
   });
@@ -290,7 +299,9 @@ export const sendMessage = async (
     throw new AppError("ERR_TICKET_NOT_FOUND", 404);
   }
 
-  logger.info(`[API] Enviando mensaje - ticketId: ${ticketId}, status: ${ticket.status}, queueId: ${queueId}`);
+  logger.info(
+    `[API] Enviando mensaje - ticketId: ${ticketId}, status: ${ticket.status}, queueId: ${queueId}`
+  );
 
   // Actualizar ticket solo si NO está cerrado
   if (ticket.status !== "closed") {
@@ -313,7 +324,9 @@ export const sendMessage = async (
         ticketData: updateData
       });
       await ticket.reload();
-      logger.info(`[API] Ticket ${ticketId} actualizado. Nuevo status: ${ticket.status}`);
+      logger.info(
+        `[API] Ticket ${ticketId} actualizado. Nuevo status: ${ticket.status}`
+      );
     }
   } else {
     logger.info(`[API] Ticket ${ticketId} está cerrado - no se actualiza`);
@@ -376,7 +389,9 @@ export const sendMediaMessage = async (
     throw new AppError("ERR_TICKET_NOT_FOUND", 404);
   }
 
-  logger.info(`[API] Enviando mensaje - ticketId: ${ticketId}, status: ${ticket.status}, queueId: ${queueId}`);
+  logger.info(
+    `[API] Enviando mensaje - ticketId: ${ticketId}, status: ${ticket.status}, queueId: ${queueId}`
+  );
 
   // Actualizar ticket solo si NO está cerrado
   if (ticket.status !== "closed") {
@@ -399,7 +414,9 @@ export const sendMediaMessage = async (
         ticketData: updateData
       });
       await ticket.reload();
-      logger.info(`[API] Ticket ${ticketId} actualizado. Nuevo status: ${ticket.status}`);
+      logger.info(
+        `[API] Ticket ${ticketId} actualizado. Nuevo status: ${ticket.status}`
+      );
     }
   } else {
     logger.info(`[API] Ticket ${ticketId} está cerrado - no se actualiza`);
@@ -484,7 +501,9 @@ export const sendMediaFromUrl = async (
     throw new AppError("ERR_TICKET_NOT_FOUND", 404);
   }
 
-  logger.info(`[API] Enviando mensaje - ticketId: ${ticketId}, status: ${ticket.status}, queueId: ${queueId}`);
+  logger.info(
+    `[API] Enviando mensaje - ticketId: ${ticketId}, status: ${ticket.status}, queueId: ${queueId}`
+  );
 
   // Actualizar ticket solo si NO está cerrado
   if (ticket.status !== "closed") {
@@ -507,7 +526,9 @@ export const sendMediaFromUrl = async (
         ticketData: updateData
       });
       await ticket.reload();
-      logger.info(`[API] Ticket ${ticketId} actualizado. Nuevo status: ${ticket.status}`);
+      logger.info(
+        `[API] Ticket ${ticketId} actualizado. Nuevo status: ${ticket.status}`
+      );
     }
   } else {
     logger.info(`[API] Ticket ${ticketId} está cerrado - no se actualiza`);
@@ -563,7 +584,8 @@ export const sendMediaFromBase64 = async (
   res: Response
 ): Promise<Response> => {
   const { ticketId } = req.params;
-  const { body, quotedMsgId, base64Data, mimeType, filename, queueId } = req.body;
+  const { body, quotedMsgId, base64Data, mimeType, filename, queueId } =
+    req.body;
 
   if (!base64Data) {
     throw new AppError("Base64 data is required", 400);
@@ -579,7 +601,9 @@ export const sendMediaFromBase64 = async (
     throw new AppError("ERR_TICKET_NOT_FOUND", 404);
   }
 
-  logger.info(`[API] Enviando mensaje - ticketId: ${ticketId}, status: ${ticket.status}, queueId: ${queueId}`);
+  logger.info(
+    `[API] Enviando mensaje - ticketId: ${ticketId}, status: ${ticket.status}, queueId: ${queueId}`
+  );
 
   // Actualizar ticket solo si NO está cerrado
   if (ticket.status !== "closed") {
@@ -602,7 +626,9 @@ export const sendMediaFromBase64 = async (
         ticketData: updateData
       });
       await ticket.reload();
-      logger.info(`[API] Ticket ${ticketId} actualizado. Nuevo status: ${ticket.status}`);
+      logger.info(
+        `[API] Ticket ${ticketId} actualizado. Nuevo status: ${ticket.status}`
+      );
     }
   } else {
     logger.info(`[API] Ticket ${ticketId} está cerrado - no se actualiza`);
@@ -686,6 +712,7 @@ export const validateContact = async (
 
   const schema = Yup.object().shape({
     number: Yup.string()
+      .nullable()
       .required("Number is required")
       .matches(/^\d+$/, "Invalid number format. Only numbers allowed.")
   });
@@ -727,6 +754,7 @@ export const createOrUpdateContact = async (
 
   const schema = Yup.object().shape({
     number: Yup.string()
+      .nullable()
       .required("Number is required")
       .matches(/^\d+$/, "Invalid number format. Only numbers allowed."),
     name: Yup.string().optional()
@@ -864,6 +892,7 @@ export const sendDirectMessage = async (
 
   const schema = Yup.object().shape({
     number: Yup.string()
+      .nullable()
       .required("Number is required")
       .matches(/^\d+$/, "Invalid number format. Only numbers allowed.")
   });
@@ -1037,7 +1066,9 @@ export const sendDirectMessage = async (
         ticket: updatedTicket
       });
   } catch (socketErr) {
-    logger.warn(`[sendDirectMessage] Failed to emit ticket update: ${socketErr}`);
+    logger.warn(
+      `[sendDirectMessage] Failed to emit ticket update: ${socketErr}`
+    );
   }
 
   // Cerrar ticket si se solicita explícitamente o si la configuración lo indica (solo si NO está ya cerrado)

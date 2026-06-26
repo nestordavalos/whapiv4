@@ -8,6 +8,7 @@ interface MessageData {
   id: string;
   ticketId: number;
   body: string;
+  ack?: number | null;
   contactId?: number;
   fromMe?: boolean;
   read?: boolean;
@@ -25,10 +26,15 @@ interface Request {
 const CreateMessageService = async ({
   messageData
 }: Request): Promise<Message> => {
+  const normalizedMessageData = {
+    ...messageData,
+    ack: Number.isInteger(messageData.ack) ? messageData.ack : 0
+  };
+
   // Buscar o crear mensaje de forma atómica para evitar duplicados
   const [message, created] = await Message.findOrCreate({
-    where: { id: messageData.id },
-    defaults: messageData
+    where: { id: normalizedMessageData.id },
+    defaults: normalizedMessageData
   });
 
   if (created) {

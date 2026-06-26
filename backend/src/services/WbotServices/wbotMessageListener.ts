@@ -63,6 +63,10 @@ interface Session extends Client {
 
 type WhatsappConnection = Awaited<ReturnType<typeof ShowWhatsAppService>>;
 
+const normalizeAck = (ack: MessageAck | number | null | undefined): number => {
+  return Number.isInteger(ack) ? Number(ack) : 0;
+};
+
 const verifyContact = async (
   msgContact: WbotContact,
   whatsappId?: number,
@@ -282,7 +286,7 @@ const verifyMediaMessage = async (
     mediaUrl: media.filename,
     mediaType: media.mimetype.split("/")[0],
     quotedMsgId: quotedMsg?.id,
-    ack: msg.ack,
+    ack: normalizeAck(msg.ack),
     createdAt: new Date(msg.timestamp * 1000),
     updatedAt: new Date(msg.timestamp * 1000)
   };
@@ -336,7 +340,7 @@ export const verifyMessage = async (
     mediaType: msg.type,
     read: msg.fromMe,
     quotedMsgId: quotedMsg?.id,
-    ack: msg.ack,
+    ack: normalizeAck(msg.ack),
     createdAt: new Date(msg.timestamp * 1000),
     updatedAt: new Date(msg.timestamp * 1000)
   };
@@ -870,8 +874,9 @@ const handleMessage = async (
       logger.debug(
         `[handleMessage] Mensaje ${msg.id.id} ya existe en BD, ticketId: ${existingMessage.ticketId}, ack: ${msg.ack}`
       );
-      if (existingMessage.ack !== msg.ack) {
-        await existingMessage.update({ ack: msg.ack });
+      const normalizedAck = normalizeAck(msg.ack);
+      if (existingMessage.ack !== normalizedAck) {
+        await existingMessage.update({ ack: normalizedAck });
       }
 
       // Emitir socket para actualizar el frontend en tiempo real
@@ -1336,6 +1341,7 @@ const handleMsgAck = async (
   await new Promise(r => setTimeout(r, 500));
 
   const io = getIO();
+  const normalizedAck = normalizeAck(ack);
 
   try {
     const messageToUpdate = await Message.findByPk(msg.id.id, {
@@ -1352,7 +1358,7 @@ const handleMsgAck = async (
     if (!messageToUpdate) {
       return;
     }
-    await messageToUpdate.update({ ack });
+    await messageToUpdate.update({ ack: normalizedAck });
 
     io.to(messageToUpdate.ticketId.toString()).emit("appMessage", {
       action: "update",
@@ -1363,8 +1369,8 @@ const handleMsgAck = async (
     if (wbot.id) {
       sendMessageAckWebhook(wbot.id, {
         messageId: msg.id.id,
-        ack,
-        ackName: getAckName(ack),
+        ack: normalizedAck,
+        ackName: getAckName(normalizedAck),
         ticketId: messageToUpdate.ticketId,
         body: msg.body
       });

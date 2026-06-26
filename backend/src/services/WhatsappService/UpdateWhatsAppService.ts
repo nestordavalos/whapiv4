@@ -98,6 +98,16 @@ interface Response {
   oldDefaultWhatsapp: Whatsapp | null;
 }
 
+const omitUndefined = (
+  data: Record<string, unknown>
+): Record<string, unknown> =>
+  Object.keys(data).reduce((acc, key) => {
+    if (data[key] !== undefined) {
+      acc[key] = data[key];
+    }
+    return acc;
+  }, {} as Record<string, unknown>);
+
 const UpdateWhatsAppService = async ({
   whatsappData,
   whatsappId
@@ -181,7 +191,7 @@ const UpdateWhatsAppService = async ({
     syncDelayBetweenChats,
     syncMarkAsSeen,
     syncCreateClosedForRead,
-    queueIds = []
+    queueIds
   } = whatsappData;
 
   try {
@@ -190,7 +200,15 @@ const UpdateWhatsAppService = async ({
     throw new AppError(err.message);
   }
 
-  if (queueIds.length > 1 && !greetingMessage) {
+  const whatsapp = await ShowWhatsAppService(whatsappId);
+  const effectiveGreetingMessage =
+    greetingMessage !== undefined ? greetingMessage : whatsapp.greetingMessage;
+
+  if (
+    queueIds !== undefined &&
+    queueIds.length > 1 &&
+    !effectiveGreetingMessage
+  ) {
     throw new AppError("ERR_WAPP_GREETING_REQUIRED");
   }
 
@@ -226,80 +244,83 @@ const UpdateWhatsAppService = async ({
     }
   }
 
-  const whatsapp = await ShowWhatsAppService(whatsappId);
+  await whatsapp.update(
+    omitUndefined({
+      name,
+      status,
+      session,
+      greetingMessage,
+      farewellMessage,
 
-  await whatsapp.update({
-    name,
-    status,
-    session,
-    greetingMessage,
-    farewellMessage,
+      defineWorkHours,
+      outOfWorkMessage,
 
-    defineWorkHours,
-    outOfWorkMessage,
+      monday,
+      tuesday,
+      wednesday,
+      thursday,
+      friday,
+      saturday,
+      sunday,
 
-    monday,
-    tuesday,
-    wednesday,
-    thursday,
-    friday,
-    saturday,
-    sunday,
+      StartDefineWorkHoursMonday,
+      EndDefineWorkHoursMonday,
+      StartDefineWorkHoursMondayLunch,
+      EndDefineWorkHoursMondayLunch,
 
-    StartDefineWorkHoursMonday,
-    EndDefineWorkHoursMonday,
-    StartDefineWorkHoursMondayLunch,
-    EndDefineWorkHoursMondayLunch,
+      StartDefineWorkHoursTuesday,
+      EndDefineWorkHoursTuesday,
+      StartDefineWorkHoursTuesdayLunch,
+      EndDefineWorkHoursTuesdayLunch,
 
-    StartDefineWorkHoursTuesday,
-    EndDefineWorkHoursTuesday,
-    StartDefineWorkHoursTuesdayLunch,
-    EndDefineWorkHoursTuesdayLunch,
+      StartDefineWorkHoursWednesday,
+      EndDefineWorkHoursWednesday,
+      StartDefineWorkHoursWednesdayLunch,
+      EndDefineWorkHoursWednesdayLunch,
 
-    StartDefineWorkHoursWednesday,
-    EndDefineWorkHoursWednesday,
-    StartDefineWorkHoursWednesdayLunch,
-    EndDefineWorkHoursWednesdayLunch,
+      StartDefineWorkHoursThursday,
+      EndDefineWorkHoursThursday,
+      StartDefineWorkHoursThursdayLunch,
+      EndDefineWorkHoursThursdayLunch,
 
-    StartDefineWorkHoursThursday,
-    EndDefineWorkHoursThursday,
-    StartDefineWorkHoursThursdayLunch,
-    EndDefineWorkHoursThursdayLunch,
+      StartDefineWorkHoursFriday,
+      EndDefineWorkHoursFriday,
+      StartDefineWorkHoursFridayLunch,
+      EndDefineWorkHoursFridayLunch,
 
-    StartDefineWorkHoursFriday,
-    EndDefineWorkHoursFriday,
-    StartDefineWorkHoursFridayLunch,
-    EndDefineWorkHoursFridayLunch,
+      StartDefineWorkHoursSaturday,
+      EndDefineWorkHoursSaturday,
+      StartDefineWorkHoursSaturdayLunch,
+      EndDefineWorkHoursSaturdayLunch,
 
-    StartDefineWorkHoursSaturday,
-    EndDefineWorkHoursSaturday,
-    StartDefineWorkHoursSaturdayLunch,
-    EndDefineWorkHoursSaturdayLunch,
+      StartDefineWorkHoursSunday,
+      EndDefineWorkHoursSunday,
+      StartDefineWorkHoursSundayLunch,
+      EndDefineWorkHoursSundayLunch,
 
-    StartDefineWorkHoursSunday,
-    EndDefineWorkHoursSunday,
-    StartDefineWorkHoursSundayLunch,
-    EndDefineWorkHoursSundayLunch,
+      ratingMessage,
+      isDefault,
+      isDisplay,
+      isGroup,
+      sendInactiveMessage,
+      inactiveMessage,
+      timeInactiveMessage,
+      webhookUrls:
+        webhookUrls !== undefined ? JSON.stringify(webhookUrls) : undefined,
+      webhookEnabled,
+      archiveOnClose,
+      syncMaxMessagesPerChat,
+      syncMaxChats,
+      syncMaxMessageAgeHours,
+      syncDelayBetweenChats,
+      syncMarkAsSeen,
+      syncCreateClosedForRead
+    })
+  );
 
-    ratingMessage,
-    isDefault,
-    isDisplay,
-    isGroup,
-    sendInactiveMessage,
-    inactiveMessage,
-    timeInactiveMessage,
-    webhookUrls: webhookUrls ? JSON.stringify(webhookUrls) : undefined,
-    webhookEnabled,
-    archiveOnClose,
-    syncMaxMessagesPerChat,
-    syncMaxChats,
-    syncMaxMessageAgeHours,
-    syncDelayBetweenChats,
-    syncMarkAsSeen,
-    syncCreateClosedForRead
-  });
-
-  await AssociateWhatsappQueue(whatsapp, queueIds);
+  if (queueIds !== undefined) {
+    await AssociateWhatsappQueue(whatsapp, queueIds);
+  }
 
   // Invalidar cache de webhook si se actualizaron los campos de webhook
   if (webhookUrls !== undefined || webhookEnabled !== undefined) {

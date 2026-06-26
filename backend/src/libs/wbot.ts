@@ -72,9 +72,23 @@ const getFirstErrorLine = (err: any): string => {
 };
 
 // eslint-disable-next-line no-restricted-syntax
-const syncUnreadMessages = async (wbot: Session) => {
+const syncUnreadMessages = async (wbot: Session, sessionName: string) => {
   const chats = await wbot.getChats();
-  const failedChats: Array<{ chat: string; error: string }> = [];
+  const failedChats: Array<{
+    chat: string;
+    unreadCount: number;
+    error: string;
+  }> = [];
+  const unreadChatsCount = chats.filter(chat => chat.unreadCount > 0).length;
+
+  logger.info(
+    {
+      sessionName,
+      totalChats: chats.length,
+      unreadChats: unreadChatsCount
+    },
+    "[wbot] Iniciando sincronización de mensajes no leídos"
+  );
 
   // eslint-disable-next-line no-restricted-syntax
   for (const chat of chats) {
@@ -88,6 +102,7 @@ const syncUnreadMessages = async (wbot: Session) => {
       } catch (err: any) {
         failedChats.push({
           chat: getChatLabel(chat),
+          unreadCount: chat.unreadCount,
           error: getFirstErrorLine(err)
         });
         // eslint-disable-next-line no-continue
@@ -168,6 +183,9 @@ const syncUnreadMessages = async (wbot: Session) => {
   if (failedChats.length > 0) {
     logger.warn(
       {
+        sessionName,
+        totalChats: chats.length,
+        unreadChats: unreadChatsCount,
         failedChats: failedChats.length,
         examples: failedChats.slice(0, 5)
       },
@@ -372,7 +390,7 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
 
           wbot.sendPresenceAvailable();
           try {
-            await syncUnreadMessages(wbot);
+            await syncUnreadMessages(wbot, sessionName);
           } catch (syncErr: any) {
             logger.warn(
               `[wbot] Sincronización inicial de no leídos falló para ${sessionName} (no crítico): ${syncErr.message}`

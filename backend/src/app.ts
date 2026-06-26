@@ -19,6 +19,19 @@ Sentry.init({ dsn: process.env.SENTRY_DSN });
 
 const app = express();
 
+const getRequestLogContext = (req: Request) => ({
+  requestId: req.id,
+  method: req.method,
+  url: req.originalUrl,
+  path: req.path,
+  ip: req.ip,
+  userId: req.user?.id,
+  userProfile: req.user?.profile,
+  userAgent: req.get("user-agent"),
+  origin: req.get("origin"),
+  referer: req.get("referer")
+});
+
 // Trust proxy - configurable per environment (default: 1 for single nginx reverse proxy)
 app.set("trust proxy", parseInt(process.env.TRUST_PROXY || "1", 10));
 
@@ -82,11 +95,18 @@ app.use(Sentry.Handlers.errorHandler());
 
 app.use(async (err: Error, req: Request, res: Response, _: NextFunction) => {
   if (err instanceof AppError) {
-    logger.warn({ requestId: req.id, statusCode: err.statusCode, error: err.message }, "AppError");
+    logger.warn(
+      {
+        ...getRequestLogContext(req),
+        statusCode: err.statusCode,
+        error: err.message
+      },
+      "AppError"
+    );
     return res.status(err.statusCode).json({ error: err.message });
   }
 
-  logger.error({ requestId: req.id, err }, "Unhandled error");
+  logger.error({ ...getRequestLogContext(req), err }, "Unhandled error");
   return res.status(500).json({ error: "Internal server error" });
 });
 

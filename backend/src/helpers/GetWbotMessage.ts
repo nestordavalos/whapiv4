@@ -4,18 +4,32 @@ import Ticket from "../models/Ticket";
 import GetTicketWbot from "./GetTicketWbot";
 import { logger } from "../utils/logger";
 
+const getErrorMessage = (err: unknown): string => {
+  if (err instanceof Error) return err.message.split("\n")[0];
+  return String(err).split("\n")[0];
+};
+
 export const GetWbotMessage = async (
   ticket: Ticket,
   messageId: string
 ): Promise<WbotMessage> => {
   const wbot = await GetTicketWbot(ticket);
+  const targetChatId = `${ticket.contact.number}@${
+    ticket.isGroup ? "g" : "c"
+  }.us`;
 
-  const wbotChat = await wbot.getChatById(
-    `${ticket.contact.number}@${ticket.isGroup ? "g" : "c"}.us`
-  );
+  const wbotChat = await wbot.getChatById(targetChatId);
 
   let limit = ticket.isGroup ? 50 : 20;
   const maxLimit = ticket.isGroup ? 300 : 100;
+  const logContext = {
+    ticketId: ticket.id,
+    contactId: ticket.contactId,
+    contactNumber: ticket.contact?.number,
+    isGroup: ticket.isGroup,
+    messageId,
+    targetChatId
+  };
 
   const fetchWbotMessagesGradually = async (): Promise<void | WbotMessage> => {
     try {
@@ -30,7 +44,15 @@ export const GetWbotMessage = async (
 
       return msgFound;
     } catch (fetchError) {
-      logger.error(`Error fetching messages: ${fetchError}`);
+      logger.error(
+        {
+          ...logContext,
+          limit,
+          maxLimit,
+          error: getErrorMessage(fetchError)
+        },
+        "[GetWbotMessage] Error fetching messages"
+      );
       return undefined;
     }
   };
@@ -44,6 +66,13 @@ export const GetWbotMessage = async (
         : `Não foi possível encontrar a mensagem nas últimas ${maxLimit} mensagens`;
 
       logger.warn(errorMsg);
+      logger.warn(
+        {
+          ...logContext,
+          maxLimit
+        },
+        "[GetWbotMessage] Message not found in fetched WhatsApp history"
+      );
       throw new AppError("ERR_FETCH_WAPP_MSG");
     }
 
@@ -53,7 +82,13 @@ export const GetWbotMessage = async (
       throw err;
     }
 
-    logger.error(`Error in GetWbotMessage: ${err}`);
+    logger.error(
+      {
+        ...logContext,
+        error: getErrorMessage(err)
+      },
+      "[GetWbotMessage] Unexpected error"
+    );
     throw new AppError("ERR_FETCH_WAPP_MSG");
   }
 };

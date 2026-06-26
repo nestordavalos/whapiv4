@@ -57,10 +57,7 @@ export const isLikelyLid = (number: string): boolean => {
  * - For normal phone numbers → number@c.us
  * - For LID-like numbers (>15 digits) → number@lid
  */
-export const getContactJid = (
-  number: string,
-  isGroup: boolean
-): string => {
+export const getContactJid = (number: string, isGroup: boolean): string => {
   if (isGroup) {
     return `${number}@g.us`;
   }
@@ -102,7 +99,7 @@ export const resolvePhoneFromLid = async (
   }
 
   try {
-    const result = await (wbot as any).pupPage.evaluate(async (lid: string) => {
+    const result = await (wbot as any).pupPage.evaluate((lid: string) => {
       try {
         const win = window as any;
         if (!win.Store || !win.Store.WidFactory) {
@@ -110,6 +107,121 @@ export const resolvePhoneFromLid = async (
         }
 
         const wid = win.Store.WidFactory.createWid(`${lid}@lid`);
+
+        const getPhoneUser = (phone: any): string | null => {
+          if (!phone) return null;
+          const serialized = Reflect.get(phone, "_serialized");
+          return phone.user || serialized?.replace("@c.us", "") || null;
+        };
+
+        const readLocalContact = (): any => {
+          if (!win.Store.Contact) {
+            return null;
+          }
+
+          try {
+            const contact = win.Store.Contact.get(wid);
+            if (!contact) {
+              return null;
+            }
+
+            const phoneUser = getPhoneUser(contact.phoneNumber);
+            if (phoneUser) {
+              return { phone: phoneUser, strategy: "Contact.phoneNumber" };
+            }
+
+            if (win.Store.ContactMethods) {
+              const userid = win.Store.ContactMethods.getUserid(contact);
+              if (userid && userid.length <= 15) {
+                return { phone: userid, strategy: "ContactMethods.getUserid" };
+              }
+            }
+          } catch {
+            return null;
+          }
+
+          return null;
+        };
+
+        const findContact = (): Promise<any> => {
+          if (!win.Store.Contact) {
+            return Promise.resolve(null);
+          }
+
+          try {
+            return Promise.resolve(win.Store.Contact.find(wid))
+              .then(contact => {
+                if (!contact) {
+                  return null;
+                }
+
+                const phoneUser = getPhoneUser(contact.phoneNumber);
+                if (phoneUser) {
+                  return {
+                    phone: phoneUser,
+                    strategy: "Contact.find.phoneNumber"
+                  };
+                }
+
+                if (win.Store.ContactMethods) {
+                  const userid = win.Store.ContactMethods.getUserid(contact);
+                  if (userid && userid.length <= 15) {
+                    return {
+                      phone: userid,
+                      strategy: "Contact.find.getUserid"
+                    };
+                  }
+                }
+
+                return null;
+              })
+              .catch(() => null);
+          } catch {
+            return Promise.resolve(null);
+          }
+        };
+
+        const queryExist = (): Promise<any> => {
+          if (!win.Store.QueryExist) {
+            return findContact();
+          }
+
+          try {
+            return Promise.resolve(win.Store.QueryExist(wid))
+              .then(queryResult => {
+                if (queryResult?.wid) {
+                  if (win.Store.LidUtils) {
+                    try {
+                      const phone = win.Store.LidUtils.getPhoneNumber(wid);
+                      if (phone && phone.user) {
+                        return {
+                          phone: phone.user,
+                          strategy: "QueryExist+LidUtils"
+                        };
+                      }
+                    } catch {
+                      // continue to QueryExist.wid
+                    }
+                  }
+
+                  if (
+                    queryResult.wid.user &&
+                    queryResult.wid.server === "c.us"
+                  ) {
+                    return {
+                      phone: queryResult.wid.user,
+                      strategy: "QueryExist.wid"
+                    };
+                  }
+                }
+
+                return findContact();
+              })
+              .catch(() => findContact());
+          } catch {
+            return findContact();
+          }
+        };
 
         // Strategy 1: LidUtils.getPhoneNumber — fast local cache lookup
         if (win.Store.LidUtils) {
@@ -124,88 +236,35 @@ export const resolvePhoneFromLid = async (
         }
 
         // Strategy 2: Contact model phoneNumber (fast, no network)
-        if (win.Store.Contact) {
-          try {
-            const contact = win.Store.Contact.get(wid);
-            if (contact) {
-              if (contact.phoneNumber && contact.phoneNumber.user) {
-                return { phone: contact.phoneNumber.user, strategy: "Contact.phoneNumber" };
-              }
-              if (win.Store.ContactMethods) {
-                const userid = win.Store.ContactMethods.getUserid(contact);
-                if (userid && userid.length <= 15) {
-                  return { phone: userid, strategy: "ContactMethods.getUserid" };
-                }
-              }
-            }
-          } catch {
-            // continue to next strategy
-          }
+        const localContact = readLocalContact();
+        if (localContact) {
+          return localContact;
         }
 
         // Strategy 3: enforceLidAndPnRetrieval — server-side QueryExist
         if (typeof win.WWebJS?.enforceLidAndPnRetrieval === "function") {
           try {
-            const resolved = await win.WWebJS.enforceLidAndPnRetrieval(
-              `${lid}@lid`
-            );
-            if (resolved?.phone) {
-              const phoneUser =
-                resolved.phone.user ||
-                resolved.phone._serialized?.replace("@c.us", "");
-              if (phoneUser) {
-                return { phone: phoneUser, strategy: "enforceLidAndPnRetrieval" };
-              }
-            }
-          } catch {
-            // continue
-          }
-        }
-
-        // Strategy 4: Direct QueryExist + re-read LidUtils
-        if (win.Store.QueryExist) {
-          try {
-            const queryResult = await win.Store.QueryExist(wid);
-            if (queryResult?.wid) {
-              if (win.Store.LidUtils) {
-                const phone = win.Store.LidUtils.getPhoneNumber(wid);
-                if (phone && phone.user) {
-                  return { phone: phone.user, strategy: "QueryExist+LidUtils" };
+            return Promise.resolve(
+              win.WWebJS.enforceLidAndPnRetrieval(`${lid}@lid`)
+            )
+              .then(resolved => {
+                const phoneUser = getPhoneUser(resolved?.phone);
+                if (phoneUser) {
+                  return {
+                    phone: phoneUser,
+                    strategy: "enforceLidAndPnRetrieval"
+                  };
                 }
-              }
-              if (
-                queryResult.wid.user &&
-                queryResult.wid.server === "c.us"
-              ) {
-                return { phone: queryResult.wid.user, strategy: "QueryExist.wid" };
-              }
-            }
+
+                return queryExist();
+              })
+              .catch(() => queryExist());
           } catch {
-            // all strategies exhausted
+            return queryExist();
           }
         }
 
-        // Strategy 5: Full Contact.find (async server fetch) + read phoneNumber
-        if (win.Store.Contact) {
-          try {
-            const contact = await win.Store.Contact.find(wid);
-            if (contact) {
-              if (contact.phoneNumber && contact.phoneNumber.user) {
-                return { phone: contact.phoneNumber.user, strategy: "Contact.find.phoneNumber" };
-              }
-              if (win.Store.ContactMethods) {
-                const userid = win.Store.ContactMethods.getUserid(contact);
-                if (userid && userid.length <= 15) {
-                  return { phone: userid, strategy: "Contact.find.getUserid" };
-                }
-              }
-            }
-          } catch {
-            // contact find failed
-          }
-        }
-
-        return null;
+        return queryExist();
       } catch {
         return null;
       }
@@ -271,21 +330,29 @@ export const resolveLidFromPhone = async (
   }
 
   try {
-    const result = await (wbot as any).pupPage.evaluate(
-      async (phone: string) => {
-        try {
-          const resolved = await (window as any).WWebJS
-            ?.enforceLidAndPnRetrieval(`${phone}@c.us`);
-          return {
-            lid: resolved?.lid?._serialized,
-            pn: resolved?.phone?._serialized
-          };
-        } catch {
+    const result = await (wbot as any).pupPage.evaluate((phone: string) => {
+      try {
+        const win = window as any;
+        if (typeof win.WWebJS?.enforceLidAndPnRetrieval !== "function") {
           return null;
         }
-      },
-      normalizedPhone
-    );
+
+        return Promise.resolve(
+          win.WWebJS.enforceLidAndPnRetrieval(`${phone}@c.us`)
+        )
+          .then(resolved => ({
+            lid: resolved?.lid
+              ? Reflect.get(resolved.lid, "_serialized")
+              : null,
+            pn: resolved?.phone
+              ? Reflect.get(resolved.phone, "_serialized")
+              : null
+          }))
+          .catch(() => null);
+      } catch {
+        return null;
+      }
+    }, normalizedPhone);
 
     if (result?.lid && result?.pn) {
       cacheLidPhoneMapping(result.lid, result.pn);
@@ -366,9 +433,7 @@ export const sendMessageWithLidFallback = async (
 
     // The library can return undefined/null when the chat isn't found
     if (!sentMessage) {
-      throw new Error(
-        `sendMessage returned empty result for ${primaryJid}`
-      );
+      throw new Error(`sendMessage returned empty result for ${primaryJid}`);
     }
     return sentMessage;
   } catch (err: any) {

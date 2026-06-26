@@ -1,4 +1,5 @@
 import { Client, Message as WbotMessage } from "whatsapp-web.js";
+import { Op } from "sequelize";
 import AppError from "../../errors/AppError";
 import GetTicketWbot from "../../helpers/GetTicketWbot";
 import GetWbotMessage from "../../helpers/GetWbotMessage";
@@ -22,6 +23,19 @@ const failureTracker = new Map<number, { count: number; lastError: string }>();
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const addJitter = (ms: number) => ms + Math.floor(Math.random() * 250);
+
+const buildSentMessageFromStoredMessage = (
+  message: Message,
+  body: string
+): WbotMessage =>
+  ({
+    id: { id: message.id },
+    body,
+    timestamp: Math.floor(new Date(message.createdAt).getTime() / 1000),
+    fromMe: true,
+    hasMedia: false,
+    ack: message.ack
+  } as unknown as WbotMessage);
 
 const errorToString = (error: unknown): string => {
   if (error instanceof Error) {
@@ -87,15 +101,27 @@ const SendWhatsAppMessage = async ({
 }: Request): Promise<WbotMessage> => {
   let quotedMsgSerializedId: string | undefined;
   if (quotedMsg) {
-    logger.debug({ id: quotedMsg.id, mediaType: quotedMsg.mediaType, fromMe: quotedMsg.fromMe }, "Processing quotedMsg");
+    logger.debug(
+      {
+        id: quotedMsg.id,
+        mediaType: quotedMsg.mediaType,
+        fromMe: quotedMsg.fromMe
+      },
+      "Processing quotedMsg"
+    );
     try {
       const wbotMessage = await GetWbotMessage(ticket, quotedMsg.id);
       // Usar el ID serializado real de WhatsApp en lugar de construir uno personalizado
       // eslint-disable-next-line no-underscore-dangle
       quotedMsgSerializedId = wbotMessage.id._serialized;
-      logger.debug("Using real WhatsApp serialized ID: %s", quotedMsgSerializedId);
+      logger.debug(
+        "Using real WhatsApp serialized ID: %s",
+        quotedMsgSerializedId
+      );
     } catch (err) {
-      logger.debug("Could not fetch quoted message, trying with custom serialization");
+      logger.debug(
+        "Could not fetch quoted message, trying with custom serialization"
+      );
       quotedMsgSerializedId = SerializeWbotMsgId(ticket, quotedMsg);
       logger.debug("Using fallback serialized ID: %s", quotedMsgSerializedId);
     }
@@ -106,6 +132,7 @@ const SendWhatsAppMessage = async ({
   const { whatsappId } = ticket;
   const { number } = ticket.contact;
   const { isGroup } = ticket;
+  const sendStartedAt = new Date(Date.now() - 2000);
 
   const sendOptions = {
     quotedMessageId: quotedMsgSerializedId,
@@ -121,7 +148,10 @@ const SendWhatsAppMessage = async ({
       }
 
       try {
-        logger.debug({ attempt, number, isGroup, bodyLength: formattedBody.length }, "Sending WhatsApp message");
+        logger.debug(
+          { attempt, number, isGroup, bodyLength: formattedBody.length },
+          "Sending WhatsApp message"
+        );
 
         // sendMessageWithLidFallback already tries @c.us then @lid internally
         const sentMessage = await sendMessageWithLidFallback(
@@ -138,7 +168,10 @@ const SendWhatsAppMessage = async ({
           );
         }
 
-        logger.debug({ id: sentMessage.id.id, hasQuoted: !!sentMessage.hasQuotedMsg }, "Message sent successfully");
+        logger.debug(
+          { id: sentMessage.id.id, hasQuoted: !!sentMessage.hasQuotedMsg },
+          "Message sent successfully"
+        );
 
         await ticket.update({ lastMessage: body });
         resetFailures(whatsappId);
@@ -184,6 +217,43 @@ const SendWhatsAppMessage = async ({
   try {
     return await attemptSend();
   } catch (err) {
+    try {
+      await delay(1000);
+
+      const storedSentMessage = await Message.findOne({
+        where: {
+          ticketId: ticket.id,
+          fromMe: true,
+          body: formattedBody,
+          mediaUrl: null,
+          createdAt: { [Op.gte]: sendStartedAt }
+        },
+        order: [["createdAt", "DESC"]]
+      });
+
+      if (storedSentMessage) {
+        logger.warn(
+          {
+            ticketId: ticket.id,
+            whatsappId,
+            messageId: storedSentMessage.id,
+            err
+          },
+          "WhatsApp text send reported an error, but outgoing message was stored"
+        );
+
+        await ticket.update({ lastMessage: body });
+        resetFailures(whatsappId);
+        return buildSentMessageFromStoredMessage(storedSentMessage, body);
+      }
+    } catch (dbCheckErr) {
+      logger.warn(
+        `Failed to verify sent text message in database for ticket ${
+          ticket.id
+        } (whatsapp ${whatsappId}): ${errorToString(dbCheckErr)}`
+      );
+    }
+
     // Last resort: check if the message was actually delivered despite errors
     try {
       await delay(1000);

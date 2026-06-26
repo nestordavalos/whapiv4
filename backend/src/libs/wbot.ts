@@ -45,6 +45,18 @@ interface Session extends Client {
 }
 
 const sessions: Session[] = [];
+const authDataPath = path.resolve(__dirname, "../../.wwebjs_auth");
+
+const numberFromEnv = (name: string, fallback: number): number => {
+  const parsed = Number(process.env[name]);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const booleanFromEnv = (name: string, fallback: boolean): boolean => {
+  const value = process.env[name];
+  if (value === undefined) return fallback;
+  return value === "true";
+};
 
 const getChatLabel = (chat: any): string => {
   if (typeof chat?.id === "string") return chat.id;
@@ -178,8 +190,18 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
 
       const wbot: Session = new Client({
         session: sessionCfg,
-        authStrategy: new LocalAuth({ clientId: `bd_${whatsapp.id}` }),
+        authStrategy: new LocalAuth({
+          clientId: `bd_${whatsapp.id}`,
+          dataPath: authDataPath,
+          rmMaxRetries: numberFromEnv("WAPP_AUTH_RM_MAX_RETRIES", 10)
+        }),
         restartOnAuthFail: false,
+        authTimeoutMs: numberFromEnv("WAPP_AUTH_TIMEOUT_MS", 60000),
+        qrMaxRetries: numberFromEnv("WAPP_QR_MAX_RETRIES", 3),
+        takeoverOnConflict: booleanFromEnv("WAPP_TAKEOVER_ON_CONFLICT", false),
+        takeoverTimeoutMs: numberFromEnv("WAPP_TAKEOVER_TIMEOUT_MS", 0),
+        deviceName: process.env.WAPP_DEVICE_NAME || "T-Chateo",
+        browserName: process.env.WAPP_BROWSER_NAME || "Chrome",
         puppeteer: {
           headless: true,
           devtools: false,
@@ -213,11 +235,8 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
             "--disable-accelerated-mjpeg-decode",
             "--disable-app-list-dismiss-on-blur",
             "--disable-accelerated-video-decode",
-            "--disable-gpu-driver-soluciones-para-errores",
-            "--disable-gpu",
             "--no-first-run",
-            "--no-zygote",
-            "--disable-dev-shm-usage"
+            "--no-zygote"
           ],
           ignoreDefaultArgs: ["--disable-automation"],
           executablePath: process.env.CHROME_BIN || undefined
@@ -279,6 +298,13 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
           Sentry.captureException(err);
           logger.error(`Error handling authenticated: ${err}`);
         }
+      });
+
+      wbot.on("loading_screen", (percent, message) => {
+        logger.info(
+          { whatsappId: whatsapp.id, sessionName, percent, message },
+          "[wbot] WhatsApp Web loading"
+        );
       });
 
       wbot.on("auth_failure", async msg => {

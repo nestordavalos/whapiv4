@@ -54,9 +54,16 @@ const getChatLabel = (chat: any): string => {
   return chat?.name || "unknown";
 };
 
+const getFirstErrorLine = (err: any): string => {
+  const message = err?.message || String(err);
+  return message.split("\n")[0];
+};
+
 // eslint-disable-next-line no-restricted-syntax
 const syncUnreadMessages = async (wbot: Session) => {
   const chats = await wbot.getChats();
+  const failedChats: Array<{ chat: string; error: string }> = [];
+
   // eslint-disable-next-line no-restricted-syntax
   for (const chat of chats) {
     if (chat.unreadCount > 0) {
@@ -67,11 +74,10 @@ const syncUnreadMessages = async (wbot: Session) => {
           limit: chat.unreadCount
         });
       } catch (err: any) {
-        logger.warn(
-          `[wbot] No se pudieron sincronizar mensajes no leídos de ${getChatLabel(
-            chat
-          )}: ${err.message}`
-        );
+        failedChats.push({
+          chat: getChatLabel(chat),
+          error: getFirstErrorLine(err)
+        });
         // eslint-disable-next-line no-continue
         continue;
       }
@@ -145,6 +151,16 @@ const syncUnreadMessages = async (wbot: Session) => {
         }
       }
     }
+  }
+
+  if (failedChats.length > 0) {
+    logger.warn(
+      {
+        failedChats: failedChats.length,
+        examples: failedChats.slice(0, 5)
+      },
+      "[wbot] Algunos chats no pudieron sincronizar mensajes no leídos"
+    );
   }
 };
 

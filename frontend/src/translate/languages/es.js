@@ -76,6 +76,7 @@ const messages = {
           syncingAll: "Sincronizando todos los mensajes del dispositivo...",
           syncSuccess: "Sincronización completada: {{chats}} chats, {{newMessages}} nuevos, {{duplicates}} duplicados",
           syncError: "Error al sincronizar mensajes",
+          startupFailed: "No se pudo iniciar la conexión {{name}}. Quedó desconectada; podés intentar de nuevo o generar un nuevo QR.",
         },
         confirmationModal: {
           deleteTitle: "Eliminar",
@@ -90,6 +91,7 @@ const messages = {
           qrcode: "CÓDIGO QR",
           newQr: "CÓDIGO QR",
           connecting: "Conectando",
+          forceStop: "Detener",
           restart: "Reiniciar",
           edit: "Editar",
           delete: "Eliminar",

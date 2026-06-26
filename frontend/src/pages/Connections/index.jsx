@@ -567,9 +567,22 @@ const Connections = () => {
 						</>
 					)}
                 {whatsApp.status === "OPENING" && (
-					<Button className={classes.actionButton} variant="outlined" disabled>
-						{i18n.t("connections.buttons.connecting")}
-					</Button>
+					<>
+						<Button className={classes.actionButton} variant="outlined" disabled>
+							{i18n.t("connections.buttons.connecting")}
+						</Button>
+						<Button
+							className={classes.actionButton}
+							variant="outlined"
+							color="secondary"
+							onClick={() => {
+								handleOpenConfirmationModal("disconnect", whatsApp.id);
+							}}
+							disabled={restartingId === whatsApp.id || syncingId === whatsApp.id}
+						>
+							{i18n.t("connections.buttons.forceStop")}
+						</Button>
+					</>
 				)}
             </>
         );

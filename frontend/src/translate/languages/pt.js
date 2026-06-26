@@ -71,6 +71,12 @@ const messages = {
         title: "Conexões",
         toasts: {
           deleted: "Conexão com o WhatsApp excluída com sucesso!",
+          restarted: "Sessão do WhatsApp reiniciada com sucesso!",
+          syncing: "Sincronizando mensagens não lidas...",
+          syncingAll: "Sincronizando todas as mensagens do dispositivo...",
+          syncSuccess: "Sincronização concluída: {{chats}} chats, {{newMessages}} novas, {{duplicates}} duplicadas",
+          syncError: "Erro ao sincronizar mensagens",
+          startupFailed: "Não foi possível iniciar a conexão {{name}}. Ela ficou desconectada; você pode tentar novamente ou gerar um novo QR.",
         },
         confirmationModal: {
           deleteTitle: "Deletar",
@@ -85,6 +91,21 @@ const messages = {
           qrcode: "QR CODE",
           newQr: "Novo QR CODE",
           connecting: "Conectando",
+          forceStop: "Parar",
+          restart: "Reiniciar",
+          edit: "Editar",
+          delete: "Excluir",
+          syncMessages: "Sincronizar mensagens",
+        },
+        syncMenu: {
+          unread: "Mensagens não lidas",
+          unreadDesc: "Sincroniza apenas mensagens não lidas (rápido)",
+          all: "Todas as mensagens",
+          allDesc: "Recupera mensagens históricas do dispositivo",
+        },
+        empty: {
+          title: "Não há conexões",
+          message: "Adicione uma conexão do WhatsApp para começar",
         },
         toolTips: {
           disconnected: {

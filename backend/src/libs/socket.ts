@@ -40,7 +40,10 @@ export const initIO = (httpServer: Server): SocketIO => {
         return io;
       }
       tokenData = verify(tokenString, authConfig.secret) as SocketTokenPayload;
-      logger.debug(JSON.stringify(tokenData), "io-onConnection: tokenData");
+      logger.debug(
+        { userId: tokenData.id, profile: tokenData.profile },
+        "socket authenticated"
+      );
     } catch (error) {
       logger.error(JSON.stringify(error), "Error decoding token");
       socket.disconnect();
@@ -73,7 +76,10 @@ export const initIO = (httpServer: Server): SocketIO => {
       }
 
       socketTicketRooms.set(socket.id, ticketRoom);
-      logger.debug({ ticketId: ticketRoom, userId }, "client joined ticket channel");
+      logger.debug(
+        { ticketId: ticketRoom, userId },
+        "client joined ticket channel"
+      );
       socket.join(ticketRoom);
     });
 
@@ -85,7 +91,10 @@ export const initIO = (httpServer: Server): SocketIO => {
         socketTicketRooms.delete(socket.id);
       }
 
-      logger.debug({ ticketId: ticketRoom, userId }, "client left ticket channel");
+      logger.debug(
+        { ticketId: ticketRoom, userId },
+        "client left ticket channel"
+      );
     });
 
     socket.on("joinNotification", () => {

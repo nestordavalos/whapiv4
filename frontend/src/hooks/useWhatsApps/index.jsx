@@ -1,7 +1,9 @@
 import { useState, useEffect, useReducer } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 import openSocket from "../../services/socket-io";
 import toastError from "../../errors/toastError";
+import { i18n } from "../../translate/i18n";
 
 import api from "../../services/api";
 
@@ -117,6 +119,14 @@ const useWhatsApps = () => {
                         }
                         if (data.action === "update" && data.session) {
                                 dispatch({ type: "UPDATE_SESSION", payload: data.session });
+                                if (data.error) {
+                                        toast.error(
+                                                i18n.t("connections.toasts.startupFailed", {
+                                                        name: data.session.name,
+                                                }),
+                                                { toastId: `whatsapp-startup-${data.session.id}` }
+                                        );
+                                }
                         }
                 });
 

@@ -152,7 +152,6 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
   // eslint-disable-next-line @typescript-eslint/no-misused-promises, no-async-promise-executor
   return new Promise(async (resolve, reject) => {
     try {
-      logger.level = "trace";
       const io = getIO();
       const sessionName = whatsapp.name;
       let sessionCfg;
@@ -209,8 +208,37 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
         }
       } as any);
 
+      const clearInitializationTimeout = () => {
+        if (wbot.initializationTimeout) {
+          clearTimeout(wbot.initializationTimeout);
+          wbot.initializationTimeout = undefined;
+        }
+      };
+
+      wbot.initializationTimeout = setTimeout(async () => {
+        try {
+          logger.error(
+            {
+              whatsappId: whatsapp.id,
+              sessionName,
+              timeoutMs: Number(process.env.WAPP_STARTUP_TIMEOUT_MS || 90000)
+            },
+            "WhatsApp session startup timed out before QR/READY"
+          );
+          await wbot.destroy();
+        } catch (destroyErr) {
+          logger.warn(
+            { err: destroyErr, whatsappId: whatsapp.id, sessionName },
+            "Could not destroy timed out WhatsApp client"
+          );
+        }
+
+        reject(new Error("WhatsApp session startup timed out."));
+      }, Number(process.env.WAPP_STARTUP_TIMEOUT_MS || 90000));
+
       wbot.on("qr", async qr => {
         try {
+          clearInitializationTimeout();
           logger.info("Session:", sessionName);
           qrCode.generate(qr, { small: true });
           await whatsapp.update({ qrcode: qr, status: "qrcode", retries: 0 });
@@ -229,6 +257,7 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
 
       wbot.on("authenticated", async _session => {
         try {
+          clearInitializationTimeout();
           logger.info(`Session: ${sessionName} AUTHENTICATED`);
         } catch (err) {
           Sentry.captureException(err);
@@ -238,6 +267,7 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
 
       wbot.on("auth_failure", async msg => {
         try {
+          clearInitializationTimeout();
           logger.error(`Session: ${sessionName} AUTH FAILURE - ${msg}`);
 
           if (whatsapp.retries > 1) {
@@ -259,6 +289,7 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
 
       wbot.on("ready", async () => {
         try {
+          clearInitializationTimeout();
           logger.info(`Session: ${sessionName} READY`);
 
           await whatsapp.update({
@@ -409,6 +440,7 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
 
       wbot.on("disconnected", async reason => {
         try {
+          clearInitializationTimeout();
           logger.warn(`Session: ${sessionName} DISCONNECTED - ${reason}`);
 
           // Limpiar el intervalo de ping cuando se desconecta
@@ -433,6 +465,15 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
       try {
         await wbot.initialize();
       } catch (err) {
+        clearInitializationTimeout();
+        try {
+          await wbot.destroy();
+        } catch (destroyErr) {
+          logger.warn(
+            { err: destroyErr, whatsappId: whatsapp.id, sessionName },
+            "Could not destroy failed WhatsApp client"
+          );
+        }
         Sentry.captureException(err);
         logger.error(`Error initializing wbot: ${err}`);
         reject(err);

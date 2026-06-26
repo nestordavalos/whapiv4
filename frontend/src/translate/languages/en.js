@@ -70,6 +70,12 @@ const messages = {
         title: "Connections",
         toasts: {
           deleted: "WhatsApp connection deleted successfully!",
+          restarted: "WhatsApp session restarted successfully!",
+          syncing: "Syncing unread messages...",
+          syncingAll: "Syncing all messages from the device...",
+          syncSuccess: "Sync completed: {{chats}} chats, {{newMessages}} new, {{duplicates}} duplicates",
+          syncError: "Error syncing messages",
+          startupFailed: "Could not start connection {{name}}. It was left disconnected; you can try again or generate a new QR.",
         },
         confirmationModal: {
           deleteTitle: "Delete",
@@ -84,6 +90,21 @@ const messages = {
           qrcode: "QR CODE",
           newQr: "New QR CODE",
           connecting: "Connecting",
+          forceStop: "Stop",
+          restart: "Restart",
+          edit: "Edit",
+          delete: "Delete",
+          syncMessages: "Sync messages",
+        },
+        syncMenu: {
+          unread: "Unread messages",
+          unreadDesc: "Only syncs unread messages (fast)",
+          all: "All messages",
+          allDesc: "Recovers historical messages from the device",
+        },
+        empty: {
+          title: "No connections",
+          message: "Add a WhatsApp connection to get started",
         },
         toolTips: {
           disconnected: {

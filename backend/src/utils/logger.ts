@@ -2,9 +2,10 @@ import pino from "pino";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 const level = process.env.LOG_LEVEL || "info";
+const prettyLogs = process.env.LOG_PRETTY !== "false";
 
 const logger = pino(
-  isDevelopment
+  prettyLogs
     ? {
         level,
         transport: {
@@ -12,7 +13,9 @@ const logger = pino(
           options: {
             levelFirst: true,
             translateTime: true,
-            colorize: true
+            colorize: isDevelopment,
+            singleLine: true,
+            ignore: "pid,hostname"
           }
         }
       }

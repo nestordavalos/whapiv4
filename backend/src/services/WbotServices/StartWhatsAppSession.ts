@@ -8,9 +8,8 @@ import { logger } from "../../utils/logger";
 export const StartWhatsAppSession = async (
   whatsapp: Whatsapp
 ): Promise<void> => {
-  await whatsapp.update({ status: "OPENING" });
-
   const io = getIO();
+  await whatsapp.update({ status: "OPENING" });
   io.emit("whatsappSession", {
     action: "update",
     session: whatsapp
@@ -21,6 +20,31 @@ export const StartWhatsAppSession = async (
     wbotMessageListener(wbot);
     wbotMonitor(wbot, whatsapp);
   } catch (err) {
-    logger.error(err);
+    const message = err instanceof Error ? err.message : String(err);
+
+    logger.error(
+      {
+        whatsappId: whatsapp.id,
+        sessionName: whatsapp.name,
+        err
+      },
+      "Error starting WhatsApp session"
+    );
+
+    await whatsapp.update({
+      status: "DISCONNECTED",
+      qrcode: "",
+      retries: (whatsapp.retries || 0) + 1
+    });
+
+    io.emit("whatsappSession", {
+      action: "update",
+      session: whatsapp,
+      error: {
+        message
+      }
+    });
+
+    throw new Error(message);
   }
 };

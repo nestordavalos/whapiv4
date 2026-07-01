@@ -735,6 +735,8 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
         !loadingRef.current &&
         messagesListDiv.scrollHeight <= messagesListDiv.clientHeight + 1
       ) {
+        loadingRef.current = true;
+        setLoading(true);
         setPageNumber((prev) => prev + 1);
       }
     });
@@ -816,6 +818,8 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     // Cargar más mensajes cuando estamos cerca del tope (dentro de los primeros 150px)
     if (scrollTop < 150) {
       if (!loadingRef.current && hasMore) {
+        loadingRef.current = true;
+        setLoading(true);
         setPageNumber((prev) => prev + 1);
       }
     }

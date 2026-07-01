@@ -31,7 +31,7 @@ const ListMessagesService = async ({
     throw new AppError("ERR_NO_TICKET_FOUND", 404);
   }
 
-  const limit = 50;
+  const limit = 100;
   const currentPage = Math.max(parseInt(pageNumber, 10) || 1, 1);
   const queryLimit = limit * currentPage;
 

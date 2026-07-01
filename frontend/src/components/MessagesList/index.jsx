@@ -719,7 +719,28 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     return () => {
       clearTimeout(delayDebounceFn);
     };
-  }, [pageNumber, ticketId, hasMore]);
+  }, [pageNumber, ticketId]);
+
+  useEffect(() => {
+    if (!hasMore || loadingRef.current || messagesList.length === 0) return undefined;
+
+    const messagesListDiv = document.getElementById("messagesList");
+    if (!messagesListDiv) return undefined;
+
+    const frame = requestAnimationFrame(() => {
+      if (
+        isMounted.current &&
+        currentTicketId.current === ticketId &&
+        hasMore &&
+        !loadingRef.current &&
+        messagesListDiv.scrollHeight <= messagesListDiv.clientHeight + 1
+      ) {
+        setPageNumber((prev) => prev + 1);
+      }
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [messagesList.length, hasMore, ticketId]);
 
   useEffect(() => {
     const socket = openSocket();

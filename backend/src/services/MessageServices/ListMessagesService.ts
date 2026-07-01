@@ -61,7 +61,10 @@ const ListMessagesService = async ({
       }
     ],
     offset,
-    order: [["createdAt", "DESC"]]
+    order: [
+      ["createdAt", "DESC"],
+      ["id", "DESC"]
+    ]
   });
 
   const hasMore = messages.length > limit;

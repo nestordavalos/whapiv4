@@ -804,10 +804,9 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
 
-    // Evitar que el scroll llegue exactamente a 0 para prevenir rebotes
+    // Evitar rebotes en 0, pero cargar igual la pagina anterior.
     if (scrollTop === 0) {
       e.currentTarget.scrollTop = 1;
-      return;
     }
 
     // Verificar que no estamos en el fondo

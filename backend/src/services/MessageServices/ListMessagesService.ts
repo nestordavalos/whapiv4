@@ -31,8 +31,9 @@ const ListMessagesService = async ({
     throw new AppError("ERR_NO_TICKET_FOUND", 404);
   }
 
-  const limit = 20;
-  const offset = limit * (+pageNumber - 1);
+  const limit = 50;
+  const currentPage = Math.max(parseInt(pageNumber, 10) || 1, 1);
+  const queryLimit = limit * currentPage;
 
   // Optimized: Use subquery instead of separate query + IN clause
   // This reduces database round trips and is more efficient
@@ -46,7 +47,7 @@ const ListMessagesService = async ({
         )`)
       }
     },
-    limit: limit + 1,
+    limit: queryLimit + 1,
     include: [
       "contact",
       "ticket",
@@ -60,14 +61,13 @@ const ListMessagesService = async ({
         as: "reactions"
       }
     ],
-    offset,
     order: [
       ["createdAt", "DESC"],
       ["id", "DESC"]
     ]
   });
 
-  const hasMore = messages.length > limit;
+  const hasMore = messages.length > queryLimit;
   if (hasMore) {
     messages.pop();
   }
@@ -75,7 +75,7 @@ const ListMessagesService = async ({
   return {
     messages: messages.reverse(),
     ticket,
-    count: offset + messages.length + (hasMore ? 1 : 0),
+    count: messages.length + (hasMore ? 1 : 0),
     hasMore
   };
 };

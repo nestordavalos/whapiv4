@@ -408,6 +408,23 @@ export const clearLidPhoneCache = (): void => {
 };
 
 /**
+ * Recent WhatsApp Web builds can deliver a message but return no message
+ * model to whatsapp-web.js. Preserve that single send as pending locally;
+ * retrying or switching to @lid produces duplicate messages for the contact.
+ */
+const buildUnconfirmedSentMessage = (content: any): any => ({
+  id: {
+    id: `unconfirmed-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  },
+  body: typeof content === "string" ? content : content?.caption || "",
+  timestamp: Math.floor(Date.now() / 1000),
+  fromMe: true,
+  hasMedia: !!content?.mimetype,
+  ack: 0,
+  isUnconfirmed: true
+});
+
+/**
  * Attempts to send a message, falling back to @lid format if @c.us fails
  * with LID-related errors.
  *
@@ -418,7 +435,8 @@ export const clearLidPhoneCache = (): void => {
  * Flow:
  * 1. If the number is a LID, try to resolve it to a real phone first
  * 2. Send via the resolved phone (@c.us) or the original JID
- * 3. If send fails or returns undefined, try the alternate JID format
+ * 3. If the result is empty, retain the single send as pending (never resend)
+ * 4. If sending fails before it reaches WhatsApp, try the alternate JID format
  */
 export const sendMessageWithLidFallback = async (
   wbot: Client,
@@ -450,9 +468,13 @@ export const sendMessageWithLidFallback = async (
   try {
     const sentMessage = await wbot.sendMessage(primaryJid, content, options);
 
-    // The library can return undefined/null when the chat isn't found
+    // WhatsApp may have accepted the send even when the library cannot
+    // serialize its response. A fallback or retry here sent duplicate copies.
     if (!sentMessage) {
-      throw new Error(`sendMessage returned empty result for ${primaryJid}`);
+      logger.warn(
+        `[sendMessageWithLidFallback] Empty result for ${primaryJid}; keeping the single send as unconfirmed to prevent duplicates`
+      );
+      return buildUnconfirmedSentMessage(content);
     }
     return sentMessage;
   } catch (err: any) {
@@ -476,8 +498,7 @@ export const sendMessageWithLidFallback = async (
         (errMsg.includes("No LID for user") ||
           errMsg.includes("Lid is missing in chat table") ||
           errMsg.includes("isNewsletter") ||
-          errMsg.includes("commonGid") ||
-          errMsg.includes("returned empty result"))
+          errMsg.includes("commonGid"))
       ) {
         const lidNumber = await resolveLidFromPhone(wbot, resolvedNumber);
         if (lidNumber) {

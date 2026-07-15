@@ -71,50 +71,6 @@ const getFirstErrorLine = (err: any): string => {
   return message.split("\n")[0];
 };
 
-/**
- * whatsapp-web.js considers its browser helpers injected as soon as
- * `window.WWebJS` exists. A WhatsApp Web reload can leave that object only
- * partially initialized, though; the client will then emit READY and every
- * operation that calls WWebJS.getChat will fail. Validate the helpers that
- * this application needs and re-inject them before accepting the session.
- */
-const ensureWWebJsHelpers = async (wbot: Session): Promise<void> => {
-  const getMissingHelpers = async (): Promise<string[]> =>
-    wbot.pupPage.evaluate(() => {
-      const helpers = (window as any).WWebJS;
-      const required = [
-        "getChat",
-        "getChatModel",
-        "getMessageModel",
-        "sendMessage",
-        "sendSeen"
-      ];
-
-      return required.filter(helper => typeof helpers?.[helper] !== "function");
-    });
-
-  let missingHelpers = await getMissingHelpers();
-  if (missingHelpers.length === 0) return;
-
-  logger.warn(
-    { missingHelpers },
-    "[wbot] WWebJS helpers incomplete after READY; reinjecting"
-  );
-
-  // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-  const { LoadUtils } = require("whatsapp-web.js/src/util/Injected/Utils");
-  await wbot.pupPage.evaluate(LoadUtils);
-
-  missingHelpers = await getMissingHelpers();
-  if (missingHelpers.length > 0) {
-    throw new Error(
-      `WhatsApp Web helpers unavailable after reinjection: ${missingHelpers.join(
-        ", "
-      )}`
-    );
-  }
-};
-
 // eslint-disable-next-line no-restricted-syntax
 const syncUnreadMessages = async (wbot: Session, sessionName: string) => {
   const chats = await wbot.getChats();
@@ -395,8 +351,6 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
         try {
           clearInitializationTimeout();
           logger.info(`Session: ${sessionName} READY`);
-
-          await ensureWWebJsHelpers(wbot);
 
           await whatsapp.update({
             status: "CONNECTED",

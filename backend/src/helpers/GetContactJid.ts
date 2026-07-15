@@ -408,21 +408,18 @@ export const clearLidPhoneCache = (): void => {
 };
 
 /**
- * Recent WhatsApp Web builds can deliver a message but return no message
- * model to whatsapp-web.js. Preserve that single send as pending locally;
- * retrying or switching to @lid produces duplicate messages for the contact.
+ * The send reached WhatsApp, but whatsapp-web.js could not serialize the
+ * message model. The caller must verify the real message ID without sending
+ * again: inventing an ID leaves the UI permanently pending.
  */
-const buildUnconfirmedSentMessage = (content: any): any => ({
-  id: {
-    id: `unconfirmed-${Date.now()}-${Math.random().toString(36).slice(2)}`
-  },
-  body: typeof content === "string" ? content : content?.caption || "",
-  timestamp: Math.floor(Date.now() / 1000),
-  fromMe: true,
-  hasMedia: !!content?.mimetype,
-  ack: 0,
-  isUnconfirmed: true
-});
+export class WhatsAppSendUnconfirmedError extends Error {
+  public readonly code = "WAPP_SEND_UNCONFIRMED";
+
+  constructor(public readonly jid: string) {
+    super(`WhatsApp accepted a send but returned no message model for ${jid}`);
+    this.name = "WhatsAppSendUnconfirmedError";
+  }
+}
 
 /**
  * Attempts to send a message, falling back to @lid format if @c.us fails
@@ -435,7 +432,7 @@ const buildUnconfirmedSentMessage = (content: any): any => ({
  * Flow:
  * 1. If the number is a LID, try to resolve it to a real phone first
  * 2. Send via the resolved phone (@c.us) or the original JID
- * 3. If the result is empty, retain the single send as pending (never resend)
+ * 3. If the result is empty, verify it later without resending
  * 4. If sending fails before it reaches WhatsApp, try the alternate JID format
  */
 export const sendMessageWithLidFallback = async (
@@ -472,9 +469,9 @@ export const sendMessageWithLidFallback = async (
     // serialize its response. A fallback or retry here sent duplicate copies.
     if (!sentMessage) {
       logger.warn(
-        `[sendMessageWithLidFallback] Empty result for ${primaryJid}; keeping the single send as unconfirmed to prevent duplicates`
+        `[sendMessageWithLidFallback] Empty result for ${primaryJid}; verifying the single send without retrying`
       );
-      return buildUnconfirmedSentMessage(content);
+      throw new WhatsAppSendUnconfirmedError(primaryJid);
     }
     return sentMessage;
   } catch (err: any) {

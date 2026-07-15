@@ -13,7 +13,8 @@ import { getIO } from "../../libs/socket";
 import {
   getContactJid,
   resolveLidFromPhone,
-  sendMessageWithLidFallback
+  sendMessageWithLidFallback,
+  WhatsAppSendUnconfirmedError
 } from "../../helpers/GetContactJid";
 import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
 
@@ -205,6 +206,15 @@ const SendWhatsAppMessage = async ({
       } catch (error: any) {
         lastError = error;
         const errMsg = error?.message || String(error);
+
+        // The first request may already have reached WhatsApp. Never retry it:
+        // verification below will look for the real WhatsApp message ID.
+        if (error instanceof WhatsAppSendUnconfirmedError) {
+          logger.warn(
+            `WhatsApp send for ticket ${ticket.id} has no immediate message ID; verifying without retrying`
+          );
+          break;
+        }
 
         // If the error is LID-related and the fallback also failed,
         // don't retry — additional attempts won't help

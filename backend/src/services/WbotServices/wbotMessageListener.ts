@@ -1412,9 +1412,18 @@ const wbotMessageListener = async (wbot: Session): Promise<void> => {
         `[message_create] Procesando mensaje fromMe - id: ${msg.id?.id}`
       );
       await handleMessage(msg, wbot);
-    } catch (err) {
+    } catch (err: any) {
       Sentry.captureException(err);
-      logger.error(`Error handling message_create: ${err}`);
+      logger.error(
+        {
+          whatsappId: wbot.id,
+          messageId: msg.id?.id,
+          to: msg.to,
+          err: err?.message || String(err),
+          stack: err?.stack
+        },
+        "Error handling message_create"
+      );
     }
   });
 
@@ -1423,9 +1432,17 @@ const wbotMessageListener = async (wbot: Session): Promise<void> => {
 
     try {
       await handleMessage(msg, wbot);
-    } catch (err) {
+    } catch (err: any) {
       Sentry.captureException(err);
-      logger.error(`Error handling media_uploaded: ${err}`);
+      logger.error(
+        {
+          whatsappId: wbot.id,
+          messageId: msg.id?.id,
+          err: err?.message || String(err),
+          stack: err?.stack
+        },
+        "Error handling media_uploaded"
+      );
     }
   });
 

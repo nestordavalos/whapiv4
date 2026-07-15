@@ -25,6 +25,10 @@ import {
 } from "../services/WbotServices/wbotMessageListener";
 import Message from "../models/Message";
 import FixLidContactsService from "../services/ContactServices/FixLidContactsService";
+import {
+  getErrorMessage,
+  isWhatsAppWebStorageError
+} from "../helpers/WhatsAppWebErrors";
 // import { getWhatsAppConfig } from "../config/whatsapp";
 // import {
 //   getCircuitBreaker,
@@ -42,6 +46,8 @@ interface Session extends Client {
   consecutiveFailedChecks?: number;
   healthCheckActive?: boolean;
   initializationTimeout?: NodeJS.Timeout;
+  storageDegraded?: boolean;
+  storageError?: string;
 }
 
 const sessions: Session[] = [];
@@ -70,6 +76,72 @@ const getChatLabel = (chat: any): string => {
 const getFirstErrorLine = (err: any): string => {
   const message = err?.message || String(err);
   return message.split("\n")[0];
+};
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * READY is emitted before every WhatsApp Web collection is necessarily usable.
+ * Wait for both the connection and the injected API before enumerating chats.
+ */
+const waitForStoreReady = async (
+  wbot: Session,
+  sessionName: string
+): Promise<void> => {
+  const initialDelayMs = numberFromEnv("WAPP_SYNC_UNREAD_DELAY_MS", 15000);
+  const timeoutMs = numberFromEnv("WAPP_SYNC_UNREAD_READY_TIMEOUT_MS", 60000);
+  const startedAt = Date.now();
+
+  await delay(initialDelayMs);
+
+  while (Date.now() - startedAt < timeoutMs) {
+    const state = await wbot.getState();
+    if (state === "CONNECTED") {
+      const apiReady = await wbot.pupPage.evaluate(() => {
+        const api = (window as any).WWebJS;
+        return (
+          typeof api?.getChat === "function" &&
+          typeof api?.getChats === "function" &&
+          typeof (window as any).require === "function"
+        );
+      });
+
+      if (apiReady) return;
+    }
+
+    await delay(2000);
+  }
+
+  throw new Error(
+    `WhatsApp Web Store was not ready after ${timeoutMs}ms for ${sessionName}`
+  );
+};
+
+const markStorageDegraded = (
+  wbot: Session,
+  whatsapp: Whatsapp,
+  error: unknown,
+  source: string
+) => {
+  const message = getFirstErrorLine(error);
+  if (wbot.storageDegraded && wbot.storageError === message) return;
+
+  wbot.storageDegraded = true;
+  wbot.storageError = message;
+  logger.error(
+    {
+      whatsappId: whatsapp.id,
+      sessionName: whatsapp.name,
+      source,
+      error: getErrorMessage(error)
+    },
+    "[wbot] Sesión degradada: WhatsApp Web no puede leer su almacenamiento local"
+  );
+  getIO().emit("whatsappSession", {
+    action: "healthCheck",
+    session: whatsapp,
+    health: { status: "degraded", reason: "storage", lastError: message }
+  });
 };
 
 // eslint-disable-next-line no-restricted-syntax
@@ -138,7 +210,10 @@ const syncUnreadMessages = async (wbot: Session, sessionName: string) => {
             continue;
           }
           Sentry.captureException(err);
-          logger.error(`[wbot] Error handling unread message: ${err}`);
+          logger.error(
+            { sessionName, messageId: msg.id?.id, err: getErrorMessage(err) },
+            "[wbot] Error handling unread message"
+          );
         }
       }
 
@@ -403,11 +478,35 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
           }
 
           wbot.sendPresenceAvailable();
-          try {
-            await syncUnreadMessages(wbot, sessionName);
-          } catch (syncErr: any) {
-            logger.warn(
-              `[wbot] Sincronización inicial de no leídos falló para ${sessionName} (no crítico): ${syncErr.message}`
+          if (booleanFromEnv("WAPP_SYNC_UNREAD_ON_READY", true)) {
+            try {
+              await waitForStoreReady(wbot, sessionName);
+              if (wbot.storageDegraded) {
+                logger.warn(
+                  { sessionName, error: wbot.storageError },
+                  "[wbot] Sincronización inicial omitida: sesión degradada"
+                );
+              } else {
+                await syncUnreadMessages(wbot, sessionName);
+              }
+            } catch (syncErr: any) {
+              if (isWhatsAppWebStorageError(syncErr)) {
+                markStorageDegraded(
+                  wbot,
+                  whatsapp,
+                  syncErr,
+                  "initial-unread-sync"
+                );
+              }
+              logger.warn(
+                { sessionName, err: getErrorMessage(syncErr) },
+                "[wbot] Sincronización inicial de no leídos falló"
+              );
+            }
+          } else {
+            logger.info(
+              { sessionName },
+              "[wbot] Sincronización inicial de no leídos desactivada"
             );
           }
 
@@ -449,6 +548,21 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
               if (state !== "CONNECTED") {
                 logger.warn(`[wbot] Estado inusual: ${state}`);
               }
+
+              // A CONNECTED state is insufficient when WhatsApp Web's
+              // IndexedDB is broken. Probe a local chat lookup without
+              // fetching history or changing read state.
+              // eslint-disable-next-line no-underscore-dangle
+              const ownWid = (wbot.info as any)?.wid?._serialized;
+              if (ownWid) {
+                await wbot.pupPage.evaluate(async (chatId: string) => {
+                  const api = (window as any).WWebJS;
+                  if (typeof api?.getChat !== "function") {
+                    throw new Error("WWebJS.getChat is unavailable");
+                  }
+                  await api.getChat(chatId, { getAsModel: false });
+                }, ownWid);
+              }
             } catch (pingErr) {
               // Si es un error de protocolo (sesión cerrada), limpiar el intervalo
               if (
@@ -461,7 +575,18 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
                 if (wbot.pingInterval) clearInterval(wbot.pingInterval);
                 return;
               }
-              logger.error(`[wbot] Error al hacer ping: ${pingErr.message}`);
+              if (isWhatsAppWebStorageError(pingErr)) {
+                markStorageDegraded(
+                  wbot,
+                  whatsapp,
+                  pingErr,
+                  "periodic-health-check"
+                );
+              }
+              logger.error(
+                { sessionName, err: getErrorMessage(pingErr) },
+                "[wbot] Error al hacer ping"
+              );
             }
           }, 60000);
 
@@ -497,18 +622,42 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
       wbot.on("message", async msg => {
         try {
           await handleMessage(msg, wbot);
-        } catch (err) {
+        } catch (err: any) {
           Sentry.captureException(err);
-          logger.error(`Error handling message: ${err}`);
+          if (isWhatsAppWebStorageError(err)) {
+            markStorageDegraded(wbot, whatsapp, err, "incoming-message");
+          }
+          logger.error(
+            {
+              sessionName,
+              messageId: msg.id?.id,
+              from: msg.from,
+              err: getErrorMessage(err),
+              stack: err?.stack
+            },
+            "Error handling message"
+          );
         }
       });
 
       wbot.on("message_ack", async (msg, ack) => {
         try {
           await handleMsgAck(msg, ack, wbot);
-        } catch (err) {
+        } catch (err: any) {
           Sentry.captureException(err);
-          logger.error(`Error handling message_ack: ${err}`);
+          if (isWhatsAppWebStorageError(err)) {
+            markStorageDegraded(wbot, whatsapp, err, "message-ack");
+          }
+          logger.error(
+            {
+              sessionName,
+              messageId: msg.id?.id,
+              ack,
+              err: getErrorMessage(err),
+              stack: err?.stack
+            },
+            "Error handling message_ack"
+          );
         }
       });
 

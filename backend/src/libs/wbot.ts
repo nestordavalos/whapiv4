@@ -46,6 +46,7 @@ interface Session extends Client {
 
 const sessions: Session[] = [];
 const authDataPath = path.resolve(__dirname, "../../.wwebjs_auth");
+const webCachePath = path.resolve(__dirname, "../../.wwebjs_cache");
 
 const numberFromEnv = (name: string, fallback: number): number => {
   const parsed = Number(process.env[name]);
@@ -220,6 +221,19 @@ export const initWbot = (whatsapp: Whatsapp): Promise<Session> => {
         takeoverTimeoutMs: numberFromEnv("WAPP_TAKEOVER_TIMEOUT_MS", 0),
         deviceName: process.env.WAPP_DEVICE_NAME || "T-Chateo",
         browserName: process.env.WAPP_BROWSER_NAME || "Chrome",
+        // When set, do not allow WhatsApp Web to silently upgrade its HTML.
+        // That upgrade can break whatsapp-web.js injection for every session
+        // at once. The matching HTML must be present in webCachePath.
+        ...(process.env.WAPP_WEB_VERSION
+          ? {
+              webVersion: process.env.WAPP_WEB_VERSION,
+              webVersionCache: {
+                type: "local",
+                path: webCachePath,
+                strict: true
+              }
+            }
+          : {}),
         puppeteer: {
           headless: true,
           devtools: false,

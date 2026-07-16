@@ -1,5 +1,6 @@
 import GetDefaultWhatsApp from "../../helpers/GetDefaultWhatsApp";
 import { getWbot } from "../../libs/wbot";
+import { getWhaileys, whaileysJid } from "../../libs/whaileys";
 import Whatsapp from "../../models/Whatsapp";
 import AppError from "../../errors/AppError";
 import { logger } from "../../utils/logger";
@@ -125,6 +126,19 @@ const GetProfilePicUrl = async (
     }
   } else {
     whatsapp = await GetDefaultWhatsApp();
+  }
+
+  if (whatsapp.provider === "whaileys") {
+    try {
+      return (
+        (await getWhaileys(whatsapp.id).profilePictureUrl(
+          whaileysJid(number, isGroup),
+          "image"
+        )) || DEFAULT_PROFILE_PIC
+      );
+    } catch {
+      return DEFAULT_PROFILE_PIC;
+    }
   }
 
   const wbot = getWbot(whatsapp.id);

@@ -17,6 +17,7 @@ interface Request {
   isGroup: boolean;
   email?: string;
   profilePicUrl?: string;
+  remoteJid?: string;
   extraInfo?: ExtraInfo[];
   whatsappId?: number;
 }
@@ -26,6 +27,7 @@ const CreateOrUpdateContactService = async ({
   number: rawNumber,
   profilePicUrl,
   isGroup,
+  remoteJid,
   email = "",
   extraInfo = [],
   whatsappId
@@ -45,8 +47,16 @@ const CreateOrUpdateContactService = async ({
     const updatePic =
       isDefaultPic && hasRealPic ? contact.profilePicUrl : profilePicUrl;
 
+    const updates: Partial<Contact> = {};
     if (updatePic !== undefined && updatePic !== contact.profilePicUrl) {
-      await contact.update({ profilePicUrl: updatePic });
+      updates.profilePicUrl = updatePic;
+    }
+    if (remoteJid?.endsWith("@lid") && remoteJid !== contact.remoteJid) {
+      updates.remoteJid = remoteJid;
+    }
+
+    if (Object.keys(updates).length) {
+      await contact.update(updates);
 
       io.emit("contact", {
         action: "update",
@@ -80,6 +90,7 @@ const CreateOrUpdateContactService = async ({
       profilePicUrl,
       email,
       isGroup,
+      remoteJid: remoteJid?.endsWith("@lid") ? remoteJid : "",
       extraInfo
     });
 

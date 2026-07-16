@@ -417,6 +417,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
   const [activeTab, setActiveTab] = useState(0);
   const initialState = {
     name: "",
+    provider: "wwebjs",
     greetingMessage: "",
     farewellMessage: "",
     ratingMessage: "",
@@ -876,6 +877,31 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                     className={classes.textField}
                     style={{ marginBottom: 8 }}
                   />
+                  <FormControl
+                    variant="outlined"
+                    margin="dense"
+                    fullWidth
+                    className={classes.formControl}
+                    style={{ marginBottom: 8 }}
+                  >
+                    <InputLabel id="whatsapp-provider-label">
+                      {i18n.t("whatsappModal.form.provider")}
+                    </InputLabel>
+                    <Field
+                      as={Select}
+                      label={i18n.t("whatsappModal.form.provider")}
+                      labelId="whatsapp-provider-label"
+                      id="whatsapp-provider"
+                      name="provider"
+                    >
+                      <MenuItem value="wwebjs">
+                        {i18n.t("whatsappModal.form.providerWwebjs")}
+                      </MenuItem>
+                      <MenuItem value="whaileys">
+                        {i18n.t("whatsappModal.form.providerWhaileys")}
+                      </MenuItem>
+                    </Field>
+                  </FormControl>
                   <div className={classes.multFieldLine}>
                     <FormControlLabel
                       control={

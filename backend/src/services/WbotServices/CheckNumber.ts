@@ -1,11 +1,9 @@
 import GetDefaultWhatsApp from "../../helpers/GetDefaultWhatsApp";
 import { getWbot } from "../../libs/wbot";
+import { getWhaileys, whaileysJid } from "../../libs/whaileys";
 import Whatsapp from "../../models/Whatsapp";
 import AppError from "../../errors/AppError";
-import {
-  cacheLidPhoneMapping,
-  isLikelyLid
-} from "../../helpers/GetContactJid";
+import { cacheLidPhoneMapping, isLikelyLid } from "../../helpers/GetContactJid";
 import { logger } from "../../utils/logger";
 
 const CheckContactNumber = async (
@@ -23,6 +21,14 @@ const CheckContactNumber = async (
     whatsapp = await GetDefaultWhatsApp();
   }
 
+  if (whatsapp.provider === "whaileys") {
+    const [validNumber] = await getWhaileys(whatsapp.id).onWhatsApp(
+      whaileysJid(number)
+    );
+    if (!validNumber?.exists) throw new AppError("ERR_WAPP_INVALID_CONTACT");
+    return number;
+  }
+
   const wbot = getWbot(whatsapp.id);
 
   const validNumber: any = await wbot.getNumberId(`${number}@c.us`);
@@ -34,10 +40,7 @@ const CheckContactNumber = async (
   // WhatsApp's LID migration can cause getNumberId to return a LID WID
   // instead of the phone WID. Since we KNOW the original number is valid
   // (QueryExist confirmed it), return the original number in that case.
-  if (
-    validNumber.server === "lid" ||
-    isLikelyLid(validNumber.user)
-  ) {
+  if (validNumber.server === "lid" || isLikelyLid(validNumber.user)) {
     cacheLidPhoneMapping(validNumber.user, number);
     logger.info(
       `CheckContactNumber: getNumberId returned LID ${validNumber.user} for phone ${number}, using original number`

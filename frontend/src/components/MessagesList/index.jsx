@@ -21,6 +21,7 @@ import {
   Close,
   Done,
   DoneAll,
+  ErrorOutline,
   ExpandMore,
   GetApp,
   Reply,
@@ -960,6 +961,13 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   };
 
   const renderMessageAck = (message) => {
+    if (message.ack === -1) {
+      return (
+        <Tooltip title="No se pudo enviar el mensaje">
+          <ErrorOutline fontSize="small" color="error" />
+        </Tooltip>
+      );
+    }
     if (message.ack === 0) {
       return <AccessTime fontSize="small" className={classes.ackIcons} />;
     }

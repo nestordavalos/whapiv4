@@ -9,6 +9,7 @@ import { invalidateWebhookCache } from "../WebhookService/SendWebhookEvent";
 
 interface WhatsappData {
   name?: string;
+  provider?: string;
   status?: string;
   session?: string;
   isDefault?: boolean;
@@ -114,6 +115,7 @@ const UpdateWhatsAppService = async ({
 }: Request): Promise<Response> => {
   const schema = Yup.object().shape({
     name: Yup.string().min(2),
+    provider: Yup.string().oneOf(["wwebjs", "whaileys"]),
     status: Yup.string(),
     isDefault: Yup.boolean(),
     isGroup: Yup.boolean(),
@@ -124,6 +126,7 @@ const UpdateWhatsAppService = async ({
 
   const {
     name,
+    provider,
     status,
     isDefault,
     session,
@@ -195,7 +198,7 @@ const UpdateWhatsAppService = async ({
   } = whatsappData;
 
   try {
-    await schema.validate({ name, status, isDefault });
+    await schema.validate({ name, status, isDefault, provider });
   } catch (err) {
     throw new AppError(err.message);
   }
@@ -247,6 +250,7 @@ const UpdateWhatsAppService = async ({
   await whatsapp.update(
     omitUndefined({
       name,
+      provider,
       status,
       session,
       greetingMessage,

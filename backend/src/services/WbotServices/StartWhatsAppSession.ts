@@ -4,6 +4,7 @@ import { wbotMessageListener } from "./wbotMessageListener";
 import { getIO } from "../../libs/socket";
 import wbotMonitor from "./wbotMonitor";
 import { logger } from "../../utils/logger";
+import { initWhaileys } from "../../libs/whaileys";
 
 export const StartWhatsAppSession = async (
   whatsapp: Whatsapp
@@ -16,6 +17,11 @@ export const StartWhatsAppSession = async (
   });
 
   try {
+    if (whatsapp.provider === "whaileys") {
+      await initWhaileys(whatsapp);
+      return;
+    }
+
     const wbot = await initWbot(whatsapp);
     wbotMessageListener(wbot);
     wbotMonitor(wbot, whatsapp);

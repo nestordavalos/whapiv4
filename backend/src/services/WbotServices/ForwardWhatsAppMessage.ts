@@ -9,6 +9,8 @@ import { logger } from "../../utils/logger";
 import FindOrCreateTicketService from "../TicketServices/FindOrCreateTicketService";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import { getStorageService } from "../StorageServices/StorageService";
+import Whatsapp from "../../models/Whatsapp";
+import { getWhaileys, whaileysJid } from "../../libs/whaileys";
 
 interface Request {
   message: Message;
@@ -27,8 +29,6 @@ const ForwardWhatsAppMessage = async ({
   contactNumber
 }: Request): Promise<ForwardResult> => {
   try {
-    const wbot = await GetTicketWbot(ticket);
-
     // Find destination contact
     const destinationContact = await Contact.findOne({
       where: { number: contactNumber }
@@ -47,6 +47,69 @@ const ForwardWhatsAppMessage = async ({
       ticket.whatsappId,
       0 // unreadMessages
     );
+
+    const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
+    if (whatsapp?.provider === "whaileys") {
+      const remoteJid = whaileysJid(
+        contactNumber,
+        false,
+        destinationContact.remoteJid
+      );
+      const originalMediaUrl = message.getDataValue("mediaUrl");
+      let content: any = { text: message.body || "" };
+      let mediaUrl: string | undefined;
+      let mediaType: string | undefined;
+
+      if (originalMediaUrl && message.mediaType) {
+        const buffer = await getStorageService().downloadToBuffer(
+          originalMediaUrl
+        );
+        const mimeType = message.mediaType.startsWith("image")
+          ? "image/jpeg"
+          : message.mediaType.startsWith("video")
+          ? "video/mp4"
+          : message.mediaType.startsWith("audio")
+          ? "audio/ogg"
+          : "application/octet-stream";
+        content = {
+          document: buffer,
+          mimetype: mimeType,
+          fileName: path.basename(originalMediaUrl),
+          caption: message.body || undefined
+        };
+        mediaUrl = originalMediaUrl;
+        mediaType = message.mediaType;
+      }
+
+      const sent = await getWhaileys(whatsapp.id).sendMessage(
+        remoteJid,
+        content
+      );
+      const id = sent?.key.id;
+      if (!id)
+        throw new Error("Whaileys did not return a forwarded message id");
+      await CreateMessageService({
+        messageData: {
+          id,
+          ticketId: destinationTicket.id,
+          body: message.body || "",
+          contactId: destinationContact.id,
+          fromMe: true,
+          read: true,
+          mediaUrl,
+          mediaType,
+          ack: 1,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
+      await destinationTicket.update({
+        lastMessage: message.body || (mediaType ? `[${mediaType}]` : "")
+      });
+      return { success: true, destinationTicketId: destinationTicket.id };
+    }
+
+    const wbot = await GetTicketWbot(ticket);
 
     let sentMessage;
     const forwardedBody = message.body || "";

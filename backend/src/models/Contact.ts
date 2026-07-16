@@ -32,6 +32,12 @@ class Contact extends Model<Contact> {
   @Column
   number: string;
 
+  // Transport identifier used by providers that expose a LID separately from
+  // the contact's real phone number.
+  @Default("")
+  @Column
+  remoteJid: string;
+
   @AllowNull(false)
   @Default("")
   @Column

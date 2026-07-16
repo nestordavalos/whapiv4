@@ -141,6 +141,9 @@ const messages = {
         },
         form: {
           name: "Name",
+          provider: "Connection provider",
+          providerWwebjs: "WhatsApp Web.js",
+          providerWhaileys: "Whaileys (native)",
           default: "Default",
           display: "Display sector time",
           group: "Permit group messages",
@@ -808,6 +811,7 @@ const messages = {
         ERR_WAPP_DOWNLOAD_MEDIA: "Unable to download media from WhatsApp. Please check connections page.",
         ERR_INVALID_CREDENTIALS: "Authentication error. Please try again.",
         ERR_SENDING_WAPP_MSG: "Error sending WhatsApp message. Check connections page.",
+        ERR_WAPP_REACHOUT_TIMELOCK: "WhatsApp temporarily restricted sends for this connection. Please wait before trying again.",
         ERR_DELETE_WAPP_MSG: "Unable to delete WhatsApp message.",
         ERR_EDIT_WAPP_MSG: "Unable to edit WhatsApp message.",
         ERR_MESSAGE_NOT_FOUND: "Message not found.",

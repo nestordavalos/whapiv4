@@ -14,6 +14,10 @@ import {
   sendMessageWithLidFallback
 } from "../../helpers/GetContactJid";
 import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
+import Whatsapp from "../../models/Whatsapp";
+import { getZapoQuoteMetadata, resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
+import CreateMessageService from "../MessageServices/CreateMessageService";
+import { getStorageService } from "../StorageServices/StorageService";
 
 interface Request {
   mediaUrl: string;
@@ -21,6 +25,7 @@ interface Request {
   body?: string;
   quotedMsg?: Message;
   filename?: string;
+  voiceNote?: boolean;
 }
 
 const SendWhatsAppMediaFromUrl = async ({
@@ -28,8 +33,99 @@ const SendWhatsAppMediaFromUrl = async ({
   ticket,
   body,
   quotedMsg,
-  filename
+  filename,
+  voiceNote = false
 }: Request): Promise<WbotMessage> => {
+  const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
+  const hasBody = body ? formatBody(body, ticket) : undefined;
+
+  if (whatsapp?.provider === "zapo") {
+    try {
+      const response = await fetch(mediaUrl);
+      if (!response.ok) {
+        throw new Error(`Could not download URL media (${response.status})`);
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const mimeType =
+        response.headers.get("content-type")?.split(";")[0] ||
+        "application/octet-stream";
+      const mimeRoot = mimeType.split("/")[0];
+      const type = ["image", "video", "audio"].includes(mimeRoot)
+        ? mimeRoot
+        : "document";
+      const isVoiceNote =
+        type === "audio";
+      const finalFilename =
+        filename || `${Date.now()}.${mimeType.split("/")[1] || "bin"}`;
+      const remoteJid = await resolveZapoRecipientJid(
+        whatsapp.id,
+        ticket.contact.number,
+        ticket.isGroup,
+        ticket.contact.remoteJid
+      );
+      const quoteMetadata = quotedMsg
+        ? await getZapoQuoteMetadata(whatsapp.id, quotedMsg.id)
+        : undefined;
+      const sent = await sendZapoMessage(
+        whatsapp.id,
+        remoteJid,
+        {
+          type,
+          media: buffer,
+          mimetype: mimeType,
+          ...(type !== "audio" ? { fileName: finalFilename } : {}),
+          ...(hasBody ? { caption: hasBody } : {}),
+          ...(isVoiceNote ? { ptt: true } : {})
+        },
+        {
+          quote: quotedMsg
+            ? {
+                id: quotedMsg.id,
+                remoteJid,
+                fromMe: quotedMsg.fromMe,
+                participant: quoteMetadata?.participant,
+                message: quoteMetadata?.message
+              }
+            : undefined
+        }
+      );
+
+      await getStorageService().uploadBuffer(buffer, finalFilename, mimeType);
+      await CreateMessageService({
+        messageData: {
+          id: sent.id,
+          ticketId: ticket.id,
+          body: hasBody || "",
+          fromMe: true,
+          read: true,
+          mediaUrl: finalFilename,
+          mediaType: type,
+          quotedMsgId: quotedMsg?.id,
+          ack: 1,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
+      await ticket.update({
+        lastMessage: body || filename || "Media from URL"
+      });
+
+      return {
+        id: { id: sent.id },
+        body: hasBody || "",
+        timestamp: Math.floor(Date.now() / 1000),
+        fromMe: true,
+        hasMedia: true,
+        ack: 1
+      } as unknown as WbotMessage;
+    } catch (err) {
+      logger.error({ ticketId: ticket.id, err }, "Error sending Zapo URL media");
+      if (err instanceof AppError) throw err;
+      throw new AppError("ERR_SENDING_WAPP_MSG_FROM_URL");
+    }
+  }
+
   let quotedMsgSerializedId: string | undefined;
   if (quotedMsg) {
     try {
@@ -43,7 +139,6 @@ const SendWhatsAppMediaFromUrl = async ({
   }
 
   const wbot = await GetTicketWbot(ticket);
-  const hasBody = body ? formatBody(body as string, ticket) : undefined;
 
   try {
     // Descargar media desde URL

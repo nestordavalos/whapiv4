@@ -20,6 +20,7 @@ import SendWhatsAppMediaFromUrl from "../services/WbotServices/SendWhatsAppMedia
 import SendWhatsAppMediaFromBase64 from "../services/WbotServices/SendWhatsAppMediaFromBase64";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import { getWbot } from "../libs/wbot";
+import { getZapo } from "../libs/zapo";
 import { getIO } from "../libs/socket";
 import ListSettingsServiceOne from "../services/SettingServices/ListSettingsServiceOne";
 import { logger } from "../utils/logger";
@@ -844,13 +845,18 @@ export const getConnectionStatus = async (
     throw new AppError("Connection not found", 404);
   }
 
-  // Intentar obtener información adicional del wbot si está conectado
+  // Consultar el proveedor activo sin intentar inicializar whatsapp-web.js
+  // para una conexión Zapo.
   let isConnected = false;
   try {
-    const wbot = getWbot(Number(connectionId));
-    if (wbot) {
-      const state = await wbot.getState();
-      isConnected = state === "CONNECTED";
+    if (whatsapp.provider === "zapo") {
+      isConnected = getZapo(Number(connectionId)).getState().connected;
+    } else {
+      const wbot = getWbot(Number(connectionId));
+      if (wbot) {
+        const state = await wbot.getState();
+        isConnected = state === "CONNECTED";
+      }
     }
   } catch {
     isConnected = false;

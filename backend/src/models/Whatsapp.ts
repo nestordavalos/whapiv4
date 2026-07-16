@@ -29,6 +29,14 @@ class Whatsapp extends Model<Whatsapp> {
   @Column(DataType.TEXT)
   name: string;
 
+  @Default("wwebjs")
+  @AllowNull(false)
+  @Column(DataType.STRING)
+  provider: string;
+
+  @Column(DataType.DATE)
+  sendBlockedUntil: Date | null;
+
   @Column(DataType.TEXT)
   session: string;
 

@@ -10,6 +10,9 @@ const allowedMimeTypes = [
   "image/gif",
   "image/webp",
   "audio/mpeg",
+  // Some browsers and clients label standard MP3 uploads this way instead of
+  // audio/mpeg. Both represent the same file format.
+  "audio/mp3",
   "audio/ogg",
   "audio/wav",
   "audio/webm",
@@ -50,7 +53,11 @@ export default {
     file: Express.Multer.File,
     cb: multer.FileFilterCallback
   ) => {
-    if (allowedMimeTypes.includes(file.mimetype)) {
+    // MediaRecorder commonly adds codec parameters (for example
+    // `audio/webm; codecs=opus`). The base MIME type is what defines the
+    // upload policy; the parameters are needed later by the media processor.
+    const baseMimeType = file.mimetype.split(";", 1)[0].trim();
+    if (allowedMimeTypes.includes(baseMimeType)) {
       cb(null, true);
     } else {
       cb(new Error(`File type not allowed: ${file.mimetype}`));

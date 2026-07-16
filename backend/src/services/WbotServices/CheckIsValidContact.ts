@@ -1,11 +1,9 @@
 import AppError from "../../errors/AppError";
 import GetDefaultWhatsApp from "../../helpers/GetDefaultWhatsApp";
 import { getWbot } from "../../libs/wbot";
+import { getZapo } from "../../libs/zapo";
 import Whatsapp from "../../models/Whatsapp";
-import {
-  cacheLidPhoneMapping,
-  isLikelyLid
-} from "../../helpers/GetContactJid";
+import { cacheLidPhoneMapping, isLikelyLid } from "../../helpers/GetContactJid";
 
 const CheckIsValidContact = async (
   number: string,
@@ -20,6 +18,26 @@ const CheckIsValidContact = async (
     }
   } else {
     whatsapp = await GetDefaultWhatsApp();
+  }
+
+  if (whatsapp.provider === "zapo") {
+    try {
+      const [result] = await getZapo(whatsapp.id).profile.getLidsByPhoneNumbers([
+        number
+      ]);
+      if (!result?.exists || result.invalid) {
+        throw new AppError("invalidNumber");
+      }
+      if (result.lidJid) {
+        cacheLidPhoneMapping(result.lidJid.split("@")[0], result.phoneJid.split("@")[0]);
+      }
+      return;
+    } catch (err) {
+      if ((err as Error).message === "invalidNumber") {
+        throw new AppError("ERR_WAPP_INVALID_CONTACT");
+      }
+      throw new AppError("ERR_WAPP_CHECK_CONTACT");
+    }
   }
 
   const wbot = getWbot(whatsapp.id);

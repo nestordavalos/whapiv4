@@ -245,11 +245,10 @@ const TicketsList = (props) => {
 			}
 		};
 
-		if (socket.connected) {
-			join();
-		} else {
-			socket.on("connect", join);
-		}
+		// Socket.IO does not retain rooms after a reconnect (e.g. nodemon
+		// restarting the backend), so subscribe both now and on every connect.
+		socket.on("connect", join);
+		if (socket.connected) join();
 
 		const isAdmin = (profile || "").toUpperCase() === "ADMIN";
 

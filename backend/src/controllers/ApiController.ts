@@ -43,23 +43,6 @@ const createContact = async (
   whatsappId: number | undefined,
   newContact: string
 ) => {
-  await CheckIsValidContact(newContact);
-
-  const validNumber: any = await CheckContactNumber(newContact);
-
-  const profilePicUrl = await GetProfilePicUrl(validNumber);
-
-  const number = validNumber;
-
-  const contactData = {
-    name: `${number}`,
-    number,
-    profilePicUrl,
-    isGroup: false
-  };
-
-  const contact = await CreateOrUpdateContactService(contactData);
-
   let whatsapp: Whatsapp | null;
 
   if (whatsappId === undefined) {
@@ -71,6 +54,20 @@ const createContact = async (
       throw new AppError(`whatsapp #${whatsappId} not found`);
     }
   }
+
+  // Validation and profile lookup must use the requested connection. Falling
+  // back to the default session made /api/send fail or query the wrong
+  // provider whenever whatsappId pointed to a Zapo inbox.
+  await CheckIsValidContact(newContact, whatsapp.id);
+  const number = await CheckContactNumber(newContact, whatsapp.id);
+  const profilePicUrl = await GetProfilePicUrl(number, whatsapp.id);
+  const contact = await CreateOrUpdateContactService({
+    name: `${number}`,
+    number,
+    profilePicUrl,
+    isGroup: false,
+    whatsappId: whatsapp.id
+  });
 
   const createTicket = await FindOrCreateTicketService(
     contact,

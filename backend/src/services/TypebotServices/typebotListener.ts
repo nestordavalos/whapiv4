@@ -12,10 +12,19 @@ type Session = Client & {
 };
 
 interface Request {
-  wbot: Session;
-  msg: WbotMessage;
+  wbot?: Session;
+  msg?: WbotMessage;
   ticket: Ticket;
   typebot: QueueIntegrations;
+  channel?: TypebotChannel;
+}
+
+export interface TypebotChannel {
+  number: string;
+  body: string;
+  name?: string;
+  sendText: (text: string) => Promise<void>;
+  sendMedia: (type: string, url: string, caption?: string) => Promise<void>;
 }
 
 const delay = (ms: number): Promise<void> =>
@@ -25,9 +34,41 @@ const typebotListener = async ({
   wbot,
   msg,
   ticket,
-  typebot
+  typebot,
+  channel: suppliedChannel
 }: Request): Promise<void> => {
-  if (msg.from === "status@broadcast") return;
+  if (!suppliedChannel && (!wbot || !msg)) {
+    throw new Error("Typebot requires a WhatsApp message channel");
+  }
+
+  const channel: TypebotChannel = suppliedChannel || {
+    number: msg!.from.replace(/\D/g, ""),
+    body: msg!.body || "",
+    name: "",
+    sendText: async text => {
+      const chat = await msg!.getChat();
+      await chat.sendStateTyping();
+      await delay(typebot.typebotDelayMessage || 1000);
+      await chat.clearState();
+      await wbot!.sendMessage(msg!.from, text);
+    },
+    sendMedia: async (type, url, caption) => {
+      const chat = await msg!.getChat();
+      if (type === "audio") await chat.sendStateRecording();
+      else await chat.sendStateTyping();
+      await delay(typebot.typebotDelayMessage || 1000);
+      await chat.clearState();
+      try {
+        const media = await MessageMedia.fromUrl(url, { unsafeMime: true });
+        await wbot!.sendMessage(msg!.from, media,
+          type === "audio" ? { sendAudioAsVoice: true } : { caption: caption || "" }
+        );
+      } catch (error) {
+        logger.error(`Error sending media ${type}: `, error);
+        await wbot!.sendMessage(msg!.from, `📎 ${url}`);
+      }
+    }
+  };
 
   const {
     typebotUrl,
@@ -46,8 +87,7 @@ const typebotListener = async ({
     return;
   }
 
-  const number = msg.from.replace(/\D/g, "");
-  const { body } = msg;
+  const { number, body } = channel;
 
   // Skip if no body (media-only messages, etc.)
   if (!body || body.trim() === "") {
@@ -56,18 +96,14 @@ const typebotListener = async ({
   }
 
   // Function to create a new typebot session
-  const createSession = async (
-    msgData: WbotMessage,
-    contactNumber: string
-  ): Promise<any> => {
+  const createSession = async (contactNumber: string): Promise<any> => {
     try {
       // Get contact name from message
-      const contact = await msgData.getContact();
-      const contactName = contact?.pushname || contact?.name || "";
+      const contactName = channel.name || "";
 
       const reqData = {
         isStreamEnabled: true,
-        message: msgData.body || "",
+        message: body || "",
         isOnlyRegistering: false,
         prefilledVariables: {
           number: contactNumber,
@@ -130,46 +166,8 @@ const typebotListener = async ({
     return request.data;
   };
 
-  // Function to send text with typing indicator
-  const sendTextWithTyping = async (text: string): Promise<void> => {
-    const chat = await msg.getChat();
-    await chat.sendStateTyping();
-    await delay(typebotDelayMessage || 1000);
-    await chat.clearState();
-    await wbot.sendMessage(msg.from, text);
-  };
-
-  // Function to send media
-  const sendMedia = async (
-    type: string,
-    url: string,
-    caption?: string
-  ): Promise<void> => {
-    const chat = await msg.getChat();
-
-    if (type === "audio") {
-      await chat.sendStateRecording();
-    } else {
-      await chat.sendStateTyping();
-    }
-
-    await delay(typebotDelayMessage || 1000);
-    await chat.clearState();
-
-    try {
-      const media = await MessageMedia.fromUrl(url, { unsafeMime: true });
-
-      if (type === "audio") {
-        await wbot.sendMessage(msg.from, media, { sendAudioAsVoice: true });
-      } else {
-        await wbot.sendMessage(msg.from, media, { caption: caption || "" });
-      }
-    } catch (error) {
-      logger.error(`Error sending media ${type}: `, error);
-      // If media fails, send the URL as text
-      await wbot.sendMessage(msg.from, `📎 ${url}`);
-    }
-  };
+  const sendTextWithTyping = channel.sendText;
+  const sendMedia = channel.sendMedia;
 
   // Function to process typebot command
   const processCommand = async (command: string): Promise<boolean> => {
@@ -379,7 +377,7 @@ const typebotListener = async ({
 
     // Create new session if needed
     if (isNil(ticket.typebotSessionId)) {
-      dataStart = await createSession(msg, number);
+      dataStart = await createSession(number);
       sessionId = dataStart.sessionId;
       status = true;
       await ticket.update({
@@ -429,7 +427,7 @@ const typebotListener = async ({
       await ticket.reload();
 
       if (typebotRestartMessage) {
-        await wbot.sendMessage(msg.from, typebotRestartMessage);
+        await channel.sendText(typebotRestartMessage);
       }
       return;
     }
@@ -454,7 +452,7 @@ const typebotListener = async ({
           });
 
           // Create new session
-          dataStart = await createSession(msg, number);
+          dataStart = await createSession(number);
           sessionId = dataStart.sessionId;
           await ticket.update({
             typebotSessionId: sessionId,
@@ -486,7 +484,7 @@ const typebotListener = async ({
       });
 
       if (typebotUnknownMessage) {
-        await wbot.sendMessage(msg.from, typebotUnknownMessage);
+        await channel.sendText(typebotUnknownMessage);
       }
       return;
     }

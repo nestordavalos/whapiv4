@@ -26,10 +26,11 @@ export const cacheLidPhoneMapping = (
   const lidNumber = jidUser(lidValue);
   const phoneNumber = jidUser(phoneValue);
 
+  const lidIsExplicit = Boolean(lidValue?.endsWith("@lid"));
   if (
     !lidNumber ||
     !phoneNumber ||
-    !isLikelyLid(lidNumber) ||
+    (!lidIsExplicit && !isLikelyLid(lidNumber)) ||
     isLikelyLid(phoneNumber)
   ) {
     return;
@@ -37,6 +38,25 @@ export const cacheLidPhoneMapping = (
 
   lidPhoneCache.set(lidNumber, phoneNumber);
   phoneLidCache.set(phoneNumber, lidNumber);
+};
+
+export const getCachedPhoneFromLid = (
+  lidValue?: string | null
+): string | null => {
+  const lidNumber = jidUser(lidValue);
+  return lidNumber ? lidPhoneCache.get(lidNumber) || null : null;
+};
+
+/**
+ * Returns the WhatsApp LID for a real phone number when the active session
+ * has already supplied that association. The UI and database keep the phone
+ * number, while transport can still target the chat's canonical LID.
+ */
+export const getCachedLidFromPhone = (
+  phoneValue?: string | null
+): string | null => {
+  const phoneNumber = jidUser(phoneValue);
+  return phoneNumber ? phoneLidCache.get(phoneNumber) || null : null;
 };
 
 /**

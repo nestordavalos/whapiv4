@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { getIO } from "../libs/socket";
-import { removeWbot, restartWbot, shutdownWbot, initWbot } from "../libs/wbot";
+import { removeWbot, restartWbot, shutdownWbot } from "../libs/wbot";
+import { removeZapo } from "../libs/zapo";
 import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
 import { logger } from "../utils/logger";
 import AppError from "../errors/AppError";
@@ -14,6 +15,7 @@ import UpdateWhatsAppService from "../services/WhatsappService/UpdateWhatsAppSer
 
 interface WhatsappData {
   name: string;
+  provider?: string;
   queueIds: number[];
   greetingMessage?: string;
   farewellMessage?: string;
@@ -98,6 +100,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 
   const {
     name,
+    provider,
     status,
     isDefault,
     greetingMessage,
@@ -160,6 +163,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 
   const { whatsapp, oldDefaultWhatsapp } = await CreateWhatsAppService({
     name,
+    provider,
     status,
     isDefault,
     greetingMessage,
@@ -283,8 +287,13 @@ export const remove = async (
 ): Promise<Response> => {
   const { whatsappId } = req.params;
 
+  const whatsapp = await Whatsapp.findByPk(whatsappId);
   await DeleteWhatsAppService(whatsappId);
-  removeWbot(+whatsappId);
+  if (whatsapp?.provider === "zapo") {
+    await removeZapo(+whatsappId, true);
+  } else {
+    removeWbot(+whatsappId);
+  }
 
   const io = getIO();
   io.emit("whatsapp", {
@@ -308,7 +317,13 @@ export const restart = async (
   try {
     logger.info(`Iniciando restart para WhatsApp ID: ${whatsappId}`);
 
-    await restartWbot(+whatsappId);
+    const currentWhatsapp = await ShowWhatsAppService(whatsappId);
+    if (currentWhatsapp.provider === "zapo") {
+      await removeZapo(+whatsappId, false);
+      await StartWhatsAppSession(currentWhatsapp);
+    } else {
+      await restartWbot(+whatsappId);
+    }
 
     logger.info(
       `Restart realizado com sucesso para WhatsApp ID: ${whatsappId}`
@@ -349,7 +364,13 @@ export const shutdown = async (
   try {
     logger.info(`Iniciando shutdown para WhatsApp ID: ${whatsappId}`);
 
-    await shutdownWbot(whatsappId);
+    const currentWhatsapp = await ShowWhatsAppService(whatsappId);
+    if (currentWhatsapp.provider === "zapo") {
+      await removeZapo(+whatsappId, false);
+      await currentWhatsapp.update({ status: "DISCONNECTED" });
+    } else {
+      await shutdownWbot(whatsappId);
+    }
     logger.info(
       `Shutdown realizado com sucesso para WhatsApp ID: ${whatsappId}`
     );
@@ -383,7 +404,7 @@ export const start = async (req: Request, res: Response): Promise<Response> => {
   if (!whatsapp) throw Error("no se encontro el whatsapp");
 
   try {
-    await initWbot(whatsapp);
+    await StartWhatsAppSession(whatsapp);
 
     // Obtener el whatsapp actualizado
     const updatedWhatsapp = await ShowWhatsAppService(whatsappId);

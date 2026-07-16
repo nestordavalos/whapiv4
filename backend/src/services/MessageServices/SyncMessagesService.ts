@@ -8,6 +8,8 @@ import GetTicketWbot from "../../helpers/GetTicketWbot";
 import { handleMessage } from "../WbotServices/wbotMessageListener";
 import { logger } from "../../utils/logger";
 import { getContactJid } from "../../helpers/GetContactJid";
+import Whatsapp from "../../models/Whatsapp";
+import { getZapo, resolveZapoRecipientJid } from "../../libs/zapo";
 import {
   getFirstErrorLine,
   isFetchMessagesStoreError
@@ -45,6 +47,39 @@ const SyncMessagesService = async ({
 
   if (!ticket) {
     throw new AppError("ERR_NO_TICKET_FOUND", 404);
+  }
+
+  const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
+  if (whatsapp?.provider === "zapo") {
+    const oldest = await Message.findOne({
+      where: { ticketId: ticket.id },
+      order: [["createdAt", "ASC"]]
+    });
+    const chatJid = await resolveZapoRecipientJid(
+      whatsapp.id,
+      ticket.contact.number,
+      ticket.isGroup,
+      ticket.contact.remoteJid
+    );
+    await getZapo(whatsapp.id).message.requestHistorySync({
+      chatJid,
+      ...(oldest
+        ? {
+            oldestMsgId: oldest.id,
+            oldestMsgFromMe: oldest.fromMe,
+            oldestMsgTimestampMs: new Date(oldest.createdAt).getTime()
+          }
+        : {}),
+      count: Math.min(Math.max(limit, 1), 50)
+    });
+
+    return {
+      synced: 0,
+      total: 0,
+      todayOnly: false,
+      message:
+        "Se solicitó el historial a WhatsApp. Los mensajes aparecerán al recibirse en tiempo real."
+    };
   }
 
   const wbot = await GetTicketWbot(ticket);

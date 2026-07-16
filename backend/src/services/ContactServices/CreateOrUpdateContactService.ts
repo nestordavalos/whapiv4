@@ -17,6 +17,7 @@ interface Request {
   isGroup: boolean;
   email?: string;
   profilePicUrl?: string;
+  remoteJid?: string;
   extraInfo?: ExtraInfo[];
   whatsappId?: number;
 }
@@ -26,6 +27,7 @@ const CreateOrUpdateContactService = async ({
   number: rawNumber,
   profilePicUrl,
   isGroup,
+  remoteJid,
   email = "",
   extraInfo = [],
   whatsappId
@@ -44,9 +46,30 @@ const CreateOrUpdateContactService = async ({
       contact.profilePicUrl && contact.profilePicUrl !== "/default-profile.png";
     const updatePic =
       isDefaultPic && hasRealPic ? contact.profilePicUrl : profilePicUrl;
+    const profilePicChanged =
+      updatePic !== undefined && updatePic !== contact.profilePicUrl;
 
-    if (updatePic !== undefined && updatePic !== contact.profilePicUrl) {
-      await contact.update({ profilePicUrl: updatePic });
+    const updates: Partial<Contact> = {};
+    if (profilePicChanged) {
+      updates.profilePicUrl = updatePic;
+    }
+    if (
+      remoteJid &&
+      (remoteJid.endsWith("@lid") || (isGroup && remoteJid.endsWith("@g.us"))) &&
+      remoteJid !== contact.remoteJid
+    ) {
+      updates.remoteJid = remoteJid;
+    }
+    // A group initially arrives as its opaque WhatsApp JID. Once the provider
+    // resolves its subject, replace that fallback with the actual group name.
+    // This is deliberately limited to groups so an operator's custom name for
+    // an individual contact is never overwritten by a later WhatsApp event.
+    if (isGroup && name?.trim() && name !== contact.name) {
+      updates.name = name;
+    }
+
+    if (Object.keys(updates).length) {
+      await contact.update(updates);
 
       io.emit("contact", {
         action: "update",
@@ -65,7 +88,8 @@ const CreateOrUpdateContactService = async ({
             profilePicUrl: contact.profilePicUrl,
             updatedAt: new Date(),
             changes: {
-              profilePicUrl: true
+              profilePicUrl: profilePicChanged,
+              name: updates.name !== undefined
             }
           });
         } catch (err) {
@@ -80,6 +104,11 @@ const CreateOrUpdateContactService = async ({
       profilePicUrl,
       email,
       isGroup,
+      remoteJid:
+        remoteJid &&
+        (remoteJid.endsWith("@lid") || (isGroup && remoteJid.endsWith("@g.us")))
+          ? remoteJid
+          : "",
       extraInfo
     });
 

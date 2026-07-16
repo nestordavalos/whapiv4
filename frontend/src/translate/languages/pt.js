@@ -142,6 +142,9 @@ const messages = {
         },
         form: {
           name: "Nome",
+          provider: "Provedor de conexão",
+          providerWwebjs: "WhatsApp Web",
+          providerZapo: "Zapo Web",
           default: "Padrão",
           display: "Exibir horário dos setores",
           group: "Permitir mensagens de grupos",
@@ -825,6 +828,7 @@ const messages = {
         ERR_WAPP_DOWNLOAD_MEDIA: "Não foi possível baixar mídia do WhatsApp. Verifique a página de conexões.",
         ERR_INVALID_CREDENTIALS: "Erro de autenticação. Por favor, tente novamente.",
         ERR_SENDING_WAPP_MSG: "Erro ao enviar mensagem do WhatsApp. Verifique a página de conexões.",
+        ERR_WAPP_REACHOUT_TIMELOCK: "O WhatsApp restringiu temporariamente os envios desta conexão. Aguarde antes de tentar novamente.",
         ERR_DELETE_WAPP_MSG: "Não foi possível excluir a mensagem do WhatsApp.",
         ERR_EDIT_WAPP_MSG: "Não foi possível editar a mensagem do WhatsApp.",
         ERR_MESSAGE_NOT_FOUND: "Mensagem não encontrada.",

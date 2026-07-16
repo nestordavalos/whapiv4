@@ -28,7 +28,18 @@ const LocationPreview = ({ image, link, description }) => {
 			}}>
 				<div>
 					<div style={{ float: "left" }}>
-						<img src={image} alt="Mapa de ubicación" onClick={handleLocation} style={{ width: "100px", cursor: "pointer" }} />
+						{image ? (
+							<img src={image} alt="Mapa de ubicación" onClick={handleLocation} style={{ width: "100px", cursor: "pointer" }} />
+						) : (
+							<button
+								type="button"
+								onClick={handleLocation}
+								style={{ width: "100px", height: "80px", border: 0, borderRadius: 4, cursor: "pointer", fontSize: "30px" }}
+								aria-label="Abrir ubicación"
+							>
+								📍
+							</button>
+						)}
 					</div>
 					{ description && (
 					<div style={{ display: "flex", flexWrap: "wrap" }}>

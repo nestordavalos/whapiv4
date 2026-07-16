@@ -7,7 +7,10 @@ import api from "../../services/api";
 import ConfirmationModal from "../ConfirmationModal";
 import ForwardMessageModal from "../ForwardMessageModal";
 import EditMessageModal from "../EditMessageModal";
-import { Menu } from "@mui/material";
+import { IconButton, Menu, Popover } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import "emoji-mart/css/emoji-mart.css";
+import { Picker } from "emoji-mart";
 import { ReplyMessageContext } from "../../context/ReplyingMessage/ReplyingMessageContext";
 import toastError from "../../errors/toastError";
 
@@ -19,6 +22,7 @@ const MessageOptionsMenu = ({ message, menuOpen, handleClose, anchorEl, anchorPo
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [forwardModalOpen, setForwardModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [emojiPickerAnchor, setEmojiPickerAnchor] = useState(null);
 
   const handleDeleteMessage = async () => {
     try {
@@ -50,6 +54,25 @@ const MessageOptionsMenu = ({ message, menuOpen, handleClose, anchorEl, anchorPo
   const handleOpenEditModal = () => {
     setEditModalOpen(true);
     handleClose();
+  };
+
+  const handleReaction = async (emoji) => {
+    try {
+      await api.post(`/messages/${message.id}/reaction`, { emoji });
+      setEmojiPickerAnchor(null);
+      handleClose();
+    } catch (err) {
+      toastError(err);
+    }
+  };
+
+  const handleOpenEmojiPicker = (event) => {
+    event.stopPropagation();
+    setEmojiPickerAnchor(event.currentTarget);
+  };
+
+  const handlePickReaction = (emoji) => {
+    handleReaction(emoji.native);
   };
 
   const handleCloseEditModal = () => {
@@ -89,6 +112,21 @@ const MessageOptionsMenu = ({ message, menuOpen, handleClose, anchorEl, anchorPo
         onClose={handleCloseEditModal}
         message={message}
       />
+      <Popover
+        open={Boolean(emojiPickerAnchor)}
+        anchorEl={emojiPickerAnchor}
+        onClose={() => setEmojiPickerAnchor(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Picker
+          title="Elegir reacción"
+          emoji="slightly_smiling_face"
+          showPreview={false}
+          showSkinTones={false}
+          onSelect={handlePickReaction}
+        />
+      </Popover>
       <Menu
         anchorEl={anchorEl}
         anchorReference={anchorPosition ? "anchorPosition" : "anchorEl"}
@@ -104,6 +142,35 @@ const MessageOptionsMenu = ({ message, menuOpen, handleClose, anchorEl, anchorPo
         open={menuOpen}
         onClose={handleClose}
       >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            padding: "6px 8px",
+            borderBottom: "1px solid rgba(0, 0, 0, 0.08)"
+          }}
+        >
+          {['👍', '❤️', '😂', '😮', '😢', '🙏'].map((emoji) => (
+            <IconButton
+              key={emoji}
+              size="small"
+              aria-label={`Reaccionar con ${emoji}`}
+              onClick={() => handleReaction(emoji)}
+              style={{ fontSize: 22, padding: 5 }}
+            >
+              {emoji}
+            </IconButton>
+          ))}
+          <IconButton
+            size="small"
+            aria-label="Más emojis"
+            onClick={handleOpenEmojiPicker}
+            style={{ marginLeft: 2 }}
+          >
+            <AddIcon fontSize="small" />
+          </IconButton>
+        </div>
         {message.fromMe && (
           <MenuItem onClick={handleOpenConfirmationModal}>
             {i18n.t("messageOptionsMenu.delete")}

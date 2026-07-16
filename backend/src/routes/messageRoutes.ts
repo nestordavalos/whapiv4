@@ -18,6 +18,7 @@ messageRoutes.post(
   MessageController.store
 );
 messageRoutes.post("/messages/:ticketId/sync", isAuth, MessageController.sync);
+messageRoutes.post("/messages/:messageId/reaction", isAuth, MessageController.react);
 messageRoutes.post(
   "/messages/:messageId/forward",
   isAuth,

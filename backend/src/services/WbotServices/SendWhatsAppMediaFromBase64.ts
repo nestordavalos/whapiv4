@@ -17,6 +17,8 @@ import {
   sendMessageWithLidFallback
 } from "../../helpers/GetContactJid";
 import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
+import Whatsapp from "../../models/Whatsapp";
+import { getZapoQuoteMetadata, resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
 
 interface Request {
   base64Data: string;
@@ -44,6 +46,91 @@ const SendWhatsAppMediaFromBase64 = async ({
   quotedMsg,
   filename
 }: Request): Promise<WbotMessage> => {
+  const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
+  if (whatsapp?.provider === "zapo") {
+    try {
+      const hasBody = body ? formatBody(body, ticket) : undefined;
+      const cleanBase64 = base64Data.includes("base64,")
+        ? base64Data.split("base64,")[1]
+        : base64Data.includes(",")
+        ? base64Data.split(",")[1]
+        : base64Data;
+      const mimeRoot = mimeType.split("/")[0];
+      const type = ["image", "video", "audio"].includes(mimeRoot)
+        ? mimeRoot
+        : "document";
+      const isVoiceNote =
+        type === "audio";
+      const finalFilename =
+        filename || `${Date.now()}.${mimeType.split("/")[1] || "bin"}`;
+      const remoteJid = await resolveZapoRecipientJid(
+        whatsapp.id,
+        ticket.contact.number,
+        ticket.isGroup,
+        ticket.contact.remoteJid
+      );
+      const quoteMetadata = quotedMsg
+        ? await getZapoQuoteMetadata(whatsapp.id, quotedMsg.id)
+        : undefined;
+      const sent = await sendZapoMessage(
+        whatsapp.id,
+        remoteJid,
+        {
+          type,
+          media: Buffer.from(cleanBase64, "base64"),
+          mimetype: mimeType,
+          ...(type !== "audio" ? { fileName: finalFilename } : {}),
+          ...(hasBody ? { caption: hasBody } : {}),
+          ...(isVoiceNote ? { ptt: true } : {})
+        },
+        {
+          quote: quotedMsg
+            ? {
+                id: quotedMsg.id,
+                remoteJid,
+                fromMe: quotedMsg.fromMe,
+                participant: quoteMetadata?.participant,
+                message: quoteMetadata?.message
+              }
+            : undefined
+        }
+      );
+      await getStorageService().uploadBase64(
+        cleanBase64,
+        finalFilename,
+        mimeType
+      );
+      await CreateMessageService({
+        messageData: {
+          id: sent.id,
+          ticketId: ticket.id,
+          body: hasBody || "",
+          fromMe: true,
+          read: true,
+          mediaUrl: finalFilename,
+          mediaType: type,
+          quotedMsgId: quotedMsg?.id,
+          ack: 1,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
+      await ticket.update({ lastMessage: body || filename || "Media from base64" });
+      return {
+        id: { id: sent.id },
+        body: hasBody || "",
+        timestamp: Math.floor(Date.now() / 1000),
+        fromMe: true,
+        hasMedia: true,
+        ack: 1
+      } as unknown as WbotMessage;
+    } catch (err) {
+      logger.error({ ticketId: ticket.id, err }, "Error sending Zapo base64 media");
+      if (err instanceof AppError) throw err;
+      throw new AppError("ERR_SENDING_WAPP_MSG");
+    }
+  }
+
   let quotedMsgSerializedId: string | undefined;
   if (quotedMsg) {
     try {

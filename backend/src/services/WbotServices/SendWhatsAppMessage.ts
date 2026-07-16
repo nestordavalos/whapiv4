@@ -17,6 +17,10 @@ import {
   WhatsAppSendUnconfirmedError
 } from "../../helpers/GetContactJid";
 import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
+import Whatsapp from "../../models/Whatsapp";
+import { getZapoQuoteMetadata, resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
+import CreateMessageService from "../MessageServices/CreateMessageService";
+import { sendMessageSentWebhook } from "../WebhookService/SendWebhookEvent";
 
 const MAX_SEND_ATTEMPTS = 3;
 const BASE_BACKOFF_MS = 500;
@@ -126,6 +130,80 @@ const SendWhatsAppMessage = async ({
   ticket,
   quotedMsg
 }: Request): Promise<WbotMessage> => {
+  const formattedBody = formatBody(body, ticket);
+  const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
+
+  if (whatsapp?.provider === "zapo") {
+    try {
+      // Keep the addressing supplied by WhatsApp. A contact can be addressed
+      // by LID even when we display/store its real phone number; sending to
+      // the phone JID in that case loses the privacy-token context and may be
+      // rejected by WhatsApp with ACK 463.
+      const remoteJid = await resolveZapoRecipientJid(
+        whatsapp.id,
+        ticket.contact.number,
+        ticket.isGroup,
+        ticket.contact.remoteJid
+      );
+      const quoteMetadata = quotedMsg
+        ? await getZapoQuoteMetadata(whatsapp.id, quotedMsg.id)
+        : undefined;
+      const sent = await sendZapoMessage(whatsapp.id, remoteJid, formattedBody, {
+        // Zapo resolves the full WhatsApp quote context from this reference.
+        // Keeping `fromMe` matters for replies to an agent's own message.
+        quote: quotedMsg
+          ? {
+              id: quotedMsg.id,
+              remoteJid,
+              fromMe: quotedMsg.fromMe,
+              participant: quoteMetadata?.participant,
+              message: quoteMetadata?.message
+            }
+          : undefined
+      });
+      await CreateMessageService({
+        messageData: {
+          id: sent.id,
+          ticketId: ticket.id,
+          body: formattedBody,
+          fromMe: true,
+          read: true,
+          mediaType: "chat",
+          quotedMsgId: quotedMsg?.id,
+          ack: 1,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
+      await ticket.update({ lastMessage: body });
+      await sendMessageSentWebhook(whatsapp.id, {
+        messageId: sent.id,
+        body: formattedBody,
+        fromMe: true,
+        mediaType: "chat",
+        hasMedia: false,
+        timestamp: Math.floor(Date.now() / 1000),
+        ticketId: ticket.id,
+        contact: {
+          id: ticket.contact.id,
+          name: ticket.contact.name,
+          number: ticket.contact.number
+        },
+        media: null
+      });
+      return {
+        id: { id: sent.id },
+        body: formattedBody,
+        timestamp: Math.floor(Date.now() / 1000),
+        fromMe: true,
+        hasMedia: false
+      } as WbotMessage;
+    } catch (err) {
+      logger.error({ ticketId: ticket.id, err }, "Error sending Zapo message");
+      throw err;
+    }
+  }
+
   let quotedMsgSerializedId: string | undefined;
   if (quotedMsg) {
     logger.debug(
@@ -155,7 +233,6 @@ const SendWhatsAppMessage = async ({
   }
 
   const wbot = await GetTicketWbot(ticket);
-  const formattedBody = formatBody(body, ticket);
   const { whatsappId } = ticket;
   const { number } = ticket.contact;
   const { isGroup } = ticket;

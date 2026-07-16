@@ -11,6 +11,7 @@ import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService
 import ShowQueueService from "../services/QueueService/ShowQueueService";
 import formatBody from "../helpers/Mustache";
 import { getWbot } from "../libs/wbot";
+import { getZapo, resolveZapoRecipientJid } from "../libs/zapo";
 import { logger } from "../utils/logger";
 import AppError from "../errors/AppError";
 
@@ -123,7 +124,10 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 export const show = async (req: Request, res: Response): Promise<Response> => {
   const { ticketId } = req.params;
 
-  const contact = await ShowTicketService({ id: ticketId, userId: req.user.id });
+  const contact = await ShowTicketService({
+    id: ticketId,
+    userId: req.user.id
+  });
 
   return res.status(200).json(contact);
 };
@@ -171,9 +175,21 @@ export const update = async (
       try {
         // Only archive if WhatsApp is connected
         if (whatsapp.status === "CONNECTED") {
-          const wbot = getWbot(ticket.whatsappId);
-          const chatId = `${ticket.contact.number}@c.us`;
-          await wbot.archiveChat(chatId);
+          if (whatsapp.provider === "zapo") {
+            await getZapo(ticket.whatsappId).chat.setChatArchive(
+              await resolveZapoRecipientJid(
+                whatsapp.id,
+                ticket.contact.number,
+                ticket.isGroup,
+                ticket.contact.remoteJid
+              ),
+              true
+            );
+          } else {
+            const wbot = getWbot(ticket.whatsappId);
+            const chatId = `${ticket.contact.number}@c.us`;
+            await wbot.archiveChat(chatId);
+          }
           logger.info(
             `[TicketController] Chat archived for ticket ${ticket.id}`
           );
@@ -202,9 +218,21 @@ export const update = async (
       try {
         // Only archive if WhatsApp is connected
         if (whatsapp.status === "CONNECTED") {
-          const wbot = getWbot(ticket.whatsappId);
-          const chatId = `${ticket.contact.number}@c.us`;
-          await wbot.archiveChat(chatId);
+          if (whatsapp.provider === "zapo") {
+            await getZapo(ticket.whatsappId).chat.setChatArchive(
+              await resolveZapoRecipientJid(
+                whatsapp.id,
+                ticket.contact.number,
+                ticket.isGroup,
+                ticket.contact.remoteJid
+              ),
+              true
+            );
+          } else {
+            const wbot = getWbot(ticket.whatsappId);
+            const chatId = `${ticket.contact.number}@c.us`;
+            await wbot.archiveChat(chatId);
+          }
           logger.info(
             `[TicketController] Chat archived for finished ticket ${ticket.id}`
           );

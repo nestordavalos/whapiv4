@@ -6,6 +6,7 @@ import AssociateWhatsappQueue from "./AssociateWhatsappQueue";
 
 interface Request {
   name: string;
+  provider?: string;
   queueIds?: number[];
   greetingMessage?: string;
   farewellMessage?: string;
@@ -90,6 +91,7 @@ interface Response {
 
 const CreateWhatsAppService = async ({
   name,
+  provider = "wwebjs",
   status = "OPENING",
   queueIds = [],
   greetingMessage,
@@ -172,11 +174,12 @@ const CreateWhatsAppService = async ({
           return !nameExists;
         }
       ),
-    isDefault: Yup.boolean().required()
+    isDefault: Yup.boolean().required(),
+    provider: Yup.string().oneOf(["wwebjs", "zapo"]).required()
   });
 
   try {
-    await schema.validate({ name, status, isDefault, isGroup });
+    await schema.validate({ name, status, isDefault, isGroup, provider });
   } catch (err) {
     throw new AppError(err.message);
   }
@@ -214,6 +217,7 @@ const CreateWhatsAppService = async ({
   const whatsapp = await Whatsapp.create(
     {
       name,
+      provider,
       status,
       greetingMessage,
       farewellMessage,

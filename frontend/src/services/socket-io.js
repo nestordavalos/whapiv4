@@ -5,7 +5,11 @@ import { getBackendUrl } from "../config";
 let socket;
 
 function connectToSocket() {
-  if (socket && socket.connected) {
+  // Keep one socket for the whole application, including while its initial
+  // WebSocket handshake/reconnection is in progress. Replacing a connecting
+  // socket makes room subscriptions (joinChatBox/joinTickets) race and drops
+  // real-time appMessage events.
+  if (socket) {
     return socket;
   }
 

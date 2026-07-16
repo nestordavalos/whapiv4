@@ -50,7 +50,11 @@ const ListMessagesService = async ({
     limit: queryLimit + 1,
     include: [
       "contact",
-      "ticket",
+      {
+        model: Ticket,
+        as: "ticket",
+        include: ["contact"]
+      },
       {
         model: Message,
         as: "quotedMsg",

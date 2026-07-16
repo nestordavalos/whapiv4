@@ -3,6 +3,8 @@ import GetWbotMessage from "../../helpers/GetWbotMessage";
 import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
 import { logger } from "../../utils/logger";
+import Whatsapp from "../../models/Whatsapp";
+import { getZapo, resolveZapoRecipientJid } from "../../libs/zapo";
 
 // Tiempo máximo para editar un mensaje (15 minutos en milisegundos)
 const MAX_EDIT_TIME_MS = 15 * 60 * 1000;
@@ -55,6 +57,32 @@ const EditWhatsAppMessage = async ({
   }
 
   const { ticket } = message;
+
+  const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
+  if (whatsapp?.provider === "zapo") {
+    try {
+      const remoteJid = await resolveZapoRecipientJid(
+        whatsapp.id,
+        ticket.contact.number,
+        ticket.isGroup,
+        ticket.contact.remoteJid
+      );
+      await getZapo(whatsapp.id).message.send(
+        remoteJid,
+        { type: "text", text: newBody },
+        { editKey: { id: message.id } }
+      );
+    } catch (err) {
+      logger.error({ messageId, err }, "Error editing Zapo message");
+      throw new AppError("ERR_EDIT_WAPP_MSG", 500);
+    }
+
+    await message.update({ body: newBody, isEdited: true });
+    await message.reload({
+      include: [{ model: Ticket, as: "ticket", include: ["contact"] }]
+    });
+    return message;
+  }
 
   // Obtener el mensaje de WhatsApp
   const wbotMessage = await GetWbotMessage(ticket, messageId);

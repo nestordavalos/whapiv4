@@ -47,6 +47,18 @@ const unwrapMessage = (message: any): any => {
   return {};
 };
 
+const extractVcardContacts = (vcard: string) => {
+  const cards = vcard.match(/BEGIN:VCARD[\s\S]*?END:VCARD/gi) || [vcard];
+  return cards.flatMap(card => {
+    const name =
+      card.match(/^FN(?:;[^:]*)?:(.+)$/im)?.[1]?.trim() || "Contacto";
+    const numbers = [...card.matchAll(/^TEL(?:;[^:]*)?:(.+)$/gim)]
+      .map(match => match[1].replace(/[^0-9+]/g, ""))
+      .filter(number => number.replace(/\D/g, "").length >= 6);
+    return numbers.map(number => ({ name, number }));
+  });
+};
+
 const persistMedia = async (
   session: any,
   event: any,
@@ -313,6 +325,15 @@ const handleZapoMessageNow = async (
     content.audioMessage ||
     content.documentMessage ||
     content.stickerMessage;
+  const vcardEntries = [
+    content.contactMessage?.vcard,
+    ...(content.contactsArrayMessage?.contacts || []).map(
+      (entry: any) => entry?.vcard
+    )
+  ].filter(
+    (vcard: unknown): vcard is string => typeof vcard === "string" && Boolean(vcard)
+  );
+  const vcardBody = vcardEntries.join("\n");
   const locationData = content.locationMessage || content.liveLocationMessage;
   const latitude = Number(locationData?.degreesLatitude);
   const longitude = Number(locationData?.degreesLongitude);
@@ -335,10 +356,13 @@ const handleZapoMessageNow = async (
     content.extendedTextMessage?.text ||
     content.imageMessage?.caption ||
     content.videoMessage?.caption ||
+    vcardBody ||
     (hasLocation ? `${locationThumbnail}|${locationLink}|${locationDescription}` : "") ||
     "";
   const mediaType = hasLocation
     ? "location"
+    : vcardBody
+    ? "vcard"
     : content.imageMessage
     ? "image"
     : content.videoMessage
@@ -353,7 +377,10 @@ const handleZapoMessageNow = async (
     ? "sticker"
     : "chat";
   const contextInfo =
-    content.extendedTextMessage?.contextInfo || mediaData?.contextInfo;
+    content.extendedTextMessage?.contextInfo ||
+    mediaData?.contextInfo ||
+    content.contactMessage?.contextInfo ||
+    content.contactsArrayMessage?.contextInfo;
   const quotedCandidateId = contextInfo?.stanzaId;
   const quotedMsgId = quotedCandidateId
     ? (await Message.findByPk(quotedCandidateId))?.id
@@ -420,6 +447,29 @@ const handleZapoMessageNow = async (
           profilePicUrl,
           whatsappId: whatsapp.id
         });
+
+  // Keep the same behavior as whatsapp-web.js: a received vCard is rendered
+  // as a contact card and its phone entries are available in the Contacts
+  // module. This also works for cards shared inside a group, while the ticket
+  // itself remains associated with the group.
+  if (vcardBody) {
+    await Promise.all(
+      extractVcardContacts(vcardBody).map(sharedContact =>
+        findOrCreateContact({
+          name: sharedContact.name,
+          number: sharedContact.number,
+          isGroup: false,
+          profilePicUrl: "/default-profile.png",
+          whatsappId: whatsapp.id
+        })
+      )
+    ).catch(err =>
+      logger.warn(
+        { whatsappId: whatsapp.id, messageId: key.id, err },
+        "Could not import contacts from Zapo vCard"
+      )
+    );
+  }
   const ticket = await FindOrCreateTicketService(
     contact,
     whatsapp.id,
@@ -471,7 +521,7 @@ const handleZapoMessageNow = async (
     body,
     fromMe,
     mediaType,
-    hasMedia: Boolean(mediaData),
+    hasMedia: Boolean(mediaData || vcardBody),
     timestamp: Number(event.timestampSeconds || Date.now() / 1000),
     ticketId: ticket.id,
     contact: { id: contact.id, name: contact.name, number: contact.number },
@@ -481,6 +531,8 @@ const handleZapoMessageNow = async (
           mimeType: mediaData.mimetype || null,
           type: mediaType
         }
+      : vcardBody
+      ? { url: null, mimeType: "text/vcard", type: "vcard" }
       : null,
     location: hasLocation
       ? { latitude, longitude, isLive: isLiveLocation, url: locationLink }

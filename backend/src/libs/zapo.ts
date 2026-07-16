@@ -21,6 +21,10 @@ const sessions = new Map<number, ZapoSession>();
 const stores = new Map<number, any>();
 const reconnecting = new Set<number>();
 const recentMessages = new Map<string, any>();
+const recentMessageKeys = new Map<
+  string,
+  { participant?: string; remoteJid?: string }
+>();
 const syncContexts = new Map<number, any>();
 const historyProcessing = new Map<number, Promise<number>>();
 const outboundMessageChains = new Map<number, Promise<void>>();
@@ -67,6 +71,12 @@ const createZapoStore = () => {
         messages: "mysql",
         threads: "mysql",
         contacts: "mysql"
+      },
+      // Sending to a group requires its participant roster. Persist it so a
+      // normal process restart does not force an avoidable metadata query
+      // before the first outgoing group message.
+      cacheProviders: {
+        groupMetadata: "mysql"
       }
     })
   };
@@ -218,13 +228,36 @@ export const getZapoStoredContacts = async (
 export const getZapoStoredContact = async (
   id: number,
   jid: string
-): Promise<{ phoneNumber?: string } | null> => {
+): Promise<{
+  phoneNumber?: string;
+  displayName?: string;
+  pushName?: string;
+} | null> => {
   const mysql = stores.get(id);
   if (!mysql) throw new AppError("ERR_WAPP_NOT_INITIALIZED");
   const record = await mysql.stores
     .contacts(sessionIdFor(id))
     .getByJid(jid.includes("@") ? jid : `${jid}@lid`);
-  return record ? { phoneNumber: record.phoneNumber } : null;
+  return record
+    ? {
+        phoneNumber: record.phoneNumber,
+        displayName: record.displayName,
+        pushName: record.pushName
+      }
+    : null;
+};
+
+/** Returns the already-synchronized mailbox title for a chat/group. */
+export const getZapoStoredThreadName = async (
+  id: number,
+  jid: string
+): Promise<string | undefined> => {
+  const mysql = stores.get(id);
+  if (!mysql) throw new AppError("ERR_WAPP_NOT_INITIALIZED");
+  const thread = await mysql.stores
+    .threads(sessionIdFor(id))
+    .getByJid(jid);
+  return thread?.name?.trim() || undefined;
 };
 
 export const requestZapoHistorySync = async (
@@ -368,29 +401,53 @@ const messageCacheKey = (whatsappId: number, messageId: string) =>
 export const cacheZapoMessage = (
   whatsappId: number,
   messageId: string,
-  message: any
+  message: any,
+  key?: { participant?: string; remoteJid?: string }
 ): void => {
-  recentMessages.set(messageCacheKey(whatsappId, messageId), message);
-  if (recentMessages.size > 1000) {
-    recentMessages.delete(recentMessages.keys().next().value as string);
+  const cacheKey = messageCacheKey(whatsappId, messageId);
+  recentMessages.set(cacheKey, message);
+  if (key?.participant || key?.remoteJid) {
+    recentMessageKeys.set(cacheKey, {
+      participant: key.participant,
+      remoteJid: key.remoteJid
+    });
   }
+  if (recentMessages.size > 1000) {
+    const oldestKey = recentMessages.keys().next().value as string;
+    recentMessages.delete(oldestKey);
+    recentMessageKeys.delete(oldestKey);
+  }
+};
+
+export const getZapoQuoteMetadata = async (
+  whatsappId: number,
+  messageId: string
+): Promise<{ message?: any; participant?: string }> => {
+  const cacheKey = messageCacheKey(whatsappId, messageId);
+  const recent = recentMessages.get(cacheKey);
+  const recentKey = recentMessageKeys.get(cacheKey);
+  if (recent) {
+    return { message: recent, participant: recentKey?.participant };
+  }
+
+  const mysql = stores.get(whatsappId);
+  if (!mysql) return {};
+  const record = await mysql.stores
+    .messages(sessionIdFor(whatsappId))
+    .getById(messageId);
+  return {
+    message: record?.messageBytes
+      ? zapo.proto.Message.decode(record.messageBytes)
+      : undefined,
+    participant: record?.participantJid || record?.senderJid
+  };
 };
 
 export const getZapoQuotedMessage = async (
   whatsappId: number,
   messageId: string
 ): Promise<any | undefined> => {
-  const key = messageCacheKey(whatsappId, messageId);
-  const recent = recentMessages.get(key);
-  if (recent) return recent;
-
-  const mysql = stores.get(whatsappId);
-  if (!mysql) return undefined;
-  const record = await mysql.stores
-    .messages(sessionIdFor(whatsappId))
-    .getById(messageId);
-  if (!record?.messageBytes) return undefined;
-  return zapo.proto.Message.decode(record.messageBytes);
+  return (await getZapoQuoteMetadata(whatsappId, messageId)).message;
 };
 export const zapoJid = (
   number: string,
@@ -399,7 +456,11 @@ export const zapoJid = (
 ): string => {
   if (knownJid?.includes("@")) return knownJid;
   if (number.includes("@")) return number;
-  return `${number.replace(/\D/g, "")}${group ? "@g.us" : "@s.whatsapp.net"}`;
+  // WhatsApp group identifiers contain a significant hyphen, e.g.
+  // `595971650095-1632372351@g.us`. Removing non-digits changes the group
+  // JID and makes Zapo wait for metadata for a group that does not exist.
+  if (group) return `${number.replace(/[^0-9-]/g, "")}@g.us`;
+  return `${number.replace(/\D/g, "")}@s.whatsapp.net`;
 };
 export const removeZapo = async (id: number, logout = false): Promise<void> => {
   const session = sessions.get(id);
@@ -414,7 +475,10 @@ export const removeZapo = async (id: number, logout = false): Promise<void> => {
     if (key.startsWith(`${id}:`)) recipientJidCache.delete(key);
   }
   for (const key of recentMessages.keys()) {
-    if (key.startsWith(`${id}:`)) recentMessages.delete(key);
+    if (key.startsWith(`${id}:`)) {
+      recentMessages.delete(key);
+      recentMessageKeys.delete(key);
+    }
   }
 
   if (session) {

@@ -16,7 +16,7 @@ import {
 import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
 import Whatsapp from "../../models/Whatsapp";
 import { getWhaileys, whaileysJid } from "../../libs/whaileys";
-import { getZapoQuotedMessage, resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
+import { getZapoQuoteMetadata, resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import { sendMessageSentWebhook } from "../WebhookService/SendWebhookEvent";
 
@@ -57,8 +57,8 @@ const SendWhatsAppMedia = async ({
         : "document";
       const isVoiceNote =
         type === "audio";
-      const quotedMessage = quotedMsg
-        ? await getZapoQuotedMessage(whatsapp.id, quotedMsg.id)
+      const quoteMetadata = quotedMsg
+        ? await getZapoQuoteMetadata(whatsapp.id, quotedMsg.id)
         : undefined;
       const sent = await sendZapoMessage(
         whatsapp.id,
@@ -77,7 +77,8 @@ const SendWhatsAppMedia = async ({
                 id: quotedMsg.id,
                 remoteJid,
                 fromMe: quotedMsg.fromMe,
-                message: quotedMessage
+                participant: quoteMetadata?.participant,
+                message: quoteMetadata?.message
               }
             : undefined
         }

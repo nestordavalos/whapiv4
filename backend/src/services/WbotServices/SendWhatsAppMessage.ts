@@ -19,7 +19,7 @@ import {
 import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
 import Whatsapp from "../../models/Whatsapp";
 import { getWhaileys, whaileysJid } from "../../libs/whaileys";
-import { getZapoQuotedMessage, resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
+import { getZapoQuoteMetadata, resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import { sendMessageSentWebhook } from "../WebhookService/SendWebhookEvent";
 
@@ -209,8 +209,8 @@ const SendWhatsAppMessage = async ({
         ticket.isGroup,
         ticket.contact.remoteJid
       );
-      const quotedMessage = quotedMsg
-        ? await getZapoQuotedMessage(whatsapp.id, quotedMsg.id)
+      const quoteMetadata = quotedMsg
+        ? await getZapoQuoteMetadata(whatsapp.id, quotedMsg.id)
         : undefined;
       const sent = await sendZapoMessage(whatsapp.id, remoteJid, formattedBody, {
         // Zapo resolves the full WhatsApp quote context from this reference.
@@ -220,7 +220,8 @@ const SendWhatsAppMessage = async ({
               id: quotedMsg.id,
               remoteJid,
               fromMe: quotedMsg.fromMe,
-              message: quotedMessage
+              participant: quoteMetadata?.participant,
+              message: quoteMetadata?.message
             }
           : undefined
       });

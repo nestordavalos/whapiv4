@@ -5,7 +5,12 @@ import CreateMessageService from "../MessageServices/CreateMessageService";
 import FindOrCreateTicketService from "../TicketServices/FindOrCreateTicketService";
 import { getStorageService } from "../StorageServices/StorageService";
 import { logger } from "../../utils/logger";
-import { cacheZapoMessage, getZapoSyncContext } from "../../libs/zapo";
+import {
+  cacheZapoMessage,
+  getZapoStoredContact,
+  getZapoStoredThreadName,
+  getZapoSyncContext
+} from "../../libs/zapo";
 import ShowWhatsAppService from "../WhatsappService/ShowWhatsAppService";
 import UpdateTicketService from "../TicketServices/UpdateTicketService";
 import SendWhatsAppMessage from "./SendWhatsAppMessage";
@@ -244,13 +249,39 @@ const handleZapoMessageNow = async (
     return;
   }
   if (await Message.findByPk(key.id)) return;
-  if (event.message) cacheZapoMessage(whatsapp.id, key.id, event.message);
-  if (key.isGroup || key.remoteJid.endsWith("@g.us")) return;
+  if (event.message) cacheZapoMessage(whatsapp.id, key.id, event.message, key);
   const current = await Whatsapp.findByPk(whatsapp.id);
   if (current?.provider !== "zapo" || current.status !== "CONNECTED") return;
-  const { remoteJid } = key;
-  const number = jidUser(key.remoteJidAlt || remoteJid);
-  if (!number) return;
+  // The canonical key is normally enough, but a few multi-device replay
+  // stanzas expose the sender LID as `remoteJid`. Keep the raw stanza/chat
+  // JID as an authoritative fallback so a group can never become a 1:1 LID
+  // ticket.
+  const rawChatCandidates = [
+    key.remoteJid,
+    event.chatJid,
+    event.rawNode?.attrs?.from,
+    event.rawNode?.attrs?.recipient,
+    event.rawNode?.attrs?.to
+  ].filter((jid: unknown): jid is string => typeof jid === "string");
+  const groupJid = rawChatCandidates.find(jid => jid.endsWith("@g.us"));
+  const remoteJid = groupJid || key.remoteJid;
+  const isGroup = Boolean(key.isGroup || groupJid || remoteJid.endsWith("@g.us"));
+  // Match whatsapp-web.js: group events are processed only when the inbox is
+  // configured to receive them. They must never enter queues or automations.
+  if (isGroup && !current.isGroup) return;
+  const groupNumber = isGroup ? jidUser(remoteJid) : "";
+  const participantJid = key.participant || key.remoteJidAlt || remoteJid;
+  const participantPhoneJid =
+    key.participantAlt ||
+    key.senderPn ||
+    event.senderPn ||
+    event.participantPn;
+  const number = jidUser(
+    isGroup && !key.fromMe
+      ? participantPhoneJid || participantJid
+      : key.remoteJidAlt || remoteJid
+  );
+  if (!number || (isGroup && !groupNumber)) return;
   const fromMe = Boolean(key.fromMe);
   const ownNumber = (current.number || "").replace(/\D/g, "");
   const messageTimestamp = Number(event.timestampSeconds || Date.now() / 1000);
@@ -273,7 +304,7 @@ const handleZapoMessageNow = async (
   // WhatsApp also synchronizes messages sent to the same connected account.
   // They are not customer conversations and used to race when creating the
   // contact for the account's own number.
-  if (fromMe && ownNumber && number === ownNumber) return;
+  if (!isGroup && fromMe && ownNumber && number === ownNumber) return;
 
   const content = rawContent;
   const mediaData =
@@ -329,7 +360,10 @@ const handleZapoMessageNow = async (
     : undefined;
   let profilePicUrl = "/default-profile.png";
   try {
-    const picture = await _session.profile.getProfilePicture(remoteJid, "image");
+    const picture = await _session.profile.getProfilePicture(
+      isGroup ? participantJid : remoteJid,
+      "image"
+    );
     profilePicUrl = picture?.url || profilePicUrl;
   } catch (err) {
     logger.debug(
@@ -337,14 +371,55 @@ const handleZapoMessageNow = async (
       "Could not fetch Zapo contact profile picture"
     );
   }
-  const contact = await findOrCreateContact({
-    name: event.pushName || number,
-    number,
-    isGroup: false,
-    remoteJid,
-    profilePicUrl,
-    whatsappId: whatsapp.id
-  });
+  let groupContact: any;
+  if (isGroup) {
+    // Do not issue a live group-metadata IQ here. Zapo uses the same query
+    // path to resolve the participant roster before publishing a group
+    // message; a stalled subject lookup would make subsequent sends time out.
+    const storedThreadName = await getZapoStoredThreadName(
+      whatsapp.id,
+      remoteJid
+    ).catch(() => undefined);
+    const storedGroup = await getZapoStoredContact(whatsapp.id, remoteJid).catch(
+      () => null
+    );
+    let groupProfilePicUrl = "/default-profile.png";
+    try {
+      const picture = await _session.profile.getProfilePicture(remoteJid, "image");
+      groupProfilePicUrl = picture?.url || groupProfilePicUrl;
+    } catch {
+      // Group avatars are optional and must not prevent message delivery.
+    }
+    groupContact = await findOrCreateContact({
+      name:
+        storedThreadName ||
+        event.groupName ||
+        event.subject ||
+        storedGroup?.displayName ||
+        storedGroup?.pushName ||
+        groupNumber,
+      number: groupNumber,
+      isGroup: true,
+      remoteJid,
+      profilePicUrl: groupProfilePicUrl,
+      whatsappId: whatsapp.id
+    });
+  }
+  // An outbound group message has no external participant. In that case the
+  // group itself is both the chat contact and the ticket contact; creating a
+  // second non-group contact with the same number would violate Contact's
+  // unique number constraint.
+  const contact =
+    isGroup && fromMe
+      ? groupContact
+      : await findOrCreateContact({
+          name: event.pushName || number,
+          number,
+          isGroup: false,
+          remoteJid: participantJid,
+          profilePicUrl,
+          whatsappId: whatsapp.id
+        });
   const ticket = await FindOrCreateTicketService(
     contact,
     whatsapp.id,
@@ -352,7 +427,7 @@ const handleZapoMessageNow = async (
     undefined,
     undefined,
     undefined,
-    undefined,
+    groupContact,
     {
       createAsClosed: Boolean(
         !fromMe &&
@@ -432,7 +507,7 @@ const handleZapoMessageNow = async (
     }
   }
 
-  if (!fromMe && !event.historySync) {
+  if (!fromMe && !isGroup && !event.historySync) {
     try {
       await ticket.reload({ include: ["contact"] });
       // This must run before an active integration. Otherwise `#` is sent to

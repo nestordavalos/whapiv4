@@ -18,7 +18,6 @@ import {
 } from "../../helpers/GetContactJid";
 import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
 import Whatsapp from "../../models/Whatsapp";
-import { getWhaileys, whaileysJid } from "../../libs/whaileys";
 import { getZapoQuoteMetadata, resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import { sendMessageSentWebhook } from "../WebhookService/SendWebhookEvent";
@@ -133,69 +132,6 @@ const SendWhatsAppMessage = async ({
 }: Request): Promise<WbotMessage> => {
   const formattedBody = formatBody(body, ticket);
   const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
-
-  if (whatsapp?.provider === "whaileys") {
-    try {
-      const socket = getWhaileys(whatsapp.id);
-      const remoteJid = whaileysJid(
-        ticket.contact.number,
-        ticket.isGroup,
-        ticket.contact.remoteJid
-      );
-      const sent = await socket.sendMessage(
-        remoteJid,
-        { text: formattedBody },
-        quotedMsg
-          ? {
-              quoted: {
-                key: {
-                  id: quotedMsg.id,
-                  remoteJid,
-                  fromMe: quotedMsg.fromMe
-                }
-              } as any
-            }
-          : undefined
-      );
-      const id = sent?.key.id;
-      if (!id) throw new Error("Whaileys did not return a message id");
-
-      await CreateMessageService({
-        messageData: {
-          id,
-          ticketId: ticket.id,
-          body: formattedBody,
-          fromMe: true,
-          read: true,
-          mediaType: "chat",
-          quotedMsgId: quotedMsg?.id,
-          ack: 0,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      });
-      await ticket.update({ lastMessage: body });
-      logger.info(
-        { whatsappId: whatsapp.id, ticketId: ticket.id, messageId: id },
-        "Whaileys text message sent"
-      );
-      return {
-        id: { id },
-        body: formattedBody,
-        timestamp: Math.floor(Date.now() / 1000),
-        fromMe: true,
-        hasMedia: false,
-        ack: 0
-      } as unknown as WbotMessage;
-    } catch (err) {
-      logger.error(
-        { ticketId: ticket.id, err },
-        "Error sending Whaileys message"
-      );
-      if (err instanceof AppError) throw err;
-      throw new AppError("ERR_SENDING_WAPP_MSG");
-    }
-  }
 
   if (whatsapp?.provider === "zapo") {
     try {

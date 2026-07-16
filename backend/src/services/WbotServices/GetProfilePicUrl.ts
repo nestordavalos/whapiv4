@@ -1,6 +1,5 @@
 import GetDefaultWhatsApp from "../../helpers/GetDefaultWhatsApp";
 import { getWbot } from "../../libs/wbot";
-import { getWhaileys, whaileysJid } from "../../libs/whaileys";
 import { getZapo, resolveZapoRecipientJid } from "../../libs/zapo";
 import Whatsapp from "../../models/Whatsapp";
 import AppError from "../../errors/AppError";
@@ -127,19 +126,6 @@ const GetProfilePicUrl = async (
     }
   } else {
     whatsapp = await GetDefaultWhatsApp();
-  }
-
-  if (whatsapp.provider === "whaileys") {
-    try {
-      return (
-        (await getWhaileys(whatsapp.id).profilePictureUrl(
-          whaileysJid(number, isGroup),
-          "image"
-        )) || DEFAULT_PROFILE_PIC
-      );
-    } catch {
-      return DEFAULT_PROFILE_PIC;
-    }
   }
 
   if (whatsapp.provider === "zapo") {

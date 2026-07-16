@@ -1,6 +1,5 @@
 import AppError from "../../errors/AppError";
 import { getZapo, resolveZapoRecipientJid } from "../../libs/zapo";
-import { getWhaileys, whaileysJid } from "../../libs/whaileys";
 import GetWbotMessage from "../../helpers/GetWbotMessage";
 import Message from "../../models/Message";
 import Whatsapp from "../../models/Whatsapp";
@@ -36,18 +35,6 @@ const ReactToWhatsAppMessage = async ({
       emoji,
       target: { id: message.id, remoteJid, fromMe: message.fromMe }
     });
-  } else if (whatsapp.provider === "whaileys") {
-    const remoteJid = whaileysJid(
-      contact.number,
-      ticket.isGroup,
-      contact.remoteJid
-    );
-    await getWhaileys(whatsapp.id).sendMessage(remoteJid, {
-      react: {
-        text: emoji,
-        key: { id: message.id, remoteJid, fromMe: message.fromMe }
-      }
-    } as any);
   } else {
     const wbotMessage = await GetWbotMessage(ticket, message.id);
     await wbotMessage.react(emoji);

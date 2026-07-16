@@ -4,7 +4,6 @@ import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
 import { logger } from "../../utils/logger";
 import Whatsapp from "../../models/Whatsapp";
-import { getWhaileys, whaileysJid } from "../../libs/whaileys";
 import { getZapo, resolveZapoRecipientJid } from "../../libs/zapo";
 
 // Tiempo máximo para editar un mensaje (15 minutos en milisegundos)
@@ -75,29 +74,6 @@ const EditWhatsAppMessage = async ({
       );
     } catch (err) {
       logger.error({ messageId, err }, "Error editing Zapo message");
-      throw new AppError("ERR_EDIT_WAPP_MSG", 500);
-    }
-
-    await message.update({ body: newBody, isEdited: true });
-    await message.reload({
-      include: [{ model: Ticket, as: "ticket", include: ["contact"] }]
-    });
-    return message;
-  }
-
-  if (whatsapp?.provider === "whaileys") {
-    try {
-      const remoteJid = whaileysJid(
-        ticket.contact.number,
-        ticket.isGroup,
-        ticket.contact.remoteJid
-      );
-      await getWhaileys(whatsapp.id).sendMessage(remoteJid, {
-        text: newBody,
-        edit: { remoteJid, fromMe: true, id: message.id }
-      } as any);
-    } catch (err) {
-      logger.error(`Error editing Whaileys message: ${err}`);
       throw new AppError("ERR_EDIT_WAPP_MSG", 500);
     }
 

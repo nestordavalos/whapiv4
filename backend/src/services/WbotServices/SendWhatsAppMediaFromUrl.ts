@@ -15,7 +15,6 @@ import {
 } from "../../helpers/GetContactJid";
 import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
 import Whatsapp from "../../models/Whatsapp";
-import { getWhaileys, whaileysJid } from "../../libs/whaileys";
 import { getZapoQuoteMetadata, resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import { getStorageService } from "../StorageServices/StorageService";
@@ -122,53 +121,6 @@ const SendWhatsAppMediaFromUrl = async ({
       } as unknown as WbotMessage;
     } catch (err) {
       logger.error({ ticketId: ticket.id, err }, "Error sending Zapo URL media");
-      if (err instanceof AppError) throw err;
-      throw new AppError("ERR_SENDING_WAPP_MSG_FROM_URL");
-    }
-  }
-
-  if (whatsapp?.provider === "whaileys") {
-    try {
-      const socket = getWhaileys(whatsapp.id);
-      const remoteJid = whaileysJid(
-        ticket.contact.number,
-        ticket.isGroup,
-        ticket.contact.remoteJid
-      );
-      const sent = await socket.sendMessage(
-        remoteJid,
-        {
-          document: { url: mediaUrl },
-          caption: hasBody,
-          fileName: filename,
-          mimetype: "application/octet-stream"
-        },
-        quotedMsg
-          ? ({
-              quoted: {
-                key: { id: quotedMsg.id, remoteJid, fromMe: quotedMsg.fromMe }
-              }
-            } as any)
-          : undefined
-      );
-      const id = sent?.key.id;
-      if (!id) throw new Error("Whaileys did not return a media message id");
-      await ticket.update({
-        lastMessage: body || filename || "Media from URL"
-      });
-      return {
-        id: { id },
-        body: hasBody || "",
-        timestamp: Math.floor(Date.now() / 1000),
-        fromMe: true,
-        hasMedia: true,
-        ack: 0
-      } as unknown as WbotMessage;
-    } catch (err) {
-      logger.error(
-        { ticketId: ticket.id, err },
-        "Error sending Whaileys URL media"
-      );
       if (err instanceof AppError) throw err;
       throw new AppError("ERR_SENDING_WAPP_MSG_FROM_URL");
     }

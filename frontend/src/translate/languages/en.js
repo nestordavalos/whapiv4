@@ -142,9 +142,8 @@ const messages = {
         form: {
           name: "Name",
           provider: "Connection provider",
-          providerWwebjs: "WhatsApp Web.js",
-          providerWhaileys: "Whaileys (native)",
-          providerZapo: "Zapo",
+          providerWwebjs: "WhatsApp Web",
+          providerZapo: "Zapo Web",
           default: "Default",
           display: "Display sector time",
           group: "Permit group messages",

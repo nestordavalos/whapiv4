@@ -11,7 +11,6 @@ import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService
 import ShowQueueService from "../services/QueueService/ShowQueueService";
 import formatBody from "../helpers/Mustache";
 import { getWbot } from "../libs/wbot";
-import { getWhaileys, whaileysJid } from "../libs/whaileys";
 import { getZapo, resolveZapoRecipientJid } from "../libs/zapo";
 import { logger } from "../utils/logger";
 import AppError from "../errors/AppError";
@@ -176,17 +175,7 @@ export const update = async (
       try {
         // Only archive if WhatsApp is connected
         if (whatsapp.status === "CONNECTED") {
-          if (whatsapp.provider === "whaileys") {
-            const chatId = whaileysJid(
-              ticket.contact.number,
-              ticket.isGroup,
-              ticket.contact.remoteJid
-            );
-            await getWhaileys(ticket.whatsappId).chatModify(
-              { archive: true, lastMessages: [] },
-              chatId
-            );
-          } else if (whatsapp.provider === "zapo") {
+          if (whatsapp.provider === "zapo") {
             await getZapo(ticket.whatsappId).chat.setChatArchive(
               await resolveZapoRecipientJid(
                 whatsapp.id,
@@ -229,17 +218,7 @@ export const update = async (
       try {
         // Only archive if WhatsApp is connected
         if (whatsapp.status === "CONNECTED") {
-          if (whatsapp.provider === "whaileys") {
-            const chatId = whaileysJid(
-              ticket.contact.number,
-              ticket.isGroup,
-              ticket.contact.remoteJid
-            );
-            await getWhaileys(ticket.whatsappId).chatModify(
-              { archive: true, lastMessages: [] },
-              chatId
-            );
-          } else if (whatsapp.provider === "zapo") {
+          if (whatsapp.provider === "zapo") {
             await getZapo(ticket.whatsappId).chat.setChatArchive(
               await resolveZapoRecipientJid(
                 whatsapp.id,

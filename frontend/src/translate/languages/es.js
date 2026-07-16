@@ -143,9 +143,8 @@ const messages = {
         form: {
           name: "Nombre",
           provider: "Proveedor de conexión",
-          providerWwebjs: "WhatsApp Web.js",
-          providerWhaileys: "Whaileys (nativo)",
-          providerZapo: "Zapo",
+          providerWwebjs: "WhatsApp Web",
+          providerZapo: "Zapo Web",
           default: "Predeterminado",
           display: "Mostrar hora del sector",
           farewellMessage: "Mensaje de despedida",

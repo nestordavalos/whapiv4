@@ -1,6 +1,5 @@
 import GetDefaultWhatsApp from "../../helpers/GetDefaultWhatsApp";
 import { getWbot } from "../../libs/wbot";
-import { getWhaileys, whaileysJid } from "../../libs/whaileys";
 import { getZapo } from "../../libs/zapo";
 import Whatsapp from "../../models/Whatsapp";
 import AppError from "../../errors/AppError";
@@ -20,14 +19,6 @@ const CheckContactNumber = async (
     }
   } else {
     whatsapp = await GetDefaultWhatsApp();
-  }
-
-  if (whatsapp.provider === "whaileys") {
-    const [validNumber] = await getWhaileys(whatsapp.id).onWhatsApp(
-      whaileysJid(number)
-    );
-    if (!validNumber?.exists) throw new AppError("ERR_WAPP_INVALID_CONTACT");
-    return number;
   }
 
   if (whatsapp.provider === "zapo") {

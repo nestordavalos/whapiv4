@@ -18,7 +18,6 @@ import {
 } from "../../helpers/GetContactJid";
 import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
 import Whatsapp from "../../models/Whatsapp";
-import { getWhaileys, whaileysJid } from "../../libs/whaileys";
 import { getZapoQuoteMetadata, resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
 
 interface Request {
@@ -127,90 +126,6 @@ const SendWhatsAppMediaFromBase64 = async ({
       } as unknown as WbotMessage;
     } catch (err) {
       logger.error({ ticketId: ticket.id, err }, "Error sending Zapo base64 media");
-      if (err instanceof AppError) throw err;
-      throw new AppError("ERR_SENDING_WAPP_MSG");
-    }
-  }
-
-  if (whatsapp?.provider === "whaileys") {
-    try {
-      const hasBody = body ? formatBody(body, ticket) : undefined;
-      const cleanBase64 = base64Data.includes("base64,")
-        ? base64Data.split("base64,")[1]
-        : base64Data.includes(",")
-        ? base64Data.split(",")[1]
-        : base64Data;
-      const mimeRoot = mimeType.split("/")[0];
-      const finalFilename =
-        filename || `${Date.now()}.${mimeType.split("/")[1] || "bin"}`;
-      const socket = getWhaileys(whatsapp.id);
-      const remoteJid = whaileysJid(
-        ticket.contact.number,
-        ticket.isGroup,
-        ticket.contact.remoteJid
-      );
-      const content: any = {
-        caption: hasBody,
-        fileName: finalFilename,
-        mimetype: mimeType
-      };
-      const buffer = Buffer.from(cleanBase64, "base64");
-      if (mimeRoot === "image") content.image = buffer;
-      else if (mimeRoot === "video") content.video = buffer;
-      else if (mimeRoot === "audio") {
-        content.audio = buffer;
-        content.ptt = true;
-      } else content.document = buffer;
-
-      const sent = await socket.sendMessage(
-        remoteJid,
-        content,
-        quotedMsg
-          ? ({
-              quoted: {
-                key: { id: quotedMsg.id, remoteJid, fromMe: quotedMsg.fromMe }
-              }
-            } as any)
-          : undefined
-      );
-      const id = sent?.key.id;
-      if (!id) throw new Error("Whaileys did not return a media message id");
-      await getStorageService().uploadBase64(
-        cleanBase64,
-        finalFilename,
-        mimeType
-      );
-      await CreateMessageService({
-        messageData: {
-          id,
-          ticketId: ticket.id,
-          body: hasBody || "",
-          fromMe: true,
-          read: true,
-          mediaUrl: finalFilename,
-          mediaType: mimeRoot,
-          quotedMsgId: quotedMsg?.id,
-          ack: 0,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      });
-      await ticket.update({
-        lastMessage: body || filename || "Media from base64"
-      });
-      return {
-        id: { id },
-        body: hasBody || "",
-        timestamp: Math.floor(Date.now() / 1000),
-        fromMe: true,
-        hasMedia: true,
-        ack: 0
-      } as unknown as WbotMessage;
-    } catch (err) {
-      logger.error(
-        { ticketId: ticket.id, err },
-        "Error sending Whaileys base64 media"
-      );
       if (err instanceof AppError) throw err;
       throw new AppError("ERR_SENDING_WAPP_MSG");
     }

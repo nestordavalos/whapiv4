@@ -21,7 +21,6 @@ import SendWhatsAppMediaFromBase64 from "../services/WbotServices/SendWhatsAppMe
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import { getWbot } from "../libs/wbot";
 import { getZapo } from "../libs/zapo";
-import { getWhaileys } from "../libs/whaileys";
 import { getIO } from "../libs/socket";
 import ListSettingsServiceOne from "../services/SettingServices/ListSettingsServiceOne";
 import { logger } from "../utils/logger";
@@ -852,8 +851,6 @@ export const getConnectionStatus = async (
   try {
     if (whatsapp.provider === "zapo") {
       isConnected = getZapo(Number(connectionId)).getState().connected;
-    } else if (whatsapp.provider === "whaileys") {
-      isConnected = Boolean(getWhaileys(Number(connectionId)).user);
     } else {
       const wbot = getWbot(Number(connectionId));
       if (wbot) {

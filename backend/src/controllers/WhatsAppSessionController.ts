@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import path from "path";
 import fs from "fs/promises";
 import { getWbot, removeWbot } from "../libs/wbot";
-import { removeWhaileys } from "../libs/whaileys";
 import { removeZapo, requestZapoHistorySync } from "../libs/zapo";
 import { getIO } from "../libs/socket";
 import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
@@ -21,9 +20,6 @@ const getErrorMessage = (error: unknown): string =>
 const getSessionPath = (whatsappId: number): string =>
   path.resolve(__dirname, `../../.wwebjs_auth/session-bd_${whatsappId}`);
 
-const getWhaileysSessionPath = (whatsappId: number): string =>
-  path.resolve(__dirname, `../../.whaileys_auth/${whatsappId}`);
-
 const wait = (ms: number): Promise<void> =>
   new Promise(resolve => setTimeout(resolve, ms));
 
@@ -33,16 +29,6 @@ const cleanupSessionResources = async (
 ): Promise<void> => {
   const { deleteAuthFiles = false } = options;
 
-  if (whatsapp.provider === "whaileys") {
-    await removeWhaileys(whatsapp.id, false);
-    if (deleteAuthFiles) {
-      await fs.rm(getWhaileysSessionPath(whatsapp.id), {
-        recursive: true,
-        force: true
-      });
-    }
-    return;
-  }
   if (whatsapp.provider === "zapo") {
     await removeZapo(whatsapp.id, deleteAuthFiles);
     return;

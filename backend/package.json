@@ -26,7 +26,6 @@
     "@aws-sdk/client-s3": "^3.940.0",
     "@aws-sdk/lib-storage": "^3.940.0",
     "@sentry/node": "^5.29.2",
-    "@whiskeysockets/baileys": "github:WhiskeySockets/Baileys#master",
     "@zapo-js/media-utils": "^1.0.0",
     "@zapo-js/store-mysql": "^1.0.2",
     "axios": "^1.13.2",

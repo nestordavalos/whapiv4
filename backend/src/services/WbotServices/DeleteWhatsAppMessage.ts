@@ -3,7 +3,6 @@ import GetWbotMessage from "../../helpers/GetWbotMessage";
 import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
 import Whatsapp from "../../models/Whatsapp";
-import { getWhaileys, whaileysJid } from "../../libs/whaileys";
 import { getZapo, resolveZapoRecipientJid } from "../../libs/zapo";
 
 const DeleteWhatsAppMessage = async (messageId: string): Promise<Message> => {
@@ -35,23 +34,6 @@ const DeleteWhatsAppMessage = async (messageId: string): Promise<Message> => {
       await getZapo(whatsapp.id).message.send(remoteJid, {
         type: "revoke",
         target: { remoteJid, fromMe: message.fromMe, id: message.id }
-      });
-      await message.update({ isDeleted: true });
-      return message;
-    } catch (err) {
-      throw new AppError("ERR_DELETE_WAPP_MSG");
-    }
-  }
-
-  if (whatsapp?.provider === "whaileys") {
-    try {
-      const remoteJid = whaileysJid(
-        ticket.contact.number,
-        ticket.isGroup,
-        ticket.contact.remoteJid
-      );
-      await getWhaileys(whatsapp.id).sendMessage(remoteJid, {
-        delete: { remoteJid, fromMe: message.fromMe, id: message.id }
       });
       await message.update({ isDeleted: true });
       return message;

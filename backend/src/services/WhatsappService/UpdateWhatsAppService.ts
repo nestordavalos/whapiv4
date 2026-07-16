@@ -115,7 +115,7 @@ const UpdateWhatsAppService = async ({
 }: Request): Promise<Response> => {
   const schema = Yup.object().shape({
     name: Yup.string().min(2),
-    provider: Yup.string().oneOf(["wwebjs", "whaileys", "zapo"]),
+    provider: Yup.string().oneOf(["wwebjs", "zapo"]),
     status: Yup.string(),
     isDefault: Yup.boolean(),
     isGroup: Yup.boolean(),

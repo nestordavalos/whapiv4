@@ -2,6 +2,7 @@ import { Op } from "sequelize";
 import Contact from "../../models/Contact";
 import Whatsapp from "../../models/Whatsapp";
 import { getWbot } from "../../libs/wbot";
+import { getZapoStoredContact } from "../../libs/zapo";
 import { isLikelyLid, resolvePhoneFromLid } from "../../helpers/GetContactJid";
 import { logger } from "../../utils/logger";
 import { getIO } from "../../libs/socket";
@@ -41,9 +42,12 @@ const FixLidContactsService = async (
 
   // Find an active WhatsApp session
   let wbot: any;
+  let activeWhatsapp: Whatsapp | null = null;
   try {
     if (whatsappId) {
-      wbot = getWbot(whatsappId);
+      activeWhatsapp = await Whatsapp.findByPk(whatsappId);
+      if (!activeWhatsapp) throw new Error("WhatsApp connection not found");
+      if (activeWhatsapp.provider !== "zapo") wbot = getWbot(whatsappId);
     } else {
       // Find any connected WhatsApp
       const whatsapp = await Whatsapp.findOne({
@@ -52,7 +56,8 @@ const FixLidContactsService = async (
       if (!whatsapp) {
         throw new Error("No active WhatsApp connection found");
       }
-      wbot = getWbot(whatsapp.id);
+      activeWhatsapp = whatsapp;
+      if (whatsapp.provider !== "zapo") wbot = getWbot(whatsapp.id);
     }
   } catch (err: any) {
     throw new Error(`Cannot get WhatsApp session: ${err.message}`);
@@ -82,7 +87,15 @@ const FixLidContactsService = async (
 
   for (const contact of lidContacts) {
     try {
-      const resolvedPhone = await resolvePhoneFromLid(wbot, contact.number);
+      const zapoContact =
+        activeWhatsapp?.provider === "zapo"
+          ? await getZapoStoredContact(activeWhatsapp.id, contact.number)
+          : null;
+      const resolvedPhone = zapoContact?.phoneNumber
+        ? zapoContact.phoneNumber.split("@")[0]
+        : activeWhatsapp?.provider === "zapo"
+        ? null
+        : await resolvePhoneFromLid(wbot, contact.number);
 
       if (!resolvedPhone) {
         result.failed++;

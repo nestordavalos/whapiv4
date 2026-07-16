@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs/promises";
 import { getWbot, removeWbot } from "../libs/wbot";
 import { removeWhaileys } from "../libs/whaileys";
+import { removeZapo, requestZapoHistorySync } from "../libs/zapo";
 import { getIO } from "../libs/socket";
 import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
 import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
@@ -40,6 +41,10 @@ const cleanupSessionResources = async (
         force: true
       });
     }
+    return;
+  }
+  if (whatsapp.provider === "zapo") {
+    await removeZapo(whatsapp.id, deleteAuthFiles);
     return;
   }
 
@@ -228,14 +233,6 @@ const sync = async (req: Request, res: Response): Promise<Response> => {
       });
     }
 
-    const wbot = getWbot(whatsapp.id);
-
-    if (!wbot) {
-      return res.status(400).json({
-        error: "No se encontró la sesión de WhatsApp"
-      });
-    }
-
     // Obtener configuración de la instancia
     const instanceConfig = await getSyncConfigForWhatsApp(whatsapp.id);
 
@@ -245,6 +242,7 @@ const sync = async (req: Request, res: Response): Promise<Response> => {
       maxChatsToProcess?: number;
       maxMessagesPerChat?: number;
       maxMessageAgeHours?: number;
+      delayBetweenChats?: number;
       markAsSeen?: boolean;
       createClosedForRead?: boolean;
     } = {
@@ -252,6 +250,7 @@ const sync = async (req: Request, res: Response): Promise<Response> => {
       maxChatsToProcess: instanceConfig.maxChatsToProcess,
       maxMessagesPerChat: instanceConfig.maxMessagesPerChat,
       maxMessageAgeHours: instanceConfig.maxMessageAgeHours,
+      delayBetweenChats: instanceConfig.delayBetweenChats,
       markAsSeen: instanceConfig.markAsSeen,
       createClosedForRead: instanceConfig.createClosedForRead
     };
@@ -265,6 +264,34 @@ const sync = async (req: Request, res: Response): Promise<Response> => {
     }
     if (maxHours) {
       customConfig.maxMessageAgeHours = parseInt(maxHours, 10);
+    }
+
+    if (whatsapp.provider === "zapo") {
+      const result = await requestZapoHistorySync(whatsapp.id, {
+        mode: customConfig.mode,
+        maxChats: customConfig.maxChatsToProcess || 100,
+        maxMessages: customConfig.maxMessagesPerChat || 50,
+        delayBetweenChats: customConfig.delayBetweenChats || 0,
+        maxMessageAgeHours: customConfig.maxMessageAgeHours || 24,
+        markAsSeen: customConfig.markAsSeen,
+        createClosedForRead: customConfig.createClosedForRead
+      });
+      logger.info(
+        { whatsappId: whatsapp.id, result },
+        "[WhatsAppSession] Zapo history sync requested"
+      );
+      return res.status(200).json({
+        message: "Sincronización Zapo solicitada",
+        result
+      });
+    }
+
+    const wbot = getWbot(whatsapp.id);
+
+    if (!wbot) {
+      return res.status(400).json({
+        error: "No se encontró la sesión de WhatsApp"
+      });
     }
 
     // Ejecutar sincronización

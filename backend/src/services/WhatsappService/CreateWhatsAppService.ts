@@ -175,7 +175,7 @@ const CreateWhatsAppService = async ({
         }
       ),
     isDefault: Yup.boolean().required(),
-    provider: Yup.string().oneOf(["wwebjs", "whaileys"]).required()
+    provider: Yup.string().oneOf(["wwebjs", "whaileys", "zapo"]).required()
   });
 
   try {

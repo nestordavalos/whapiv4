@@ -709,6 +709,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
       saturday: sab,
       sunday: dom,
       webhookUrls: webhooks,
+      webhookEnabled: values.webhookEnabled,
     };
 
     try {
@@ -899,6 +900,9 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       </MenuItem>
                       <MenuItem value="whaileys">
                         {i18n.t("whatsappModal.form.providerWhaileys")}
+                      </MenuItem>
+                      <MenuItem value="zapo">
+                        {i18n.t("whatsappModal.form.providerZapo")}
                       </MenuItem>
                     </Field>
                   </FormControl>

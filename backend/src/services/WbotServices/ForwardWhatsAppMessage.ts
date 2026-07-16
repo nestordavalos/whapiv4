@@ -11,6 +11,7 @@ import CreateMessageService from "../MessageServices/CreateMessageService";
 import { getStorageService } from "../StorageServices/StorageService";
 import Whatsapp from "../../models/Whatsapp";
 import { getWhaileys, whaileysJid } from "../../libs/whaileys";
+import { sendZapoMessage, zapoJid } from "../../libs/zapo";
 
 interface Request {
   message: Message;
@@ -49,6 +50,69 @@ const ForwardWhatsAppMessage = async ({
     );
 
     const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
+    if (whatsapp?.provider === "zapo") {
+      const remoteJid = zapoJid(
+        contactNumber,
+        false,
+        destinationContact.remoteJid
+      );
+      const originalMediaUrl = message.getDataValue("mediaUrl");
+      let content: any = message.body || "";
+      let mediaUrl: string | undefined;
+      let mediaType: string | undefined;
+
+      if (originalMediaUrl && message.mediaType) {
+        const buffer = await getStorageService().downloadToBuffer(
+          originalMediaUrl
+        );
+        const mimeType = message.mediaType === "image"
+          ? "image/jpeg"
+          : message.mediaType === "video"
+          ? "video/mp4"
+          : message.mediaType === "audio"
+          ? "audio/ogg; codecs=opus"
+          : "application/octet-stream";
+        const type = ["image", "video", "audio", "sticker"].includes(
+          message.mediaType
+        )
+          ? message.mediaType
+          : "document";
+        content = {
+          type,
+          media: buffer,
+          mimetype: mimeType,
+          fileName: path.basename(originalMediaUrl),
+          ...(message.body ? { caption: message.body } : {}),
+          ...(type === "audio" ? { ptt: true } : {})
+        };
+        mediaUrl = originalMediaUrl;
+        mediaType = message.mediaType;
+      }
+
+      const sent = await sendZapoMessage(whatsapp.id, remoteJid, content, {
+        forward: true
+      });
+      await CreateMessageService({
+        messageData: {
+          id: sent.id,
+          ticketId: destinationTicket.id,
+          body: message.body || "",
+          contactId: destinationContact.id,
+          fromMe: true,
+          read: true,
+          mediaUrl,
+          mediaType,
+          ack: 1,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      });
+      await destinationTicket.update({
+        lastMessage: message.body || (mediaType ? `[${mediaType}]` : "")
+      });
+      return { success: true, destinationTicketId: destinationTicket.id };
+    }
+
     if (whatsapp?.provider === "whaileys") {
       const remoteJid = whaileysJid(
         contactNumber,

@@ -145,6 +145,7 @@ const messages = {
           provider: "Proveedor de conexión",
           providerWwebjs: "WhatsApp Web.js",
           providerWhaileys: "Whaileys (nativo)",
+          providerZapo: "Zapo",
           default: "Predeterminado",
           display: "Mostrar hora del sector",
           farewellMessage: "Mensaje de despedida",

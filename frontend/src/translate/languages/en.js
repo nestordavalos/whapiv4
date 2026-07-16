@@ -144,6 +144,7 @@ const messages = {
           provider: "Connection provider",
           providerWwebjs: "WhatsApp Web.js",
           providerWhaileys: "Whaileys (native)",
+          providerZapo: "Zapo",
           default: "Default",
           display: "Display sector time",
           group: "Permit group messages",

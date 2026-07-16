@@ -16,23 +16,126 @@ import {
 import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
 import Whatsapp from "../../models/Whatsapp";
 import { getWhaileys, whaileysJid } from "../../libs/whaileys";
+import { getZapoQuotedMessage, resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
 import CreateMessageService from "../MessageServices/CreateMessageService";
+import { sendMessageSentWebhook } from "../WebhookService/SendWebhookEvent";
 
 interface Request {
   media: Express.Multer.File;
   ticket: Ticket;
   body?: string;
+  voiceNote?: boolean;
   quotedMsg?: Message;
+  persistMessage?: boolean;
 }
 
 const SendWhatsAppMedia = async ({
   media,
   ticket,
   body,
-  quotedMsg
+  voiceNote = false,
+  quotedMsg,
+  persistMessage = true
 }: Request): Promise<WbotMessage> => {
   const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
-  const hasBody = body ? formatBody(body, ticket) : undefined;
+  const isAudioFilename =
+    media.mimetype.startsWith("audio/") &&
+    Boolean(body && /\.(mp3|mpeg|ogg|opus|wav|webm|m4a|aac)$/i.test(body));
+  const hasBody = body && !isAudioFilename ? formatBody(body, ticket) : undefined;
+
+  if (whatsapp?.provider === "zapo") {
+    try {
+      const remoteJid = await resolveZapoRecipientJid(
+        whatsapp.id,
+        ticket.contact.number,
+        ticket.isGroup,
+        ticket.contact.remoteJid
+      );
+      const mimeRoot = media.mimetype.split("/")[0];
+      const type = ["image", "video", "audio"].includes(mimeRoot)
+        ? mimeRoot
+        : "document";
+      const isVoiceNote =
+        type === "audio" &&
+        (voiceNote || /audio\/ogg(?:;.*opus)?/i.test(media.mimetype));
+      const quotedMessage = quotedMsg
+        ? await getZapoQuotedMessage(whatsapp.id, quotedMsg.id)
+        : undefined;
+      const sent = await sendZapoMessage(
+        whatsapp.id,
+        remoteJid,
+        {
+          type,
+          media: media.path,
+          mimetype: media.mimetype,
+          ...(type !== "audio" ? { fileName: media.originalname } : {}),
+          ...(hasBody ? { caption: hasBody } : {}),
+          ...(isVoiceNote ? { ptt: true } : {})
+        },
+        {
+          quote: quotedMsg
+            ? {
+                id: quotedMsg.id,
+                remoteJid,
+                fromMe: quotedMsg.fromMe,
+                message: quotedMessage
+              }
+            : undefined
+        }
+      );
+      if (persistMessage) {
+        await CreateMessageService({
+          messageData: {
+            id: sent.id,
+            ticketId: ticket.id,
+            body: hasBody || "",
+            fromMe: true,
+            read: true,
+            mediaUrl: media.filename,
+            mediaType: type,
+            quotedMsgId: quotedMsg?.id,
+            ack: 1,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
+      }
+      await ticket.update({
+        lastMessage: hasBody || (type === "audio" ? "🎵 Audio" : media.filename)
+      });
+      await sendMessageSentWebhook(whatsapp.id, {
+        messageId: sent.id,
+        body: hasBody || "",
+        fromMe: true,
+        mediaType: type,
+        hasMedia: true,
+        timestamp: Math.floor(Date.now() / 1000),
+        ticketId: ticket.id,
+        contact: {
+          id: ticket.contact.id,
+          name: ticket.contact.name,
+          number: ticket.contact.number
+        },
+        media: {
+          url: media.filename,
+          mimeType: media.mimetype,
+          type
+        }
+      });
+      return {
+        id: { id: sent.id },
+        body: hasBody || "",
+        timestamp: Math.floor(Date.now() / 1000),
+        fromMe: true,
+        hasMedia: true,
+        ack: 1
+      } as unknown as WbotMessage;
+    } catch (err) {
+      logger.error({ ticketId: ticket.id, err }, "Error sending Zapo media");
+      if (err instanceof AppError) throw err;
+      throw new AppError("ERR_SENDING_WAPP_MSG");
+    }
+  }
 
   if (whatsapp?.provider === "whaileys") {
     try {

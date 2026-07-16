@@ -15,6 +15,7 @@ import CheckIsValidContact from "../services/WbotServices/CheckIsValidContact";
 import GetProfilePicUrl from "../services/WbotServices/GetProfilePicUrl";
 import AppError from "../errors/AppError";
 import GetContactService from "../services/ContactServices/GetContactService";
+import Ticket from "../models/Ticket";
 
 type IndexQuery = {
   searchParam: string;
@@ -122,6 +123,26 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
 export const show = async (req: Request, res: Response): Promise<Response> => {
   const { contactId } = req.params;
   const contact = await ShowContactService(contactId);
+  const ticket = await Ticket.findOne({
+    where: { contactId: contact.id },
+    order: [["updatedAt", "DESC"]]
+  });
+  if (ticket) {
+    try {
+      const profilePicUrl = await GetProfilePicUrl(
+        contact.remoteJid || contact.number,
+        ticket.whatsappId
+      );
+      if (
+        profilePicUrl !== "/default-profile.png" &&
+        profilePicUrl !== contact.profilePicUrl
+      ) {
+        await contact.update({ profilePicUrl });
+      }
+    } catch {
+      // The avatar is optional; the contact itself must still load normally.
+    }
+  }
   return res.status(200).json(contact);
 };
 

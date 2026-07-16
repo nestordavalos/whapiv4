@@ -22,6 +22,14 @@ const useStyles = makeStyles(theme => ({
 		MozUserSelect: "auto",
 		msUserSelect: "auto",
 	},
+	quotedMedia: {
+		objectFit: "contain",
+		width: 140,
+		height: 100,
+		borderRadius: 6,
+		display: "block",
+		cursor: "pointer",
+	},
 	imageWrapper: {
 		position: "relative",
 		display: "inline-block",
@@ -47,7 +55,7 @@ const useStyles = makeStyles(theme => ({
 	},
 }));
 
-const ModalImageCors = ({ imageUrl }) => {
+const ModalImageCors = ({ imageUrl, compact = false, previewOnly = false }) => {
 	const classes = useStyles();
 	const [fetching, setFetching] = useState(true);
 	const [blobUrl, setBlobUrl] = useState("");
@@ -107,6 +115,17 @@ const ModalImageCors = ({ imageUrl }) => {
 		return <div className={classes.loadingPlaceholder}>⏳</div>;
 	}
 
+	if (previewOnly) {
+		return (
+			<img
+				className={classes.quotedMedia}
+				src={blobUrl}
+				alt="Vista previa del mensaje citado"
+				style={{ pointerEvents: "none" }}
+			/>
+		);
+	}
+
 	return (
 		<div 
 			className={classes.imageWrapper}
@@ -116,7 +135,7 @@ const ModalImageCors = ({ imageUrl }) => {
 			}}
 		>
 			<ModalImage
-				className={classes.messageMedia}
+				className={compact ? classes.quotedMedia : classes.messageMedia}
 				smallSrcSet={blobUrl}
 				medium={blobUrl}
 				large={blobUrl}

@@ -32,7 +32,6 @@ import {
   MoreVert,
   Send
 } from "@mui/icons-material";
-import MicRecorder from "mic-recorder-to-mp3";
 import clsx from "clsx";
 import { ReplyMessageContext } from "../../context/ReplyingMessage/ReplyingMessageContext";
 import { AuthContext } from "../../context/Auth/AuthContext";
@@ -41,8 +40,6 @@ import { useLocalStorage } from "../../hooks/useLocalStorage";
 import toastError from "../../errors/toastError";
 import api from "../../services/api";
 import RecordingTimer from "./RecordingTimer";
-
-const Mp3Recorder = new MicRecorder({ bitRate: 128 });
 
 const useStyles = makeStyles((theme) => ({
   mainWrapper: {
@@ -309,11 +306,38 @@ const MessageInput = ({ ticketStatus }) => {
   const [quickAnswers, setQuickAnswer] = useState([]);
   const [typeBar, setTypeBar] = useState(false);
   const inputRef = useRef();
+  const mediaRecorderRef = useRef(null);
+  const recordingStreamRef = useRef(null);
+  const recordingChunksRef = useRef([]);
   const [onDragEnter, setOnDragEnter] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const { setReplyingMessage, replyingMessage } = useContext(ReplyMessageContext);
   const { user } = useContext(AuthContext);
   const [signMessage, setSignMessage] = useLocalStorage("signOption", true);
+
+  const releaseRecordingStream = () => {
+    recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+    recordingStreamRef.current = null;
+  };
+
+  const stopNativeRecording = () => new Promise((resolve) => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || recorder.state === "inactive") {
+      releaseRecordingStream();
+      resolve(null);
+      return;
+    }
+
+    recorder.addEventListener("stop", () => {
+      const mimeType = recorder.mimeType || "audio/webm";
+      const blob = new Blob(recordingChunksRef.current, { type: mimeType });
+      recordingChunksRef.current = [];
+      mediaRecorderRef.current = null;
+      releaseRecordingStream();
+      resolve(blob);
+    }, { once: true });
+    recorder.stop();
+  });
 
   useEffect(() => {
     inputRef.current.focus();
@@ -322,6 +346,7 @@ const MessageInput = ({ ticketStatus }) => {
   useEffect(() => {
     inputRef.current.focus();
     return () => {
+      stopNativeRecording();
       setInputMessage("");
       setShowEmoji(false);
       setMedias([]);
@@ -448,12 +473,28 @@ const MessageInput = ({ ticketStatus }) => {
   const handleStartRecording = async () => {
     setLoading(true);
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-      await Mp3Recorder.start();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Store it immediately so an unsupported MediaRecorder implementation
+      // cannot leave the microphone active after throwing below.
+      recordingStreamRef.current = stream;
+      const mimeType = [
+        "audio/ogg; codecs=opus",
+        "audio/webm; codecs=opus",
+        "audio/webm"
+      ].find((candidate) => MediaRecorder.isTypeSupported(candidate));
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+
+      recordingChunksRef.current = [];
+      recorder.addEventListener("dataavailable", (event) => {
+        if (event.data.size > 0) recordingChunksRef.current.push(event.data);
+      });
+      mediaRecorderRef.current = recorder;
+      recorder.start();
       setRecording(true);
-      setLoading(false);
     } catch (err) {
+      releaseRecordingStream();
       toastError(err);
+    } finally {
       setLoading(false);
     }
   };
@@ -514,34 +555,38 @@ const MessageInput = ({ ticketStatus }) => {
   const handleUploadAudio = async () => {
     setLoading(true);
     try {
-      const [, blob] = await Mp3Recorder.stop().getMp3();
-      if (blob.size < 10000) {
-        setLoading(false);
-        setRecording(false);
+      const blob = await stopNativeRecording();
+      if (!blob || blob.size < 1000) {
         return;
       }
 
       const formData = new FormData();
-      const filename = `${new Date().getTime()}.mp3`;
+      const filename = `${new Date().getTime()}.${blob.type.includes("ogg") ? "ogg" : "webm"}`;
       formData.append("medias", blob, filename);
-      formData.append("body", filename);
       formData.append("fromMe", true);
+      // A browser recording is a WhatsApp voice note, not a regular audio file.
+      formData.append("voiceNote", "true");
+      if (replyingMessage) {
+        formData.append("quotedMsg", JSON.stringify(replyingMessage));
+      }
 
       await api.post(`/messages/${ticketId}`, formData);
+      setReplyingMessage(null);
     } catch (err) {
       toastError(err);
+    } finally {
+      setRecording(false);
+      setLoading(false);
     }
-
-    setRecording(false);
-    setLoading(false);
   };
 
   const handleCancelAudio = async () => {
     try {
-      await Mp3Recorder.stop().getMp3();
-      setRecording(false);
+      await stopNativeRecording();
     } catch (err) {
       toastError(err);
+    } finally {
+      setRecording(false);
     }
   };
 

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { getIO } from "../libs/socket";
 import { removeWbot, restartWbot, shutdownWbot } from "../libs/wbot";
 import { removeWhaileys } from "../libs/whaileys";
+import { removeZapo } from "../libs/zapo";
 import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
 import { logger } from "../utils/logger";
 import AppError from "../errors/AppError";
@@ -291,6 +292,8 @@ export const remove = async (
   await DeleteWhatsAppService(whatsappId);
   if (whatsapp?.provider === "whaileys") {
     await removeWhaileys(+whatsappId, true);
+  } else if (whatsapp?.provider === "zapo") {
+    await removeZapo(+whatsappId, true);
   } else {
     removeWbot(+whatsappId);
   }
@@ -318,8 +321,13 @@ export const restart = async (
     logger.info(`Iniciando restart para WhatsApp ID: ${whatsappId}`);
 
     const currentWhatsapp = await ShowWhatsAppService(whatsappId);
-    if (currentWhatsapp.provider === "whaileys") {
-      await removeWhaileys(+whatsappId, false);
+    if (
+      currentWhatsapp.provider === "whaileys" ||
+      currentWhatsapp.provider === "zapo"
+    ) {
+      if (currentWhatsapp.provider === "whaileys")
+        await removeWhaileys(+whatsappId, false);
+      else await removeZapo(+whatsappId, false);
       await StartWhatsAppSession(currentWhatsapp);
     } else {
       await restartWbot(+whatsappId);
@@ -365,8 +373,13 @@ export const shutdown = async (
     logger.info(`Iniciando shutdown para WhatsApp ID: ${whatsappId}`);
 
     const currentWhatsapp = await ShowWhatsAppService(whatsappId);
-    if (currentWhatsapp.provider === "whaileys") {
-      await removeWhaileys(+whatsappId, false);
+    if (
+      currentWhatsapp.provider === "whaileys" ||
+      currentWhatsapp.provider === "zapo"
+    ) {
+      if (currentWhatsapp.provider === "whaileys")
+        await removeWhaileys(+whatsappId, false);
+      else await removeZapo(+whatsappId, false);
       await currentWhatsapp.update({ status: "DISCONNECTED" });
     } else {
       await shutdownWbot(whatsappId);

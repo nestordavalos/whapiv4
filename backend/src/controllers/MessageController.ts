@@ -15,6 +15,7 @@ import ForwardWhatsAppMessage from "../services/WbotServices/ForwardWhatsAppMess
 import CreateMessageService from "../services/MessageServices/CreateMessageService";
 import Message from "../models/Message";
 import { logger } from "../utils/logger";
+import ReactToWhatsAppMessage from "../services/WbotServices/ReactToWhatsAppMessage";
 
 type IndexQuery = {
   pageNumber: string;
@@ -39,6 +40,7 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const { ticketId } = req.params;
   const { body } = req.body;
+  const voiceNote = req.body.voiceNote === "true" || req.body.voiceNote === true;
   const quotedMsg = req.body.quotedMsg
     ? typeof req.body.quotedMsg === "string"
       ? JSON.parse(req.body.quotedMsg)
@@ -59,23 +61,32 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
           media,
           ticket,
           body,
-          quotedMsg
+          voiceNote,
+          quotedMsg,
+          persistMessage: false
         });
 
         const timestamp = sentMsg.timestamp
           ? new Date(sentMsg.timestamp * 1000)
           : new Date();
+        const isAudioFilename =
+          media.mimetype.startsWith("audio/") &&
+          Boolean(body && /\.(mp3|mpeg|ogg|opus|wav|webm|m4a|aac)$/i.test(body));
 
         const message = await CreateMessageService({
           messageData: {
             id: sentMsg.id.id,
             ticketId: ticket.id,
-            body: sentMsg.body || body,
+            // The attachment input can submit its generated filename as the
+            // message body. It is not a caption and must not be rendered as
+            // text below an audio player.
+            body: isAudioFilename ? "" : sentMsg.body || body,
             fromMe: true,
             read: true,
             mediaUrl: media.filename,
             mediaType: media.mimetype.split("/")[0],
             quotedMsgId: quotedMsg?.id,
+            ack: 1,
             createdAt: timestamp,
             updatedAt: timestamp
           }
@@ -191,4 +202,14 @@ export const forward = async (
     message: "Message forwarded successfully",
     destinationTicketId: result.destinationTicketId
   });
+};
+
+export const react = async (req: Request, res: Response): Promise<Response> => {
+  const { messageId } = req.params;
+  const { emoji } = req.body;
+  if (typeof emoji !== "string") {
+    throw new Error("emoji is required");
+  }
+  await ReactToWhatsAppMessage({ messageId, emoji });
+  return res.sendStatus(204);
 };

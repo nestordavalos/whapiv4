@@ -13,10 +13,11 @@ import clsx from "clsx";
 
 import { red } from "@mui/material/colors";
 // import { AuthContext } from "../../context/Auth/AuthContext";
-import { Badge, Button, Checkbox, CircularProgress, Fab, IconButton, Tooltip } from "@mui/material";
+import { Avatar, Badge, Button, Checkbox, CircularProgress, Fab, IconButton, Popover, Tooltip, Typography } from "@mui/material";
 import makeStyles from '@mui/styles/makeStyles';
 import {
   AccessTime,
+  AddReactionOutlined,
   Block,
   Close,
   Done,
@@ -26,6 +27,8 @@ import {
   GetApp,
   Reply,
 } from "@mui/icons-material";
+import "emoji-mart/css/emoji-mart.css";
+import { Picker } from "emoji-mart";
 
 import MarkdownWrapper from "../MarkdownWrapper";
 import VcardPreview from "../VcardPreview";
@@ -253,12 +256,34 @@ const useStyles = makeStyles((theme) => ({
   },
 
   messageMedia: {
-    objectFit: "cover",
-    width: 250,
-    height: 200,
+    objectFit: "contain",
+    width: "min(100%, 360px)",
+    height: "auto",
+    maxHeight: "60vh",
     borderRadius: 12,
     border: "none",
     display: "block",
+    backgroundColor: "#000",
+  },
+
+  quotedMedia: {
+    objectFit: "contain",
+    width: 140,
+    height: 100,
+    maxHeight: 100,
+    borderRadius: 6,
+    display: "block",
+    backgroundColor: "#000",
+  },
+
+  quotedAudioPreview: {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    minWidth: 120,
+    padding: "8px 4px",
+    color: "inherit",
+    pointerEvents: "none",
   },
 
   audioWrapper: {
@@ -636,6 +661,9 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   // const { user } = useContext(AuthContext);
 
   const [selectedMessage, setSelectedMessage] = useState({});
+  const [reactionDetails, setReactionDetails] = useState(null);
+  const [reactionFilter, setReactionFilter] = useState(null);
+  const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
   const { setReplyingMessage } = useContext(ReplyMessageContext);
 
   const [anchorEl, setAnchorEl] = useState(null);
@@ -782,11 +810,10 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     };
 
     const join = () => socket.emit("joinChatBox", ticketId);
-    if (socket.connected) {
-      join();
-    } else {
-      socket.on("connect", join);
-    }
+    // Rejoin after a backend restart/reconnect as Socket.IO rooms are
+    // server-side and are discarded when the connection is re-established.
+    socket.on("connect", join);
+    if (socket.connected) join();
     socket.on("appMessage", handleMessage);
 
     return () => {
@@ -842,6 +869,30 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     setAnchorPosition(null);
   };
 
+  const handleOpenReactionDetails = (event, message) => {
+    event.stopPropagation();
+    const rect = event.currentTarget.getBoundingClientRect();
+    setReactionFilter(null);
+    setReactionPickerOpen(false);
+    setReactionDetails({
+      anchorPosition: {
+        top: rect.top,
+        left: rect.left + rect.width / 2
+      },
+      message
+    });
+  };
+
+  const handleReactionChange = async (message, emoji) => {
+    try {
+      await api.post(`/messages/${message.id}/reaction`, { emoji });
+      setReactionPickerOpen(false);
+      setReactionDetails(null);
+    } catch (err) {
+      toastError(err);
+    }
+  };
+
   // Selection handlers
   const handleToggleSelectionMode = () => {
     setSelectionMode(!selectionMode);
@@ -886,6 +937,18 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     }
   };
 
+  const isImageLikeMedia = (message) =>
+    ["image", "sticker"].includes(message?.mediaType) ||
+    /\.(avif|gif|jpe?g|png|webp)(?:$|\?)/i.test(message?.mediaUrl || "");
+
+  const isAudioFilenameOnly = (message) => {
+    if (message?.mediaType !== "audio" || !message?.body || !message?.mediaUrl) {
+      return false;
+    }
+    const filename = decodeURIComponent(message.mediaUrl.split("/").pop() || "");
+    return message.body.trim() === filename;
+  };
+
   const checkMessageMedia = (message) => {
     if (
       message.mediaType === "location" &&
@@ -924,7 +987,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
         }
       }
       return <VcardPreview contact={contact} numbers={obj[0].number} />;
-    } else if (message.mediaType === "image") {
+    } else if (isImageLikeMedia(message)) {
       return <ModalImageCors imageUrl={message.mediaUrl} />
     } else if (message.mediaType === "audio") {
       return (
@@ -938,6 +1001,8 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
           className={classes.messageMedia}
           src={message.mediaUrl}
           controls
+          playsInline
+          preload="metadata"
         />
       );
     } else {
@@ -1000,21 +1065,19 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
 
     return (
       <div className={classes.reactionsContainer} style={isFromMe ? { left: 'auto', right: 6 } : {}}>
-        {Object.entries(groupedReactions).map(([emoji, reactions]) => (
-          <Tooltip
-            key={emoji}
-            title={reactions.map((r) => r.senderName || r.senderId).join(", ")}
-            arrow
-            placement="top"
+        <Tooltip title="Ver reacciones" arrow placement="top">
+          <button
+            type="button"
+            className={isFromMe ? classes.reactionBadgeRight : classes.reactionBadge}
+            onClick={(event) => handleOpenReactionDetails(event, message)}
+            style={{ border: 0 }}
           >
-            <span className={isFromMe ? classes.reactionBadgeRight : classes.reactionBadge}>
-              <span className={classes.reactionEmoji}>{emoji}</span>
-              {reactions.length > 1 && (
-                <span className={classes.reactionCount}>{reactions.length}</span>
-              )}
-            </span>
-          </Tooltip>
-        ))}
+            {Object.keys(groupedReactions).map((emoji) => (
+              <span key={emoji} className={classes.reactionEmoji}>{emoji}</span>
+            ))}
+            <span className={classes.reactionCount}>{message.reactions.length}</span>
+          </button>
+        </Tooltip>
       </div>
     );
   };
@@ -1155,34 +1218,27 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
             </span>
           )}
           {message.quotedMsg.mediaType === "audio" && (
-            <div className={classes.downloadMedia}>
-              <audio controls>
-                <source
-                  src={message.quotedMsg.mediaUrl}
-                  type="audio/ogg"
-                ></source>
-              </audio>
+            <div className={classes.quotedAudioPreview}>
+              <span aria-hidden="true">🎵</span>
+              <span>Audio</span>
             </div>
           )}
           {message.quotedMsg.mediaType === "video" && (
             <video
-              className={classes.messageMedia}
+              className={classes.quotedMedia}
               src={message.quotedMsg.mediaUrl}
-              controls
+              muted
+              playsInline
+              preload="metadata"
+              style={{ pointerEvents: "none" }}
             />
           )}
           {message.quotedMsg.mediaType === "application" && (
-            <div className={classes.downloadMedia}>
-              <Button
-                startIcon={<GetApp />}
-                color="primary"
-                variant="outlined"
-                target="_blank"
-                href={message.quotedMsg.mediaUrl}
-                size="small"
-              >
-                Descargar
-              </Button>
+            <div className={classes.quotedAudioPreview}>
+              <span aria-hidden="true">📄</span>
+              <span>
+                {message.quotedMsg.mediaUrl?.split("/").pop() || "Documento"}
+              </span>
             </div>
           )}
 
@@ -1335,8 +1391,12 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
             );
           })()}
 
-          {message.quotedMsg.mediaType === "image" ? (
-            <ModalImageCors imageUrl={message.quotedMsg.mediaUrl} />
+          {isImageLikeMedia(message.quotedMsg) ? (
+            <ModalImageCors
+              imageUrl={message.quotedMsg.mediaUrl}
+              compact
+              previewOnly
+            />
           ) : (message.quotedMsg.mediaType === "location" || message.quotedMsg.mediaType === "vcard") ? null : (
             message.quotedMsg?.body
           )}
@@ -1470,7 +1530,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                     [classes.textContentItemEdited]: message.isEdited,
                   })}>
                     {message.quotedMsg && renderQuotedMessage(message)}
-                    {message.mediaType !== "vcard" && (
+                    {message.mediaType !== "vcard" && message.mediaType !== "audio" && !isAudioFilenameOnly(message) && (
                       <MarkdownWrapper>{message.body}</MarkdownWrapper>
                     )}
                     <span className={classes.timestamp}>
@@ -1544,7 +1604,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                       />
                     )}
                     {message.quotedMsg && renderQuotedMessage(message)}
-                    {message.mediaType !== "vcard" && (
+                    {message.mediaType !== "vcard" && message.mediaType !== "audio" && !isAudioFilenameOnly(message) && (
                       <MarkdownWrapper>{message.body}</MarkdownWrapper>
                     )}
                     <span className={classes.timestamp}>
@@ -1582,6 +1642,113 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
 
   return (
     <div className={classes.messagesListWrapper}>
+      <Popover
+        open={Boolean(reactionDetails?.anchorPosition)}
+        anchorReference="anchorPosition"
+        anchorPosition={reactionDetails?.anchorPosition}
+        onClose={() => setReactionDetails(null)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        transformOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <div style={{ minWidth: 300, maxWidth: 380, padding: "14px 16px" }}>
+          <Typography variant="subtitle2" style={{ marginBottom: 10 }}>
+            {reactionDetails?.message?.reactions?.length || 0} reacciones
+          </Typography>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              paddingBottom: 10,
+              marginBottom: 6,
+              borderBottom: "1px solid rgba(128,128,128,.2)"
+            }}
+          >
+            <IconButton
+              size="small"
+              aria-label="Añadir reacción"
+              onClick={() => setReactionPickerOpen((open) => !open)}
+              style={{ border: "1px solid rgba(128,128,128,.35)" }}
+            >
+              <AddReactionOutlined fontSize="small" />
+            </IconButton>
+            {Object.entries(
+              (reactionDetails?.message?.reactions || []).reduce((groups, reaction) => {
+                groups[reaction.emoji] = (groups[reaction.emoji] || 0) + 1;
+                return groups;
+              }, {})
+            ).map(([emoji, count]) => (
+              <button
+                type="button"
+                key={emoji}
+                onClick={() => setReactionFilter((current) => current === emoji ? null : emoji)}
+                style={{
+                  border: reactionFilter === emoji ? "2px solid #00a884" : "1px solid rgba(128,128,128,.35)",
+                  borderRadius: 18,
+                  background: "transparent",
+                  padding: "3px 9px",
+                  cursor: "pointer",
+                  fontSize: 16
+                }}
+              >
+                {emoji} <span style={{ fontSize: 12 }}>{count}</span>
+              </button>
+            ))}
+          </div>
+          {reactionPickerOpen && (
+            <div style={{ marginBottom: 8 }}>
+              <Picker
+                title="Añadir reacción"
+                emoji="slightly_smiling_face"
+                showPreview={false}
+                showSkinTones={false}
+                onSelect={(emoji) => handleReactionChange(reactionDetails.message, emoji.native)}
+              />
+            </div>
+          )}
+          {(reactionDetails?.message?.reactions || [])
+            .filter((reaction) => !reactionFilter || reaction.emoji === reactionFilter)
+            .map((reaction) => {
+            const name =
+              reaction.senderName ||
+              reactionDetails?.message?.contact?.name ||
+              reactionDetails?.message?.ticket?.contact?.name ||
+              "Contacto";
+            const isOwnReaction = reaction.fromMe;
+            return (
+              <button
+                type="button"
+                key={reaction.id || `${reaction.senderId}-${reaction.emoji}`}
+                onClick={() => isOwnReaction && handleReactionChange(reactionDetails.message, "")}
+                style={{
+                  display: "flex",
+                  width: "100%",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "7px 0",
+                  border: 0,
+                  background: "transparent",
+                  color: "inherit",
+                  textAlign: "left",
+                  cursor: isOwnReaction ? "pointer" : "default"
+                }}
+              >
+                <Avatar style={{ width: 32, height: 32, fontSize: 14 }}>
+                  {name.charAt(0).toUpperCase()}
+                </Avatar>
+                <div style={{ flexGrow: 1 }}>
+                  <Typography variant="body2">{isOwnReaction ? "Tú" : name}</Typography>
+                  {isOwnReaction && (
+                    <Typography variant="caption" color="textSecondary">
+                      Haz clic para quitarla
+                    </Typography>
+                  )}
+                </div>
+                <span style={{ fontSize: 22 }}>{reaction.emoji}</span>
+              </button>
+            );
+          })}
+        </div>
+      </Popover>
       <MessageOptionsMenu
         message={selectedMessage}
         anchorEl={anchorEl}

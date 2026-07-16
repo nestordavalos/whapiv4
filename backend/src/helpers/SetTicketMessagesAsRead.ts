@@ -6,6 +6,7 @@ import GetTicketWbot from "./GetTicketWbot";
 import { getContactJid } from "./GetContactJid";
 import Whatsapp from "../models/Whatsapp";
 import { getWhaileys, whaileysJid } from "../libs/whaileys";
+import { getZapo, zapoJid } from "../libs/zapo";
 
 const SetTicketMessagesAsRead = async (ticket: Ticket): Promise<void> => {
   await Message.update(
@@ -37,6 +38,24 @@ const SetTicketMessagesAsRead = async (ticket: Ticket): Promise<void> => {
         await getWhaileys(whatsapp.id).readMessages([
           { remoteJid, id: lastMessage.id, fromMe: lastMessage.fromMe }
         ]);
+      }
+    } else if (whatsapp?.provider === "zapo") {
+      // Zapo does not expose WhatsApp-Web.js' sendSeen. Send a standard
+      // WhatsApp read receipt for the last inbound message instead.
+      const lastInboundMessage = await Message.findOne({
+        where: { ticketId: ticket.id, fromMe: false },
+        order: [["createdAt", "DESC"]]
+      });
+      if (lastInboundMessage) {
+        await getZapo(whatsapp.id).message.sendReceipt(
+          zapoJid(
+            ticket.contact.number,
+            ticket.isGroup,
+            ticket.contact.remoteJid
+          ),
+          lastInboundMessage.id,
+          { type: "read" }
+        );
       }
     } else {
       const wbot = await GetTicketWbot(ticket);

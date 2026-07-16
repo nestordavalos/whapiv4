@@ -12,7 +12,7 @@ import ShowQueueService from "../services/QueueService/ShowQueueService";
 import formatBody from "../helpers/Mustache";
 import { getWbot } from "../libs/wbot";
 import { getWhaileys, whaileysJid } from "../libs/whaileys";
-import { getZapo, zapoJid } from "../libs/zapo";
+import { getZapo, resolveZapoRecipientJid } from "../libs/zapo";
 import { logger } from "../utils/logger";
 import AppError from "../errors/AppError";
 
@@ -188,7 +188,8 @@ export const update = async (
             );
           } else if (whatsapp.provider === "zapo") {
             await getZapo(ticket.whatsappId).chat.setChatArchive(
-              zapoJid(
+              await resolveZapoRecipientJid(
+                whatsapp.id,
                 ticket.contact.number,
                 ticket.isGroup,
                 ticket.contact.remoteJid
@@ -240,7 +241,8 @@ export const update = async (
             );
           } else if (whatsapp.provider === "zapo") {
             await getZapo(ticket.whatsappId).chat.setChatArchive(
-              zapoJid(
+              await resolveZapoRecipientJid(
+                whatsapp.id,
                 ticket.contact.number,
                 ticket.isGroup,
                 ticket.contact.remoteJid

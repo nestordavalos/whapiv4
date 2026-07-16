@@ -4,7 +4,7 @@ import Message from "../../models/Message";
 import Ticket from "../../models/Ticket";
 import Whatsapp from "../../models/Whatsapp";
 import { getWhaileys, whaileysJid } from "../../libs/whaileys";
-import { getZapo, zapoJid } from "../../libs/zapo";
+import { getZapo, resolveZapoRecipientJid } from "../../libs/zapo";
 
 const DeleteWhatsAppMessage = async (messageId: string): Promise<Message> => {
   const message = await Message.findByPk(messageId, {
@@ -26,7 +26,8 @@ const DeleteWhatsAppMessage = async (messageId: string): Promise<Message> => {
   const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
   if (whatsapp?.provider === "zapo") {
     try {
-      const remoteJid = zapoJid(
+      const remoteJid = await resolveZapoRecipientJid(
+        whatsapp.id,
         ticket.contact.number,
         ticket.isGroup,
         ticket.contact.remoteJid

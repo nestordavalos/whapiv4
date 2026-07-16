@@ -1,5 +1,7 @@
 import AppError from "../../errors/AppError";
-import { getZapo, zapoJid } from "../../libs/zapo";
+import { getZapo, resolveZapoRecipientJid } from "../../libs/zapo";
+import { getWhaileys, whaileysJid } from "../../libs/whaileys";
+import GetWbotMessage from "../../helpers/GetWbotMessage";
 import Message from "../../models/Message";
 import Whatsapp from "../../models/Whatsapp";
 import HandleMessageReactionService from "../MessageServices/HandleMessageReactionService";
@@ -20,22 +22,36 @@ const ReactToWhatsAppMessage = async ({
 
   const whatsapp = await Whatsapp.findByPk(message.ticket.whatsappId);
   if (!whatsapp) throw new AppError("ERR_NO_WAPP_FOUND", 404);
-  if (whatsapp.provider !== "zapo") {
-    throw new AppError("ERR_WAPP_REACTION_UNSUPPORTED", 400);
-  }
-
   const ticket = message.ticket as any;
   const contact = await ticket.getContact();
-  const remoteJid = zapoJid(contact.number, ticket.isGroup, contact.remoteJid);
-  await getZapo(whatsapp.id).message.send(remoteJid, {
-    type: "reaction",
-    emoji,
-    target: {
-      id: message.id,
-      remoteJid,
-      fromMe: message.fromMe
-    }
-  });
+  if (whatsapp.provider === "zapo") {
+    const remoteJid = await resolveZapoRecipientJid(
+      whatsapp.id,
+      contact.number,
+      ticket.isGroup,
+      contact.remoteJid
+    );
+    await getZapo(whatsapp.id).message.send(remoteJid, {
+      type: "reaction",
+      emoji,
+      target: { id: message.id, remoteJid, fromMe: message.fromMe }
+    });
+  } else if (whatsapp.provider === "whaileys") {
+    const remoteJid = whaileysJid(
+      contact.number,
+      ticket.isGroup,
+      contact.remoteJid
+    );
+    await getWhaileys(whatsapp.id).sendMessage(remoteJid, {
+      react: {
+        text: emoji,
+        key: { id: message.id, remoteJid, fromMe: message.fromMe }
+      }
+    } as any);
+  } else {
+    const wbotMessage = await GetWbotMessage(ticket, message.id);
+    await wbotMessage.react(emoji);
+  }
 
   await HandleMessageReactionService({
     reactionData: {

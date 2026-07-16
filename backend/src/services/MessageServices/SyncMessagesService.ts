@@ -9,7 +9,7 @@ import { handleMessage } from "../WbotServices/wbotMessageListener";
 import { logger } from "../../utils/logger";
 import { getContactJid } from "../../helpers/GetContactJid";
 import Whatsapp from "../../models/Whatsapp";
-import { getZapo, zapoJid } from "../../libs/zapo";
+import { getZapo, resolveZapoRecipientJid } from "../../libs/zapo";
 import {
   getFirstErrorLine,
   isFetchMessagesStoreError
@@ -55,12 +55,14 @@ const SyncMessagesService = async ({
       where: { ticketId: ticket.id },
       order: [["createdAt", "ASC"]]
     });
+    const chatJid = await resolveZapoRecipientJid(
+      whatsapp.id,
+      ticket.contact.number,
+      ticket.isGroup,
+      ticket.contact.remoteJid
+    );
     await getZapo(whatsapp.id).message.requestHistorySync({
-      chatJid: zapoJid(
-        ticket.contact.number,
-        ticket.isGroup,
-        ticket.contact.remoteJid
-      ),
+      chatJid,
       ...(oldest
         ? {
             oldestMsgId: oldest.id,

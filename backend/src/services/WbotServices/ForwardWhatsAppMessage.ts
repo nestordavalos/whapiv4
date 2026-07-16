@@ -11,7 +11,7 @@ import CreateMessageService from "../MessageServices/CreateMessageService";
 import { getStorageService } from "../StorageServices/StorageService";
 import Whatsapp from "../../models/Whatsapp";
 import { getWhaileys, whaileysJid } from "../../libs/whaileys";
-import { sendZapoMessage, zapoJid } from "../../libs/zapo";
+import { resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
 
 interface Request {
   message: Message;
@@ -51,7 +51,8 @@ const ForwardWhatsAppMessage = async ({
 
     const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
     if (whatsapp?.provider === "zapo") {
-      const remoteJid = zapoJid(
+      const remoteJid = await resolveZapoRecipientJid(
+        whatsapp.id,
         contactNumber,
         false,
         destinationContact.remoteJid

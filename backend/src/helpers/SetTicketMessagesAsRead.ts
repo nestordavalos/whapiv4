@@ -6,7 +6,7 @@ import GetTicketWbot from "./GetTicketWbot";
 import { getContactJid } from "./GetContactJid";
 import Whatsapp from "../models/Whatsapp";
 import { getWhaileys, whaileysJid } from "../libs/whaileys";
-import { getZapo, zapoJid } from "../libs/zapo";
+import { getZapo, resolveZapoRecipientJid } from "../libs/zapo";
 
 const SetTicketMessagesAsRead = async (ticket: Ticket): Promise<void> => {
   await Message.update(
@@ -47,12 +47,14 @@ const SetTicketMessagesAsRead = async (ticket: Ticket): Promise<void> => {
         order: [["createdAt", "DESC"]]
       });
       if (lastInboundMessage) {
+        const remoteJid = await resolveZapoRecipientJid(
+          whatsapp.id,
+          ticket.contact.number,
+          ticket.isGroup,
+          ticket.contact.remoteJid
+        );
         await getZapo(whatsapp.id).message.sendReceipt(
-          zapoJid(
-            ticket.contact.number,
-            ticket.isGroup,
-            ticket.contact.remoteJid
-          ),
+          remoteJid,
           lastInboundMessage.id,
           { type: "read" }
         );

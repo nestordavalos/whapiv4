@@ -61,7 +61,7 @@ const SendWhatsAppMediaFromBase64 = async ({
         ? mimeRoot
         : "document";
       const isVoiceNote =
-        type === "audio" && /audio\/ogg(?:;.*opus)?/i.test(mimeType);
+        type === "audio";
       const finalFilename =
         filename || `${Date.now()}.${mimeType.split("/")[1] || "bin"}`;
       const remoteJid = await resolveZapoRecipientJid(

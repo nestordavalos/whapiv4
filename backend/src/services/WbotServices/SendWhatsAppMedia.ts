@@ -56,8 +56,7 @@ const SendWhatsAppMedia = async ({
         ? mimeRoot
         : "document";
       const isVoiceNote =
-        type === "audio" &&
-        (voiceNote || /audio\/ogg(?:;.*opus)?/i.test(media.mimetype));
+        type === "audio";
       const quotedMessage = quotedMsg
         ? await getZapoQuotedMessage(whatsapp.id, quotedMsg.id)
         : undefined;

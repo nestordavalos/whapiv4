@@ -5,7 +5,7 @@ import Ticket from "../../models/Ticket";
 import { logger } from "../../utils/logger";
 import Whatsapp from "../../models/Whatsapp";
 import { getWhaileys, whaileysJid } from "../../libs/whaileys";
-import { getZapo, zapoJid } from "../../libs/zapo";
+import { getZapo, resolveZapoRecipientJid } from "../../libs/zapo";
 
 // Tiempo máximo para editar un mensaje (15 minutos en milisegundos)
 const MAX_EDIT_TIME_MS = 15 * 60 * 1000;
@@ -62,7 +62,8 @@ const EditWhatsAppMessage = async ({
   const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
   if (whatsapp?.provider === "zapo") {
     try {
-      const remoteJid = zapoJid(
+      const remoteJid = await resolveZapoRecipientJid(
+        whatsapp.id,
         ticket.contact.number,
         ticket.isGroup,
         ticket.contact.remoteJid

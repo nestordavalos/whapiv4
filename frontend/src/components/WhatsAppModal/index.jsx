@@ -896,10 +896,14 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                       name="provider"
                     >
                       <MenuItem value="wwebjs">
-                        {i18n.t("whatsappModal.form.providerWwebjs")}
+                        {i18n.t("whatsappModal.form.providerWwebjs", {
+                          defaultValue: "WhatsApp Web",
+                        })}
                       </MenuItem>
                       <MenuItem value="zapo">
-                        {i18n.t("whatsappModal.form.providerZapo")}
+                        {i18n.t("whatsappModal.form.providerZapo", {
+                          defaultValue: "Zapo Web",
+                        })}
                       </MenuItem>
                     </Field>
                   </FormControl>

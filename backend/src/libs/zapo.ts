@@ -42,6 +42,32 @@ const OUTBOUND_MESSAGE_DELAY_MS = 2000;
 const emitSession = (whatsapp: Whatsapp) =>
   getIO().emit("whatsappSession", { action: "update", session: whatsapp });
 const sessionIdFor = (id: number) => `whatsapp-${id}`;
+const waitForZapoRemoteLogout = (session: ZapoSession): Promise<void> =>
+  new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      session.off("connection", onConnection);
+      reject(
+        new Error(
+          "WhatsApp did not confirm removal of the Zapo companion device"
+        )
+      );
+    }, 15000);
+    const onConnection = (event: any) => {
+      if (event?.status !== "close") return;
+      clearTimeout(timeout);
+      session.off("connection", onConnection);
+      if (event.isLogout) {
+        resolve();
+      } else {
+        reject(
+          new Error(
+            `WhatsApp closed Zapo without unpairing the device (${event.reason || "unknown"})`
+          )
+        );
+      }
+    };
+    session.on("connection", onConnection);
+  });
 const messageText = (message: any): string => {
   const content =
     message?.ephemeralMessage?.message ||
@@ -556,12 +582,47 @@ export const removeZapo = async (id: number, logout = false): Promise<void> => {
   }
 
   if (session) {
-    await (logout ? session.logout() : session.disconnect()).catch(err => {
-      logger.warn({ whatsappId: id, err }, "Could not close Zapo session");
-    });
+    if (logout) {
+      try {
+        // This sends Zapo's server-side "remove companion device" IQ. Do not
+        // hide a failure here: clearing our MySQL state after a failed request
+        // makes the UI say disconnected while the phone still shows the link.
+        // Zapo resolves logout when WhatsApp accepts the IQ. The device is
+        // only actually unpaired when the server closes the session with the
+        // logout flag, so wait for that definitive event as well.
+        const remoteLogout = waitForZapoRemoteLogout(session);
+        try {
+          await session.logout();
+        } catch (err) {
+          // The confirmation listener has its own timeout. Consume it when
+          // the IQ itself fails so it cannot become an unhandled rejection.
+          void remoteLogout.catch(() => undefined);
+          throw err;
+        }
+        await remoteLogout;
+        logger.info(
+          { whatsappId: id },
+          "Zapo companion device unpaired by WhatsApp"
+        );
+      } catch (err) {
+        // Keep the in-memory session available. The caller must receive the
+        // failure and must not claim that the device was disconnected.
+        sessions.set(id, session);
+        if (store) stores.set(id, store);
+        logger.error(
+          { whatsappId: id, err },
+          "Zapo could not unpair the companion device remotely"
+        );
+        throw err;
+      }
+    } else {
+      await session.disconnect().catch(err => {
+        logger.warn({ whatsappId: id, err }, "Could not close Zapo session");
+      });
+    }
   }
 
-  if (logout) {
+  if (logout && !session) {
     // A local reset must force a fresh QR even if WhatsApp has not yet sent
     // the logout close event. Zapo's credentials live in MySQL, not in the
     // `Whatsapps.session` field used by the WWebJS provider.
@@ -605,6 +666,24 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
   const { mysql, store } = createZapoStore();
   try {
     await ensureZapoMysqlMigrations(mysql);
+    // Zapo credentials are durable in MySQL. Restore the linked phone number
+    // before connecting so a temporary disconnect never makes the connection
+    // look like a brand-new, unlinked QR session in the UI.
+    const persistedCredentials = await mysql.stores
+      .auth(sessionIdFor(whatsapp.id))
+      .load();
+    const persistedNumber = persistedCredentials?.meJid
+      ?.split(":")[0]
+      .split("@")[0];
+    if (persistedNumber) {
+      if (whatsapp.number !== persistedNumber) {
+        await whatsapp.update({ number: persistedNumber });
+      }
+      logger.info(
+        { whatsappId: whatsapp.id, number: persistedNumber },
+        "Restoring persisted Zapo authentication"
+      );
+    }
   } catch (err) {
     await mysql.destroy().catch(() => undefined);
     throw err;
@@ -641,7 +720,6 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
     await whatsapp.update({
       status: "qrcode",
       qrcode: qr,
-      number: "",
       retries: 0
     });
     emitSession(whatsapp);
@@ -675,8 +753,7 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
       if (event.isLogout) {
         await whatsapp.update({
           status: "DISCONNECTED",
-          qrcode: "",
-          number: ""
+          qrcode: ""
         });
         emitSession(whatsapp);
         await sendConnectionUpdateWebhook(whatsapp.id, {

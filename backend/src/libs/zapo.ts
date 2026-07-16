@@ -42,6 +42,34 @@ const OUTBOUND_MESSAGE_DELAY_MS = 2000;
 const emitSession = (whatsapp: Whatsapp) =>
   getIO().emit("whatsappSession", { action: "update", session: whatsapp });
 const sessionIdFor = (id: number) => `whatsapp-${id}`;
+const hasRenderableZapoContent = (message: any): boolean => {
+  const content =
+    message?.ephemeralMessage?.message ||
+    message?.viewOnceMessage?.message ||
+    message?.viewOnceMessageV2?.message ||
+    message?.viewOnceMessageV2Extension?.message ||
+    message?.documentWithCaptionMessage?.message ||
+    message ||
+    {};
+  return Boolean(
+      content.conversation ||
+      content.extendedTextMessage?.text ||
+      content.templateMessage?.interactiveMessageTemplate?.body?.text ||
+      content.templateMessage?.hydratedTemplate?.hydratedContentText ||
+      content.interactiveMessage?.body?.text ||
+      content.buttonsMessage?.contentText ||
+      content.listMessage?.description ||
+      content.imageMessage ||
+      content.videoMessage ||
+      content.audioMessage ||
+      content.documentMessage ||
+      content.stickerMessage ||
+      content.contactMessage?.vcard ||
+      content.contactsArrayMessage?.contacts?.length ||
+      content.locationMessage ||
+      content.liveLocationMessage
+  );
+};
 const waitForZapoRemoteLogout = (session: ZapoSession): Promise<void> =>
   new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
@@ -379,37 +407,112 @@ export const requestZapoHistorySync = async (
   const session = getZapo(id);
   const mysql = stores.get(id);
   if (!mysql) throw new AppError("ERR_WAPP_NOT_INITIALIZED");
-  const threads = await mysql.stores
-    .threads(sessionIdFor(id))
-    .list(Math.max(1, options.maxChats));
-  const selected =
-    options.mode === "unread"
-      ? threads.filter((thread: any) => (thread.unreadCount || 0) > 0)
-      : threads;
+  const whatsapp = await Whatsapp.findByPk(id);
+  if (!whatsapp) throw new AppError("ERR_NO_WAPP_FOUND", 404);
+  // Same reason as the message query below: the generic store method caps
+  // threads at 100, while the connection configuration allows up to 1,000.
+  const maxChats = Math.min(Math.max(Math.floor(options.maxChats || 1), 1), 1000);
+  const [threadRows] = await mysql.pool.execute(
+    // A history chunk can persist messages before (or without) a matching
+    // mailbox_threads row. Drive the selection from the messages table so a
+    // real chat never becomes invisible to a manual recovery.
+    `SELECT message.thread_jid AS jid,
+            COALESCE(MAX(thread.unread_count), 0) AS unread_count,
+            MAX(message.timestamp_ms) AS last_message_ms
+       FROM zapo_mailbox_messages AS message
+  LEFT JOIN zapo_mailbox_threads AS thread
+         ON thread.session_id = message.session_id
+        AND thread.jid = message.thread_jid
+      WHERE message.session_id = ?
+        AND message.thread_jid NOT LIKE '%@newsletter'
+        AND message.thread_jid NOT LIKE '%@broadcast'
+        AND (? = TRUE OR message.thread_jid NOT LIKE '%@g.us')
+   GROUP BY message.thread_jid
+   ORDER BY unread_count DESC, last_message_ms DESC, message.thread_jid ASC
+      LIMIT ?`,
+    [sessionIdFor(id), Boolean(whatsapp.isGroup), maxChats]
+  );
+  const threads = (threadRows as any[]).map(row => ({
+    jid: row.jid,
+    unreadCount: row.unread_count === null ? 0 : Number(row.unread_count)
+  }));
+  const selected = (options.mode === "unread"
+    ? threads.filter((thread: any) => (thread.unreadCount || 0) > 0)
+    : threads
+  );
+
+  // Keep the server-side limits aligned with the connection form.  Zapo does
+  // not impose the old whatsapp-web.js 50-message limit; the previous cap
+  // silently ignored configurations such as "201 messages per chat".
+  const maxMessages = Math.min(Math.max(Math.floor(options.maxMessages || 1), 1), 500);
+  const maxMessageAgeHours = Math.min(
+    Math.max(Math.floor(options.maxMessageAgeHours || 24), 1),
+    720
+  );
+  const delay = Math.min(Math.max(options.delayBetweenChats || 0, 0), 5000);
+  const expiresAt =
+    Date.now() + Math.max(30 * 60 * 1000, selected.length * (delay + 1000) + 30 * 60 * 1000);
 
   syncContexts.set(id, {
     mode: options.mode,
-    expiresAt: Date.now() + 10 * 60 * 1000,
-    maxMessageAgeHours: Math.max(options.maxMessageAgeHours || 24, 1),
-    maxMessages: Math.min(Math.max(options.maxMessages, 1), 50),
+    expiresAt,
+    maxMessageAgeHours,
+    maxMessages,
     markAsSeen: Boolean(options.markAsSeen),
     createClosedForRead: Boolean(options.createClosedForRead),
     unreadByJid: new Map(
       selected.map((thread: any) => [thread.jid, Number(thread.unreadCount || 0)])
-    )
+    ),
+    // A history import can take longer than the normal ticket timeout while
+    // media is downloaded. Keep the resolved ticket per contact for this run
+    // so a batch never turns into one closed ticket per message.
+    ticketsByContactId: new Map<number, any>(),
+    // Once a request is sent, this marks the boundary between the mailbox
+    // we already had and the older page WhatsApp is about to deliver.
+    cursorTimestampByJid: new Map<string, number>()
   });
 
+  // A previous failed import may already be present in Zapo's durable
+  // mailbox. Import that window first; the later on-demand chunks page
+  // backwards from it. This makes a retry recover messages missing only from
+  // our platform, while Message.id keeps it safely idempotent.
+  await processZapoHistorySync(whatsapp);
+
   let failedChats = 0;
-  const delay = Math.min(Math.max(options.delayBetweenChats || 0, 0), 10000);
 
   // Request one chat at a time. Apart from respecting the inbox setting, this
   // prevents a large mailbox from issuing a burst of peer-data requests.
   for (let index = 0; index < selected.length; index += 1) {
     const thread: any = selected[index];
     try {
+      // On-demand history is paginated backwards. The local Zapo mailbox is
+      // the current top of the imported window, so use its oldest row as the
+      // cursor when it exists. Without it WhatsApp only chooses its default
+      // recent window and the configured historical sync is ineffective.
+      const [cursorRows] = await mysql.pool.execute(
+        `SELECT message_id, from_me, timestamp_ms
+           FROM zapo_mailbox_messages
+          WHERE session_id = ? AND thread_jid = ? AND timestamp_ms IS NOT NULL
+          ORDER BY timestamp_ms ASC, message_id ASC
+          LIMIT 1`,
+        [sessionIdFor(id), thread.jid]
+      );
+      const cursor = (cursorRows as any[])[0];
+      if (cursor) {
+        syncContexts
+          .get(id)
+          ?.cursorTimestampByJid.set(thread.jid, Number(cursor.timestamp_ms));
+      }
       await session.message.requestHistorySync({
         chatJid: thread.jid,
-        count: Math.min(Math.max(options.maxMessages, 1), 50)
+        count: maxMessages,
+        ...(cursor
+          ? {
+              oldestMsgId: cursor.message_id,
+              oldestMsgFromMe: Number(cursor.from_me) === 1,
+              oldestMsgTimestampMs: Number(cursor.timestamp_ms)
+            }
+          : {})
       });
     } catch (err) {
       failedChats += 1;
@@ -446,10 +549,51 @@ const processZapoHistorySync = async (
   if (!context || !session || !mysql || context.expiresAt < Date.now()) return 0;
 
   let processed = 0;
+  const cutoffTimestampMs =
+    Date.now() - context.maxMessageAgeHours * 60 * 60 * 1000;
   for (const jid of context.unreadByJid.keys()) {
-    const records = await mysql.stores
-      .messages(sessionIdFor(whatsapp.id))
-      .listByThread(jid, context.maxMessages);
+    let processedForChat = 0;
+    // The store's public listByThread API intentionally caps results at 50.
+    // Read the persisted mailbox directly here so the connection setting
+    // (1–500 messages per chat) is honored exactly.
+    const cursorTimestamp = context.cursorTimestampByJid?.get(jid);
+    const [rows] = await mysql.pool.execute(
+      `SELECT mailbox.message_id, mailbox.thread_jid, mailbox.sender_jid,
+              mailbox.participant_jid, mailbox.from_me, mailbox.timestamp_ms,
+              mailbox.message_bytes
+         FROM zapo_mailbox_messages AS mailbox
+    LEFT JOIN Messages AS existing_message
+           ON existing_message.id = mailbox.message_id
+        WHERE mailbox.session_id = ? AND mailbox.thread_jid = ?
+          AND mailbox.timestamp_ms >= ?
+          AND existing_message.id IS NULL
+          ${cursorTimestamp ? "AND timestamp_ms < ?" : ""}
+        ORDER BY mailbox.timestamp_ms DESC, mailbox.message_id DESC
+        LIMIT ?`,
+      cursorTimestamp
+        ? [
+            sessionIdFor(whatsapp.id),
+            jid,
+            cutoffTimestampMs,
+            cursorTimestamp,
+            Math.min(context.maxMessages * 10, 5000)
+          ]
+        : [
+            sessionIdFor(whatsapp.id),
+            jid,
+            cutoffTimestampMs,
+            Math.min(context.maxMessages * 10, 5000)
+          ]
+    );
+    const records = (rows as any[]).map(row => ({
+      id: row.message_id,
+      threadJid: row.thread_jid,
+      senderJid: row.sender_jid || undefined,
+      participantJid: row.participant_jid || undefined,
+      fromMe: Number(row.from_me) === 1,
+      timestampMs: row.timestamp_ms === null ? undefined : Number(row.timestamp_ms),
+      messageBytes: row.message_bytes || undefined
+    }));
     const storedContact = await mysql.stores
       .contacts(sessionIdFor(whatsapp.id))
       .getByJid(jid);
@@ -460,6 +604,9 @@ const processZapoHistorySync = async (
     // identical for live and synchronized messages.
     for (const record of [...records].reverse()) {
       if (!record.messageBytes) continue;
+      if (await Message.findByPk(record.id)) continue;
+      const decodedMessage = zapo.proto.Message.decode(record.messageBytes);
+      if (!hasRenderableZapoContent(decodedMessage)) continue;
       await handleZapoMessage(session, whatsapp, {
         key: {
           id: record.id,
@@ -473,9 +620,11 @@ const processZapoHistorySync = async (
           ? Math.floor(record.timestampMs / 1000)
           : undefined,
         historySync: true,
-        message: zapo.proto.Message.decode(record.messageBytes)
+        message: decodedMessage
       });
       processed += 1;
+      processedForChat += 1;
+      if (processedForChat >= context.maxMessages) break;
     }
   }
   return processed;

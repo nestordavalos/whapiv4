@@ -245,7 +245,13 @@ const handleZapoMessageNow = async (
   event: any
 ): Promise<void> => {
   const { key } = event;
-  if (!key?.id || !key.remoteJid || key.remoteJid === "status@broadcast")
+  if (
+    !key?.id ||
+    !key.remoteJid ||
+    key.remoteJid === "status@broadcast" ||
+    key.remoteJid.endsWith("@newsletter") ||
+    key.remoteJid.endsWith("@broadcast")
+  )
     return;
   const rawContent = unwrapMessage(event.message);
   const reaction = rawContent.reactionMessage;
@@ -302,7 +308,6 @@ const handleZapoMessageNow = async (
   // History responses share the live-message event. Apply inbox limits only
   // to a chat explicitly requested by the current synchronization.
   if (
-    !fromMe &&
     syncContext &&
     messageTimestamp * 1000 < Date.now() - syncContext.maxMessageAgeHours * 3600000
   ) {
@@ -351,9 +356,34 @@ const handleZapoMessageNow = async (
   const locationThumbnail = locationData?.jpegThumbnail
     ? `data:image/jpeg;base64,${Buffer.from(locationData.jpegThumbnail).toString("base64")}`
     : "";
-  const body =
+  const interactiveText =
+    content.templateMessage?.interactiveMessageTemplate?.body?.text ||
+    content.templateMessage?.hydratedTemplate?.hydratedContentText ||
+    content.interactiveMessage?.body?.text ||
+    content.buttonsMessage?.contentText ||
+    content.listMessage?.description ||
+    "";
+  // Protocol, edit, revoke and other transport-control records can be part
+  // of a history chunk. They are not user-visible messages and must never
+  // become empty chat bubbles or create tickets.
+  if (
+    !content.conversation &&
+    !content.extendedTextMessage?.text &&
+    !interactiveText &&
+    !mediaData &&
+    !vcardBody &&
+    !hasLocation
+  ) {
+    logger.debug(
+      { whatsappId: whatsapp.id, messageId: key.id },
+      "Skipping non-renderable Zapo history record"
+    );
+    return;
+  }
+  let body =
     content.conversation ||
     content.extendedTextMessage?.text ||
+    interactiveText ||
     content.imageMessage?.caption ||
     content.videoMessage?.caption ||
     vcardBody ||
@@ -470,23 +500,32 @@ const handleZapoMessageNow = async (
       )
     );
   }
-  const ticket = await FindOrCreateTicketService(
-    contact,
-    whatsapp.id,
-    fromMe ? 0 : 1,
-    undefined,
-    undefined,
-    undefined,
-    groupContact,
-    {
-      createAsClosed: Boolean(
-        !fromMe &&
-          syncContext?.createClosedForRead &&
-          syncContext.mode === "all" &&
-          syncContext.unreadCount === 0
-      )
+  const ticketContactId = groupContact ? groupContact.id : contact.id;
+  let ticket = event.historySync
+    ? syncContext?.ticketsByContactId?.get(ticketContactId)
+    : undefined;
+  if (!ticket) {
+    ticket = await FindOrCreateTicketService(
+      contact,
+      whatsapp.id,
+      fromMe ? 0 : 1,
+      undefined,
+      undefined,
+      undefined,
+      groupContact,
+      {
+        createAsClosed: Boolean(
+          !fromMe &&
+            syncContext?.createClosedForRead &&
+            syncContext.mode === "all" &&
+            syncContext.unreadCount === 0
+        )
+      }
+    );
+    if (event.historySync && syncContext?.ticketsByContactId) {
+      syncContext.ticketsByContactId.set(ticketContactId, ticket);
     }
-  );
+  }
   let mediaUrl: string | undefined;
   if (mediaData) {
     try {
@@ -496,6 +535,12 @@ const handleZapoMessageNow = async (
         { whatsappId: whatsapp.id, messageId: key.id, err },
         "Could not download Zapo media"
       );
+      // WhatsApp returns 410 when the encrypted media URL has expired. Keep
+      // the historical message and its timestamp, but do not render an empty
+      // bubble that looks like a successful attachment.
+      if (!body) {
+        body = "Archivo multimedia no disponible en WhatsApp.";
+      }
     }
   }
 

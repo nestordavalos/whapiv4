@@ -86,16 +86,16 @@ const HandleMessageReactionService = async ({
     }
   }
 
+  if (!message) {
+    logger.warn(`[Reaction] Mensaje no encontrado: ${messageId}`);
+    return null;
+  }
+
   // Zapo identifies a peer by LID in reaction stanzas. In a 1:1 ticket the
   // ticket contact is the authoritative display identity, never expose that
   // implementation JID to the operator UI.
   const resolvedSenderName =
     senderName || (!fromMe ? message.ticket?.contact?.name : undefined);
-
-  if (!message) {
-    logger.warn(`[Reaction] Mensaje no encontrado: ${messageId}`);
-    return null;
-  }
 
   logger.info(
     `[Reaction] Mensaje encontrado: ${message.id} para reaccion de ${messageId}`

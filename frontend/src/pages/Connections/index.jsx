@@ -384,14 +384,20 @@ const Connections = () => {
 			}
 			
 			const { result } = data;
-			toast.success(
-				i18n.t("connections.toasts.syncSuccess", {
-					chats: result.chatsProcessed,
-					newMessages: result.messagesNew,
-					duplicates: result.messagesDuplicate,
-					mode: result.mode === "all" ? "todos" : "no leídos",
-				})
-			);
+			if (typeof result.requestedChats === "number") {
+				toast.success(
+					`Se solicitó el historial de ${result.requestedChats} chats. Los mensajes y archivos se importarán en segundo plano.`
+				);
+			} else {
+				toast.success(
+					i18n.t("connections.toasts.syncSuccess", {
+						chats: result.chatsProcessed,
+						newMessages: result.messagesNew,
+						duplicates: result.messagesDuplicate,
+						mode: result.mode === "all" ? "todos" : "no leídos",
+					})
+				);
+			}
 		} catch (err) {
 			if (toastId) {
 				toast.dismiss(toastId);

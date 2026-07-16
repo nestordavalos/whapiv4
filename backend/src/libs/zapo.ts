@@ -11,6 +11,13 @@ import {
   sendMessageAckWebhook
 } from "../services/WebhookService/SendWebhookEvent";
 
+// Node 20 does not provide a global WebSocket, while Zapo expects the Web
+// platform constructor to exist. Keep the polyfill local to Node runtimes;
+// newer Node releases already provide it natively.
+if (!(globalThis as any).WebSocket) {
+  (globalThis as any).WebSocket = require("ws");
+}
+
 const zapo = require("zapo-js") as any;
 const zapoMysql = require("@zapo-js/store-mysql") as any;
 const { createMediaProcessor } = require("@zapo-js/media-utils") as any;
@@ -30,6 +37,7 @@ const historyProcessing = new Map<number, Promise<number>>();
 const outboundMessageChains = new Map<number, Promise<void>>();
 const lastOutboundMessageAt = new Map<number, number>();
 const recipientJidCache = new Map<string, string>();
+let mysqlMigrationPromise: Promise<void> | undefined;
 const OUTBOUND_MESSAGE_DELAY_MS = 2000;
 const emitSession = (whatsapp: Whatsapp) =>
   getIO().emit("whatsappSession", { action: "update", session: whatsapp });
@@ -80,6 +88,72 @@ const createZapoStore = () => {
       }
     })
   };
+};
+
+// @zapo-js/store-mysql lazily migrates each persistence domain. When several
+// Zapo sessions boot together, two pools can see the same pending migration
+// and race on ALTER TABLE. Run every Zapo schema migration once per process
+// before opening a session to make startup deterministic.
+const ensureZapoMysqlMigrations = async (mysql: any): Promise<void> => {
+  if (!mysqlMigrationPromise) {
+    const domains = [
+      "auth",
+      "signal",
+      "senderKey",
+      "appState",
+      "retry",
+      "mailbox",
+      "participants",
+      "deviceList",
+      "privacyToken",
+      "messageSecret"
+    ];
+    const migrate = () =>
+      zapoMysql.ensureMysqlMigrations(mysql.pool, domains, "zapo_");
+    mysqlMigrationPromise = (async () => {
+      try {
+        await migrate();
+      } catch (err) {
+        // MySQL DDL commits implicitly. An old concurrent startup can therefore
+        // add the columns but fail before recording Zapo migration 0011. Repair
+        // only that verified, fully-applied state, then let Zapo run normally.
+        const duplicateDeviceInfo =
+          (err as any)?.code === "ER_DUP_FIELDNAME" &&
+          String((err as any)?.message || "").includes("device_info");
+        if (!duplicateDeviceInfo) throw err;
+
+        const [rows] = await mysql.pool.execute(
+          `SELECT COLUMN_NAME
+             FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = "zapo_auth_credentials"
+              AND COLUMN_NAME IN ("device_info", "push_name", "year_class", "mem_class")`
+        );
+        const expected = new Set([
+          "device_info",
+          "push_name",
+          "year_class",
+          "mem_class"
+        ]);
+        const actual = new Set((rows as any[]).map(row => row.COLUMN_NAME));
+        if (![...expected].every(column => actual.has(column))) throw err;
+
+        await mysql.pool.execute(
+          "INSERT IGNORE INTO `zapo__migrations` (name, applied_at) VALUES (?, ?)",
+          ["0011_auth_credentials_mobile_transport", Date.now()]
+        );
+        logger.warn(
+          "Recovered completed Zapo MySQL migration 0011 after a concurrent startup"
+        );
+        await migrate();
+      }
+    })()
+      .catch(err => {
+        mysqlMigrationPromise = undefined;
+        throw err;
+      });
+  }
+  await mysqlMigrationPromise;
 };
 
 export const getZapo = (id: number): ZapoSession => {
@@ -529,6 +603,12 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
   const existing = sessions.get(whatsapp.id);
   if (existing) return existing;
   const { mysql, store } = createZapoStore();
+  try {
+    await ensureZapoMysqlMigrations(mysql);
+  } catch (err) {
+    await mysql.destroy().catch(() => undefined);
+    throw err;
+  }
   const session = new zapo.WaClient(
     {
       store,

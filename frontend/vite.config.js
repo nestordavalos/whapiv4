@@ -14,6 +14,10 @@ export default defineConfig(({ mode }) => {
       }),
       VitePWA({
         registerType: "autoUpdate",
+        // Registration is handled in src/index.jsx so updates bypass browser
+        // HTTP caches and the active client reloads as soon as a new worker
+        // takes control. This prevents mixing an old app bundle with a new API.
+        injectRegister: false,
         includeAssets: ["favicon.ico", "apple-touch-icon.png", "android-chrome-192x192.png"],
         manifest: {
           name: "T-Chateo",

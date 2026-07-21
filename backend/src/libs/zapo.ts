@@ -98,6 +98,12 @@ const waitForZapoRemoteLogout = (session: ZapoSession): Promise<void> =>
   });
 const messageText = (message: any): string => {
   const content =
+    // WhatsApp can deliver an edit inside a ProtocolMessage.  Zapo's
+    // decrypted `message_addon` event already gives us the inner message,
+    // whereas protocol edits retain this wrapper.
+    message?.editedMessage?.message ||
+    message?.protocolMessage?.editedMessage?.message ||
+    message?.protocolMessage?.editedMessage ||
     message?.ephemeralMessage?.message ||
     message?.viewOnceMessage?.message ||
     message?.viewOnceMessageV2?.message ||
@@ -965,9 +971,18 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
     }
 
     if (event.kind === "message_edit" && event.targetMessageId) {
+      const newBody = messageText(event.decrypted?.message);
+      if (!newBody) {
+        logger.warn(
+          { whatsappId: whatsapp.id, targetId: event.targetMessageId },
+          "Ignoring Zapo addon edit without text content"
+        );
+        return;
+      }
+
       HandleMessageEditService({
         messageId: event.targetMessageId,
-        newBody: messageText(event.decrypted?.message),
+        newBody,
         fromMe: Boolean(event.key?.fromMe)
       }).catch(err =>
         logger.warn({ whatsappId: whatsapp.id, err }, "Could not process Zapo edit")
@@ -975,9 +990,33 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
     }
   });
   session.on("message_protocol", event => {
-    const targetId = event.protocolMessage?.key?.id;
+    const protocolMessage = event.protocolMessage;
+    const targetId = protocolMessage?.key?.id;
+    if (!targetId) return;
+
+    const editType = zapo.proto.Message.ProtocolMessage.Type.MESSAGE_EDIT;
+    if (protocolMessage?.type === editType) {
+      const newBody = messageText(protocolMessage);
+      if (!newBody) {
+        logger.warn(
+          { whatsappId: whatsapp.id, targetId },
+          "Ignoring Zapo protocol edit without text content"
+        );
+        return;
+      }
+
+      HandleMessageEditService({
+        messageId: targetId,
+        newBody,
+        fromMe: Boolean(event.key?.fromMe)
+      }).catch(err =>
+        logger.warn({ whatsappId: whatsapp.id, err, targetId }, "Could not process Zapo protocol edit")
+      );
+      return;
+    }
+
     const revokeType = zapo.proto.Message.ProtocolMessage.Type.REVOKE;
-    if (event.protocolMessage?.type !== revokeType || !targetId) return;
+    if (protocolMessage?.type !== revokeType) return;
     Message.findByPk(targetId)
       .then(async message => {
         if (!message || message.isDeleted) return;

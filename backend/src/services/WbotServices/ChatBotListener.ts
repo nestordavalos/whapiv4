@@ -35,11 +35,11 @@ const pickOption = (
     return undefined;
   }
 
-  if (!Number.isNaN(selectedIndex) && validOptions[selectedIndex]) {
+  if (Number.isInteger(selectedIndex) && validOptions[selectedIndex]) {
     return validOptions[selectedIndex];
   }
 
-  return validOptions[0];
+  return undefined;
 };
 
 const assignAgentIfPossible = async (
@@ -231,12 +231,17 @@ export const sayChatbot = async (
   }
 
   if (!getStageBot) {
+    // The customer can send free-form data before choosing a submenu option.
+    // Only a numeric reply is a chatbot selection.
+    if (!isNumeric(selectedOption)) {
+      return;
+    }
+
     const queue = await ShowQueueService(queueId);
     const optionIndex = Number(selectedOption) - 1;
     const choosenQueue = pickOption(queue.chatbots, optionIndex);
 
     if (!choosenQueue) {
-      await backToMainMenu(wbot, contact, ticket);
       return;
     }
     if (!choosenQueue?.greetingMessage) {
@@ -278,14 +283,17 @@ export const sayChatbot = async (
   }
 
   if (getStageBot) {
-    const selected = isNumeric(selectedOption) ? selectedOption : 1;
+    // Keep waiting while the customer writes the requested information. A
+    // submenu advances only after receiving one of its numeric options.
+    if (!isNumeric(selectedOption)) {
+      return;
+    }
+
     const bots = await ShowChatBotServices(getStageBot.chatbotId);
-    const optionIndex = Number(selected) - 1;
+    const optionIndex = Number(selectedOption) - 1;
     const choosenQueue = pickOption(bots.options, optionIndex);
 
     if (!choosenQueue) {
-      await DeleteDialogChatBotsServices(contact.id);
-      await backToMainMenu(wbot, contact, ticket);
       return;
     }
     if (!choosenQueue.greetingMessage) {

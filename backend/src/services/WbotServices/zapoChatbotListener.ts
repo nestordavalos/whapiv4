@@ -19,7 +19,9 @@ const pickOption = (
   selectedIndex: number
 ): Chatbot | undefined => {
   const validOptions = (options || []).filter(Boolean) as Chatbot[];
-  return validOptions[selectedIndex] || validOptions[0];
+  return Number.isInteger(selectedIndex)
+    ? validOptions[selectedIndex]
+    : undefined;
 };
 
 const sendText = async (ticket: Ticket, body: string): Promise<void> => {
@@ -127,22 +129,25 @@ export const sayZapoChatbot = async (
 
   const stage = await ShowDialogChatBotsServices(contact.id);
   if (!stage) {
+    // Free-form messages are data entered by the customer, not an implicit
+    // selection of the first submenu option.
+    if (!isNumeric(body)) return;
+
     const queue = await ShowQueueService(queueId);
     const selected = pickOption(queue.chatbots, Number(body) - 1);
     if (!selected || !selected.greetingMessage) {
-      if (!selected) await backToMainMenu(ticket, contact);
       return;
     }
     await processNode(ticket, contact, selected);
     return;
   }
 
-  const selectedBody = isNumeric(body) ? body : "1";
+  // Stay on the active submenu until an explicit numeric option arrives.
+  if (!isNumeric(body)) return;
+
   const node = await ShowChatBotServices(stage.chatbotId);
-  const selected = pickOption(node.options, Number(selectedBody) - 1);
+  const selected = pickOption(node.options, Number(body) - 1);
   if (!selected || !selected.greetingMessage) {
-    await DeleteDialogChatBotsServices(contact.id);
-    if (!selected) await backToMainMenu(ticket, contact);
     return;
   }
   await processNode(ticket, contact, selected);

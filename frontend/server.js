@@ -23,14 +23,18 @@ const noCacheFiles = new Set([
 ]);
 
 // The app shell and service-worker must always be fetched again after a
-// deployment. Vite assets use content hashes, so only those may be immutable.
+// deployment. Only /assets contains Vite content-hashed files and is safe to
+// retain for a long period. This server is used by the PM2 deployment path.
 app.use(express.static(distPath, {
-	maxAge: "7d",          // Cache static assets for 7 days
-	immutable: true,       // Vite hashed filenames are immutable
+	maxAge: 0,
 	etag: true,
 	setHeaders: (res, filePath) => {
 		if (noCacheFiles.has(path.basename(filePath))) {
 			res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+		} else if (filePath.startsWith(`${distPath}${path.sep}assets${path.sep}`)) {
+			res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+		} else {
+			res.setHeader("Cache-Control", "no-cache, must-revalidate");
 		}
 	},
 }));

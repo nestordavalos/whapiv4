@@ -52,10 +52,13 @@ export default defineConfig(({ mode }) => {
           ]
         },
         workbox: {
-          globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff,woff2}"],
-          // The server already resolves SPA routes. Do not have a previous
-          // service worker answer navigations with an old cached index.html.
-          // Hashed assets remain precached for offline use.
+          // Never precache HTML. A cached app shell is what can keep serving
+          // an older deployment even after the server has published a new one.
+          // All JavaScript and CSS names are content-hashed, so they remain
+          // safe to precache indefinitely.
+          globPatterns: ["**/*.{js,css,ico,png,svg,jpg,jpeg,woff,woff2}"],
+          // The server resolves SPA routes. Navigations must reach it instead
+          // of being answered by a previously-installed service worker.
           navigateFallback: null,
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB
           cleanupOutdatedCaches: true,

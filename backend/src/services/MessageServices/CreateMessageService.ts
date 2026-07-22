@@ -81,11 +81,18 @@ const CreateMessageService = async ({
       `[CreateMessage] Mensaje ${message.id} ya existía, no se emite socket`
     );
 
-    // Zapo persists and emits an outbound message as soon as WhatsApp accepts
-    // it; the HTTP controller then reaches this same id a second time. Reload
-    // and emit the quote relation here so the active chat does not need a page
-    // refresh to render reply_to.
+    // The provider listener can persist and emit an outbound message before
+    // the controller reaches this same id with its quote metadata. Persist the
+    // reference when it arrives: reloading alone leaves quotedMsgId as null,
+    // so neither a fresh message-list request nor the socket update can render
+    // the reply preview.
     if (normalizedMessageData.quotedMsgId) {
+      if (message.quotedMsgId !== normalizedMessageData.quotedMsgId) {
+        await message.update({
+          quotedMsgId: normalizedMessageData.quotedMsgId
+        });
+      }
+
       await message.reload({
         include: [
           "contact",

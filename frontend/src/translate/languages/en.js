@@ -744,7 +744,8 @@ const messages = {
       },
       copyToClipboard: {
         copy: "Copy",
-        copied: "Copied"
+        copied: "Copied",
+        error: "Unable to copy the message"
       },
       ticketOptionsMenu: {
         delete: "Delete",
@@ -767,6 +768,7 @@ const messages = {
       },
       messageOptionsMenu: {
         delete: "Delete",
+        copy: "Copy",
         reply: "Reply",
         forward: "Forward",
         edit: "Edit",

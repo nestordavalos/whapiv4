@@ -800,7 +800,8 @@ const messages = {
       },
       copyToClipboard: {
         copy: "Copiar",
-        copied: "Copiado"
+        copied: "Copiado",
+        error: "No se pudo copiar el mensaje"
       },
       ticketOptionsMenu: {
         delete: "Eliminar",
@@ -823,6 +824,7 @@ const messages = {
       },
       messageOptionsMenu: {
         delete: "Eliminar",
+        copy: "Copiar",
         reply: "Responder",
         forward: "Reenviar",
         edit: "Editar",

@@ -13,6 +13,7 @@ import "emoji-mart/css/emoji-mart.css";
 import { Picker } from "emoji-mart";
 import { ReplyMessageContext } from "../../context/ReplyingMessage/ReplyingMessageContext";
 import toastError from "../../errors/toastError";
+import { toast } from "react-toastify";
 
 // Tiempo máximo para editar un mensaje (15 minutos en milisegundos)
 const MAX_EDIT_TIME_MS = 15 * 60 * 1000;
@@ -54,6 +55,35 @@ const MessageOptionsMenu = ({ message, menuOpen, handleClose, anchorEl, anchorPo
   const handleOpenEditModal = () => {
     setEditModalOpen(true);
     handleClose();
+  };
+
+  const handleCopyMessage = async () => {
+    const messageText = message?.body || "";
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(messageText);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = messageText;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        const copied = document.execCommand("copy");
+        document.body.removeChild(textArea);
+
+        if (!copied) {
+          throw new Error("Clipboard copy failed");
+        }
+      }
+
+      toast.success(i18n.t("copyToClipboard.copied"));
+    } catch (err) {
+      toast.error(i18n.t("copyToClipboard.error"));
+    } finally {
+      handleClose();
+    }
   };
 
   const handleReaction = async (emoji) => {
@@ -181,6 +211,9 @@ const MessageOptionsMenu = ({ message, menuOpen, handleClose, anchorEl, anchorPo
             {i18n.t("messageOptionsMenu.edit")}
           </MenuItem>
         )}
+        <MenuItem onClick={handleCopyMessage}>
+          {i18n.t("messageOptionsMenu.copy")}
+        </MenuItem>
         <MenuItem onClick={hanldeReplyMessage}>
           {i18n.t("messageOptionsMenu.reply")}
         </MenuItem>

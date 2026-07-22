@@ -303,6 +303,19 @@ const MessageInput = ({ ticketStatus }) => {
   const [showEmoji, setShowEmoji] = useState(false);
   const [loading, setLoading] = useState(false);
   const [recording, setRecording] = useState(false);
+
+  // The Socket.IO notification is still used for every connected client, but
+  // the sender already has the authoritative response from POST /messages.
+  // Publish it locally as well so an out-of-order socket event cannot make a
+  // newly-created reply wait for a page refresh before its quote is rendered.
+  const publishCreatedMessages = (response) => {
+    const messages = Array.isArray(response) ? response : [response];
+    messages.filter(Boolean).forEach((createdMessage) => {
+      window.dispatchEvent(
+        new CustomEvent("ticket:message-created", { detail: createdMessage })
+      );
+    });
+  };
   const [quickAnswers, setQuickAnswer] = useState([]);
   const [typeBar, setTypeBar] = useState(false);
   const inputRef = useRef();
@@ -434,7 +447,8 @@ const MessageInput = ({ ticketStatus }) => {
       formData.append("quotedMsg", JSON.stringify(replyingMessage));
     }
     try {
-      await api.post(`/messages/${ticketId}`, formData);
+      const { data } = await api.post(`/messages/${ticketId}`, formData);
+      publishCreatedMessages(data);
     } catch (err) {
       toastError(err);
     }
@@ -460,7 +474,8 @@ const MessageInput = ({ ticketStatus }) => {
     };
     
     try {
-      await api.post(`/messages/${ticketId}`, message);
+      const { data } = await api.post(`/messages/${ticketId}`, message);
+      publishCreatedMessages(data);
     } catch (err) {
       toastError(err);
     }
@@ -570,7 +585,8 @@ const MessageInput = ({ ticketStatus }) => {
         formData.append("quotedMsg", JSON.stringify(replyingMessage));
       }
 
-      await api.post(`/messages/${ticketId}`, formData);
+      const { data } = await api.post(`/messages/${ticketId}`, formData);
+      publishCreatedMessages(data);
       setReplyingMessage(null);
     } catch (err) {
       toastError(err);

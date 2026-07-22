@@ -548,6 +548,23 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+// Socket events and the initial HTTP request can arrive out of order. In
+// particular, a message can first arrive without its quoted relation and be
+// immediately updated once the backend persists quotedMsgId. Never let an
+// older/incomplete payload erase relations already rendered in the chat.
+const mergeMessage = (currentMessage, incomingMessage) => {
+  if (!currentMessage) return incomingMessage;
+
+  return {
+    ...currentMessage,
+    ...incomingMessage,
+    quotedMsg: incomingMessage.quotedMsg ?? currentMessage.quotedMsg,
+    quotedMsgId: incomingMessage.quotedMsgId ?? currentMessage.quotedMsgId,
+    contact: incomingMessage.contact ?? currentMessage.contact,
+    reactions: incomingMessage.reactions ?? currentMessage.reactions,
+  };
+};
+
 const reducer = (state, action) => {
   if (action.type === "LOAD_MESSAGES") {
     const messages = action.payload;
@@ -557,7 +574,7 @@ const reducer = (state, action) => {
     messages.forEach((message) => {
       const messageIndex = updatedState.findIndex((m) => m.id === message.id);
       if (messageIndex !== -1) {
-        updatedState[messageIndex] = message;
+        updatedState[messageIndex] = mergeMessage(updatedState[messageIndex], message);
       } else {
         newMessages.push(message);
       }
@@ -572,7 +589,7 @@ const reducer = (state, action) => {
 
     if (messageIndex !== -1) {
       const updatedState = [...state];
-      updatedState[messageIndex] = newMessage;
+      updatedState[messageIndex] = mergeMessage(updatedState[messageIndex], newMessage);
       return updatedState;
     } else {
       return [...state, newMessage];
@@ -598,10 +615,15 @@ const reducer = (state, action) => {
     }
 
     if (messageIndex !== -1) {
-      state[messageIndex] = messageToUpdate;
+      const updatedState = [...state];
+      updatedState[messageIndex] = mergeMessage(
+        updatedState[messageIndex],
+        messageToUpdate
+      );
+      return updatedState;
     }
 
-    return [...state];
+    return state;
   }
 
   if (action.type === "UPDATE_REACTION") {
@@ -821,6 +843,18 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
       socket.off("appMessage", handleMessage);
       socket.emit("leaveChatBox", ticketId);
     };
+  }, [ticketId]);
+
+  useEffect(() => {
+    const handleLocalMessage = (event) => {
+      const message = event.detail;
+      if (message?.ticketId === Number(ticketId)) {
+        dispatch({ type: "ADD_MESSAGE", payload: message });
+      }
+    };
+
+    window.addEventListener("ticket:message-created", handleLocalMessage);
+    return () => window.removeEventListener("ticket:message-created", handleLocalMessage);
   }, [ticketId]);
 
   const scrollToBottom = () => {

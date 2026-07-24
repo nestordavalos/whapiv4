@@ -11,6 +11,11 @@ import normalizeOptionalId from "../../helpers/NormalizeOptionalId";
 interface FindOrCreateOptions {
   /** If true and no open ticket exists, create as closed (for synced read messages) */
   createAsClosed?: boolean;
+  /**
+   * Reuse the recipient's latest ticket regardless of its age or status.
+   * Direct API sends use this to avoid creating one ticket per API retry.
+   */
+  reuseLatestTicket?: boolean;
 }
 
 const FindOrCreateTicketService = async (
@@ -23,7 +28,7 @@ const FindOrCreateTicketService = async (
   groupContact?: Contact,
   options?: FindOrCreateOptions
 ): Promise<Ticket> => {
-  const { createAsClosed = false } = options || {};
+  const { createAsClosed = false, reuseLatestTicket = false } = options || {};
   const normalizedQueueId = normalizeOptionalId(queueId);
   const normalizedTagsId = normalizeOptionalId(tagsId);
   const normalizedUserId = normalizeOptionalId(userId);
@@ -54,6 +59,31 @@ const FindOrCreateTicketService = async (
     if (ticket) {
       // Solo actualizar a pending si el ticket NO está open
       // Si está open, mantener ese estado para no interrumpir conversaciones activas
+      const updateData: any = {
+        unreadMessages,
+        isBot: true
+      };
+
+      if (ticket.status !== "open") {
+        updateData.status = "pending";
+        updateData.userId = null;
+        updateData.queueId = null;
+      }
+
+      await ticket.update(updateData);
+    }
+  }
+
+  if (!ticket && !groupContact && reuseLatestTicket) {
+    ticket = await Ticket.findOne({
+      where: {
+        contactId: contact.id,
+        whatsappId
+      },
+      order: [["updatedAt", "DESC"]]
+    });
+
+    if (ticket) {
       const updateData: any = {
         unreadMessages,
         isBot: true

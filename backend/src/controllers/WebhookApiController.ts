@@ -239,7 +239,9 @@ export const createTicket = async (
     1,
     queueId || null,
     tagsId || null,
-    userId || null
+    userId || null,
+    undefined,
+    { reuseLatestTicket: true }
   );
 
   const fullTicket = await ShowTicketService(ticket.id);
@@ -948,7 +950,9 @@ export const sendDirectMessage = async (
     1,
     queueId || null,
     tagsId || null,
-    userId || null
+    userId || null,
+    undefined,
+    { reuseLatestTicket: true }
   );
 
   const fullTicket = await ShowTicketService(ticket.id);

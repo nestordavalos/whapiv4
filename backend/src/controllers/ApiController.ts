@@ -75,7 +75,9 @@ const createContact = async (
     1,
     queueId,
     tagsId,
-    userId
+    userId,
+    undefined,
+    { reuseLatestTicket: true }
   );
 
   const ticket = await ShowTicketService(createTicket.id);

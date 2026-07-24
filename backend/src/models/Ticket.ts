@@ -108,6 +108,11 @@ class Ticket extends Model<Ticket> {
   @Column
   zapoSendBlockedAt: Date;
 
+  // Zapo account number that produced the 463. A recycled connection may be
+  // linked to another account, which must not inherit this restriction.
+  @Column
+  zapoSendBlockedAccount: string;
+
   // Typebot integration fields
   @Column
   typebotSessionId: string;

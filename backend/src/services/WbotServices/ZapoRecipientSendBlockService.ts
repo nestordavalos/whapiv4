@@ -5,6 +5,8 @@ import Ticket from "../../models/Ticket";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 
 const BLOCKED_ERROR = "ERR_WAPP_RECIPIENT_REQUIRES_CONTACT";
+const normalizeAccount = (accountNumber?: string): string =>
+  String(accountNumber || "").replace(/\D/g, "");
 
 const emitTicketUpdate = (ticket: Ticket) => {
   getIO()
@@ -34,14 +36,18 @@ const ticketsForRecipient = (ticket: Ticket) =>
     }
   });
 
-export const blockZapoRecipientSend = async (ticket: Ticket): Promise<void> => {
+export const blockZapoRecipientSend = async (
+  ticket: Ticket,
+  accountNumber?: string
+): Promise<void> => {
   if (ticket.isGroup) return;
 
   const tickets = await ticketsForRecipient(ticket);
   const blockedAt = new Date();
   await updateTickets(tickets, {
     zapoSendBlocked: true,
-    zapoSendBlockedAt: blockedAt
+    zapoSendBlockedAt: blockedAt,
+    zapoSendBlockedAccount: normalizeAccount(accountNumber) || null
   });
 
   await CreateMessageService({
@@ -60,11 +66,12 @@ export const blockZapoRecipientSend = async (ticket: Ticket): Promise<void> => {
 };
 
 export const assertZapoRecipientCanReceive = async (
-  ticket: Ticket
+  ticket: Ticket,
+  accountNumber?: string
 ): Promise<void> => {
   if (ticket.isGroup) return;
 
-  const blockedTicket = await Ticket.findOne({
+  const blockedTickets = await Ticket.findAll({
     where: {
       whatsappId: ticket.whatsappId,
       contactId: ticket.contactId,
@@ -73,12 +80,31 @@ export const assertZapoRecipientCanReceive = async (
     }
   });
 
+  const currentAccount = normalizeAccount(accountNumber);
+  const staleTickets = blockedTickets.filter(
+    blockedTicket =>
+      Boolean(currentAccount) &&
+      Boolean(blockedTicket.zapoSendBlockedAccount) &&
+      normalizeAccount(blockedTicket.zapoSendBlockedAccount) !== currentAccount
+  );
+  if (staleTickets.length > 0) {
+    await updateTickets(staleTickets, {
+      zapoSendBlocked: false,
+      zapoSendBlockedAt: null,
+      zapoSendBlockedAccount: null
+    });
+  }
+
+  const blockedTicket = blockedTickets.find(
+    item => !staleTickets.some(stale => stale.id === item.id)
+  );
   if (!blockedTicket) return;
 
   if (!ticket.zapoSendBlocked) {
     await updateTickets([ticket], {
       zapoSendBlocked: true,
-      zapoSendBlockedAt: blockedTicket.zapoSendBlockedAt
+      zapoSendBlockedAt: blockedTicket.zapoSendBlockedAt,
+      zapoSendBlockedAccount: blockedTicket.zapoSendBlockedAccount
     });
   }
 
@@ -104,6 +130,23 @@ export const unblockZapoRecipientByJid = async (
 
   await updateTickets(tickets, {
     zapoSendBlocked: false,
-    zapoSendBlockedAt: null
+    zapoSendBlockedAt: null,
+    zapoSendBlockedAccount: null
+  });
+};
+
+/** A WhatsApp row can be relinked to another account; clear old 463 state. */
+export const clearZapoRecipientBlocksForAccountChange = async (
+  whatsappId: number
+): Promise<void> => {
+  const tickets = await Ticket.findAll({
+    where: { whatsappId, zapoSendBlocked: true }
+  });
+  if (tickets.length === 0) return;
+
+  await updateTickets(tickets, {
+    zapoSendBlocked: false,
+    zapoSendBlockedAt: null,
+    zapoSendBlockedAccount: null
   });
 };

@@ -6,7 +6,10 @@ import { logger } from "../utils/logger";
 import { handleZapoMessage } from "../services/WbotServices/zapoMessageListener";
 import HandleMessageEditService from "../services/MessageServices/HandleMessageEditService";
 import HandleMessageReactionService from "../services/MessageServices/HandleMessageReactionService";
-import { unblockZapoRecipientByJid } from "../services/WbotServices/ZapoRecipientSendBlockService";
+import {
+  clearZapoRecipientBlocksForAccountChange,
+  unblockZapoRecipientByJid
+} from "../services/WbotServices/ZapoRecipientSendBlockService";
 import {
   sendConnectionUpdateWebhook,
   sendMessageAckWebhook
@@ -851,7 +854,11 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
       .split("@")[0];
     if (persistedNumber) {
       if (whatsapp.number !== persistedNumber) {
+        const hadAnotherAccount = Boolean(whatsapp.number);
         await whatsapp.update({ number: persistedNumber });
+        if (hadAnotherAccount) {
+          await clearZapoRecipientBlocksForAccountChange(whatsapp.id);
+        }
       }
       logger.info(
         { whatsappId: whatsapp.id, number: persistedNumber },
@@ -904,12 +911,18 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
       const number = (session.getCredentials()?.meJid || "")
         .split(":")[0]
         .split("@")[0];
+      const hadAnotherAccount = Boolean(
+        whatsapp.number && whatsapp.number !== number
+      );
       await whatsapp.update({
         status: "CONNECTED",
         qrcode: "",
         retries: 0,
         number
       });
+      if (hadAnotherAccount) {
+        await clearZapoRecipientBlocksForAccountChange(whatsapp.id);
+      }
       await session.presence.send("available").catch(err =>
         logger.warn({ whatsappId: whatsapp.id, err }, "Could not announce Zapo presence")
       );

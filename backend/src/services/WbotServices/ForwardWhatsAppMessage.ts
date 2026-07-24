@@ -69,7 +69,7 @@ const ForwardWhatsAppMessage = async ({
       if (await hasZapoTrustedContactToken(whatsapp.id, remoteJid)) {
         await unblockZapoRecipientByJid(whatsapp.id, remoteJid);
       }
-      await assertZapoRecipientCanReceive(destinationTicket);
+      await assertZapoRecipientCanReceive(destinationTicket, whatsapp.number);
       const originalMediaUrl = message.getDataValue("mediaUrl");
       let content: any = message.body || "";
       let mediaUrl: string | undefined;
@@ -110,7 +110,7 @@ const ForwardWhatsAppMessage = async ({
         });
       } catch (err) {
         if (isZapoTrustedContactPrivacyNack(err)) {
-          await blockZapoRecipientSend(destinationTicket);
+          await blockZapoRecipientSend(destinationTicket, whatsapp.number);
           throw new AppError("ERR_WAPP_RECIPIENT_REQUIRES_CONTACT", 422);
         }
         throw err;

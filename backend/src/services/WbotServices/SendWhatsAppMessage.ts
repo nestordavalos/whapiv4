@@ -159,7 +159,7 @@ const SendWhatsAppMessage = async ({
       if (await hasZapoTrustedContactToken(whatsapp.id, remoteJid)) {
         await unblockZapoRecipientByJid(whatsapp.id, remoteJid);
       }
-      await assertZapoRecipientCanReceive(ticket);
+      await assertZapoRecipientCanReceive(ticket, whatsapp.number);
       const quoteMetadata = quotedMsg
         ? await getZapoQuoteMetadata(whatsapp.id, quotedMsg.id)
         : undefined;
@@ -219,7 +219,7 @@ const SendWhatsAppMessage = async ({
           { ticketId: ticket.id, err },
           "Zapo recipient requires a trusted-contact token"
         );
-        await blockZapoRecipientSend(ticket);
+        await blockZapoRecipientSend(ticket, whatsapp.number);
         throw new AppError("ERR_WAPP_RECIPIENT_REQUIRES_CONTACT", 422);
       }
       logger.error({ ticketId: ticket.id, err }, "Error sending Zapo message");

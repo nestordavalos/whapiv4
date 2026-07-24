@@ -22,6 +22,7 @@ import {
   resolveZapoRecipientJid,
   sendZapoMessage
 } from "../../libs/zapo";
+import { ZapoOutboundSource } from "../../libs/ZapoOutboundPacing";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import { getStorageService } from "../StorageServices/StorageService";
 import {
@@ -37,6 +38,7 @@ interface Request {
   quotedMsg?: Message;
   filename?: string;
   voiceNote?: boolean;
+  source?: ZapoOutboundSource;
 }
 
 const SendWhatsAppMediaFromUrl = async ({
@@ -45,7 +47,8 @@ const SendWhatsAppMediaFromUrl = async ({
   body,
   quotedMsg,
   filename,
-  voiceNote = false
+  voiceNote = false,
+  source
 }: Request): Promise<WbotMessage> => {
   const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
   const hasBody = body ? formatBody(body, ticket) : undefined;
@@ -103,7 +106,8 @@ const SendWhatsAppMediaFromUrl = async ({
                 message: quoteMetadata?.message
               }
             : undefined
-        }
+        },
+        source
       );
 
       await getStorageService().uploadBuffer(buffer, finalFilename, mimeType);

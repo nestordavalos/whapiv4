@@ -134,7 +134,8 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
           body,
           media,
           ticket: contactAndTicket,
-          quotedMsg
+          quotedMsg,
+          source: "api"
         });
       })
     );
@@ -142,7 +143,8 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
     resp = await SendWhatsAppMessage({
       body,
       ticket: contactAndTicket,
-      quotedMsg
+      quotedMsg,
+      source: "api"
     });
   }
 

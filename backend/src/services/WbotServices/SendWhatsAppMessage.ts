@@ -25,6 +25,7 @@ import {
   resolveZapoRecipientJid,
   sendZapoMessage
 } from "../../libs/zapo";
+import { ZapoOutboundSource } from "../../libs/ZapoOutboundPacing";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import { sendMessageSentWebhook } from "../WebhookService/SendWebhookEvent";
 import {
@@ -134,12 +135,14 @@ interface Request {
   body: string;
   ticket: Ticket;
   quotedMsg?: Message;
+  source?: ZapoOutboundSource;
 }
 
 const SendWhatsAppMessage = async ({
   body,
   ticket,
-  quotedMsg
+  quotedMsg,
+  source
 }: Request): Promise<WbotMessage> => {
   const formattedBody = formatBody(body, ticket);
   const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
@@ -163,19 +166,25 @@ const SendWhatsAppMessage = async ({
       const quoteMetadata = quotedMsg
         ? await getZapoQuoteMetadata(whatsapp.id, quotedMsg.id)
         : undefined;
-      const sent = await sendZapoMessage(whatsapp.id, remoteJid, formattedBody, {
-        // Zapo resolves the full WhatsApp quote context from this reference.
-        // Keeping `fromMe` matters for replies to an agent's own message.
-        quote: quotedMsg
-          ? {
-              id: quotedMsg.id,
-              remoteJid,
-              fromMe: quotedMsg.fromMe,
-              participant: quoteMetadata?.participant,
-              message: quoteMetadata?.message
-            }
-          : undefined
-      });
+      const sent = await sendZapoMessage(
+        whatsapp.id,
+        remoteJid,
+        formattedBody,
+        {
+          // Zapo resolves the full WhatsApp quote context from this reference.
+          // Keeping `fromMe` matters for replies to an agent's own message.
+          quote: quotedMsg
+            ? {
+                id: quotedMsg.id,
+                remoteJid,
+                fromMe: quotedMsg.fromMe,
+                participant: quoteMetadata?.participant,
+                message: quoteMetadata?.message
+              }
+            : undefined
+        },
+        source
+      );
       await CreateMessageService({
         messageData: {
           id: sent.id,

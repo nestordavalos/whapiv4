@@ -22,6 +22,7 @@ import {
   resolveZapoRecipientJid,
   sendZapoMessage
 } from "../../libs/zapo";
+import { ZapoOutboundSource } from "../../libs/ZapoOutboundPacing";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import { sendMessageSentWebhook } from "../WebhookService/SendWebhookEvent";
 import {
@@ -37,6 +38,7 @@ interface Request {
   voiceNote?: boolean;
   quotedMsg?: Message;
   persistMessage?: boolean;
+  source?: ZapoOutboundSource;
 }
 
 const SendWhatsAppMedia = async ({
@@ -45,7 +47,8 @@ const SendWhatsAppMedia = async ({
   body,
   voiceNote = false,
   quotedMsg,
-  persistMessage = true
+  persistMessage = true,
+  source
 }: Request): Promise<WbotMessage> => {
   const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
   const isAudioFilename =
@@ -95,7 +98,8 @@ const SendWhatsAppMedia = async ({
                 message: quoteMetadata?.message
               }
             : undefined
-        }
+        },
+        source
       );
       if (persistMessage) {
         await CreateMessageService({

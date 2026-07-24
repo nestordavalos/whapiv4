@@ -16,6 +16,10 @@ import {
   sendConnectionUpdateWebhook,
   sendMessageAckWebhook
 } from "../services/WebhookService/SendWebhookEvent";
+import {
+  getZapoOutboundDelayMs,
+  ZapoOutboundSource
+} from "./ZapoOutboundPacing";
 
 // Node 20 does not provide a global WebSocket, while Zapo expects the Web
 // platform constructor to exist. Keep the polyfill local to Node runtimes;
@@ -50,7 +54,6 @@ const outboundMessageChains = new Map<number, Promise<void>>();
 const lastOutboundMessageAt = new Map<number, number>();
 const recipientJidCache = new Map<string, string>();
 let mysqlMigrationPromise: Promise<void> | undefined;
-const OUTBOUND_MESSAGE_DELAY_MS = 2000;
 const emitSession = (whatsapp: Whatsapp) =>
   getIO().emit("whatsappSession", { action: "update", session: whatsapp });
 const sessionIdFor = (id: number) => `whatsapp-${id}`;
@@ -306,7 +309,8 @@ export const sendZapoMessage = async (
   whatsappId: number,
   to: string,
   content: any,
-  options?: any
+  options?: any,
+  source?: ZapoOutboundSource
 ): Promise<any> => {
   const previous = outboundMessageChains.get(whatsappId) || Promise.resolve();
   let resolveChain!: () => void;
@@ -336,10 +340,17 @@ export const sendZapoMessage = async (
       );
     // The first outbound message must wait too; otherwise the typing signal
     // is immediately replaced by the message and is never visible remotely.
+    const pacingDelayMs = getZapoOutboundDelayMs(source);
     const lastSentAt = lastOutboundMessageAt.get(whatsappId) || Date.now();
-    const earliest = lastSentAt + OUTBOUND_MESSAGE_DELAY_MS;
+    const earliest = lastSentAt + pacingDelayMs;
     const waitMs = Math.max(0, earliest - Date.now());
     if (waitMs > 0) {
+      if (source === "api") {
+        logger.debug(
+          { whatsappId, to, waitMs, pacingDelayMs },
+          "Applying randomized Zapo API send delay"
+        );
+      }
       await new Promise(resolve => setTimeout(resolve, waitMs));
     }
     lastOutboundMessageAt.set(whatsappId, Date.now());

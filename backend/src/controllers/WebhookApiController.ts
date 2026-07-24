@@ -345,7 +345,8 @@ export const sendMessage = async (
   const sentMessage = await SendWhatsAppMessage({
     body,
     ticket,
-    quotedMsg: quotedMsg || undefined
+    quotedMsg: quotedMsg || undefined,
+    source: "api"
   });
 
   // Obtener el mensaje creado en la BD
@@ -439,7 +440,8 @@ export const sendMediaMessage = async (
       media,
       ticket,
       body: medias.indexOf(media) === 0 ? body : undefined,
-      quotedMsg: quotedMsg || undefined
+      quotedMsg: quotedMsg || undefined,
+      source: "api"
     });
 
     // Obtener el mensaje creado en la BD
@@ -549,7 +551,8 @@ export const sendMediaFromUrl = async (
     ticket,
     body,
     quotedMsg: quotedMsg || undefined,
-    filename
+    filename,
+    source: "api"
   });
 
   // Obtener el mensaje creado en la BD
@@ -650,7 +653,8 @@ export const sendMediaFromBase64 = async (
     ticket,
     body,
     quotedMsg: quotedMsg || undefined,
-    filename
+    filename,
+    source: "api"
   });
 
   // Obtener el mensaje creado en la BD
@@ -973,7 +977,8 @@ export const sendDirectMessage = async (
       ticket: fullTicket,
       body,
       quotedMsg: quotedMsg || undefined,
-      filename
+      filename,
+      source: "api"
     });
 
     const message = await Message.findByPk(sentMessage.id.id);
@@ -998,7 +1003,8 @@ export const sendDirectMessage = async (
       ticket: fullTicket,
       body,
       quotedMsg: quotedMsg || undefined,
-      filename
+      filename,
+      source: "api"
     });
 
     const message = await Message.findByPk(sentMessage.id.id);
@@ -1021,7 +1027,8 @@ export const sendDirectMessage = async (
         media,
         ticket: fullTicket,
         body: medias.indexOf(media) === 0 ? body : undefined,
-        quotedMsg: quotedMsg || undefined
+        quotedMsg: quotedMsg || undefined,
+        source: "api"
       });
 
       const message = await Message.findByPk(sentMessage.id.id);
@@ -1043,7 +1050,8 @@ export const sendDirectMessage = async (
     const sentMessage = await SendWhatsAppMessage({
       body,
       ticket: fullTicket,
-      quotedMsg: quotedMsg || undefined
+      quotedMsg: quotedMsg || undefined,
+      source: "api"
     });
 
     const message = await Message.findByPk(sentMessage.id.id);
@@ -1140,7 +1148,8 @@ export const replyToMessage = async (
       ticket,
       body,
       quotedMsg: originalMessage,
-      filename
+      filename,
+      source: "api"
     });
 
     const message = await Message.findByPk(sentMessage.id.id);
@@ -1166,7 +1175,8 @@ export const replyToMessage = async (
       ticket,
       body,
       quotedMsg: originalMessage,
-      filename
+      filename,
+      source: "api"
     });
 
     const message = await Message.findByPk(sentMessage.id.id);
@@ -1190,7 +1200,8 @@ export const replyToMessage = async (
         media,
         ticket,
         body: medias.indexOf(media) === 0 ? body : undefined,
-        quotedMsg: originalMessage
+        quotedMsg: originalMessage,
+        source: "api"
       });
 
       const message = await Message.findByPk(sentMessage.id.id);
@@ -1213,7 +1224,8 @@ export const replyToMessage = async (
     const sentMessage = await SendWhatsAppMessage({
       body,
       ticket,
-      quotedMsg: originalMessage
+      quotedMsg: originalMessage,
+      source: "api"
     });
 
     const message = await Message.findByPk(sentMessage.id.id);

@@ -25,6 +25,7 @@ import {
   resolveZapoRecipientJid,
   sendZapoMessage
 } from "../../libs/zapo";
+import { ZapoOutboundSource } from "../../libs/ZapoOutboundPacing";
 import {
   assertZapoRecipientCanReceive,
   blockZapoRecipientSend,
@@ -38,6 +39,7 @@ interface Request {
   body?: string;
   quotedMsg?: Message;
   filename?: string;
+  source?: ZapoOutboundSource;
 }
 
 const buildSentMessageFromStoredMessage = (message: Message): WbotMessage =>
@@ -55,7 +57,8 @@ const SendWhatsAppMediaFromBase64 = async ({
   ticket,
   body,
   quotedMsg,
-  filename
+  filename,
+  source
 }: Request): Promise<WbotMessage> => {
   const whatsapp = await Whatsapp.findByPk(ticket.whatsappId);
   if (whatsapp?.provider === "zapo") {
@@ -108,7 +111,8 @@ const SendWhatsAppMediaFromBase64 = async ({
                 message: quoteMetadata?.message
               }
             : undefined
-        }
+        },
+        source
       );
       await getStorageService().uploadBase64(
         cleanBase64,

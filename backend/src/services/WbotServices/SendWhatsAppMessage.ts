@@ -30,7 +30,7 @@ import { sendMessageSentWebhook } from "../WebhookService/SendWebhookEvent";
 import {
   assertZapoRecipientCanReceive,
   blockZapoRecipientSend,
-  unblockZapoRecipientByJid
+  unblockZapoRecipientForTicket
 } from "./ZapoRecipientSendBlockService";
 
 const MAX_SEND_ATTEMPTS = 3;
@@ -157,7 +157,7 @@ const SendWhatsAppMessage = async ({
         ticket.contact.remoteJid
       );
       if (await hasZapoTrustedContactToken(whatsapp.id, remoteJid)) {
-        await unblockZapoRecipientByJid(whatsapp.id, remoteJid);
+        await unblockZapoRecipientForTicket(ticket);
       }
       await assertZapoRecipientCanReceive(ticket, whatsapp.number);
       const quoteMetadata = quotedMsg
@@ -202,7 +202,9 @@ const SendWhatsAppMessage = async ({
         contact: {
           id: ticket.contact.id,
           name: ticket.contact.name,
-          number: ticket.contact.number
+          number: ticket.contact.number,
+          phoneNumber: ticket.contact.number,
+          lidJid: remoteJid
         },
         media: null
       });

@@ -27,7 +27,7 @@ import { sendMessageSentWebhook } from "../WebhookService/SendWebhookEvent";
 import {
   assertZapoRecipientCanReceive,
   blockZapoRecipientSend,
-  unblockZapoRecipientByJid
+  unblockZapoRecipientForTicket
 } from "./ZapoRecipientSendBlockService";
 
 interface Request {
@@ -62,7 +62,7 @@ const SendWhatsAppMedia = async ({
         ticket.contact.remoteJid
       );
       if (await hasZapoTrustedContactToken(whatsapp.id, remoteJid)) {
-        await unblockZapoRecipientByJid(whatsapp.id, remoteJid);
+        await unblockZapoRecipientForTicket(ticket);
       }
       await assertZapoRecipientCanReceive(ticket, whatsapp.number);
       const mimeRoot = media.mimetype.split("/")[0];
@@ -128,7 +128,9 @@ const SendWhatsAppMedia = async ({
         contact: {
           id: ticket.contact.id,
           name: ticket.contact.name,
-          number: ticket.contact.number
+          number: ticket.contact.number,
+          phoneNumber: ticket.contact.number,
+          lidJid: remoteJid
         },
         media: {
           url: media.filename,

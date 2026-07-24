@@ -1,5 +1,6 @@
 import Whatsapp from "../models/Whatsapp";
 import Message from "../models/Message";
+import Contact from "../models/Contact";
 import AppError from "../errors/AppError";
 import { getIO } from "./socket";
 import { logger } from "../utils/logger";
@@ -8,6 +9,7 @@ import HandleMessageEditService from "../services/MessageServices/HandleMessageE
 import HandleMessageReactionService from "../services/MessageServices/HandleMessageReactionService";
 import {
   clearZapoRecipientBlocksForAccountChange,
+  unblockZapoRecipientByPhone,
   unblockZapoRecipientByJid
 } from "../services/WbotServices/ZapoRecipientSendBlockService";
 import {
@@ -267,6 +269,17 @@ export const resolveZapoRecipientJid = async (
     ]);
     if (result?.exists && result?.lidJid) {
       recipientJidCache.set(cacheKey, result.lidJid);
+      // Keep the latest transport address visible to APIs. The per-session
+      // Zapo store remains authoritative for LID -> real-phone resolution.
+      await Contact.update(
+        { remoteJid: result.lidJid },
+        { where: { number: phone } }
+      ).catch(err =>
+        logger.debug(
+          { whatsappId, phone, err },
+          "Could not persist resolved Zapo recipient LID"
+        )
+      );
       return result.lidJid;
     }
   } catch (err) {
@@ -968,7 +981,15 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
   // authoritative signal to re-enable recipients blocked by NACK 463.
   session.on("debug_privacy_token", event => {
     if (!event?.jid) return;
-    void unblockZapoRecipientByJid(whatsapp.id, event.jid)
+    // Privacy notifications are keyed by LID. Resolve the real phone from
+    // Zapo's per-session contact store before falling back to the old JID
+    // match; Contacts.remoteJid may not yet have the current LID.
+    void getZapoStoredContact(whatsapp.id, event.jid)
+      .then(stored =>
+        stored?.phoneNumber
+          ? unblockZapoRecipientByPhone(whatsapp.id, stored.phoneNumber)
+          : unblockZapoRecipientByJid(whatsapp.id, event.jid)
+      )
       .then(unblockedTickets =>
         logger.info(
           { whatsappId: whatsapp.id, remoteJid: event.jid, unblockedTickets },

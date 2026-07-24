@@ -28,7 +28,7 @@ import {
 import {
   assertZapoRecipientCanReceive,
   blockZapoRecipientSend,
-  unblockZapoRecipientByJid
+  unblockZapoRecipientForTicket
 } from "./ZapoRecipientSendBlockService";
 
 interface Request {
@@ -81,7 +81,7 @@ const SendWhatsAppMediaFromBase64 = async ({
         ticket.contact.remoteJid
       );
       if (await hasZapoTrustedContactToken(whatsapp.id, remoteJid)) {
-        await unblockZapoRecipientByJid(whatsapp.id, remoteJid);
+        await unblockZapoRecipientForTicket(ticket);
       }
       await assertZapoRecipientCanReceive(ticket, whatsapp.number);
       const quoteMetadata = quotedMsg

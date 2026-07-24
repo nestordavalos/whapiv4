@@ -117,12 +117,22 @@ export const unblockZapoRecipientByJid = async (
   remoteJid: string
 ): Promise<number> => {
   const contacts = await Contact.findAll({ where: { remoteJid } });
-  if (contacts.length === 0) return 0;
+  return unblockZapoRecipientByContactIds(
+    whatsappId,
+    contacts.map(contact => contact.id)
+  );
+};
+
+const unblockZapoRecipientByContactIds = async (
+  whatsappId: number,
+  contactIds: number[]
+): Promise<number> => {
+  if (contactIds.length === 0) return 0;
 
   const tickets = await Ticket.findAll({
     where: {
       whatsappId,
-      contactId: contacts.map(contact => contact.id),
+      contactId: contactIds,
       zapoSendBlocked: true
     }
   });
@@ -135,6 +145,29 @@ export const unblockZapoRecipientByJid = async (
   });
   return tickets.length;
 };
+
+/** Unblocks by the application's canonical identity: the real phone number. */
+export const unblockZapoRecipientByPhone = async (
+  whatsappId: number,
+  phoneNumber?: string
+): Promise<number> => {
+  const number = String(phoneNumber || "").replace(/\D/g, "");
+  if (!number) return 0;
+  const contacts = await Contact.findAll({ where: { number } });
+  return unblockZapoRecipientByContactIds(
+    whatsappId,
+    contacts.map(contact => contact.id)
+  );
+};
+
+/**
+ * A token found during a send is already tied to this ticket's recipient.
+ * Do not reverse-map it through Contacts.remoteJid: that field can lag a LID.
+ */
+export const unblockZapoRecipientForTicket = async (
+  ticket: Ticket
+): Promise<number> =>
+  unblockZapoRecipientByContactIds(ticket.whatsappId, [ticket.contactId]);
 
 /** A WhatsApp row can be relinked to another account; clear old 463 state. */
 export const clearZapoRecipientBlocksForAccountChange = async (

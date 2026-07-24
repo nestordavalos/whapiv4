@@ -16,6 +16,7 @@ import GetProfilePicUrl from "../services/WbotServices/GetProfilePicUrl";
 import AppError from "../errors/AppError";
 import GetContactService from "../services/ContactServices/GetContactService";
 import Ticket from "../models/Ticket";
+import { serializeContactAddress } from "../helpers/ContactAddress";
 
 type IndexQuery = {
   searchParam: string;
@@ -47,7 +48,11 @@ export const index = async (req: Request, res: Response): Promise<Response> => {
     pageNumber
   });
 
-  return res.json({ contacts, count, hasMore });
+  return res.json({
+    contacts: contacts.map(serializeContactAddress),
+    count,
+    hasMore
+  });
 };
 
 export const getContact = async (
@@ -62,7 +67,7 @@ export const getContact = async (
     email
   });
 
-  return res.status(200).json(contact);
+  return res.status(200).json(serializeContactAddress(contact));
 };
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
@@ -117,7 +122,7 @@ export const store = async (req: Request, res: Response): Promise<Response> => {
     contact
   });
 
-  return res.status(200).json(contact);
+  return res.status(200).json(serializeContactAddress(contact));
 };
 
 export const show = async (req: Request, res: Response): Promise<Response> => {
@@ -143,7 +148,7 @@ export const show = async (req: Request, res: Response): Promise<Response> => {
       // The avatar is optional; the contact itself must still load normally.
     }
   }
-  return res.status(200).json(contact);
+  return res.status(200).json(serializeContactAddress(contact));
 };
 
 export const update = async (
@@ -178,7 +183,7 @@ export const update = async (
     contact
   });
 
-  return res.status(200).json(contact);
+  return res.status(200).json(serializeContactAddress(contact));
 };
 
 export const remove = async (

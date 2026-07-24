@@ -294,10 +294,17 @@ const handleZapoMessageNow = async (
     key.senderPn ||
     event.senderPn ||
     event.participantPn;
+  const directPhoneJid = key.remoteJidAlt || remoteJid;
+  // A LID is opaque: never turn its numeric part into a customer phone
+  // number. Zapo persists the LID<->PN association per session when known.
+  const storedDirectContact =
+    !isGroup && !key.remoteJidAlt && remoteJid.endsWith("@lid")
+      ? await getZapoStoredContact(whatsapp.id, remoteJid).catch(() => null)
+      : null;
   const number = jidUser(
     isGroup && !key.fromMe
       ? participantPhoneJid || participantJid
-      : key.remoteJidAlt || remoteJid
+      : storedDirectContact?.phoneNumber || directPhoneJid
   );
   if (!number || (isGroup && !groupNumber)) return;
   const fromMe = Boolean(key.fromMe);
@@ -569,7 +576,13 @@ const handleZapoMessageNow = async (
     hasMedia: Boolean(mediaData || vcardBody),
     timestamp: Number(event.timestampSeconds || Date.now() / 1000),
     ticketId: ticket.id,
-    contact: { id: contact.id, name: contact.name, number: contact.number },
+    contact: {
+      id: contact.id,
+      name: contact.name,
+      number: contact.number,
+      phoneNumber: contact.number,
+      lidJid: participantJid.endsWith("@lid") ? participantJid : null
+    },
     media: mediaData
       ? {
           url: mediaUrl || null,

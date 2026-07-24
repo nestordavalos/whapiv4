@@ -7,6 +7,7 @@ import Whatsapp from "../models/Whatsapp";
 import Ticket from "../models/Ticket";
 import Message from "../models/Message";
 import Contact from "../models/Contact";
+import { serializeContactAddress } from "../helpers/ContactAddress";
 import CreateOrUpdateContactService from "../services/ContactServices/CreateOrUpdateContactService";
 import FindOrCreateTicketService from "../services/TicketServices/FindOrCreateTicketService";
 import ShowTicketService from "../services/TicketServices/ShowTicketService";
@@ -698,7 +699,7 @@ export const getContact = async (
     throw new AppError("Contact not found", 404);
   }
 
-  return res.status(200).json(contact);
+  return res.status(200).json(serializeContactAddress(contact));
 };
 
 /**
@@ -1094,6 +1095,7 @@ export const sendDirectMessage = async (
     message: "Message(s) sent successfully",
     ticketId: fullTicket.id,
     contactId: contact.id,
+    contact: serializeContactAddress(contact),
     data: sentMessages
   });
 };

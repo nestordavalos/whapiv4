@@ -19,7 +19,7 @@ import { isZapoTrustedContactPrivacyNack } from "../../helpers/ZapoErrors";
 import {
   assertZapoRecipientCanReceive,
   blockZapoRecipientSend,
-  unblockZapoRecipientByJid
+  unblockZapoRecipientForTicket
 } from "./ZapoRecipientSendBlockService";
 
 interface Request {
@@ -67,7 +67,7 @@ const ForwardWhatsAppMessage = async ({
         destinationContact.remoteJid
       );
       if (await hasZapoTrustedContactToken(whatsapp.id, remoteJid)) {
-        await unblockZapoRecipientByJid(whatsapp.id, remoteJid);
+        await unblockZapoRecipientForTicket(destinationTicket);
       }
       await assertZapoRecipientCanReceive(destinationTicket, whatsapp.number);
       const originalMediaUrl = message.getDataValue("mediaUrl");

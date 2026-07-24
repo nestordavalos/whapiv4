@@ -28,6 +28,7 @@ import { getStorageService } from "../StorageServices/StorageService";
 import {
   assertZapoRecipientCanReceive,
   blockZapoRecipientSend,
+  createZapoRecipientBlockedError,
   unblockZapoRecipientForTicket
 } from "./ZapoRecipientSendBlockService";
 
@@ -153,7 +154,7 @@ const SendWhatsAppMediaFromUrl = async ({
           "Zapo send blocked until the contact replies"
         );
         await blockZapoRecipientSend(ticket, whatsapp.number);
-        throw new AppError("ERR_WAPP_RECIPIENT_REQUIRES_CONTACT", 422);
+        throw createZapoRecipientBlockedError(ticket);
       }
       logger.error({ ticketId: ticket.id, err }, "Error sending Zapo URL media");
       throw new AppError("ERR_SENDING_WAPP_MSG_FROM_URL");

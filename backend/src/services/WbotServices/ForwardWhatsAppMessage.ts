@@ -19,6 +19,7 @@ import { isZapoTrustedContactPrivacyNack } from "../../helpers/ZapoErrors";
 import {
   assertZapoRecipientCanReceive,
   blockZapoRecipientSend,
+  createZapoRecipientBlockedError,
   unblockZapoRecipientForTicket
 } from "./ZapoRecipientSendBlockService";
 
@@ -111,7 +112,7 @@ const ForwardWhatsAppMessage = async ({
       } catch (err) {
         if (isZapoTrustedContactPrivacyNack(err)) {
           await blockZapoRecipientSend(destinationTicket, whatsapp.number);
-          throw new AppError("ERR_WAPP_RECIPIENT_REQUIRES_CONTACT", 422);
+          throw createZapoRecipientBlockedError(destinationTicket);
         }
         throw err;
       }

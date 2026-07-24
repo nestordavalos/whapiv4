@@ -31,6 +31,7 @@ import { sendMessageSentWebhook } from "../WebhookService/SendWebhookEvent";
 import {
   assertZapoRecipientCanReceive,
   blockZapoRecipientSend,
+  createZapoRecipientBlockedError,
   unblockZapoRecipientForTicket
 } from "./ZapoRecipientSendBlockService";
 
@@ -238,7 +239,7 @@ const SendWhatsAppMessage = async ({
           "Zapo send blocked until the contact replies"
         );
         await blockZapoRecipientSend(ticket, whatsapp.number);
-        throw new AppError("ERR_WAPP_RECIPIENT_REQUIRES_CONTACT", 422);
+        throw createZapoRecipientBlockedError(ticket);
       }
       logger.error({ ticketId: ticket.id, err }, "Error sending Zapo message");
       throw err;

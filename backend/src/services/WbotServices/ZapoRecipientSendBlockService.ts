@@ -8,6 +8,16 @@ const BLOCKED_ERROR = "ERR_WAPP_RECIPIENT_REQUIRES_CONTACT";
 const normalizeAccount = (accountNumber?: string): string =>
   String(accountNumber || "").replace(/\D/g, "");
 
+export const createZapoRecipientBlockedError = (ticket: Ticket): AppError =>
+  new AppError(BLOCKED_ERROR, 422, {
+    ticketId: ticket.id,
+    whatsappId: ticket.whatsappId,
+    contactId: ticket.contactId,
+    contactNumber: ticket.contact?.number,
+    code: 463,
+    retryable: false
+  });
+
 const emitTicketUpdate = (ticket: Ticket) => {
   getIO()
     .to(ticket.id.toString())
@@ -108,7 +118,7 @@ export const assertZapoRecipientCanReceive = async (
     });
   }
 
-  throw new AppError(BLOCKED_ERROR, 422);
+  throw createZapoRecipientBlockedError(ticket);
 };
 
 /** Clears the restriction only after Zapo receives a trusted-contact token. */

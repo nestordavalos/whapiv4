@@ -98,6 +98,7 @@ app.use(async (err: Error, req: Request, res: Response, _: NextFunction) => {
     logger.warn(
       {
         ...getRequestLogContext(req),
+        ...err.context,
         statusCode: err.statusCode,
         error: err.message
       },

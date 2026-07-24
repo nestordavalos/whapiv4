@@ -14,10 +14,21 @@ import {
   sendMessageWithLidFallback
 } from "../../helpers/GetContactJid";
 import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
+import { isZapoTrustedContactPrivacyNack } from "../../helpers/ZapoErrors";
 import Whatsapp from "../../models/Whatsapp";
-import { getZapoQuoteMetadata, resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
+import {
+  getZapoQuoteMetadata,
+  hasZapoTrustedContactToken,
+  resolveZapoRecipientJid,
+  sendZapoMessage
+} from "../../libs/zapo";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import { sendMessageSentWebhook } from "../WebhookService/SendWebhookEvent";
+import {
+  assertZapoRecipientCanReceive,
+  blockZapoRecipientSend,
+  unblockZapoRecipientByJid
+} from "./ZapoRecipientSendBlockService";
 
 interface Request {
   media: Express.Multer.File;
@@ -50,6 +61,10 @@ const SendWhatsAppMedia = async ({
         ticket.isGroup,
         ticket.contact.remoteJid
       );
+      if (await hasZapoTrustedContactToken(whatsapp.id, remoteJid)) {
+        await unblockZapoRecipientByJid(whatsapp.id, remoteJid);
+      }
+      await assertZapoRecipientCanReceive(ticket);
       const mimeRoot = media.mimetype.split("/")[0];
       const type = ["image", "video", "audio"].includes(mimeRoot)
         ? mimeRoot
@@ -132,6 +147,10 @@ const SendWhatsAppMedia = async ({
     } catch (err) {
       logger.error({ ticketId: ticket.id, err }, "Error sending Zapo media");
       if (err instanceof AppError) throw err;
+      if (isZapoTrustedContactPrivacyNack(err)) {
+        await blockZapoRecipientSend(ticket);
+        throw new AppError("ERR_WAPP_RECIPIENT_REQUIRES_CONTACT", 422);
+      }
       throw new AppError("ERR_SENDING_WAPP_MSG");
     }
   }

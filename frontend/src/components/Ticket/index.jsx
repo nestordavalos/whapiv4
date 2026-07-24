@@ -195,7 +195,10 @@ const Ticket = () => {
             isGroup={ticket.isGroup}
             isContactDrawerOpen={drawerOpen}
           ></MessagesList>
-          <MessageInput ticketStatus={ticket.status} />
+          <MessageInput
+            ticketStatus={ticket.status}
+            ticketSendBlocked={ticket.zapoSendBlocked}
+          />
         </ReplyMessageProvider>
       </Paper>
       <ContactDrawer

@@ -99,6 +99,15 @@ class Ticket extends Model<Ticket> {
   @Column
   isFinished: boolean;
 
+  // Set after WhatsApp rejects a Zapo send with privacy NACK 463. It is
+  // cleared only after Zapo receives a trusted-contact token for this contact.
+  @Default(false)
+  @Column
+  zapoSendBlocked: boolean;
+
+  @Column
+  zapoSendBlockedAt: Date;
+
   // Typebot integration fields
   @Column
   typebotSessionId: string;

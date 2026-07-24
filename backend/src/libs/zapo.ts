@@ -6,6 +6,7 @@ import { logger } from "../utils/logger";
 import { handleZapoMessage } from "../services/WbotServices/zapoMessageListener";
 import HandleMessageEditService from "../services/MessageServices/HandleMessageEditService";
 import HandleMessageReactionService from "../services/MessageServices/HandleMessageReactionService";
+import { unblockZapoRecipientByJid } from "../services/WbotServices/ZapoRecipientSendBlockService";
 import {
   sendConnectionUpdateWebhook,
   sendMessageAckWebhook
@@ -220,6 +221,24 @@ export const getZapo = (id: number): ZapoSession => {
   const session = sessions.get(id);
   if (!session) throw new AppError("ERR_WAPP_NOT_INITIALIZED");
   return session;
+};
+
+/**
+ * Used by the 463 gate to recover a persisted token after a process restart
+ * or history sync. Zapo itself remains responsible for rejecting expired
+ * tokens at send time.
+ */
+export const hasZapoTrustedContactToken = async (
+  whatsappId: number,
+  remoteJid: string
+): Promise<boolean> => {
+  const mysql = stores.get(whatsappId);
+  if (!mysql) return false;
+
+  const token = await mysql.stores
+    .privacyToken(sessionIdFor(whatsappId))
+    .getByJid(remoteJid);
+  return Boolean(token?.tcToken && token.tcTokenTimestamp);
 };
 
 /** Prefer the LID that WhatsApp currently assigns to a phone contact. */
@@ -932,6 +951,17 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
       )
     )
   );
+  // Zapo emits this only after persisting a trusted-contact token. That is the
+  // authoritative signal to re-enable recipients blocked by NACK 463.
+  session.on("debug_privacy_token", event => {
+    if (!event?.jid) return;
+    unblockZapoRecipientByJid(whatsapp.id, event.jid).catch(err =>
+      logger.warn(
+        { whatsappId: whatsapp.id, remoteJid: event.jid, err },
+        "Could not unblock Zapo recipient after receiving privacy token"
+      )
+    );
+  });
   session.on("history_sync_chunk", event =>
     queueZapoHistoryProcessing(whatsapp)
       .then(processed =>

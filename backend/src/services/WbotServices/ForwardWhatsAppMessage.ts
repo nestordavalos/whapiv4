@@ -10,7 +10,17 @@ import FindOrCreateTicketService from "../TicketServices/FindOrCreateTicketServi
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import { getStorageService } from "../StorageServices/StorageService";
 import Whatsapp from "../../models/Whatsapp";
-import { resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
+import {
+  hasZapoTrustedContactToken,
+  resolveZapoRecipientJid,
+  sendZapoMessage
+} from "../../libs/zapo";
+import { isZapoTrustedContactPrivacyNack } from "../../helpers/ZapoErrors";
+import {
+  assertZapoRecipientCanReceive,
+  blockZapoRecipientSend,
+  unblockZapoRecipientByJid
+} from "./ZapoRecipientSendBlockService";
 
 interface Request {
   message: Message;
@@ -56,6 +66,10 @@ const ForwardWhatsAppMessage = async ({
         false,
         destinationContact.remoteJid
       );
+      if (await hasZapoTrustedContactToken(whatsapp.id, remoteJid)) {
+        await unblockZapoRecipientByJid(whatsapp.id, remoteJid);
+      }
+      await assertZapoRecipientCanReceive(destinationTicket);
       const originalMediaUrl = message.getDataValue("mediaUrl");
       let content: any = message.body || "";
       let mediaUrl: string | undefined;
@@ -89,9 +103,18 @@ const ForwardWhatsAppMessage = async ({
         mediaType = message.mediaType;
       }
 
-      const sent = await sendZapoMessage(whatsapp.id, remoteJid, content, {
-        forward: true
-      });
+      let sent;
+      try {
+        sent = await sendZapoMessage(whatsapp.id, remoteJid, content, {
+          forward: true
+        });
+      } catch (err) {
+        if (isZapoTrustedContactPrivacyNack(err)) {
+          await blockZapoRecipientSend(destinationTicket);
+          throw new AppError("ERR_WAPP_RECIPIENT_REQUIRES_CONTACT", 422);
+        }
+        throw err;
+      }
       await CreateMessageService({
         messageData: {
           id: sent.id,
@@ -218,6 +241,7 @@ const ForwardWhatsAppMessage = async ({
     };
   } catch (err: any) {
     logger.error(`Error forwarding WhatsApp message: ${err.message}`);
+    if (err instanceof AppError) throw err;
     throw new AppError("ERR_FORWARD_WAPP_MSG");
   }
 };

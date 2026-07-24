@@ -10,6 +10,7 @@ import { Picker } from "emoji-mart";
 import {
   CircularProgress,
   ClickAwayListener,
+  Alert,
   IconButton,
   InputBase,
   Paper,
@@ -294,7 +295,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const MessageInput = ({ ticketStatus }) => {
+const MessageInput = ({ ticketStatus, ticketSendBlocked = false }) => {
   const classes = useStyles();
   const { ticketId } = useParams();
   const [medias, setMedias] = useState([]);
@@ -327,6 +328,7 @@ const MessageInput = ({ ticketStatus }) => {
   const { setReplyingMessage, replyingMessage } = useContext(ReplyMessageContext);
   const { user } = useContext(AuthContext);
   const [signMessage, setSignMessage] = useLocalStorage("signOption", true);
+  const sendingDisabled = loading || recording || ticketStatus !== "open" || ticketSendBlocked;
 
   const releaseRecordingStream = () => {
     recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -431,6 +433,7 @@ const MessageInput = ({ ticketStatus }) => {
   };
 
   const handleUploadMedia = async (e) => {
+    if (ticketSendBlocked) return;
     setLoading(true);
     if (e) {
       e.preventDefault();
@@ -460,6 +463,7 @@ const MessageInput = ({ ticketStatus }) => {
   };
 
   const handleSendMessage = async () => {
+    if (ticketSendBlocked) return;
     if (inputMessage.trim() === "") return;
     setLoading(true);
     
@@ -486,6 +490,7 @@ const MessageInput = ({ ticketStatus }) => {
   };
 
   const handleStartRecording = async () => {
+    if (ticketSendBlocked) return;
     setLoading(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -568,6 +573,7 @@ const MessageInput = ({ ticketStatus }) => {
   };
 
   const handleUploadAudio = async () => {
+    if (ticketSendBlocked) return;
     setLoading(true);
     try {
       const blob = await stopNativeRecording();
@@ -697,7 +703,7 @@ const MessageInput = ({ ticketStatus }) => {
         <IconButton
           aria-label="showRecorder"
           component="span"
-          disabled={loading || ticketStatus !== "open"}
+          disabled={sendingDisabled}
           onClick={() => setReplyingMessage(null)}
           size="large">
           <Clear className={classes.sendMessageIcons} />
@@ -742,7 +748,7 @@ const MessageInput = ({ ticketStatus }) => {
         <IconButton
           aria-label="clear-media"
           component="span"
-          disabled={loading || ticketStatus !== "open"}
+          disabled={sendingDisabled}
           onClick={() => {
             setMedias([]);
             setMediaCaption("");
@@ -773,7 +779,7 @@ const MessageInput = ({ ticketStatus }) => {
             <IconButton
               aria-label="emojiPicker"
               component="span"
-              disabled={loading || recording || ticketStatus !== "open"}
+              disabled={sendingDisabled}
               onClick={(e) => setShowEmoji((prevState) => !prevState)}
               size="large">
               <Mood className={classes.sendMessageIcons} />
@@ -796,7 +802,7 @@ const MessageInput = ({ ticketStatus }) => {
               multiple
               type="file"
               id="upload-button"
-              disabled={loading || recording || ticketStatus !== "open"}
+              disabled={sendingDisabled}
               className={classes.uploadInput}
               onChange={handleChangeMedias}
             />
@@ -804,7 +810,7 @@ const MessageInput = ({ ticketStatus }) => {
               <IconButton
                 aria-label="upload"
                 component="span"
-                disabled={loading || recording || ticketStatus !== "open"}
+                disabled={sendingDisabled}
                 onMouseOver={() => setOnDragEnter(true)}
                 size="large">
                 <AttachFile className={classes.sendMessageIcons} />
@@ -846,7 +852,7 @@ const MessageInput = ({ ticketStatus }) => {
                 <IconButton
                   aria-label="emojiPicker"
                   component="span"
-                  disabled={loading || recording || ticketStatus !== "open"}
+                  disabled={sendingDisabled}
                   onClick={(e) => setShowEmoji((prevState) => !prevState)}
                   size="large">
                   <Mood className={classes.sendMessageIcons} />
@@ -857,7 +863,7 @@ const MessageInput = ({ ticketStatus }) => {
                   multiple
                   type="file"
                   id="upload-button"
-                  disabled={loading || recording || ticketStatus !== "open"}
+                  disabled={sendingDisabled}
                   className={classes.uploadInput}
                   onChange={handleChangeMedias}
                 />
@@ -865,7 +871,7 @@ const MessageInput = ({ ticketStatus }) => {
                   <IconButton
                     aria-label="upload"
                     component="span"
-                    disabled={loading || recording || ticketStatus !== "open"}
+                    disabled={sendingDisabled}
                     size="large">
                     <AttachFile className={classes.sendMessageIcons} />
                   </IconButton>
@@ -903,7 +909,7 @@ const MessageInput = ({ ticketStatus }) => {
               maxRows={5}
               value={capitalizeFirstLetter(mediaCaption)}
               onChange={(e) => setMediaCaption(e.target.value)}
-              disabled={loading || ticketStatus !== "open"}
+              disabled={sendingDisabled}
               onKeyPress={(e) => {
                 if (loading || e.shiftKey) return;
                 else if (e.key === "Enter") {
@@ -916,7 +922,7 @@ const MessageInput = ({ ticketStatus }) => {
             aria-label="send-upload"
             component="span"
             onClick={handleUploadMedia}
-            disabled={loading || ticketStatus !== "open"}
+            disabled={sendingDisabled}
             size="large">
             <Send className={classes.sendMessageIcons} />
           </IconButton>
@@ -936,12 +942,17 @@ const MessageInput = ({ ticketStatus }) => {
           {i18n.t("uploads.titles.titleUploadMsgDragDrop")}
         </div>
         {replyingMessage && renderReplyingMessage(replyingMessage)}
+        {ticketSendBlocked && (
+          <Alert severity="warning" sx={{ width: "100%", borderRadius: 0 }}>
+            {i18n.t("messagesInput.recipientRequiresContact")}
+          </Alert>
+        )}
         <div className={classes.newMessageBox}>
           <Hidden only={["sm", "xs"]}>
             <IconButton
               aria-label="emojiPicker"
               component="span"
-              disabled={loading || recording || ticketStatus !== "open"}
+              disabled={sendingDisabled}
               onClick={(e) => setShowEmoji((prevState) => !prevState)}
               size="large">
               <Mood className={classes.sendMessageIcons} />
@@ -965,7 +976,7 @@ const MessageInput = ({ ticketStatus }) => {
               multiple
               type="file"
               id="upload-button"
-              disabled={loading || recording || ticketStatus !== "open"}
+              disabled={sendingDisabled}
               className={classes.uploadInput}
               onChange={handleChangeMedias}
             />
@@ -973,7 +984,7 @@ const MessageInput = ({ ticketStatus }) => {
               <IconButton
                 aria-label="upload"
                 component="span"
-                disabled={loading || recording || ticketStatus !== "open"}
+                disabled={sendingDisabled}
                 onMouseOver={() => setOnDragEnter(true)}
                 size="large">
                 <AttachFile className={classes.sendMessageIcons} />
@@ -1015,7 +1026,7 @@ const MessageInput = ({ ticketStatus }) => {
                 <IconButton
                   aria-label="emojiPicker"
                   component="span"
-                  disabled={loading || recording || ticketStatus !== "open"}
+                  disabled={sendingDisabled}
                   onClick={(e) => setShowEmoji((prevState) => !prevState)}
                   size="large">
                   <Mood className={classes.sendMessageIcons} />
@@ -1026,7 +1037,7 @@ const MessageInput = ({ ticketStatus }) => {
                   multiple
                   type="file"
                   id="upload-button"
-                  disabled={loading || recording || ticketStatus !== "open"}
+                  disabled={sendingDisabled}
                   className={classes.uploadInput}
                   onChange={handleChangeMedias}
                 />
@@ -1034,7 +1045,7 @@ const MessageInput = ({ ticketStatus }) => {
                   <IconButton
                     aria-label="upload"
                     component="span"
-                    disabled={loading || recording || ticketStatus !== "open"}
+                    disabled={sendingDisabled}
                     size="large">
                     <AttachFile className={classes.sendMessageIcons} />
                   </IconButton>
@@ -1076,7 +1087,7 @@ const MessageInput = ({ ticketStatus }) => {
               maxRows={5}
               value={capitalizeFirstLetter(inputMessage)}
               onChange={handleChangeInput}
-              disabled={recording || loading || ticketStatus !== "open"}
+              disabled={sendingDisabled}
               onPaste={(e) => {
                 ticketStatus === "open" && handleInputPaste(e);
               }}
@@ -1119,7 +1130,7 @@ const MessageInput = ({ ticketStatus }) => {
               aria-label="sendMessage"
               component="span"
               onClick={handleSendMessage}
-              disabled={loading}
+              disabled={sendingDisabled}
               size="large">
               <Send className={classes.sendMessageIcons} />
             </IconButton>
@@ -1155,7 +1166,7 @@ const MessageInput = ({ ticketStatus }) => {
             <IconButton
               aria-label="showRecorder"
               component="span"
-              disabled={loading || ticketStatus !== "open"}
+              disabled={sendingDisabled}
               onClick={handleStartRecording}
               size="large">
               <Mic className={classes.sendMessageIcons} />

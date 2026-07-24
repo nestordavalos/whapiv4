@@ -1442,6 +1442,21 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
   const renderMessages = () => {
     if (messagesList.length > 0) {
       const viewMessagesList = messagesList.map((message, index) => {
+        if (
+          message.mediaType === "system" &&
+          message.body === "ERR_WAPP_RECIPIENT_REQUIRES_CONTACT"
+        ) {
+          return (
+            <React.Fragment key={message.id}>
+              {renderDailyTimestamps(message, index)}
+              {renderTicketsSeparator(message, index)}
+              <div className={classes.messageCenter} id={`message-${message.id}`}>
+                <Block color="error" fontSize="small" />{" "}
+                {i18n.t("messagesList.recipientRequiresContact")}
+              </div>
+            </React.Fragment>
+          );
+        }
         if (message.mediaType === "call_log") {
           return (
             <React.Fragment key={message.id}>

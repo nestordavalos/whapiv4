@@ -17,10 +17,21 @@ import {
   WhatsAppSendUnconfirmedError
 } from "../../helpers/GetContactJid";
 import { isFetchMessagesStoreError } from "../../helpers/WhatsAppWebErrors";
+import { isZapoTrustedContactPrivacyNack } from "../../helpers/ZapoErrors";
 import Whatsapp from "../../models/Whatsapp";
-import { getZapoQuoteMetadata, resolveZapoRecipientJid, sendZapoMessage } from "../../libs/zapo";
+import {
+  getZapoQuoteMetadata,
+  hasZapoTrustedContactToken,
+  resolveZapoRecipientJid,
+  sendZapoMessage
+} from "../../libs/zapo";
 import CreateMessageService from "../MessageServices/CreateMessageService";
 import { sendMessageSentWebhook } from "../WebhookService/SendWebhookEvent";
+import {
+  assertZapoRecipientCanReceive,
+  blockZapoRecipientSend,
+  unblockZapoRecipientByJid
+} from "./ZapoRecipientSendBlockService";
 
 const MAX_SEND_ATTEMPTS = 3;
 const BASE_BACKOFF_MS = 500;
@@ -145,6 +156,10 @@ const SendWhatsAppMessage = async ({
         ticket.isGroup,
         ticket.contact.remoteJid
       );
+      if (await hasZapoTrustedContactToken(whatsapp.id, remoteJid)) {
+        await unblockZapoRecipientByJid(whatsapp.id, remoteJid);
+      }
+      await assertZapoRecipientCanReceive(ticket);
       const quoteMetadata = quotedMsg
         ? await getZapoQuoteMetadata(whatsapp.id, quotedMsg.id)
         : undefined;
@@ -200,6 +215,10 @@ const SendWhatsAppMessage = async ({
       } as WbotMessage;
     } catch (err) {
       logger.error({ ticketId: ticket.id, err }, "Error sending Zapo message");
+      if (isZapoTrustedContactPrivacyNack(err)) {
+        await blockZapoRecipientSend(ticket);
+        throw new AppError("ERR_WAPP_RECIPIENT_REQUIRES_CONTACT", 422);
+      }
       throw err;
     }
   }

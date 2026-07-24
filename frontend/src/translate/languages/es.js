@@ -782,6 +782,7 @@ const messages = {
           },
         },
         edited: "Editado",
+        recipientRequiresContact: "WhatsApp rechazó el envío a este contacto. No se podrán enviar más mensajes hasta que el contacto responda y WhatsApp entregue un nuevo token de confianza.",
       },
       messagesInput: {
         placeholderOpen: "Ingrese un mensaje",
@@ -789,6 +790,7 @@ const messages = {
         signMessage: "Suscribirse",
         captionPlaceholder: "Agrega un subtítulo...",
         cancel: "Cancelar",
+        recipientRequiresContact: "No se puede enviar a este contacto hasta que responda y WhatsApp entregue un nuevo token de confianza.",
       },
       contactDrawer: {
         header: "Datos de contacto",
@@ -869,6 +871,7 @@ const messages = {
         ERR_WAPP_DOWNLOAD_MEDIA: "No se pueden descargar medios de WhatsApp. Verifique la página de conexiones",
         ERR_INVALID_CREDENTIALS: "Error de autenticación. Vuelva a intentarlo",
         ERR_SENDING_WAPP_MSG: "Error al enviar el mensaje de WhatsApp. Verificar página de conexiones.",
+        ERR_WAPP_RECIPIENT_REQUIRES_CONTACT: "WhatsApp no permite enviar a este destinatario todavía. El contacto debe iniciar una interacción legítima primero.",
         ERR_WAPP_REACHOUT_TIMELOCK: "WhatsApp restringió temporalmente los envíos de esta conexión. Espere antes de volver a intentar.",
         ERR_DELETE_WAPP_MSG: "No se pudo eliminar el mensaje de WhatsApp.",
         ERR_EDIT_WAPP_MSG: "No se pudo editar el mensaje de WhatsApp.",

@@ -726,6 +726,7 @@ const messages = {
           },
         },
         edited: "Edited",
+        recipientRequiresContact: "WhatsApp rejected the send to this contact. No more messages can be sent until the contact replies and WhatsApp provides a new trusted-contact token.",
       },
       messagesInput: {
         placeholderOpen: "Enter a message",
@@ -733,6 +734,7 @@ const messages = {
         signMessage: "Subscribe",
         captionPlaceholder: "Add a caption...",
         cancel: "Cancel",
+        recipientRequiresContact: "This contact cannot be messaged until they reply and WhatsApp provides a new trusted-contact token.",
       },
       contactDrawer: {
         header: "Contact Data",
@@ -813,6 +815,7 @@ const messages = {
         ERR_WAPP_DOWNLOAD_MEDIA: "Unable to download media from WhatsApp. Please check connections page.",
         ERR_INVALID_CREDENTIALS: "Authentication error. Please try again.",
         ERR_SENDING_WAPP_MSG: "Error sending WhatsApp message. Check connections page.",
+        ERR_WAPP_RECIPIENT_REQUIRES_CONTACT: "WhatsApp cannot send to this recipient yet. The contact must initiate a legitimate interaction first.",
         ERR_WAPP_REACHOUT_TIMELOCK: "WhatsApp temporarily restricted sends for this connection. Please wait before trying again.",
         ERR_DELETE_WAPP_MSG: "Unable to delete WhatsApp message.",
         ERR_EDIT_WAPP_MSG: "Unable to edit WhatsApp message.",

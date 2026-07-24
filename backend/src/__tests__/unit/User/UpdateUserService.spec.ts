@@ -43,9 +43,9 @@ describe("User", () => {
       email: faker.internet.email()
     };
 
-    expect(UpdateUserService({ userId, userData })).rejects.toBeInstanceOf(
-      AppError
-    );
+    await expect(
+      UpdateUserService({ userId, userData })
+    ).rejects.toBeInstanceOf(AppError);
   });
 
   it("should not be able to updated an user with invalid data", async () => {
@@ -61,8 +61,8 @@ describe("User", () => {
       email: "test.worgn.email"
     };
 
-    expect(UpdateUserService({ userId, userData })).rejects.toBeInstanceOf(
-      AppError
-    );
+    await expect(
+      UpdateUserService({ userId, userData })
+    ).rejects.toBeInstanceOf(AppError);
   });
 });

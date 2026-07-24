@@ -32,7 +32,7 @@ describe("User", () => {
   });
 
   it("should not be able to find a inexisting user", async () => {
-    expect(ShowUserService(faker.random.number())).rejects.toBeInstanceOf(
+    await expect(ShowUserService(faker.random.number())).rejects.toBeInstanceOf(
       AppError
     );
   });

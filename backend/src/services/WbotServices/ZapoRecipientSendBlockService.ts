@@ -115,9 +115,9 @@ export const assertZapoRecipientCanReceive = async (
 export const unblockZapoRecipientByJid = async (
   whatsappId: number,
   remoteJid: string
-): Promise<void> => {
+): Promise<number> => {
   const contacts = await Contact.findAll({ where: { remoteJid } });
-  if (contacts.length === 0) return;
+  if (contacts.length === 0) return 0;
 
   const tickets = await Ticket.findAll({
     where: {
@@ -126,13 +126,14 @@ export const unblockZapoRecipientByJid = async (
       zapoSendBlocked: true
     }
   });
-  if (tickets.length === 0) return;
+  if (tickets.length === 0) return 0;
 
   await updateTickets(tickets, {
     zapoSendBlocked: false,
     zapoSendBlockedAt: null,
     zapoSendBlockedAccount: null
   });
+  return tickets.length;
 };
 
 /** A WhatsApp row can be relinked to another account; clear old 463 state. */

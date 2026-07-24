@@ -968,12 +968,19 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
   // authoritative signal to re-enable recipients blocked by NACK 463.
   session.on("debug_privacy_token", event => {
     if (!event?.jid) return;
-    unblockZapoRecipientByJid(whatsapp.id, event.jid).catch(err =>
-      logger.warn(
-        { whatsappId: whatsapp.id, remoteJid: event.jid, err },
-        "Could not unblock Zapo recipient after receiving privacy token"
+    void unblockZapoRecipientByJid(whatsapp.id, event.jid)
+      .then(unblockedTickets =>
+        logger.info(
+          { whatsappId: whatsapp.id, remoteJid: event.jid, unblockedTickets },
+          "Zapo trusted-contact token received"
+        )
       )
-    );
+      .catch(err =>
+        logger.warn(
+          { whatsappId: whatsapp.id, remoteJid: event.jid, err },
+          "Could not unblock Zapo recipient after receiving privacy token"
+        )
+      );
   });
   session.on("history_sync_chunk", event =>
     queueZapoHistoryProcessing(whatsapp)

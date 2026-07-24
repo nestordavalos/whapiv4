@@ -5,10 +5,23 @@ import { getIO } from "../../libs/socket";
 import wbotMonitor from "./wbotMonitor";
 import { logger } from "../../utils/logger";
 import { initZapo } from "../../libs/zapo";
+import AppError from "../../errors/AppError";
 
 export const StartWhatsAppSession = async (
   whatsapp: Whatsapp
 ): Promise<void> => {
+  if (
+    whatsapp.provider === "zapo" &&
+    ["BANNED", "TEMP_BANNED"].includes(whatsapp.status)
+  ) {
+    throw new AppError("ERR_ZAPO_ACCOUNT_RESTRICTED", 409, {
+      whatsappId: whatsapp.id,
+      status: whatsapp.status,
+      disconnectReason: whatsapp.disconnectReason,
+      disconnectCode: whatsapp.disconnectCode
+    });
+  }
+
   const io = getIO();
   await whatsapp.update({ status: "OPENING" });
   io.emit("whatsappSession", {

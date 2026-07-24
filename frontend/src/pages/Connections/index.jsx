@@ -32,6 +32,7 @@ import {
 	CloudDownload,
 	History,
 	MailOutline,
+	ErrorOutline,
 } from "@mui/icons-material";
 
 import MainContainer from "../../components/MainContainer";
@@ -179,6 +180,24 @@ const useStyles = makeStyles(theme => ({
 			: "rgba(255, 152, 0, 0.1)",
 		color: theme.palette.mode === "dark" ? "#ffb74d" : "#f57c00",
 	},
+	statusRestricted: {
+		backgroundColor: theme.palette.mode === "dark"
+			? "rgba(211, 47, 47, 0.28)"
+			: "rgba(211, 47, 47, 0.12)",
+		color: theme.palette.mode === "dark" ? "#ff8a80" : "#b71c1c",
+	},
+	reasonBox: {
+		display: "flex",
+		alignItems: "flex-start",
+		gap: theme.spacing(1),
+		padding: theme.spacing(1),
+		borderRadius: 8,
+		backgroundColor: theme.palette.mode === "dark"
+			? "rgba(211, 47, 47, 0.14)"
+			: "rgba(211, 47, 47, 0.06)",
+		color: theme.palette.mode === "dark" ? "#ffab91" : "#b71c1c",
+		fontSize: "0.8rem",
+	},
 	connectionActions: {
 		display: "flex",
 		gap: theme.spacing(1),
@@ -298,6 +317,30 @@ const CustomToolTip = ({ title, content, children }) => {
 	);
 };
 
+const RESET_REQUIRED_REASONS = new Set([
+	"failure_banned",
+	"failure_locked",
+	"failure_not_authorized",
+	"stream_error_device_removed",
+	"stream_error_force_logout",
+]);
+
+const requiresFullZapoReset = whatsApp =>
+	whatsApp.provider === "zapo" &&
+	(whatsApp.status === "BANNED" ||
+		RESET_REQUIRED_REASONS.has(whatsApp.disconnectReason));
+
+const getStatusLabel = status =>
+	i18n.t(`connections.status.${status}`, { defaultValue: status });
+
+const getDisconnectReasonLabel = whatsApp => {
+	const reason = whatsApp.disconnectReason || "unknown";
+	const label = i18n.t(`connections.disconnectReasons.${reason}`, {
+		defaultValue: reason,
+	});
+	return whatsApp.disconnectCode ? `${label} (${whatsApp.disconnectCode})` : label;
+};
+
 const Connections = () => {
 	const classes = useStyles();
 
@@ -307,6 +350,7 @@ const Connections = () => {
 	const [selectedWhatsApp, setSelectedWhatsApp] = useState(null);
 	const [confirmModalOpen, setConfirmModalOpen] = useState(false);
 	const [restartingId, setRestartingId] = useState(null);
+	const [reusingId, setReusingId] = useState(null);
 	const [syncingId, setSyncingId] = useState(null);
 	const [syncMenuAnchor, setSyncMenuAnchor] = useState(null);
 	const [syncMenuWhatsAppId, setSyncMenuWhatsAppId] = useState(null);
@@ -468,6 +512,15 @@ const Connections = () => {
 				whatsAppId: whatsAppId,
 			});
 		}
+
+		if (action === "reuse") {
+			setConfirmModalInfo({
+				action,
+				title: i18n.t("connections.confirmationModal.reuseTitle"),
+				message: i18n.t("connections.confirmationModal.reuseMessage"),
+				whatsAppId,
+			});
+		}
 		setConfirmModalOpen(true);
 	};
 
@@ -489,12 +542,61 @@ const Connections = () => {
 			}
 		}
 
+		if (confirmModalInfo.action === "reuse") {
+			try {
+				setReusingId(confirmModalInfo.whatsAppId);
+				const target = whatsApps.find(
+					item => item.id === confirmModalInfo.whatsAppId
+				);
+				await api.post(
+					`/whatsappsession/${confirmModalInfo.whatsAppId}/reuse`
+				);
+				toast.success(i18n.t("connections.toasts.reused"));
+				if (target) {
+					setSelectedWhatsApp(target);
+					setQrModalOpen(true);
+				}
+			} catch (err) {
+				toastError(err);
+			} finally {
+				setReusingId(null);
+			}
+		}
+
 		setConfirmModalInfo(confirmationModalInitialState);
 	};
 
 	const renderActionButtons = whatsApp => {
+		if (requiresFullZapoReset(whatsApp)) {
+			return (
+				<Button
+					className={classes.actionButton}
+					variant="contained"
+					color="secondary"
+					onClick={() => handleOpenConfirmationModal("reuse", whatsApp.id)}
+					disabled={reusingId === whatsApp.id}
+					startIcon={
+						reusingId === whatsApp.id ? (
+							<CircularProgress size={16} color="inherit" />
+						) : (
+							<Replay />
+						)
+					}
+				>
+					{reusingId === whatsApp.id
+						? i18n.t("connections.buttons.reusing")
+						: i18n.t("connections.buttons.reuse")}
+				</Button>
+			);
+		}
+
 		return (
             <>
+				{whatsApp.status === "TEMP_BANNED" && (
+					<Button className={classes.actionButton} variant="outlined" disabled>
+						{i18n.t("connections.buttons.tempBanned")}
+					</Button>
+				)}
                 {whatsApp.status === "qrcode" && (
 					<Button
 						className={classes.actionButton}
@@ -519,9 +621,15 @@ const Connections = () => {
 							className={classes.actionButton}
 							variant="outlined"
 							color="secondary"
-							onClick={() => handleRequestNewQrCode(whatsApp.id)}
+							onClick={() =>
+								whatsApp.provider === "zapo"
+									? handleOpenConfirmationModal("reuse", whatsApp.id)
+									: handleRequestNewQrCode(whatsApp.id)
+							}
 						>
-							{i18n.t("connections.buttons.newQr")}
+							{whatsApp.provider === "zapo"
+								? i18n.t("connections.buttons.reuse")
+								: i18n.t("connections.buttons.newQr")}
 						</Button>
 					</>
 				)}
@@ -740,6 +848,8 @@ const Connections = () => {
 										className={`${classes.statusChip} ${
 											whatsApp.status === "CONNECTED"
 												? classes.statusConnected
+												: ["BANNED", "TEMP_BANNED"].includes(whatsApp.status)
+												? classes.statusRestricted
 												: whatsApp.status === "DISCONNECTED"
 												? classes.statusDisconnected
 												: whatsApp.status === "OPENING"
@@ -753,6 +863,10 @@ const Connections = () => {
 										{whatsApp.status === "DISCONNECTED" && (
 											<SignalCellularConnectedNoInternet0Bar style={{ fontSize: "0.9rem" }} />
 										)}
+										{(whatsApp.status === "BANNED" ||
+											whatsApp.status === "TEMP_BANNED") && (
+											<ErrorOutline style={{ fontSize: "0.9rem" }} />
+										)}
 										{whatsApp.status === "OPENING" && (
 											<CircularProgress size={12} style={{ color: "inherit" }} />
 										)}
@@ -762,7 +876,7 @@ const Connections = () => {
 										{(whatsApp.status === "TIMEOUT" || whatsApp.status === "PAIRING") && (
 											<SignalCellularConnectedNoInternet2Bar style={{ fontSize: "0.9rem" }} />
 										)}
-										<span>{whatsApp.status}</span>
+										<span>{getStatusLabel(whatsApp.status)}</span>
 									</Box>
 								</Box>
 
@@ -787,6 +901,18 @@ const Connections = () => {
 											<span className={classes.detailLabel}>Actualizado:</span>
 											<span className={classes.detailValue}>{format(parseISO(whatsApp.updatedAt), "dd/MM/yy HH:mm")}</span>
 										</Box>
+
+										{whatsApp.disconnectReason &&
+											whatsApp.status !== "CONNECTED" &&
+											whatsApp.status !== "qrcode" && (
+												<Box className={classes.reasonBox}>
+													<ErrorOutline style={{ fontSize: "1.1rem", marginTop: 1 }} />
+													<span>
+														<strong>{i18n.t("connections.details.reason")}:</strong>{" "}
+														{getDisconnectReasonLabel(whatsApp)}
+													</span>
+												</Box>
+											)}
 									</Box>
 
 									{/* Actions */}

@@ -2,8 +2,13 @@ import { Request, Response } from "express";
 import path from "path";
 import fs from "fs/promises";
 import { getWbot, removeWbot } from "../libs/wbot";
-import { removeZapo, requestZapoHistorySync } from "../libs/zapo";
+import {
+  removeZapo,
+  requestZapoHistorySync,
+  resetZapoForReuse
+} from "../libs/zapo";
 import { getIO } from "../libs/socket";
+import AppError from "../errors/AppError";
 import ShowWhatsAppService from "../services/WhatsappService/ShowWhatsAppService";
 import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
 import UpdateWhatsAppService from "../services/WhatsappService/UpdateWhatsAppService";
@@ -157,6 +162,40 @@ const update = async (req: Request, res: Response): Promise<Response> => {
   return res.status(200).json({ message: "Starting session." });
 };
 
+const reuse = async (req: Request, res: Response): Promise<Response> => {
+  const { whatsappId } = req.params;
+  const whatsapp = await ShowWhatsAppService(whatsappId);
+
+  if (whatsapp.provider !== "zapo") {
+    throw new AppError("ERR_ZAPO_REUSE_ONLY", 400);
+  }
+
+  const clearedDomains = await resetZapoForReuse(whatsapp.id);
+  await whatsapp.update({
+    status: "DISCONNECTED",
+    session: "",
+    qrcode: "",
+    number: "",
+    retries: 0,
+    disconnectReason: null,
+    disconnectCode: null,
+    disconnectedAt: null
+  });
+
+  await StartWhatsAppSession(whatsapp);
+
+  logger.info(
+    { whatsappId: whatsapp.id, clearedDomains, userId: req.user?.id },
+    "[WhatsAppSession] Zapo connection recreated for reuse"
+  );
+
+  return res.status(200).json({
+    message: "Zapo connection recreated. Scan the new QR code.",
+    whatsappId: whatsapp.id,
+    clearedDomains
+  });
+};
+
 const remove = async (req: Request, res: Response): Promise<Response> => {
   logger.info("[WhatsAppSession] Recibiendo solicitud de desconexión...");
   const { whatsappId } = req.params;
@@ -300,4 +339,4 @@ const sync = async (req: Request, res: Response): Promise<Response> => {
   }
 };
 
-export default { store, remove, update, sync };
+export default { store, remove, update, reuse, sync };

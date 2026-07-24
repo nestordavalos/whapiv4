@@ -15,6 +15,11 @@ whatsappSessionRoutes.put(
   isAuth,
   WhatsAppSessionController.update
 );
+whatsappSessionRoutes.post(
+  "/whatsappsession/:whatsappId/reuse",
+  isAuth,
+  WhatsAppSessionController.reuse
+);
 whatsappSessionRoutes.delete(
   "/whatsappsession/:whatsappId",
   isAuth,

@@ -12,6 +12,7 @@ const QrcodeModal = ({ open, onClose, whatsAppId }) => {
 
 	useEffect(() => {
 		const fetchSession = async () => {
+			setQrCode("");
 			if (!whatsAppId) return;
 
 			try {
@@ -29,11 +30,10 @@ const QrcodeModal = ({ open, onClose, whatsAppId }) => {
 		const socket = openSocket();
 
 		socket.on("whatsappSession", data => {
-			if (data.action === "update" && data.session.id === whatsAppId) {
-				setQrCode(data.session.qrcode);
-			}
+			if (data.action !== "update" || data.session.id !== whatsAppId) return;
 
-			if (data.action === "update" && data.session.qrcode === "") {
+			setQrCode(data.session.qrcode);
+			if (data.session.status === "CONNECTED") {
 				onClose();
 			}
 		});

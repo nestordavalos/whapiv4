@@ -20,6 +20,13 @@ import {
   getZapoOutboundDelayMs,
   ZapoOutboundSource
 } from "./ZapoOutboundPacing";
+import {
+  getZapoClosedStatus,
+  isZapoTemporaryBan,
+  shouldReconnectZapo,
+  ZAPO_TEMP_BAN_CODE
+} from "../helpers/ZapoConnectionState";
+import { clearAllZapoInternalStores } from "../helpers/ZapoStoreReset";
 
 // Node 20 does not provide a global WebSocket, while Zapo expects the Web
 // platform constructor to exist. Keep the polyfill local to Node runtimes;
@@ -43,6 +50,8 @@ export type ZapoSession = any;
 const sessions = new Map<number, ZapoSession>();
 const stores = new Map<number, any>();
 const reconnecting = new Set<number>();
+const reconnectTimers = new Map<number, NodeJS.Timeout>();
+const resettingSessions = new Set<number>();
 const recentMessages = new Map<string, any>();
 const recentMessageKeys = new Map<
   string,
@@ -53,6 +62,7 @@ const historyProcessing = new Map<number, Promise<number>>();
 const outboundMessageChains = new Map<number, Promise<void>>();
 const lastOutboundMessageAt = new Map<number, number>();
 const recipientJidCache = new Map<string, string>();
+const restrictedSessions = new Set<number>();
 let mysqlMigrationPromise: Promise<void> | undefined;
 const emitSession = (whatsapp: Whatsapp) =>
   getIO().emit("whatsappSession", { action: "update", session: whatsapp });
@@ -232,6 +242,11 @@ const ensureZapoMysqlMigrations = async (mysql: any): Promise<void> => {
 };
 
 export const getZapo = (id: number): ZapoSession => {
+  if (restrictedSessions.has(id)) {
+    throw new AppError("ERR_ZAPO_ACCOUNT_RESTRICTED", 409, {
+      whatsappId: id
+    });
+  }
   const session = sessions.get(id);
   if (!session) throw new AppError("ERR_WAPP_NOT_INITIALIZED");
   return session;
@@ -769,7 +784,20 @@ export const zapoJid = (
   if (group) return `${number.replace(/[^0-9-]/g, "")}@g.us`;
   return `${number.replace(/\D/g, "")}@s.whatsapp.net`;
 };
-export const removeZapo = async (id: number, logout = false): Promise<void> => {
+interface RemoveZapoOptions {
+  skipInactiveCredentialClear?: boolean;
+}
+
+export const removeZapo = async (
+  id: number,
+  logout = false,
+  options: RemoveZapoOptions = {}
+): Promise<void> => {
+  const reconnectTimer = reconnectTimers.get(id);
+  if (reconnectTimer) clearTimeout(reconnectTimer);
+  reconnectTimers.delete(id);
+  reconnecting.delete(id);
+
   const session = sessions.get(id);
   let store = stores.get(id);
   sessions.delete(id);
@@ -778,6 +806,7 @@ export const removeZapo = async (id: number, logout = false): Promise<void> => {
   historyProcessing.delete(id);
   outboundMessageChains.delete(id);
   lastOutboundMessageAt.delete(id);
+  restrictedSessions.delete(id);
   for (const key of recipientJidCache.keys()) {
     if (key.startsWith(`${id}:`)) recipientJidCache.delete(key);
   }
@@ -829,7 +858,7 @@ export const removeZapo = async (id: number, logout = false): Promise<void> => {
     }
   }
 
-  if (logout && !session) {
+  if (logout && !session && !options.skipInactiveCredentialClear) {
     // A local reset must force a fresh QR even if WhatsApp has not yet sent
     // the logout close event. Zapo's credentials live in MySQL, not in the
     // `Whatsapps.session` field used by the WWebJS provider.
@@ -855,17 +884,54 @@ export const removeZapo = async (id: number, logout = false): Promise<void> => {
 
   if (store) await store.destroy().catch(() => undefined);
 };
+
+/**
+ * Recreates only Zapo's internal provider state while preserving the
+ * application's Whatsapp row, configuration, Contacts, Tickets and Messages.
+ */
+export const resetZapoForReuse = async (id: number): Promise<number> => {
+  resettingSessions.add(id);
+  try {
+    // The complete 15-domain clear below supersedes removeZapo's legacy
+    // inactive-session credential clear. An active session is still remotely
+    // unpaired before its local provider state is discarded.
+    await removeZapo(id, true, { skipInactiveCredentialClear: true });
+
+    const { mysql } = createZapoStore();
+    try {
+      await ensureZapoMysqlMigrations(mysql);
+      const clearedDomains = await clearAllZapoInternalStores(
+        mysql,
+        sessionIdFor(id)
+      );
+      await clearZapoRecipientBlocksForAccountChange(id);
+      logger.info(
+        { whatsappId: id, clearedDomains },
+        "Zapo internal state fully reset for connection reuse"
+      );
+      return clearedDomains;
+    } finally {
+      await mysql.destroy().catch(() => undefined);
+    }
+  } finally {
+    resettingSessions.delete(id);
+  }
+};
+
 const scheduleReconnect = (id: number) => {
   if (reconnecting.has(id)) return;
   reconnecting.add(id);
-  setTimeout(async () => {
+  const timer = setTimeout(async () => {
+    reconnectTimers.delete(id);
     reconnecting.delete(id);
+    if (resettingSessions.has(id)) return;
     const whatsapp = await Whatsapp.findByPk(id);
     if (whatsapp?.provider === "zapo")
       initZapo(whatsapp).catch(err =>
         logger.error({ id, err }, "Could not reconnect Zapo")
       );
   }, 2000);
+  reconnectTimers.set(id, timer);
 };
 export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
   const existing = sessions.get(whatsapp.id);
@@ -969,8 +1035,12 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
         status: "CONNECTED",
         qrcode: "",
         retries: 0,
-        number
+        number,
+        disconnectReason: null,
+        disconnectCode: null,
+        disconnectedAt: null
       });
+      restrictedSessions.delete(whatsapp.id);
       if (hadAnotherAccount) {
         await clearZapoRecipientBlocksForAccountChange(whatsapp.id);
       }
@@ -984,28 +1054,91 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
       });
       logger.info({ whatsappId: whatsapp.id, number }, "Zapo session ready");
     } else {
+      const wasResetting = resettingSessions.has(whatsapp.id);
       sessions.delete(whatsapp.id);
       const mysqlStore = stores.get(whatsapp.id);
       stores.delete(whatsapp.id);
       if (mysqlStore) await mysqlStore.destroy().catch(() => undefined);
-      if (event.isLogout) {
-        await whatsapp.update({
-          status: "DISCONNECTED",
-          qrcode: ""
-        });
-        emitSession(whatsapp);
-        await sendConnectionUpdateWebhook(whatsapp.id, {
-          status: "DISCONNECTED",
-          isLogout: true
-        });
-      } else {
-        await sendConnectionUpdateWebhook(whatsapp.id, {
-          status: "RECONNECTING",
-          reason: event.reason || null
-        });
+
+      if (wasResetting) {
+        logger.info(
+          { whatsappId: whatsapp.id, reason: event.reason || "unknown" },
+          "Ignored expected Zapo close during connection reuse"
+        );
+        return;
+      }
+
+      const status = getZapoClosedStatus(event);
+      const disconnectedAt = new Date();
+      await whatsapp.update({
+        status,
+        qrcode: "",
+        disconnectReason: event.reason || "unknown",
+        disconnectCode: event.code ?? null,
+        disconnectedAt
+      });
+      emitSession(whatsapp);
+      await sendConnectionUpdateWebhook(whatsapp.id, {
+        status,
+        isLogout: Boolean(event.isLogout),
+        reason: event.reason || null,
+        code: event.code ?? null,
+        disconnectedAt
+      });
+      logger.warn(
+        {
+          whatsappId: whatsapp.id,
+          number: whatsapp.number,
+          status,
+          reason: event.reason || "unknown",
+          code: event.code ?? null,
+          isLogout: Boolean(event.isLogout)
+        },
+        "Zapo session closed"
+      );
+
+      if (shouldReconnectZapo(event)) {
         scheduleReconnect(whatsapp.id);
       }
     }
+  });
+  session.on("stream_failure", (event: any) => {
+    if (!isZapoTemporaryBan(event)) return;
+
+    restrictedSessions.add(whatsapp.id);
+    const disconnectedAt = new Date();
+    whatsapp
+      .update({
+        status: "TEMP_BANNED",
+        disconnectReason: "failure_temp_banned",
+        disconnectCode: ZAPO_TEMP_BAN_CODE,
+        disconnectedAt
+      })
+      .then(async () => {
+        emitSession(whatsapp);
+        await sendConnectionUpdateWebhook(whatsapp.id, {
+          status: "TEMP_BANNED",
+          reason: "failure_temp_banned",
+          code: ZAPO_TEMP_BAN_CODE,
+          disconnectedAt
+        });
+        logger.warn(
+          {
+            whatsappId: whatsapp.id,
+            number: whatsapp.number,
+            status: "TEMP_BANNED",
+            reason: "failure_temp_banned",
+            code: ZAPO_TEMP_BAN_CODE
+          },
+          "Zapo account temporarily banned"
+        );
+      })
+      .catch(err =>
+        logger.error(
+          { whatsappId: whatsapp.id, err },
+          "Could not persist Zapo temporary-ban state"
+        )
+      );
   });
   session.on("message", event =>
     handleZapoMessage(session, whatsapp, event as any).catch(err =>

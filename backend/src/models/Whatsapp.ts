@@ -46,6 +46,15 @@ class Whatsapp extends Model<Whatsapp> {
   @Column
   status: string;
 
+  @Column(DataType.STRING)
+  disconnectReason: string;
+
+  @Column(DataType.INTEGER)
+  disconnectCode: number;
+
+  @Column(DataType.DATE)
+  disconnectedAt: Date;
+
   @Column
   number: string;
 

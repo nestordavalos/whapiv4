@@ -142,8 +142,15 @@ const SendWhatsAppMediaFromUrl = async ({
       if (err instanceof AppError) throw err;
       if (isZapoTrustedContactPrivacyNack(err)) {
         logger.warn(
-          { ticketId: ticket.id, err },
-          "Zapo URL-media recipient requires a trusted-contact token"
+          {
+            ticketId: ticket.id,
+            whatsappId: whatsapp.id,
+            contactId: ticket.contact.id,
+            code: 463,
+            retryable: false,
+            messageType: "url-media"
+          },
+          "Zapo send blocked until the contact replies"
         );
         await blockZapoRecipientSend(ticket, whatsapp.number);
         throw new AppError("ERR_WAPP_RECIPIENT_REQUIRES_CONTACT", 422);

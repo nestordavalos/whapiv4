@@ -29,19 +29,21 @@ const QrcodeModal = ({ open, onClose, whatsAppId }) => {
 		if (!whatsAppId) return;
 		const socket = openSocket();
 
-		socket.on("whatsappSession", data => {
+		const handleWhatsappSession = data => {
 			if (data.action !== "update" || data.session.id !== whatsAppId) return;
 
 			setQrCode(data.session.qrcode);
 			if (data.session.status === "CONNECTED") {
 				onClose();
 			}
-		});
+		};
 
-                return () => {
-                        socket.off("whatsappSession");
-                };
-        }, [whatsAppId, onClose]);
+		socket.on("whatsappSession", handleWhatsappSession);
+
+		return () => {
+			socket.off("whatsappSession", handleWhatsappSession);
+		};
+	}, [whatsAppId, onClose]);
 
 	return (
 		<Dialog open={open} onClose={onClose} maxWidth="lg" scroll="paper">

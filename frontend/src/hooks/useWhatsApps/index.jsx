@@ -7,7 +7,7 @@ import { i18n } from "../../translate/i18n";
 
 import api from "../../services/api";
 
-const reducer = (state, action) => {
+export const whatsAppsReducer = (state, action) => {
 	if (action.type === "LOAD_WHATSAPPS") {
 		const whatsApps = action.payload;
 		if (!whatsApps) return state;
@@ -38,7 +38,7 @@ const reducer = (state, action) => {
 		if (whatsAppIndex !== -1) {
 			return state.map((item, idx) =>
 				idx === whatsAppIndex
-					? { ...item, status: whatsApp.status, updatedAt: whatsApp.updatedAt, qrcode: whatsApp.qrcode, retries: whatsApp.retries }
+					? { ...item, ...whatsApp }
 					: item
 			);
 		} else {
@@ -63,7 +63,7 @@ const reducer = (state, action) => {
 };
 
 const useWhatsApps = () => {
-	const [whatsApps, dispatch] = useReducer(reducer, []);
+	const [whatsApps, dispatch] = useReducer(whatsAppsReducer, []);
 	const [loading, setLoading] = useState(true);
 
         useEffect(() => {
@@ -99,7 +99,18 @@ const useWhatsApps = () => {
 
                 if (!socket) return undefined;
 
-                socket.on("whatsapp", data => {
+                const refreshWhatsApps = async () => {
+                        try {
+                                const { data } = await api.get("/whatsapp/");
+                                if (isMounted) {
+                                        dispatch({ type: "LOAD_WHATSAPPS", payload: data });
+                                }
+                        } catch (err) {
+                                if (isMounted) toastError(err);
+                        }
+                };
+
+                const handleWhatsapp = data => {
                         if (!isMounted || !data) return;
                         if (data.action === "update" && data.whatsapp) {
                                 dispatch({
@@ -110,9 +121,9 @@ const useWhatsApps = () => {
                         if (data.action === "delete" && data.whatsappId) {
                                 dispatch({ type: "DELETE_WHATSAPPS", payload: data.whatsappId });
                         }
-                });
+                };
 
-                socket.on("whatsappSession", data => {
+                const handleWhatsappSession = data => {
                         if (!isMounted) return;
                         if (!data) {
                                 return;
@@ -128,12 +139,17 @@ const useWhatsApps = () => {
                                         );
                                 }
                         }
-                });
+                };
+
+                socket.on("connect", refreshWhatsApps);
+                socket.on("whatsapp", handleWhatsapp);
+                socket.on("whatsappSession", handleWhatsappSession);
 
                 return () => {
                         isMounted = false;
-                        socket.off("whatsapp");
-                        socket.off("whatsappSession");
+                        socket.off("connect", refreshWhatsApps);
+                        socket.off("whatsapp", handleWhatsapp);
+                        socket.off("whatsappSession", handleWhatsappSession);
                 };
         }, []);
 

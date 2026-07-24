@@ -240,8 +240,11 @@ const ForwardWhatsAppMessage = async ({
       destinationTicketId: destinationTicket.id
     };
   } catch (err: any) {
+    if (err instanceof AppError) {
+      logger.warn(`WhatsApp message forwarding was rejected: ${err.message}`);
+      throw err;
+    }
     logger.error(`Error forwarding WhatsApp message: ${err.message}`);
-    if (err instanceof AppError) throw err;
     throw new AppError("ERR_FORWARD_WAPP_MSG");
   }
 };

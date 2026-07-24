@@ -135,12 +135,16 @@ const SendWhatsAppMediaFromUrl = async ({
         ack: 1
       } as unknown as WbotMessage;
     } catch (err) {
-      logger.error({ ticketId: ticket.id, err }, "Error sending Zapo URL media");
       if (err instanceof AppError) throw err;
       if (isZapoTrustedContactPrivacyNack(err)) {
+        logger.warn(
+          { ticketId: ticket.id, err },
+          "Zapo URL-media recipient requires a trusted-contact token"
+        );
         await blockZapoRecipientSend(ticket);
         throw new AppError("ERR_WAPP_RECIPIENT_REQUIRES_CONTACT", 422);
       }
+      logger.error({ ticketId: ticket.id, err }, "Error sending Zapo URL media");
       throw new AppError("ERR_SENDING_WAPP_MSG_FROM_URL");
     }
   }

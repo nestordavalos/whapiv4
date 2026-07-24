@@ -214,11 +214,15 @@ const SendWhatsAppMessage = async ({
         hasMedia: false
       } as WbotMessage;
     } catch (err) {
-      logger.error({ ticketId: ticket.id, err }, "Error sending Zapo message");
       if (isZapoTrustedContactPrivacyNack(err)) {
+        logger.warn(
+          { ticketId: ticket.id, err },
+          "Zapo recipient requires a trusted-contact token"
+        );
         await blockZapoRecipientSend(ticket);
         throw new AppError("ERR_WAPP_RECIPIENT_REQUIRES_CONTACT", 422);
       }
+      logger.error({ ticketId: ticket.id, err }, "Error sending Zapo message");
       throw err;
     }
   }

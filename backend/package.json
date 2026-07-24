@@ -28,6 +28,7 @@
     "@sentry/node": "^5.29.2",
     "@zapo-js/media-utils": "^1.0.0",
     "@zapo-js/store-mysql": "^1.0.2",
+    "@zapo-js/wam": "^0.1.1",
     "axios": "^1.13.2",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.6",

@@ -27,7 +27,13 @@ if (!(globalThis as any).WebSocket) {
 const zapo = require("zapo-js") as any;
 const zapoMysql = require("@zapo-js/store-mysql") as any;
 const { createMediaProcessor } = require("@zapo-js/media-utils") as any;
+const { wamPlugin } = require("@zapo-js/wam") as any;
 const mediaProcessor = createMediaProcessor();
+const zapoWamLogLevel = ["trace", "debug", "info", "warn", "error"].includes(
+  process.env.ZAPO_WAM_LOG_LEVEL || ""
+)
+  ? process.env.ZAPO_WAM_LOG_LEVEL
+  : undefined;
 
 export type ZapoSession = any;
 const sessions = new Map<number, ZapoSession>();
@@ -893,6 +899,14 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
       // Chat-state hints are only useful while the linked client is online.
       // Match a focused WhatsApp Web client instead of the headless default.
       markOnlineOnConnect: true,
+      // Mirror the w:stats telemetry emitted by a regular WhatsApp Web tab.
+      // Keep the plugin defaults so protocol events and plausible UI activity
+      // share the same telemetry pipeline for frontend and API-driven sends.
+      plugins: [
+        wamPlugin(
+          zapoWamLogLevel ? { logLevel: zapoWamLogLevel } : undefined
+        )
+      ],
       // Zapo uploads media without this processor, but WhatsApp clients need
       // the generated probe/waveform/Opus normalization metadata for reliable
       // audio and voice-note rendering.
@@ -904,8 +918,21 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
         normalizeVoiceNote: true
       }
     },
-    zapo.createNoopLogger("error")
+    zapoWamLogLevel
+      ? new zapo.PinoLogger(
+          logger.child({ subsystem: "zapo" }),
+          // Keep the rest of Zapo quiet. The WAM child logger overrides this
+          // with ZAPO_WAM_LOG_LEVEL through the plugin option above.
+          "error"
+        )
+      : zapo.createNoopLogger("error")
   ) as ZapoSession;
+  if (zapoWamLogLevel) {
+    logger.info(
+      { whatsappId: whatsapp.id, logLevel: zapoWamLogLevel },
+      "Zapo WAM diagnostics enabled"
+    );
+  }
   session.id = whatsapp.id;
   sessions.set(whatsapp.id, session);
   stores.set(whatsapp.id, mysql);

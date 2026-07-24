@@ -465,6 +465,18 @@ const useStyles = makeStyles((theme) => ({
       : "0 1px 2px rgba(0,0,0,0.1)",
   },
 
+  privacyBlockNotice: {
+    alignSelf: "center",
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    margin: "12px auto",
+    maxWidth: 420,
+    padding: "8px 12px",
+    textAlign: "center",
+    backgroundColor: theme.palette.mode === "dark" ? "#4a2f18" : "#fff3e0",
+  },
+
   currentTick: {
     alignItems: "center",
     textAlign: "center",
@@ -1450,7 +1462,10 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
             <React.Fragment key={message.id}>
               {renderDailyTimestamps(message, index)}
               {renderTicketsSeparator(message, index)}
-              <div className={classes.messageCenter} id={`message-${message.id}`}>
+              <div
+                className={clsx(classes.messageCenter, classes.privacyBlockNotice)}
+                id={`message-${message.id}`}
+              >
                 <Block color="error" fontSize="small" />{" "}
                 {i18n.t("messagesList.recipientRequiresContact")}
               </div>

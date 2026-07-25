@@ -69,6 +69,7 @@ These documents existed before the scan and cover specific operational topics:
 | [STORAGE_CONFIGURATION.md](STORAGE_CONFIGURATION.md) | S3 / local storage setup |
 | [DATABASE_OPTIMIZATION.md](DATABASE_OPTIMIZATION.md) | Database optimization guide |
 | [plan-mensajeria.md](plan-mensajeria.md) | Messaging plan documentation |
+| [zapo-timelock-recipient-filter.md](zapo-timelock-recipient-filter.md) | Diseño pendiente del filtro preventivo de destinatarios durante un timelock Zapo |
 | [CHANGELOG.md](CHANGELOG.md) | Version history and changes |
 
 ### Root-Level Documents

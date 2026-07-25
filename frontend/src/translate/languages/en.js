@@ -121,6 +121,7 @@ const messages = {
           renews: "Cycle renews:",
           pausedUntil: "Outreach paused until:",
           pauseRemaining: "Time remaining:",
+          awaitingRefresh: "Time elapsed; waiting for WhatsApp confirmation",
           pausedNoEnd: "WhatsApp temporarily paused outreach",
           serverManaged: "Cycle managed by WhatsApp",
           notApplicable: "Not applicable",

@@ -240,6 +240,37 @@ const useStyles = makeStyles(theme => ({
 		fontSize: "0.72rem",
 		color: theme.palette.text.secondary,
 	},
+	zapoPauseNotice: {
+		display: "flex",
+		flexDirection: "column",
+		gap: theme.spacing(0.5),
+		padding: theme.spacing(1, 1.25),
+		borderRadius: 8,
+		border: `1px solid ${
+			theme.palette.mode === "dark"
+				? "rgba(239, 154, 154, 0.5)"
+				: "rgba(211, 47, 47, 0.28)"
+		}`,
+		backgroundColor:
+			theme.palette.mode === "dark"
+				? "rgba(211, 47, 47, 0.16)"
+				: "rgba(211, 47, 47, 0.07)",
+		color: theme.palette.mode === "dark" ? "#ef9a9a" : "#b71c1c",
+		fontSize: "0.82rem",
+	},
+	zapoPauseRemaining: {
+		display: "flex",
+		alignItems: "center",
+		gap: theme.spacing(0.5),
+		fontSize: "1rem",
+		fontWeight: 700,
+		lineHeight: 1.25,
+	},
+	zapoPauseEnd: {
+		paddingLeft: theme.spacing(2.5),
+		fontSize: "0.8rem",
+		fontWeight: 500,
+	},
 	zapoHealthMeta: {
 		fontSize: "0.7rem",
 		color: theme.palette.text.secondary,
@@ -406,9 +437,9 @@ const asDate = value => {
 	return Number.isNaN(date.getTime()) ? null : date;
 };
 
-const formatRemainingTime = deadline => {
+const formatRemainingTime = (deadline, nowMs = Date.now()) => {
 	const remainingMinutes = Math.ceil(
-		(deadline.getTime() - Date.now()) / 60000
+		(deadline.getTime() - nowMs) / 60000
 	);
 	if (remainingMinutes <= 0) return null;
 
@@ -517,6 +548,7 @@ const Connections = () => {
 
 	const { whatsApps, loading } = useContext(WhatsAppsContext);
 	const [zapoHealthById, setZapoHealthById] = useState({});
+	const [countdownNow, setCountdownNow] = useState(Date.now());
 	const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
 	const [qrModalOpen, setQrModalOpen] = useState(false);
 	const [selectedWhatsApp, setSelectedWhatsApp] = useState(null);
@@ -534,6 +566,11 @@ const Connections = () => {
 		[whatsApps]
 	);
 	const connectedZapoIdsKey = connectedZapoIds.join(",");
+
+	useEffect(() => {
+		const interval = setInterval(() => setCountdownNow(Date.now()), 60000);
+		return () => clearInterval(interval);
+	}, []);
 
 	useEffect(() => {
 		if (!connectedZapoIdsKey) return undefined;
@@ -1203,21 +1240,27 @@ const Connections = () => {
 													? "#ed6c02"
 													: "#2e7d32";
 											let deadlineText;
+											let pauseRemainingText;
+											let pauseEndText;
 											if (presentation.enforcementEnd) {
 												const remaining = formatRemainingTime(
-													presentation.enforcementEnd
+													presentation.enforcementEnd,
+													countdownNow
 												);
 												const remainingLabel = i18n.t(
 													"connections.zapoHealth.pauseRemaining"
 												);
-												const remainingText = remaining
-													? `${remainingLabel} ${remaining} · `
-													: "";
-												deadlineText = `${remainingText}${i18n.t(
+												const awaitingRefreshLabel = i18n.t(
+													"connections.zapoHealth.awaitingRefresh"
+												);
+												pauseRemainingText = remaining
+													? `${remainingLabel} ${remaining}`
+													: awaitingRefreshLabel;
+												pauseEndText = `${i18n.t(
 													"connections.zapoHealth.pausedUntil"
 												)} ${format(presentation.enforcementEnd, "dd/MM HH:mm")}`;
 											} else if (presentation.isPaused) {
-												deadlineText = i18n.t(
+												pauseRemainingText = i18n.t(
 													"connections.zapoHealth.pausedNoEnd"
 												);
 											} else if (
@@ -1313,6 +1356,19 @@ const Connections = () => {
 																	{health.chatHistory.outboundOnly}
 																</strong>
 															</span>
+														</Box>
+													)}
+													{presentation.isPaused && (
+														<Box className={classes.zapoPauseNotice}>
+															<Box className={classes.zapoPauseRemaining}>
+																<Schedule style={{ fontSize: "0.95rem" }} />
+																{pauseRemainingText}
+															</Box>
+															{pauseEndText && (
+																<span className={classes.zapoPauseEnd}>
+																	{pauseEndText}
+																</span>
+															)}
 														</Box>
 													)}
 													{presentation.hasFiniteQuota && (

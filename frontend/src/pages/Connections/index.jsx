@@ -231,6 +231,15 @@ const useStyles = makeStyles(theme => ({
 		fontSize: "0.76rem",
 		color: theme.palette.text.secondary,
 	},
+	zapoHealthHistory: {
+		display: "flex",
+		justifyContent: "space-between",
+		gap: theme.spacing(1),
+		paddingTop: theme.spacing(0.5),
+		borderTop: `1px solid ${theme.palette.divider}`,
+		fontSize: "0.72rem",
+		color: theme.palette.text.secondary,
+	},
 	zapoHealthMeta: {
 		fontSize: "0.7rem",
 		color: theme.palette.text.secondary,
@@ -1284,6 +1293,28 @@ const Connections = () => {
 															<strong>{availableText}</strong>
 														</span>
 													</Box>
+													{health.chatHistory && (
+														<Box className={classes.zapoHealthHistory}>
+															<span>
+																{i18n.t(
+																	"connections.zapoHealth.withInbound"
+																)}
+																:{" "}
+																<strong>
+																	{health.chatHistory.withInbound}
+																</strong>
+															</span>
+															<span>
+																{i18n.t(
+																	"connections.zapoHealth.outboundOnly"
+																)}
+																:{" "}
+																<strong>
+																	{health.chatHistory.outboundOnly}
+																</strong>
+															</span>
+														</Box>
+													)}
 													{presentation.hasFiniteQuota && (
 														<LinearProgress
 															variant="determinate"

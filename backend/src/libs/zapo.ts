@@ -308,6 +308,12 @@ export interface ZapoOutreachSummary {
   };
 }
 
+export interface ZapoChatHistorySummary {
+  individualChats: number;
+  withInbound: number;
+  outboundOnly: number;
+}
+
 export interface ZapoHealthSnapshot {
   provider: "zapo";
   whatsappId: number;
@@ -320,7 +326,45 @@ export interface ZapoHealthSnapshot {
   reachoutTimelock: ZapoReachoutTimelock | null;
   accountInfo: ZapoAccountInfo | null;
   outreach: ZapoOutreachSummary;
+  chatHistory: ZapoChatHistorySummary | null;
 }
+
+const getZapoChatHistorySummary = async (
+  whatsappId: number
+): Promise<ZapoChatHistorySummary | null> => {
+  const mysql = stores.get(whatsappId);
+  if (!mysql) return null;
+
+  const [rows] = await mysql.pool.execute(
+    `SELECT COUNT(*) AS individual_chats,
+            COALESCE(SUM(chat.has_inbound = 1), 0) AS with_inbound,
+            COALESCE(
+              SUM(chat.has_inbound = 0 AND chat.has_outbound = 1),
+              0
+            ) AS outbound_only
+       FROM (
+         SELECT thread_jid,
+                MAX(from_me = 0) AS has_inbound,
+                MAX(from_me = 1) AS has_outbound
+           FROM zapo_mailbox_messages
+          WHERE session_id = ?
+            AND (
+              thread_jid LIKE '%@s.whatsapp.net'
+              OR thread_jid LIKE '%@lid'
+            )
+          GROUP BY thread_jid
+       ) AS chat`,
+    [sessionIdFor(whatsappId)]
+  );
+  const row = (rows as any[])[0];
+  if (!row) return null;
+
+  return {
+    individualChats: Number(row.individual_chats || 0),
+    withInbound: Number(row.with_inbound || 0),
+    outboundOnly: Number(row.outbound_only || 0)
+  };
+};
 
 const buildZapoOutreachSummary = (
   messageCapping: ZapoMessageCapping | null,
@@ -376,7 +420,8 @@ const getZapoHealthWebhookSignature = (
     messageCappingConfig: snapshot.messageCappingConfig,
     reachoutTimelock: snapshot.reachoutTimelock,
     accountInfo: snapshot.accountInfo,
-    outreach: snapshot.outreach
+    outreach: snapshot.outreach,
+    chatHistory: snapshot.chatHistory
   });
 
 const emitZapoHealth = (snapshot: ZapoHealthSnapshot): void => {
@@ -403,7 +448,8 @@ const unavailableZapoHealth = (
   messageCappingConfig: null,
   reachoutTimelock: null,
   accountInfo: zapoAccountInfo.get(whatsappId) || null,
-  outreach: buildZapoOutreachSummary(null, null, null)
+  outreach: buildZapoOutreachSummary(null, null, null),
+  chatHistory: null
 });
 
 /**
@@ -522,16 +568,19 @@ export const refreshZapoHealth = async (
 
     try {
       const cachedAccountInfo = zapoAccountInfo.get(whatsappId);
-      const [cappingResult, timelockResult, accountInfoResult] =
-        await Promise.allSettled([
-          session.message.getNewChatMessageCapping(
-            "INDIVIDUAL_NEW_CHAT_THREAD"
-          ),
-          session.message.getReachoutTimelock(),
-          cachedAccountInfo
-            ? Promise.resolve(cachedAccountInfo)
-            : detectZapoAccountInfo(whatsappId, session)
-        ]);
+      const [
+        cappingResult,
+        timelockResult,
+        accountInfoResult,
+        chatHistoryResult
+      ] = await Promise.allSettled([
+        session.message.getNewChatMessageCapping("INDIVIDUAL_NEW_CHAT_THREAD"),
+        session.message.getReachoutTimelock(),
+        cachedAccountInfo
+          ? Promise.resolve(cachedAccountInfo)
+          : detectZapoAccountInfo(whatsappId, session),
+        getZapoChatHistorySummary(whatsappId)
+      ]);
       if (
         cappingResult.status === "rejected" &&
         timelockResult.status === "rejected"
@@ -546,6 +595,16 @@ export const refreshZapoHealth = async (
         accountInfoResult.status === "fulfilled"
           ? accountInfoResult.value
           : cachedAccountInfo || null;
+      const chatHistory =
+        chatHistoryResult.status === "fulfilled"
+          ? chatHistoryResult.value
+          : zapoHealthSnapshots.get(whatsappId)?.chatHistory ?? null;
+      if (chatHistoryResult.status === "rejected") {
+        logger.warn(
+          { whatsappId, err: chatHistoryResult.reason },
+          "Could not summarize Zapo chat history"
+        );
+      }
       const messageCappingConfig = getZapoMessageCappingConfig(session);
       const snapshot: ZapoHealthSnapshot = {
         provider: "zapo",
@@ -560,7 +619,8 @@ export const refreshZapoHealth = async (
           messageCapping,
           messageCappingConfig,
           reachoutTimelock
-        )
+        ),
+        chatHistory
       };
       if (!zapoHealthLogged.has(whatsappId)) {
         zapoHealthLogged.add(whatsappId);
@@ -581,7 +641,9 @@ export const refreshZapoHealth = async (
             mvStatus: messageCapping?.mvStatus ?? null,
             timelockActive: reachoutTimelock?.isActive ?? null,
             timelockType: reachoutTimelock?.enforcementType ?? null,
-            timelockEndsAt: reachoutTimelock?.enforcementEndsAt ?? null
+            timelockEndsAt: reachoutTimelock?.enforcementEndsAt ?? null,
+            chatsWithInbound: chatHistory?.withInbound ?? null,
+            outboundOnlyChats: chatHistory?.outboundOnly ?? null
           },
           "Zapo outreach status received"
         );
@@ -1593,7 +1655,8 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
           previous?.messageCappingConfig ??
           null,
         previous?.reachoutTimelock ?? null
-      )
+      ),
+      chatHistory: previous?.chatHistory ?? null
     };
     zapoHealthSnapshots.set(whatsapp.id, snapshot);
     emitZapoHealth(snapshot);

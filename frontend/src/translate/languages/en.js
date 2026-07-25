@@ -132,6 +132,8 @@ const messages = {
           unavailable: "Unavailable",
           stale: "last available data",
           reportedStatus: "Status reported by Zapo",
+          withInbound: "With interaction",
+          outboundOnly: "No reply",
           status: {
             healthy: "Healthy",
             warning: "Caution",

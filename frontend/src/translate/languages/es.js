@@ -133,6 +133,8 @@ const messages = {
           unavailable: "No disponible",
           stale: "último dato disponible",
           reportedStatus: "Estado informado por Zapo",
+          withInbound: "Con interacción",
+          outboundOnly: "Sin respuesta",
           status: {
             healthy: "Saludable",
             warning: "Precaución",

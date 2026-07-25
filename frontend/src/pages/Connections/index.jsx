@@ -262,9 +262,10 @@ const useStyles = makeStyles(theme => ({
 		display: "flex",
 		alignItems: "center",
 		gap: theme.spacing(0.5),
-		fontSize: "1rem",
+		fontSize: "0.92rem",
 		fontWeight: 700,
 		lineHeight: 1.25,
+		whiteSpace: "nowrap",
 	},
 	zapoPauseEnd: {
 		paddingLeft: theme.spacing(2.5),
@@ -445,10 +446,10 @@ const formatRemainingTime = (deadline, nowMs = Date.now()) => {
 	const hours = Math.floor((remainingSeconds % 86400) / 3600);
 	const minutes = Math.floor((remainingSeconds % 3600) / 60);
 	const seconds = remainingSeconds % 60;
-	if (days > 0) return `${days} d ${hours} h ${minutes} min ${seconds} s`;
-	if (hours > 0) return `${hours} h ${minutes} min ${seconds} s`;
-	if (minutes > 0) return `${minutes} min ${seconds} s`;
-	return `${seconds} s`;
+	const clock = [hours, minutes, seconds]
+		.map(value => String(value).padStart(2, "0"))
+		.join(":");
+	return days > 0 ? `${days} d · ${clock}` : clock;
 };
 
 const getZapoAccountType = health =>

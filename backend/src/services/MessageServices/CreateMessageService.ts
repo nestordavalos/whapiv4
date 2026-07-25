@@ -8,6 +8,7 @@ interface MessageData {
   id: string;
   ticketId: number;
   body: string;
+  dataJson?: string;
   ack?: number | null;
   contactId?: number;
   fromMe?: boolean;

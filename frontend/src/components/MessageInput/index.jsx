@@ -41,6 +41,10 @@ import { useLocalStorage } from "../../hooks/useLocalStorage";
 import toastError from "../../errors/toastError";
 import api from "../../services/api";
 import RecordingTimer from "./RecordingTimer";
+import {
+  getVcardSummary,
+  parseVcardContacts,
+} from "../../utils/vcard";
 
 const useStyles = makeStyles((theme) => ({
   mainWrapper: {
@@ -636,43 +640,36 @@ const MessageInput = ({ ticketStatus, ticketSendBlocked = false }) => {
         );
       }
       
-      if (message.mediaType === "vcard") {
-        const vcardLines = (message.body || "").split("\n");
-        let contactName = "Contacto";
-        let phoneNumber = "";
-        
-        vcardLines.forEach(line => {
-          const trimmedLine = line.trim();
-          if (trimmedLine.startsWith("FN:")) {
-            contactName = trimmedLine.substring(3);
-          } else if (trimmedLine.includes("FN") && trimmedLine.includes(":")) {
-            const parts = trimmedLine.split(":");
-            if (parts.length > 1) {
-              contactName = parts[parts.length - 1];
-            }
-          }
-          
-          if (trimmedLine.includes("TEL")) {
-            const parts = trimmedLine.split(":");
-            for (let i = 0; i < parts.length; i++) {
-              if (parts[i].includes("+") || /^\d{10,}/.test(parts[i])) {
-                phoneNumber = parts[i];
-                break;
-              }
-            }
-          }
-        });
+      if (["vcard", "multi_vcard", "contact_array"].includes(message.mediaType)) {
+        const summary = getVcardSummary(
+          parseVcardContacts(message.body, message.dataJson)
+        );
         
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '18px' }}>👤</span>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
               <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#303030' }}>
-                {contactName}
+                {summary.name}
               </span>
-              {phoneNumber && (
+              {summary.detail && (
                 <span style={{ fontSize: '0.75rem', color: '#667781' }}>
-                  {phoneNumber}
+                  {summary.detail}
+                </span>
+              )}
+              {(summary.additionalContacts > 0 ||
+                summary.additionalPhones > 0) && (
+                <span style={{ fontSize: '0.7rem', color: '#667781' }}>
+                  {[
+                    summary.additionalContacts > 0
+                      ? `+${summary.additionalContacts} contacto(s)`
+                      : "",
+                    summary.additionalPhones > 0
+                      ? `+${summary.additionalPhones} teléfono(s)`
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </span>
               )}
             </div>

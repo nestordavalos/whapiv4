@@ -26,6 +26,7 @@ import {
   sendMessageReceivedWebhook,
   sendMessageSentWebhook
 } from "../WebhookService/SendWebhookEvent";
+import { parseVcardContacts } from "../../helpers/Vcard";
 
 const jidUser = (jid?: string) => (jid || "").split("@")[0].split(":")[0];
 
@@ -45,18 +46,6 @@ const unwrapMessage = (message: any): any => {
     content = nested;
   }
   return {};
-};
-
-const extractVcardContacts = (vcard: string) => {
-  const cards = vcard.match(/BEGIN:VCARD[\s\S]*?END:VCARD/gi) || [vcard];
-  return cards.flatMap(card => {
-    const name =
-      card.match(/^FN(?:;[^:]*)?:(.+)$/im)?.[1]?.trim() || "Contacto";
-    const numbers = [...card.matchAll(/^TEL(?:;[^:]*)?:(.+)$/gim)]
-      .map(match => match[1].replace(/[^0-9+]/g, ""))
-      .filter(number => number.replace(/\D/g, "").length >= 6);
-    return numbers.map(number => ({ name, number }));
-  });
 };
 
 const persistMedia = async (
@@ -337,15 +326,29 @@ const handleZapoMessageNow = async (
     content.audioMessage ||
     content.documentMessage ||
     content.stickerMessage;
-  const vcardEntries = [
-    content.contactMessage?.vcard,
-    ...(content.contactsArrayMessage?.contacts || []).map(
-      (entry: any) => entry?.vcard
-    )
-  ].filter(
-    (vcard: unknown): vcard is string => typeof vcard === "string" && Boolean(vcard)
-  );
-  const vcardBody = vcardEntries.join("\n");
+  const vcardContactEntries = [
+    ...(content.contactMessage
+      ? [
+          {
+            displayName: content.contactMessage.displayName || "",
+            vcard: content.contactMessage.vcard || ""
+          }
+        ]
+      : []),
+    ...(content.contactsArrayMessage?.contacts || []).map((entry: any) => ({
+      displayName: entry?.displayName || "",
+      vcard: entry?.vcard || ""
+    }))
+  ].filter(entry => entry.displayName || entry.vcard);
+  const hasSharedContacts = vcardContactEntries.length > 0;
+  const vcardBody = vcardContactEntries
+    .map(entry => entry.vcard)
+    .filter(Boolean)
+    .join("\n");
+  const vcardFallbackBody = vcardContactEntries
+    .map(entry => entry.displayName)
+    .filter(Boolean)
+    .join(", ");
   const locationData = content.locationMessage || content.liveLocationMessage;
   const latitude = Number(locationData?.degreesLatitude);
   const longitude = Number(locationData?.degreesLongitude);
@@ -378,7 +381,7 @@ const handleZapoMessageNow = async (
     !content.extendedTextMessage?.text &&
     !interactiveText &&
     !mediaData &&
-    !vcardBody &&
+    !hasSharedContacts &&
     !hasLocation
   ) {
     logger.debug(
@@ -394,12 +397,15 @@ const handleZapoMessageNow = async (
     content.imageMessage?.caption ||
     content.videoMessage?.caption ||
     vcardBody ||
+    (hasSharedContacts ? vcardFallbackBody || "Contacto compartido" : "") ||
     (hasLocation ? `${locationThumbnail}|${locationLink}|${locationDescription}` : "") ||
     "";
   const mediaType = hasLocation
     ? "location"
-    : vcardBody
-    ? "vcard"
+    : hasSharedContacts
+    ? content.contactsArrayMessage
+      ? "contact_array"
+      : "vcard"
     : content.imageMessage
     ? "image"
     : content.videoMessage
@@ -489,16 +495,22 @@ const handleZapoMessageNow = async (
   // as a contact card and its phone entries are available in the Contacts
   // module. This also works for cards shared inside a group, while the ticket
   // itself remains associated with the group.
-  if (vcardBody) {
+  if (hasSharedContacts) {
+    const sharedContacts = vcardContactEntries.flatMap(entry =>
+      parseVcardContacts(entry.vcard, entry.displayName)
+    );
     await Promise.all(
-      extractVcardContacts(vcardBody).map(sharedContact =>
-        findOrCreateContact({
-          name: sharedContact.name,
-          number: sharedContact.number,
-          isGroup: false,
-          profilePicUrl: "/default-profile.png",
-          whatsappId: whatsapp.id
-        })
+      sharedContacts.flatMap(sharedContact =>
+        sharedContact.phones.map(phone =>
+          findOrCreateContact({
+            name: sharedContact.name,
+            number: phone.value,
+            email: sharedContact.emails[0]?.value || "",
+            isGroup: false,
+            profilePicUrl: "/default-profile.png",
+            whatsappId: whatsapp.id
+          })
+        )
       )
     ).catch(err =>
       logger.warn(
@@ -557,6 +569,9 @@ const handleZapoMessageNow = async (
       ticketId: ticket.id,
       contactId: fromMe ? undefined : contact.id,
       body,
+      dataJson: hasSharedContacts
+        ? JSON.stringify({ vcardContacts: vcardContactEntries })
+        : undefined,
       fromMe,
       read: fromMe,
       mediaType,
@@ -573,7 +588,7 @@ const handleZapoMessageNow = async (
     body,
     fromMe,
     mediaType,
-    hasMedia: Boolean(mediaData || vcardBody),
+    hasMedia: Boolean(mediaData || hasSharedContacts),
     timestamp: Number(event.timestampSeconds || Date.now() / 1000),
     ticketId: ticket.id,
     contact: {
@@ -589,8 +604,8 @@ const handleZapoMessageNow = async (
           mimeType: mediaData.mimetype || null,
           type: mediaType
         }
-      : vcardBody
-      ? { url: null, mimeType: "text/vcard", type: "vcard" }
+      : hasSharedContacts
+      ? { url: null, mimeType: "text/vcard", type: mediaType }
       : null,
     location: hasLocation
       ? { latitude, longitude, isLive: isLiveLocation, url: locationLink }

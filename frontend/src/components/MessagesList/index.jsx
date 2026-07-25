@@ -45,6 +45,10 @@ import api from "../../services/api";
 import toastError from "../../errors/toastError";
 import { toast } from "react-toastify";
 import { i18n } from "../../translate/i18n";
+import {
+  getVcardSummary,
+  parseVcardContacts,
+} from "../../utils/vcard";
 // import { Viewer } from "@react-pdf-viewer/core";
 //import { PDFViewer, Document, Page } from "@react-pdf/renderer";
 
@@ -995,6 +999,9 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
     return message.body.trim() === filename;
   };
 
+  const isVcardMedia = (message) =>
+    ["vcard", "multi_vcard", "contact_array"].includes(message?.mediaType);
+
   const checkMessageMedia = (message) => {
     if (
       message.mediaType === "location" &&
@@ -1016,23 +1023,13 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
           description={descriptionLocation}
         />
       );
-    } else if (message.mediaType === "vcard") {
-      let array = message.body.split("\n");
-      let obj = [];
-      let contact = "";
-      for (let index = 0; index < array.length; index++) {
-        const v = array[index];
-        let values = v.split(":");
-        for (let ind = 0; ind < values.length; ind++) {
-          if (values[ind].indexOf("+") !== -1) {
-            obj.push({ number: values[ind] });
-          }
-          if (values[ind].indexOf("FN") !== -1) {
-            contact = values[ind + 1];
-          }
-        }
-      }
-      return <VcardPreview contact={contact} numbers={obj[0].number} />;
+    } else if (isVcardMedia(message)) {
+      const vcardContacts = parseVcardContacts(
+        message.body,
+        message.dataJson
+      );
+
+      return <VcardPreview contacts={vcardContacts} />;
     } else if (isImageLikeMedia(message)) {
       return <ModalImageCors imageUrl={message.mediaUrl} />
     } else if (message.mediaType === "audio") {
@@ -1288,32 +1285,12 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
             </div>
           )}
 
-          {message.quotedMsg.mediaType === "vcard" && (() => {
-            const vcardLines = (message.quotedMsg.body || "").split("\n");
-            let contactName = "Contacto";
-            let phoneNumber = "";
-            
-            vcardLines.forEach(line => {
-              const trimmedLine = line.trim();
-              if (trimmedLine.startsWith("FN:")) {
-                contactName = trimmedLine.substring(3);
-              } else if (trimmedLine.includes("FN") && trimmedLine.includes(":")) {
-                const parts = trimmedLine.split(":");
-                if (parts.length > 1) {
-                  contactName = parts[parts.length - 1];
-                }
-              }
-              
-              if (trimmedLine.includes("TEL")) {
-                const parts = trimmedLine.split(":");
-                for (let i = 0; i < parts.length; i++) {
-                  if (parts[i].includes("+") || /^\d{10,}/.test(parts[i])) {
-                    phoneNumber = parts[i];
-                    break;
-                  }
-                }
-              }
-            });
+          {isVcardMedia(message.quotedMsg) && (() => {
+            const vcardContacts = parseVcardContacts(
+              message.quotedMsg.body,
+              message.quotedMsg.dataJson
+            );
+            const summary = getVcardSummary(vcardContacts);
             
             return (
               <div style={{ 
@@ -1349,9 +1326,9 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap'
                   }}>
-                    {contactName}
+                    {summary.name}
                   </div>
-                  {phoneNumber && (
+                  {summary.detail && (
                     <div style={{ 
                       fontSize: '0.8em',
                       color: '#667781',
@@ -1359,7 +1336,28 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap'
                     }}>
-                      {phoneNumber}
+                      {summary.detail}
+                    </div>
+                  )}
+                  {(summary.additionalContacts > 0 ||
+                    summary.additionalPhones > 0) && (
+                    <div style={{
+                      fontSize: '0.75em',
+                      color: '#667781',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {[
+                        summary.additionalContacts > 0
+                          ? `+${summary.additionalContacts} contacto(s)`
+                          : "",
+                        summary.additionalPhones > 0
+                          ? `+${summary.additionalPhones} teléfono(s)`
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </div>
                   )}
                 </div>
@@ -1443,7 +1441,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
               compact
               previewOnly
             />
-          ) : (message.quotedMsg.mediaType === "location" || message.quotedMsg.mediaType === "vcard") ? null : (
+          ) : (message.quotedMsg.mediaType === "location" || isVcardMedia(message.quotedMsg)) ? null : (
             message.quotedMsg?.body
           )}
         </div>
@@ -1579,14 +1577,13 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                   )}
                   {(message.mediaUrl ||
                     message.mediaType === "location" ||
-                    message.mediaType === "vcard") &&
-                    //|| message.mediaType === "multi_vcard"
+                    isVcardMedia(message)) &&
                     checkMessageMedia(message)}
                   <div className={clsx(classes.textContentItem, {
                     [classes.textContentItemEdited]: message.isEdited,
                   })}>
                     {message.quotedMsg && renderQuotedMessage(message)}
-                    {message.mediaType !== "vcard" && message.mediaType !== "audio" && !isAudioFilenameOnly(message) && (
+                    {!isVcardMedia(message) && message.mediaType !== "audio" && !isAudioFilenameOnly(message) && (
                       <MarkdownWrapper>{message.body}</MarkdownWrapper>
                     )}
                     <span className={classes.timestamp}>
@@ -1635,8 +1632,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                   </IconButton>
                   {(message.mediaUrl ||
                     message.mediaType === "location" ||
-                    message.mediaType === "vcard") &&
-                    //|| message.mediaType === "multi_vcard"
+                    isVcardMedia(message)) &&
                     checkMessageMedia(message)}
                   <div
                     className={clsx(classes.textContentItem, {
@@ -1652,7 +1648,7 @@ const MessagesList = ({ ticketId, isGroup, isContactDrawerOpen = false }) => {
                       />
                     )}
                     {message.quotedMsg && renderQuotedMessage(message)}
-                    {message.mediaType !== "vcard" && message.mediaType !== "audio" && !isAudioFilenameOnly(message) && (
+                    {!isVcardMedia(message) && message.mediaType !== "audio" && !isAudioFilenameOnly(message) && (
                       <MarkdownWrapper>{message.body}</MarkdownWrapper>
                     )}
                     <span className={classes.timestamp}>

@@ -1,172 +1,296 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from "react";
 import { useHistory } from "react-router-dom";
+
+import {
+  Avatar,
+  Button,
+  CircularProgress,
+  Typography,
+} from "@mui/material";
+import {
+  EmailOutlined,
+  Person,
+  PhoneOutlined,
+} from "@mui/icons-material";
+import makeStyles from "@mui/styles/makeStyles";
+
+import NewTicketModalPageContact from "../NewTicketModalPageContact";
 import toastError from "../../errors/toastError";
 import api from "../../services/api";
 
-import Avatar from "@mui/material/Avatar";
-import Typography from "@mui/material/Typography";
-
-import { Button } from "@mui/material";
-import makeStyles from '@mui/styles/makeStyles';
-import { Person } from "@mui/icons-material";
-import NewTicketModalPageContact from "../../components/NewTicketModalPageContact";
-
-const useStyles = makeStyles((theme) => ({
-    vcardContainer: {
-        minWidth: 220,
-        maxWidth: 280,
-        padding: 12,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 8,
-    },
-    avatarWrapper: {
-        width: 56,
-        height: 56,
-        borderRadius: "50%",
-        backgroundColor: theme.palette.grey[200],
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        overflow: "hidden",
-    },
-    avatar: {
-        width: 56,
-        height: 56,
-    },
-    fallbackIcon: {
-        fontSize: 32,
-        color: theme.palette.grey[500],
-    },
-    contactInfo: {
-        textAlign: "center",
-        width: "100%",
-    },
-    contactName: {
-        fontSize: "0.9rem",
-        fontWeight: 600,
-        color: theme.palette.text.primary,
-        marginBottom: 2,
-        wordBreak: "break-word",
-    },
-    contactNumber: {
-        fontSize: "0.8rem",
-        color: theme.palette.primary.main,
-        fontWeight: 500,
-    },
-    divider: {
-        width: "100%",
-        height: 1,
-        backgroundColor: theme.palette.divider,
-        margin: "4px 0",
-    },
-    conversarButton: {
-        textTransform: "none",
-        fontWeight: 600,
-        fontSize: "0.85rem",
-        borderRadius: 8,
-        padding: "6px 16px",
-        width: "100%",
-        color: theme.palette.primary.main,
-        "&:hover": {
-            backgroundColor: theme.palette.primary.light + "20",
-        },
-    },
+const useStyles = makeStyles(theme => ({
+  container: {
+    width: "min(360px, 100%)",
+    minWidth: 260,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    padding: "6px 0",
+  },
+  title: {
+    color: theme.palette.text.secondary,
+    fontSize: "0.75rem",
+    fontWeight: 600,
+    letterSpacing: "0.02em",
+    padding: "0 4px",
+  },
+  card: {
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: theme.palette.background.paper,
+  },
+  contactHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "10px 12px",
+    backgroundColor: theme.palette.action.hover,
+  },
+  avatar: {
+    width: 42,
+    height: 42,
+    backgroundColor: theme.palette.grey[300],
+    color: theme.palette.grey[600],
+  },
+  contactName: {
+    minWidth: 0,
+    color: theme.palette.text.primary,
+    fontSize: "0.9rem",
+    fontWeight: 600,
+    lineHeight: 1.25,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  contactMeta: {
+    color: theme.palette.text.secondary,
+    fontSize: "0.72rem",
+    marginTop: 2,
+  },
+  methods: {
+    display: "flex",
+    flexDirection: "column",
+  },
+  methodRow: {
+    minHeight: 48,
+    display: "flex",
+    alignItems: "center",
+    gap: 9,
+    padding: "7px 10px",
+    borderTop: `1px solid ${theme.palette.divider}`,
+  },
+  methodIcon: {
+    color: theme.palette.text.secondary,
+    fontSize: 19,
+    flexShrink: 0,
+  },
+  methodInfo: {
+    minWidth: 0,
+    flex: 1,
+  },
+  methodValue: {
+    color: theme.palette.text.primary,
+    fontSize: "0.82rem",
+    lineHeight: 1.25,
+    overflowWrap: "anywhere",
+  },
+  methodType: {
+    color: theme.palette.text.secondary,
+    fontSize: "0.68rem",
+    lineHeight: 1.2,
+    textTransform: "capitalize",
+  },
+  chatButton: {
+    minWidth: 84,
+    padding: "4px 8px",
+    borderRadius: 7,
+    fontSize: "0.72rem",
+    fontWeight: 600,
+    textTransform: "none",
+  },
+  empty: {
+    color: theme.palette.text.secondary,
+    fontSize: "0.78rem",
+    padding: "11px 12px",
+    borderTop: `1px solid ${theme.palette.divider}`,
+  },
 }));
 
+const normalizeContacts = (contacts, legacyContact, legacyNumber) => {
+  if (Array.isArray(contacts) && contacts.length) return contacts;
 
-const VcardPreview = ({ contact, numbers }) => {
-    const classes = useStyles();
-    const history = useHistory();
+  return [
+    {
+      name: legacyContact || "Contacto",
+      phones: legacyNumber
+        ? [
+            {
+              value: legacyNumber,
+              normalized: String(legacyNumber).replace(/\D/g, ""),
+              type: "",
+            },
+          ]
+        : [],
+      emails: [],
+    },
+  ];
+};
 
-    const [selectedContact, setContact] = useState({
-        name: "",
-        number: 0,
-        profilePicUrl: ""
-    });
-    const [newTicketModalOpen, setNewTicketModalOpen] = useState(false);
+const VcardPreview = ({ contacts, contact, numbers }) => {
+  const classes = useStyles();
+  const history = useHistory();
+  const parsedContacts = useMemo(
+    () => normalizeContacts(contacts, contact, numbers),
+    [contacts, contact, numbers]
+  );
+  const [selectedContact, setSelectedContact] = useState();
+  const [newTicketModalOpen, setNewTicketModalOpen] = useState(false);
+  const [loadingPhone, setLoadingPhone] = useState("");
 
-    useEffect(() => {
-        const delayDebounceFn = setTimeout(() => {
-            const fetchContacts = async () => {
-                try {
-                    let contactObj = {
-                        name: contact,
-                        number: numbers.replace(/\D/g, ""),
-                        email: ""
-                    }
-                    const { data } = await api.post("/contact", contactObj);
-                    setContact(data)
+  const handleOpenChat = async (sharedContact, phone, phoneKey) => {
+    const normalizedNumber =
+      phone.normalized || String(phone.value || "").replace(/\D/g, "");
+    if (normalizedNumber.length < 6) return;
 
-                } catch (err) {
-                    toastError(err);
-                }
-            };
-            fetchContacts();
-        }, 500);
-        return () => clearTimeout(delayDebounceFn);
-    }, [contact, numbers]);
+    setLoadingPhone(phoneKey);
+    try {
+      const { data } = await api.post("/contact", {
+        name: sharedContact.name || "Contacto",
+        number: normalizedNumber,
+        email: sharedContact.emails?.[0]?.value || "",
+      });
+      setSelectedContact(data);
+      setNewTicketModalOpen(true);
+    } catch (err) {
+      toastError(err);
+    } finally {
+      setLoadingPhone("");
+    }
+  };
 
-    // const handleNewChat = async () => {
-    //     try {
-    //         const { data: ticket } = await api.post("/tickets", {
-    //             contactId: selectedContact.id,
-    //             userId: user.id,
-    //             status: "open",
-    //         });
-    //         history.push(`/tickets/${ticket.id}`);
-    //     } catch (err) {
-    //         toastError(err);
-    //     }
-    // }
+  const handleCloseOrOpenTicket = ticket => {
+    setNewTicketModalOpen(false);
+    if (ticket?.id !== undefined) {
+      history.push(`/tickets/${ticket.id}`);
+    }
+  };
 
-    const handleCloseOrOpenTicket = (ticket) => {
-        setNewTicketModalOpen(false);
-        if (ticket !== undefined && ticket.id !== undefined) {
-            history.push(`/tickets/${ticket.id}`);
-        }
-    };
+  return (
+    <>
+      {selectedContact && (
+        <NewTicketModalPageContact
+          modalOpen={newTicketModalOpen}
+          initialContact={selectedContact}
+          onClose={handleCloseOrOpenTicket}
+        />
+      )}
 
-    return (
-        <>
-            <NewTicketModalPageContact
-                modalOpen={newTicketModalOpen}
-                initialContact={selectedContact}
-                onClose={(ticket) => {
-                    handleCloseOrOpenTicket(ticket);
-                }}
-            />
-            <div className={classes.vcardContainer}>
-                <div className={classes.avatarWrapper}>
-                    {selectedContact.profilePicUrl ? (
-                        <Avatar 
-                            src={selectedContact.profilePicUrl} 
-                            className={classes.avatar}
-                        />
-                    ) : (
-                        <Person className={classes.fallbackIcon} />
-                    )}
+      <div className={classes.container}>
+        <Typography className={classes.title}>
+          {parsedContacts.length === 1
+            ? "Contacto compartido"
+            : `${parsedContacts.length} contactos compartidos`}
+        </Typography>
+
+        {parsedContacts.map((sharedContact, contactIndex) => {
+          const phones = sharedContact.phones || [];
+          const emails = sharedContact.emails || [];
+          const methodCount = phones.length + emails.length;
+
+          return (
+            <div
+              className={classes.card}
+              key={`${sharedContact.name}-${contactIndex}`}
+            >
+              <div className={classes.contactHeader}>
+                <Avatar className={classes.avatar}>
+                  <Person />
+                </Avatar>
+                <div style={{ minWidth: 0 }}>
+                  <Typography className={classes.contactName}>
+                    {sharedContact.name || "Contacto"}
+                  </Typography>
+                  <Typography className={classes.contactMeta}>
+                    {methodCount
+                      ? `${phones.length} teléfono(s) · ${emails.length} email(s)`
+                      : "Sin datos de contacto"}
+                  </Typography>
                 </div>
-                <div className={classes.contactInfo}>
-                    <Typography className={classes.contactName}>
-                        {selectedContact.name}
-                    </Typography>
-                    <Typography className={classes.contactNumber}>
-                        {selectedContact.number}
-                    </Typography>
-                </div>
-                <div className={classes.divider} />
-                <Button
-                    className={classes.conversarButton}
-                    onClick={() => setNewTicketModalOpen(true)}
-                    disabled={!selectedContact.number}
-                >
-                    Conversar
-                </Button>
+              </div>
+
+              <div className={classes.methods}>
+                {phones.map((phone, phoneIndex) => {
+                  const phoneKey = `${contactIndex}-${phoneIndex}`;
+                  const normalizedNumber =
+                    phone.normalized ||
+                    String(phone.value || "").replace(/\D/g, "");
+                  const canChat = normalizedNumber.length >= 6;
+
+                  return (
+                    <div className={classes.methodRow} key={phoneKey}>
+                      <PhoneOutlined className={classes.methodIcon} />
+                      <div className={classes.methodInfo}>
+                        <Typography className={classes.methodValue}>
+                          {phone.value}
+                        </Typography>
+                        {phone.type && (
+                          <Typography className={classes.methodType}>
+                            {phone.type}
+                          </Typography>
+                        )}
+                      </div>
+                      <Button
+                        className={classes.chatButton}
+                        color="primary"
+                        size="small"
+                        variant="outlined"
+                        disabled={!canChat || Boolean(loadingPhone)}
+                        onClick={() =>
+                          handleOpenChat(sharedContact, phone, phoneKey)
+                        }
+                      >
+                        {loadingPhone === phoneKey ? (
+                          <CircularProgress size={16} />
+                        ) : (
+                          "Conversar"
+                        )}
+                      </Button>
+                    </div>
+                  );
+                })}
+
+                {emails.map((email, emailIndex) => (
+                  <div
+                    className={classes.methodRow}
+                    key={`email-${contactIndex}-${emailIndex}`}
+                  >
+                    <EmailOutlined className={classes.methodIcon} />
+                    <div className={classes.methodInfo}>
+                      <Typography className={classes.methodValue}>
+                        {email.value}
+                      </Typography>
+                      {email.type && (
+                        <Typography className={classes.methodType}>
+                          {email.type}
+                        </Typography>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {!methodCount && (
+                  <Typography className={classes.empty}>
+                    Este contacto no incluye teléfono ni email.
+                  </Typography>
+                )}
+              </div>
             </div>
-        </>
-    );
+          );
+        })}
+      </div>
+    </>
+  );
 };
 
 export default VcardPreview;

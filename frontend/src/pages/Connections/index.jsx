@@ -438,17 +438,17 @@ const asDate = value => {
 };
 
 const formatRemainingTime = (deadline, nowMs = Date.now()) => {
-	const remainingMinutes = Math.ceil(
-		(deadline.getTime() - nowMs) / 60000
-	);
-	if (remainingMinutes <= 0) return null;
+	const remainingSeconds = Math.ceil((deadline.getTime() - nowMs) / 1000);
+	if (remainingSeconds <= 0) return null;
 
-	const days = Math.floor(remainingMinutes / 1440);
-	const hours = Math.floor((remainingMinutes % 1440) / 60);
-	const minutes = remainingMinutes % 60;
-	if (days > 0) return `${days} d ${hours} h`;
-	if (hours > 0) return `${hours} h ${minutes} min`;
-	return `${minutes} min`;
+	const days = Math.floor(remainingSeconds / 86400);
+	const hours = Math.floor((remainingSeconds % 86400) / 3600);
+	const minutes = Math.floor((remainingSeconds % 3600) / 60);
+	const seconds = remainingSeconds % 60;
+	if (days > 0) return `${days} d ${hours} h ${minutes} min ${seconds} s`;
+	if (hours > 0) return `${hours} h ${minutes} min ${seconds} s`;
+	if (minutes > 0) return `${minutes} min ${seconds} s`;
+	return `${seconds} s`;
 };
 
 const getZapoAccountType = health =>
@@ -514,7 +514,6 @@ const getZapoHealthPresentation = health => {
 		isPersonalAccount,
 		hasFiniteQuota,
 		isPaused: Boolean(health?.reachoutTimelock?.isActive),
-		reportedStatus: hasReportedStatus ? status : null,
 		percentage,
 		tone: isDanger
 			? "danger"
@@ -543,12 +542,45 @@ const getZapoHealthPresentation = health => {
 	};
 };
 
+const ZapoPauseNotice = ({ deadline, classes }) => {
+	const [nowMs, setNowMs] = useState(Date.now());
+
+	useEffect(() => {
+		if (!deadline) return undefined;
+		setNowMs(Date.now());
+		const interval = setInterval(() => setNowMs(Date.now()), 1000);
+		return () => clearInterval(interval);
+	}, [deadline]);
+
+	const remaining = deadline
+		? formatRemainingTime(deadline, nowMs)
+		: null;
+	const remainingText = deadline
+		? remaining
+			? `${i18n.t("connections.zapoHealth.pauseRemaining")} ${remaining}`
+			: i18n.t("connections.zapoHealth.awaitingRefresh")
+		: i18n.t("connections.zapoHealth.pausedNoEnd");
+	const formattedEnd = deadline ? format(deadline, "dd/MM HH:mm:ss") : null;
+	const endText = deadline
+		? `${i18n.t("connections.zapoHealth.pausedUntil")} ${formattedEnd}`
+		: null;
+
+	return (
+		<Box className={classes.zapoPauseNotice}>
+			<Box className={classes.zapoPauseRemaining}>
+				<Schedule style={{ fontSize: "0.95rem" }} />
+				{remainingText}
+			</Box>
+			{endText && <span className={classes.zapoPauseEnd}>{endText}</span>}
+		</Box>
+	);
+};
+
 const Connections = () => {
 	const classes = useStyles();
 
 	const { whatsApps, loading } = useContext(WhatsAppsContext);
 	const [zapoHealthById, setZapoHealthById] = useState({});
-	const [countdownNow, setCountdownNow] = useState(Date.now());
 	const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
 	const [qrModalOpen, setQrModalOpen] = useState(false);
 	const [selectedWhatsApp, setSelectedWhatsApp] = useState(null);
@@ -566,11 +598,6 @@ const Connections = () => {
 		[whatsApps]
 	);
 	const connectedZapoIdsKey = connectedZapoIds.join(",");
-
-	useEffect(() => {
-		const interval = setInterval(() => setCountdownNow(Date.now()), 60000);
-		return () => clearInterval(interval);
-	}, []);
 
 	useEffect(() => {
 		if (!connectedZapoIdsKey) return undefined;
@@ -1240,59 +1267,38 @@ const Connections = () => {
 													? "#ed6c02"
 													: "#2e7d32";
 											let deadlineText;
-											let pauseRemainingText;
-											let pauseEndText;
-											if (presentation.enforcementEnd) {
-												const remaining = formatRemainingTime(
-													presentation.enforcementEnd,
-													countdownNow
-												);
-												const remainingLabel = i18n.t(
-													"connections.zapoHealth.pauseRemaining"
-												);
-												const awaitingRefreshLabel = i18n.t(
-													"connections.zapoHealth.awaitingRefresh"
-												);
-												pauseRemainingText = remaining
-													? `${remainingLabel} ${remaining}`
-													: awaitingRefreshLabel;
-												pauseEndText = `${i18n.t(
-													"connections.zapoHealth.pausedUntil"
-												)} ${format(presentation.enforcementEnd, "dd/MM HH:mm")}`;
-											} else if (presentation.isPaused) {
-												pauseRemainingText = i18n.t(
-													"connections.zapoHealth.pausedNoEnd"
-												);
-											} else if (
-												presentation.quotaNotReported &&
-												presentation.cappingConfigured === false
-											) {
-												deadlineText = i18n.t(
-													"connections.zapoHealth.cappingDisabled"
-												);
-											} else if (
-												presentation.quotaNotReported &&
-												presentation.isPersonalAccount
-											) {
-												deadlineText = i18n.t(
-													"connections.zapoHealth.personalQuota"
-												);
-											} else if (presentation.quotaNotReported) {
-												deadlineText = i18n.t(
-													"connections.zapoHealth.quotaNotReported"
-												);
-											} else if (presentation.usesConfiguredLimit) {
-												deadlineText = i18n.t(
-													"connections.zapoHealth.configuredLimit"
-												);
-											} else if (presentation.cycleEnd) {
-												deadlineText = `${i18n.t(
-													"connections.zapoHealth.renews"
-												)} ${format(presentation.cycleEnd, "dd/MM HH:mm")}`;
-											} else {
-												deadlineText = i18n.t(
-													"connections.zapoHealth.serverManaged"
-												);
+											if (!presentation.isPaused) {
+												if (
+													presentation.quotaNotReported &&
+													presentation.cappingConfigured === false
+												) {
+													deadlineText = i18n.t(
+														"connections.zapoHealth.cappingDisabled"
+													);
+												} else if (
+													presentation.quotaNotReported &&
+													presentation.isPersonalAccount
+												) {
+													deadlineText = i18n.t(
+														"connections.zapoHealth.personalQuota"
+													);
+												} else if (presentation.quotaNotReported) {
+													deadlineText = i18n.t(
+														"connections.zapoHealth.quotaNotReported"
+													);
+												} else if (presentation.usesConfiguredLimit) {
+													deadlineText = i18n.t(
+														"connections.zapoHealth.configuredLimit"
+													);
+												} else if (presentation.cycleEnd) {
+													deadlineText = `${i18n.t(
+														"connections.zapoHealth.renews"
+													)} ${format(presentation.cycleEnd, "dd/MM HH:mm")}`;
+												} else {
+													deadlineText = i18n.t(
+														"connections.zapoHealth.serverManaged"
+													);
+												}
 											}
 											let availableText = "—";
 											if (presentation.isPaused) {
@@ -1359,17 +1365,10 @@ const Connections = () => {
 														</Box>
 													)}
 													{presentation.isPaused && (
-														<Box className={classes.zapoPauseNotice}>
-															<Box className={classes.zapoPauseRemaining}>
-																<Schedule style={{ fontSize: "0.95rem" }} />
-																{pauseRemainingText}
-															</Box>
-															{pauseEndText && (
-																<span className={classes.zapoPauseEnd}>
-																	{pauseEndText}
-																</span>
-															)}
-														</Box>
+														<ZapoPauseNotice
+															deadline={presentation.enforcementEnd}
+															classes={classes}
+														/>
 													)}
 													{presentation.hasFiniteQuota && (
 														<LinearProgress
@@ -1385,21 +1384,15 @@ const Connections = () => {
 															}}
 														/>
 													)}
-													<Box className={classes.zapoHealthMeta}>
-														{presentation.reportedStatus && (
-															<Box>
-																{i18n.t(
-																	"connections.zapoHealth.reportedStatus"
-																)}
-																: {presentation.reportedStatus}
-															</Box>
-														)}
-														<Box>
+													{(deadlineText || health.stale) && (
+														<Box className={classes.zapoHealthMeta}>
 															{deadlineText}
 															{health.stale &&
-																` · ${i18n.t("connections.zapoHealth.stale")}`}
+																`${deadlineText ? " · " : ""}${i18n.t(
+																	"connections.zapoHealth.stale"
+																)}`}
 														</Box>
-													</Box>
+													)}
 												</Box>
 											);
 										})()}

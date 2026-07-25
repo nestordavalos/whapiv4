@@ -121,6 +121,7 @@ const messages = {
           available: "Disponibles",
           renews: "El ciclo se renueva:",
           pausedUntil: "Alcance pausado hasta:",
+          pauseRemaining: "Tiempo restante:",
           pausedNoEnd: "WhatsApp pausó temporalmente el alcance",
           serverManaged: "Ciclo administrado por WhatsApp",
           notApplicable: "No aplica",

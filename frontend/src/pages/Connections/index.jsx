@@ -397,6 +397,20 @@ const asDate = value => {
 	return Number.isNaN(date.getTime()) ? null : date;
 };
 
+const formatRemainingTime = deadline => {
+	const remainingMinutes = Math.ceil(
+		(deadline.getTime() - Date.now()) / 60000
+	);
+	if (remainingMinutes <= 0) return null;
+
+	const days = Math.floor(remainingMinutes / 1440);
+	const hours = Math.floor((remainingMinutes % 1440) / 60);
+	const minutes = remainingMinutes % 60;
+	if (days > 0) return `${days} d ${hours} h`;
+	if (hours > 0) return `${hours} h ${minutes} min`;
+	return `${minutes} min`;
+};
+
 const getZapoAccountType = health =>
 	health?.accountInfo?.type === "business"
 		? "business"
@@ -1181,7 +1195,16 @@ const Connections = () => {
 													: "#2e7d32";
 											let deadlineText;
 											if (presentation.enforcementEnd) {
-												deadlineText = `${i18n.t(
+												const remaining = formatRemainingTime(
+													presentation.enforcementEnd
+												);
+												const remainingLabel = i18n.t(
+													"connections.zapoHealth.pauseRemaining"
+												);
+												const remainingText = remaining
+													? `${remainingLabel} ${remaining} · `
+													: "";
+												deadlineText = `${remainingText}${i18n.t(
 													"connections.zapoHealth.pausedUntil"
 												)} ${format(presentation.enforcementEnd, "dd/MM HH:mm")}`;
 											} else if (presentation.isPaused) {
@@ -1220,7 +1243,9 @@ const Connections = () => {
 												);
 											}
 											let availableText = "—";
-											if (Number.isFinite(presentation.remaining)) {
+											if (presentation.isPaused) {
+												availableText = 0;
+											} else if (Number.isFinite(presentation.remaining)) {
 												availableText = presentation.remaining;
 											} else if (presentation.quotaNotReported) {
 												availableText = i18n.t(

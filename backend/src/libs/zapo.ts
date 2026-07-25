@@ -347,8 +347,11 @@ const buildZapoOutreachSummary = (
   const used = Number.isFinite(messageCapping?.usedQuota)
     ? Number(messageCapping?.usedQuota)
     : null;
-  const available =
-    total !== null && used !== null ? Math.max(0, total - used) : null;
+  const available = reachoutTimelock?.isActive
+    ? 0
+    : total !== null && used !== null
+    ? Math.max(0, total - used)
+    : null;
   const status = messageCapping?.cappingStatus;
   let normalizedStatus: ZapoOutreachStatus = "unknown";
   if (reachoutTimelock?.isActive) normalizedStatus = "paused";
@@ -576,7 +579,9 @@ export const refreshZapoHealth = async (
             cappingStatus: messageCapping?.cappingStatus ?? null,
             oteStatus: messageCapping?.oteStatus ?? null,
             mvStatus: messageCapping?.mvStatus ?? null,
-            timelockActive: reachoutTimelock?.isActive ?? null
+            timelockActive: reachoutTimelock?.isActive ?? null,
+            timelockType: reachoutTimelock?.enforcementType ?? null,
+            timelockEndsAt: reachoutTimelock?.enforcementEndsAt ?? null
           },
           "Zapo outreach status received"
         );

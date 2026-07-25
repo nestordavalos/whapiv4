@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { getIO } from "../libs/socket";
 import { removeWbot, restartWbot, shutdownWbot } from "../libs/wbot";
-import { removeZapo } from "../libs/zapo";
+import { refreshZapoHealth, removeZapo } from "../libs/zapo";
 import { StartWhatsAppSession } from "../services/WbotServices/StartWhatsAppSession";
 import { logger } from "../utils/logger";
 import AppError from "../errors/AppError";
@@ -251,6 +251,21 @@ export const show = async (req: Request, res: Response): Promise<Response> => {
   const whatsapp = await ShowWhatsAppService(whatsappId);
 
   return res.status(200).json(whatsapp);
+};
+
+export const zapoHealth = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const { whatsappId } = req.params;
+  const whatsapp = await ShowWhatsAppService(whatsappId);
+
+  if (whatsapp.provider !== "zapo") {
+    throw new AppError("ERR_ZAPO_ONLY", 400);
+  }
+
+  const health = await refreshZapoHealth(whatsapp.id);
+  return res.status(200).json(health);
 };
 
 export const update = async (

@@ -883,6 +883,71 @@ curl -X GET "http://localhost:8080/api/v1/connections/1" \
 
 ---
 
+### Obtener Salud y Alcance de una Conexión Zapo
+
+Consulta el último estado directamente mediante Zapo. Devuelve el estado
+normalizado, el cupo cuando está disponible, las señales originales de capping
+y cualquier pausa temporal de alcance.
+
+```
+GET /api/v1/connections/:connectionId/health
+```
+
+### Ejemplo
+```bash
+curl -X GET "http://localhost:8080/api/v1/connections/1/health" \
+  -H "Authorization: Bearer TU_TOKEN"
+```
+
+### Respuesta
+```json
+{
+  "provider": "zapo",
+  "whatsappId": 1,
+  "available": true,
+  "checkedAt": "2026-07-25T15:55:54.850Z",
+  "messageCapping": {
+    "totalQuota": -1,
+    "usedQuota": 0,
+    "cycleStartAt": 1782878400,
+    "cycleEndAt": 1785556799,
+    "serverSentAt": 1784994954,
+    "oteStatus": "NOT_ELIGIBLE",
+    "mvStatus": "NOT_ELIGIBLE",
+    "cappingStatus": "NONE"
+  },
+  "messageCappingConfig": {
+    "enabled": false,
+    "limit": 0,
+    "fetchTtlSeconds": 3600
+  },
+  "reachoutTimelock": {
+    "isActive": false,
+    "enforcementType": null,
+    "enforcementEndsAt": 0
+  },
+  "accountInfo": {
+    "type": "business",
+    "verifiedName": "Empresa",
+    "hasBusinessProfile": true,
+    "isBusinessApp": true
+  },
+  "outreach": {
+    "status": "healthy",
+    "quota": {
+      "source": null,
+      "total": null,
+      "used": 0,
+      "available": null
+    }
+  }
+}
+```
+
+Este endpoint solamente aplica a conexiones cuyo proveedor sea `zapo`.
+
+---
+
 # 🔔 WEBHOOKS
 
 ## Configuración
@@ -902,6 +967,7 @@ Los webhooks se configuran por conexión de WhatsApp en **Conexiones > Editar > 
 | message_sent | Mensaje enviado desde el sistema |
 | message_ack | Actualización de estado del mensaje (entregado, leído) |
 | connection_update | Cambio de estado de la conexión |
+| connection_health | Cambio de salud, cupo o pausa de alcance de una conexión Zapo |
 | ticket_created | Nuevo ticket creado |
 | ticket_updated | Ticket actualizado |
 | ticket_closed | Ticket cerrado |

@@ -21,7 +21,7 @@ import SendWhatsAppMediaFromUrl from "../services/WbotServices/SendWhatsAppMedia
 import SendWhatsAppMediaFromBase64 from "../services/WbotServices/SendWhatsAppMediaFromBase64";
 import SendWhatsAppMessage from "../services/WbotServices/SendWhatsAppMessage";
 import { getWbot } from "../libs/wbot";
-import { getZapo } from "../libs/zapo";
+import { getZapo, refreshZapoHealth } from "../libs/zapo";
 import { getIO } from "../libs/socket";
 import ListSettingsServiceOne from "../services/SettingServices/ListSettingsServiceOne";
 import { logger } from "../utils/logger";
@@ -873,6 +873,36 @@ export const getConnectionStatus = async (
     ...whatsapp.toJSON(),
     isConnected
   });
+};
+
+/**
+ * Obtener salud de alcance de una conexión Zapo
+ * GET /api/v1/connections/:connectionId/health
+ */
+export const getConnectionHealth = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const connectionId = Number(req.params.connectionId);
+  if (!Number.isSafeInteger(connectionId) || connectionId <= 0) {
+    throw new AppError("Invalid connection ID", 400);
+  }
+
+  const whatsapp = await Whatsapp.findByPk(connectionId, {
+    attributes: ["id", "provider"]
+  });
+  if (!whatsapp) {
+    throw new AppError("Connection not found", 404);
+  }
+  if (whatsapp.provider !== "zapo") {
+    throw new AppError(
+      "Connection health is only available for Zapo connections",
+      400
+    );
+  }
+
+  const health = await refreshZapoHealth(connectionId);
+  return res.status(200).json(health);
 };
 
 // ==========================================

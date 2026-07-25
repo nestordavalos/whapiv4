@@ -73,7 +73,8 @@ const isAuth = async (
     }
     throw new AppError(
       "Invalid token. We'll try to assign a new one on next request",
-      403
+      403,
+      { logCategory: "auth_refresh" }
     );
   }
 

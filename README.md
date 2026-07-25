@@ -102,7 +102,7 @@ Plataforma de atención y tickets sobre WhatsApp inspirada en Whaticket, con bac
 El sistema incluye un módulo de webhooks para integrar con plataformas externas (n8n, Make, Zapier, etc.). 
 
 ### Estado de Eventos de Webhook ✅ 100% IMPLEMENTADO
-✅ **Funcionando:** message_received, message_sent, message_ack, connection_update, ticket_created, ticket_updated, ticket_closed, contact_created, contact_updated
+✅ **Funcionando:** message_received, message_sent, message_ack, connection_update, connection_health, ticket_created, ticket_updated, ticket_closed, contact_created, contact_updated
 
 **Todos los eventos están implementados y funcionando correctamente.**
 

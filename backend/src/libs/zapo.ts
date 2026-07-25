@@ -13,6 +13,7 @@ import {
   unblockZapoRecipientByJid
 } from "../services/WbotServices/ZapoRecipientSendBlockService";
 import {
+  sendConnectionHealthWebhook,
   sendConnectionUpdateWebhook,
   sendMessageAckWebhook
 } from "../services/WebhookService/SendWebhookEvent";
@@ -21,6 +22,7 @@ import {
   ZapoOutboundSource
 } from "./ZapoOutboundPacing";
 import {
+  getZapoCloseLog,
   getZapoClosedStatus,
   isZapoTemporaryBan,
   shouldReconnectZapo,
@@ -63,6 +65,12 @@ const outboundMessageChains = new Map<number, Promise<void>>();
 const lastOutboundMessageAt = new Map<number, number>();
 const recipientJidCache = new Map<string, string>();
 const restrictedSessions = new Set<number>();
+const zapoHealthSnapshots = new Map<number, ZapoHealthSnapshot>();
+const zapoHealthRequests = new Map<number, Promise<ZapoHealthSnapshot>>();
+const zapoHealthRefreshTimers = new Map<number, NodeJS.Timeout>();
+const zapoHealthLogged = new Set<number>();
+const zapoHealthWebhookSignatures = new Map<number, string>();
+const zapoAccountInfo = new Map<number, ZapoAccountInfo>();
 let mysqlMigrationPromise: Promise<void> | undefined;
 const emitSession = (whatsapp: Whatsapp) =>
   getIO().emit("whatsappSession", { action: "update", session: whatsapp });
@@ -250,6 +258,383 @@ export const getZapo = (id: number): ZapoSession => {
   const session = sessions.get(id);
   if (!session) throw new AppError("ERR_WAPP_NOT_INITIALIZED");
   return session;
+};
+
+export interface ZapoMessageCapping {
+  totalQuota: number | null;
+  usedQuota: number | null;
+  cycleStartAt: number | null;
+  cycleEndAt: number | null;
+  serverSentAt: number | null;
+  oteStatus: string | null;
+  mvStatus: string | null;
+  cappingStatus: string | null;
+}
+
+export interface ZapoReachoutTimelock {
+  isActive: boolean;
+  enforcementType: string | null;
+  enforcementEndsAt: number | null;
+}
+
+export interface ZapoMessageCappingConfig {
+  enabled: boolean;
+  limit: number;
+  fetchTtlSeconds: number;
+}
+
+export interface ZapoAccountInfo {
+  type: "personal" | "business";
+  verifiedName: string | null;
+  hasBusinessProfile: boolean | null;
+  isBusinessApp: boolean | null;
+}
+
+export type ZapoOutreachStatus =
+  | "healthy"
+  | "warning"
+  | "risk"
+  | "capped"
+  | "paused"
+  | "unknown";
+
+export interface ZapoOutreachSummary {
+  status: ZapoOutreachStatus;
+  quota: {
+    source: "cycle" | "configuration" | null;
+    total: number | null;
+    used: number | null;
+    available: number | null;
+  };
+}
+
+export interface ZapoHealthSnapshot {
+  provider: "zapo";
+  whatsappId: number;
+  available: boolean;
+  checkedAt: string;
+  stale?: boolean;
+  reason?: "not_connected" | "query_failed";
+  messageCapping: ZapoMessageCapping | null;
+  messageCappingConfig: ZapoMessageCappingConfig | null;
+  reachoutTimelock: ZapoReachoutTimelock | null;
+  accountInfo: ZapoAccountInfo | null;
+  outreach: ZapoOutreachSummary;
+}
+
+const buildZapoOutreachSummary = (
+  messageCapping: ZapoMessageCapping | null,
+  messageCappingConfig: ZapoMessageCappingConfig | null,
+  reachoutTimelock: ZapoReachoutTimelock | null
+): ZapoOutreachSummary => {
+  const rawTotal = messageCapping?.totalQuota;
+  const configuredLimit =
+    messageCappingConfig?.enabled &&
+    Number.isFinite(messageCappingConfig.limit) &&
+    messageCappingConfig.limit > 0
+      ? messageCappingConfig.limit
+      : null;
+  const total =
+    Number.isFinite(rawTotal) && Number(rawTotal) >= 0
+      ? Number(rawTotal)
+      : configuredLimit;
+  const source =
+    Number.isFinite(rawTotal) && Number(rawTotal) >= 0
+      ? "cycle"
+      : configuredLimit !== null
+      ? "configuration"
+      : null;
+  const used = Number.isFinite(messageCapping?.usedQuota)
+    ? Number(messageCapping?.usedQuota)
+    : null;
+  const available =
+    total !== null && used !== null ? Math.max(0, total - used) : null;
+  const status = messageCapping?.cappingStatus;
+  let normalizedStatus: ZapoOutreachStatus = "unknown";
+  if (reachoutTimelock?.isActive) normalizedStatus = "paused";
+  else if (status === "CAPPED") normalizedStatus = "capped";
+  else if (status === "SECOND_WARNING") normalizedStatus = "risk";
+  else if (status === "FIRST_WARNING") normalizedStatus = "warning";
+  else if (status === "NONE") normalizedStatus = "healthy";
+
+  return {
+    status: normalizedStatus,
+    quota: { source, total, used, available }
+  };
+};
+
+const getZapoHealthWebhookSignature = (
+  snapshot: ZapoHealthSnapshot
+): string =>
+  JSON.stringify({
+    available: snapshot.available,
+    reason: snapshot.reason ?? null,
+    messageCapping: snapshot.messageCapping,
+    messageCappingConfig: snapshot.messageCappingConfig,
+    reachoutTimelock: snapshot.reachoutTimelock,
+    accountInfo: snapshot.accountInfo,
+    outreach: snapshot.outreach
+  });
+
+const emitZapoHealth = (snapshot: ZapoHealthSnapshot): void => {
+  getIO().emit("zapoHealth", snapshot);
+
+  const signature = getZapoHealthWebhookSignature(snapshot);
+  if (zapoHealthWebhookSignatures.get(snapshot.whatsappId) === signature) {
+    return;
+  }
+  zapoHealthWebhookSignatures.set(snapshot.whatsappId, signature);
+  void sendConnectionHealthWebhook(snapshot.whatsappId, snapshot);
+};
+
+const unavailableZapoHealth = (
+  whatsappId: number,
+  reason: "not_connected" | "query_failed"
+): ZapoHealthSnapshot => ({
+  provider: "zapo",
+  whatsappId,
+  available: false,
+  checkedAt: new Date().toISOString(),
+  reason,
+  messageCapping: null,
+  messageCappingConfig: null,
+  reachoutTimelock: null,
+  accountInfo: zapoAccountInfo.get(whatsappId) || null,
+  outreach: buildZapoOutreachSummary(null, null, null)
+});
+
+/**
+ * Zapo synchronizes these WhatsApp AB props after connecting, but does not
+ * currently expose the coordinator on its public WaClient surface. Keep this
+ * optional so a future Zapo internal refactor cannot break the health query.
+ */
+const getZapoMessageCappingConfig = (
+  session: ZapoSession
+): ZapoMessageCappingConfig | null => {
+  const coordinator = session?.deps?.abPropsCoordinator;
+  if (typeof coordinator?.getConfigValue !== "function") return null;
+
+  const enabled = coordinator.getConfigValue(
+    "wa_individual_new_chat_msg_capping_enabled"
+  );
+  const limit = coordinator.getConfigValue(
+    "wa_individual_new_chat_msg_capping_limit"
+  );
+  const fetchTtlSeconds = coordinator.getConfigValue(
+    "wa_individual_new_chat_msg_capping_fetch_ttl_seconds"
+  );
+
+  if (
+    typeof enabled !== "boolean" ||
+    !Number.isFinite(limit) ||
+    !Number.isFinite(fetchTtlSeconds)
+  ) {
+    return null;
+  }
+
+  return {
+    enabled,
+    limit: Number(limit),
+    fetchTtlSeconds: Number(fetchTtlSeconds)
+  };
+};
+
+const detectZapoAccountInfo = async (
+  whatsappId: number,
+  session: ZapoSession
+): Promise<ZapoAccountInfo> => {
+  const meJid = session.getCredentials?.()?.meJid;
+  if (!meJid) {
+    return {
+      type: "personal",
+      verifiedName: null,
+      hasBusinessProfile: null,
+      isBusinessApp: null
+    };
+  }
+
+  const ownJid =
+    typeof zapo.toUserJid === "function"
+      ? zapo.toUserJid(meJid)
+      : meJid.replace(/:\d+@/, "@");
+  const [verifiedNameResult, profileResult] = await Promise.allSettled([
+    session.business.getVerifiedName(ownJid),
+    session.business.getBusinessProfile([ownJid])
+  ]);
+  const verifiedName =
+    verifiedNameResult.status === "fulfilled"
+      ? verifiedNameResult.value
+      : null;
+  const profiles =
+    profileResult.status === "fulfilled" ? profileResult.value : null;
+  const hasBusinessProfile = profiles ? profiles.length > 0 : null;
+
+  const type: ZapoAccountInfo["type"] =
+    verifiedName || hasBusinessProfile ? "business" : "personal";
+
+  const accountInfo: ZapoAccountInfo = {
+    type,
+    verifiedName: verifiedName?.name || null,
+    hasBusinessProfile,
+    isBusinessApp:
+      verifiedNameResult.status === "fulfilled"
+        ? verifiedName?.isSmb ?? false
+        : null
+  };
+  zapoAccountInfo.set(whatsappId, accountInfo);
+  logger.info(
+    {
+      whatsappId,
+      accountType: type,
+      businessApp: accountInfo.isBusinessApp,
+      verifiedName: accountInfo.verifiedName,
+      businessProfile: hasBusinessProfile
+    },
+    "Zapo account type detected"
+  );
+  return accountInfo;
+};
+
+/**
+ * Reads the cold-outreach signals exposed by Zapo. WhatsApp may return a
+ * numeric counter, or -1 when this account is not enrolled in numeric capping.
+ * These server-side values can include activity from other linked devices.
+ */
+export const refreshZapoHealth = async (
+  whatsappId: number
+): Promise<ZapoHealthSnapshot> => {
+  const inFlight = zapoHealthRequests.get(whatsappId);
+  if (inFlight) return inFlight;
+
+  const request = (async () => {
+    const session = sessions.get(whatsappId);
+    if (
+      !session?.getState?.().connected ||
+      restrictedSessions.has(whatsappId)
+    ) {
+      const snapshot = unavailableZapoHealth(whatsappId, "not_connected");
+      zapoHealthSnapshots.set(whatsappId, snapshot);
+      return snapshot;
+    }
+
+    try {
+      const cachedAccountInfo = zapoAccountInfo.get(whatsappId);
+      const [cappingResult, timelockResult, accountInfoResult] =
+        await Promise.allSettled([
+          session.message.getNewChatMessageCapping(
+            "INDIVIDUAL_NEW_CHAT_THREAD"
+          ),
+          session.message.getReachoutTimelock(),
+          cachedAccountInfo
+            ? Promise.resolve(cachedAccountInfo)
+            : detectZapoAccountInfo(whatsappId, session)
+        ]);
+      if (
+        cappingResult.status === "rejected" &&
+        timelockResult.status === "rejected"
+      ) {
+        throw cappingResult.reason;
+      }
+      const messageCapping =
+        cappingResult.status === "fulfilled" ? cappingResult.value : null;
+      const reachoutTimelock =
+        timelockResult.status === "fulfilled" ? timelockResult.value : null;
+      const accountInfo =
+        accountInfoResult.status === "fulfilled"
+          ? accountInfoResult.value
+          : cachedAccountInfo || null;
+      const messageCappingConfig = getZapoMessageCappingConfig(session);
+      const snapshot: ZapoHealthSnapshot = {
+        provider: "zapo",
+        whatsappId,
+        available: true,
+        checkedAt: new Date().toISOString(),
+        messageCapping,
+        messageCappingConfig,
+        reachoutTimelock,
+        accountInfo,
+        outreach: buildZapoOutreachSummary(
+          messageCapping,
+          messageCappingConfig,
+          reachoutTimelock
+        )
+      };
+      if (!zapoHealthLogged.has(whatsappId)) {
+        zapoHealthLogged.add(whatsappId);
+        logger.info(
+          {
+            whatsappId,
+            totalQuota: messageCapping?.totalQuota ?? null,
+            usedQuota: messageCapping?.usedQuota ?? null,
+            quotaReported:
+              Number.isFinite(messageCapping?.totalQuota) &&
+              Number(messageCapping?.totalQuota) >= 0,
+            cappingEnabled: messageCappingConfig?.enabled ?? null,
+            configuredLimit: messageCappingConfig?.limit ?? null,
+            cappingFetchTtlSeconds:
+              messageCappingConfig?.fetchTtlSeconds ?? null,
+            cappingStatus: messageCapping?.cappingStatus ?? null,
+            oteStatus: messageCapping?.oteStatus ?? null,
+            mvStatus: messageCapping?.mvStatus ?? null,
+            timelockActive: reachoutTimelock?.isActive ?? null
+          },
+          "Zapo outreach status received"
+        );
+      }
+      zapoHealthSnapshots.set(whatsappId, snapshot);
+      emitZapoHealth(snapshot);
+      return snapshot;
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : String(err || "unknown error");
+      const disconnectedDuringQuery =
+        !session?.getState?.().connected ||
+        errorMessage.toLowerCase().includes("client disconnected");
+      if (disconnectedDuringQuery) {
+        const snapshot = unavailableZapoHealth(whatsappId, "not_connected");
+        zapoHealthSnapshots.set(whatsappId, snapshot);
+        emitZapoHealth(snapshot);
+        logger.debug(
+          { whatsappId },
+          "Zapo outreach health check skipped because the session disconnected"
+        );
+        return snapshot;
+      }
+
+      logger.warn(
+        { whatsappId, error: errorMessage },
+        "Zapo outreach health is temporarily unavailable; the last value will be kept"
+      );
+      logger.debug({ whatsappId, err }, "Zapo outreach health query details");
+      const previous = zapoHealthSnapshots.get(whatsappId);
+      if (previous?.available) {
+        const stale = {
+          ...previous,
+          stale: true,
+          reason: "query_failed" as const
+        };
+        zapoHealthSnapshots.set(whatsappId, stale);
+        return stale;
+      }
+      const snapshot = unavailableZapoHealth(whatsappId, "query_failed");
+      zapoHealthSnapshots.set(whatsappId, snapshot);
+      return snapshot;
+    }
+  })().finally(() => zapoHealthRequests.delete(whatsappId));
+
+  zapoHealthRequests.set(whatsappId, request);
+  return request;
+};
+
+/** Debounces refreshes produced by replies or bursts of incoming messages. */
+const scheduleZapoHealthRefresh = (whatsappId: number): void => {
+  const existing = zapoHealthRefreshTimers.get(whatsappId);
+  if (existing) clearTimeout(existing);
+  const timer = setTimeout(() => {
+    zapoHealthRefreshTimers.delete(whatsappId);
+    refreshZapoHealth(whatsappId).catch(() => undefined);
+  }, 10000);
+  zapoHealthRefreshTimers.set(whatsappId, timer);
 };
 
 /**
@@ -807,6 +1192,14 @@ export const removeZapo = async (
   outboundMessageChains.delete(id);
   lastOutboundMessageAt.delete(id);
   restrictedSessions.delete(id);
+  zapoHealthSnapshots.delete(id);
+  zapoHealthRequests.delete(id);
+  zapoHealthLogged.delete(id);
+  zapoHealthWebhookSignatures.delete(id);
+  zapoAccountInfo.delete(id);
+  const healthRefreshTimer = zapoHealthRefreshTimers.get(id);
+  if (healthRefreshTimer) clearTimeout(healthRefreshTimer);
+  zapoHealthRefreshTimers.delete(id);
   for (const key of recipientJidCache.keys()) {
     if (key.startsWith(`${id}:`)) recipientJidCache.delete(key);
   }
@@ -1053,6 +1446,7 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
         number
       });
       logger.info({ whatsappId: whatsapp.id, number }, "Zapo session ready");
+      refreshZapoHealth(whatsapp.id).catch(() => undefined);
     } else {
       const wasResetting = resettingSessions.has(whatsapp.id);
       sessions.delete(whatsapp.id);
@@ -1085,17 +1479,22 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
         code: event.code ?? null,
         disconnectedAt
       });
-      logger.warn(
+      const closeLog = getZapoCloseLog(event);
+      logger[closeLog.level](
         {
           whatsappId: whatsapp.id,
           number: whatsapp.number,
           status,
           reason: event.reason || "unknown",
           code: event.code ?? null,
-          isLogout: Boolean(event.isLogout)
+          isLogout: Boolean(event.isLogout),
+          action: closeLog.action
         },
-        "Zapo session closed"
+        closeLog.message
       );
+      const health = unavailableZapoHealth(whatsapp.id, "not_connected");
+      zapoHealthSnapshots.set(whatsapp.id, health);
+      emitZapoHealth(health);
 
       if (shouldReconnectZapo(event)) {
         scheduleReconnect(whatsapp.id);
@@ -1140,14 +1539,60 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
         )
       );
   });
-  session.on("message", event =>
+  session.on("message", event => {
+    scheduleZapoHealthRefresh(whatsapp.id);
     handleZapoMessage(session, whatsapp, event as any).catch(err =>
       logger.error(
         { whatsappId: whatsapp.id, err },
         "Error handling Zapo message"
       )
-    )
-  );
+    );
+  });
+  session.on("mex_notification", (event: any) => {
+    if (event?.kind !== "message_capping") return;
+    const previous = zapoHealthSnapshots.get(whatsapp.id);
+    const snapshot: ZapoHealthSnapshot = {
+      provider: "zapo",
+      whatsappId: whatsapp.id,
+      available: true,
+      checkedAt: new Date().toISOString(),
+      messageCapping: {
+        totalQuota: event.totalQuota ?? null,
+        usedQuota: event.usedQuota ?? null,
+        cycleStartAt: event.cycleStartTimestamp ?? null,
+        cycleEndAt: event.cycleEndTimestamp ?? null,
+        serverSentAt: event.serverSentTimestamp ?? null,
+        oteStatus: event.oteStatus ?? null,
+        mvStatus: event.mvStatus ?? null,
+        cappingStatus: event.cappingStatus ?? null
+      },
+      messageCappingConfig:
+        getZapoMessageCappingConfig(session) ??
+        previous?.messageCappingConfig ??
+        null,
+      reachoutTimelock: previous?.reachoutTimelock ?? null,
+      accountInfo:
+        previous?.accountInfo ?? zapoAccountInfo.get(whatsapp.id) ?? null,
+      outreach: buildZapoOutreachSummary(
+        {
+          totalQuota: event.totalQuota ?? null,
+          usedQuota: event.usedQuota ?? null,
+          cycleStartAt: event.cycleStartTimestamp ?? null,
+          cycleEndAt: event.cycleEndTimestamp ?? null,
+          serverSentAt: event.serverSentTimestamp ?? null,
+          oteStatus: event.oteStatus ?? null,
+          mvStatus: event.mvStatus ?? null,
+          cappingStatus: event.cappingStatus ?? null
+        },
+        getZapoMessageCappingConfig(session) ??
+          previous?.messageCappingConfig ??
+          null,
+        previous?.reachoutTimelock ?? null
+      )
+    };
+    zapoHealthSnapshots.set(whatsapp.id, snapshot);
+    emitZapoHealth(snapshot);
+  });
   // Zapo emits this only after persisting a trusted-contact token. That is the
   // authoritative signal to re-enable recipients blocked by NACK 463.
   session.on("debug_privacy_token", event => {

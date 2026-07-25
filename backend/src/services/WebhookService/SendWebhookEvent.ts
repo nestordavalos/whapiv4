@@ -9,6 +9,7 @@ export type WebhookEventType =
   | "message_sent"
   | "message_ack"
   | "connection_update"
+  | "connection_health"
   | "ticket_created"
   | "ticket_updated"
   | "ticket_closed"
@@ -217,6 +218,17 @@ export const sendConnectionUpdateWebhook = async (
     whatsappId,
     event: "connection_update",
     data: connectionData
+  });
+};
+
+export const sendConnectionHealthWebhook = async (
+  whatsappId: number,
+  healthData: Record<string, any>
+): Promise<void> => {
+  await SendWebhookEvent({
+    whatsappId,
+    event: "connection_health",
+    data: healthData
   });
 };
 

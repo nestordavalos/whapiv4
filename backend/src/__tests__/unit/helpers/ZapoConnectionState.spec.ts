@@ -1,5 +1,6 @@
 import {
   getZapoClosedStatus,
+  getZapoCloseLog,
   isZapoPermanentBan,
   isZapoTemporaryBan,
   shouldReconnectZapo
@@ -49,5 +50,28 @@ describe("ZapoConnectionState", () => {
         code: 500
       })
     ).toBe(true);
+  });
+
+  it("describes an expired authorization with the required action", () => {
+    expect(
+      getZapoCloseLog({
+        isLogout: true,
+        reason: "failure_not_authorized",
+        code: 401
+      })
+    ).toEqual({
+      level: "warn",
+      message:
+        "Zapo authorization expired; reuse the instance and scan a new QR code",
+      action: "scan_qr"
+    });
+  });
+
+  it("keeps an intentional local stop at info level", () => {
+    expect(getZapoCloseLog({ reason: "client_disconnected" })).toEqual({
+      level: "info",
+      message: "Zapo session stopped locally",
+      action: "none"
+    });
   });
 });

@@ -95,6 +95,19 @@ app.use(Sentry.Handlers.errorHandler());
 
 app.use(async (err: Error, req: Request, res: Response, _: NextFunction) => {
   if (err instanceof AppError) {
+    if (err.context?.logCategory === "auth_refresh") {
+      logger.info(
+        {
+          requestId: req.id,
+          method: req.method,
+          path: req.path,
+          statusCode: err.statusCode
+        },
+        "Access token rejected; client will refresh it and retry"
+      );
+      return res.status(err.statusCode).json({ error: err.message });
+    }
+
     logger.warn(
       {
         ...getRequestLogContext(req),

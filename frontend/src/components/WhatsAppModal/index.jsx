@@ -1970,6 +1970,7 @@ const WhatsAppModal = ({ open, onClose, whatsAppId }) => {
                                       { value: 'message_sent', label: i18n.t("whatsappModal.form.webhookEventMessageSent") },
                                       { value: 'message_ack', label: i18n.t("whatsappModal.form.webhookEventMessageAck") },
                                       { value: 'connection_update', label: i18n.t("whatsappModal.form.webhookEventConnectionUpdate") },
+                                      { value: 'connection_health', label: i18n.t("whatsappModal.form.webhookEventConnectionHealth") },
                                       { value: 'ticket_created', label: i18n.t("whatsappModal.form.webhookEventTicketCreated") },
                                       { value: 'ticket_updated', label: i18n.t("whatsappModal.form.webhookEventTicketUpdated") },
                                       { value: 'ticket_closed', label: i18n.t("whatsappModal.form.webhookEventTicketClosed") },

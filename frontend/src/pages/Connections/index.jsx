@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useContext } from "react";
+import React, { useState, useCallback, useContext, useEffect, useMemo } from "react";
 import { toast } from "react-toastify";
 import { format, parseISO } from "date-fns";
 
@@ -16,6 +16,7 @@ import {
 	MenuItem,
 	ListItemIcon,
 	ListItemText,
+	LinearProgress,
 } from "@mui/material";
 import {
 	Edit,
@@ -33,6 +34,8 @@ import {
 	History,
 	MailOutline,
 	ErrorOutline,
+	ForumOutlined,
+	AccountCircleOutlined,
 } from "@mui/icons-material";
 
 import MainContainer from "../../components/MainContainer";
@@ -48,6 +51,7 @@ import QrcodeModal from "../../components/QrcodeModal";
 import { i18n } from "../../translate/i18n";
 import { WhatsAppsContext } from "../../context/WhatsApp/WhatsAppsContext";
 import toastError from "../../errors/toastError";
+import openSocket from "../../services/socket-io";
 
 const useStyles = makeStyles(theme => ({
 	mainPaper: {
@@ -198,6 +202,51 @@ const useStyles = makeStyles(theme => ({
 		color: theme.palette.mode === "dark" ? "#ffab91" : "#b71c1c",
 		fontSize: "0.8rem",
 	},
+	zapoHealthBox: {
+		padding: theme.spacing(1.25),
+		borderRadius: 10,
+		border: `1px solid ${theme.palette.divider}`,
+		backgroundColor: theme.palette.action.hover,
+		display: "flex",
+		flexDirection: "column",
+		gap: theme.spacing(0.75),
+	},
+	zapoHealthHeader: {
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "space-between",
+		gap: theme.spacing(1),
+		fontSize: "0.78rem",
+		fontWeight: 600,
+	},
+	zapoHealthTitle: {
+		display: "flex",
+		alignItems: "center",
+		gap: theme.spacing(0.75),
+	},
+	zapoHealthNumbers: {
+		display: "flex",
+		justifyContent: "space-between",
+		gap: theme.spacing(1),
+		fontSize: "0.76rem",
+		color: theme.palette.text.secondary,
+	},
+	zapoHealthMeta: {
+		fontSize: "0.7rem",
+		color: theme.palette.text.secondary,
+	},
+	zapoHealthHealthy: {
+		color: theme.palette.mode === "dark" ? "#81c784" : "#2e7d32",
+	},
+	zapoHealthWarning: {
+		color: theme.palette.mode === "dark" ? "#ffb74d" : "#ed6c02",
+	},
+	zapoHealthDanger: {
+		color: theme.palette.mode === "dark" ? "#ef9a9a" : "#d32f2f",
+	},
+	zapoHealthNeutral: {
+		color: theme.palette.text.secondary,
+	},
 	connectionActions: {
 		display: "flex",
 		gap: theme.spacing(1),
@@ -341,10 +390,110 @@ const getDisconnectReasonLabel = whatsApp => {
 	return whatsApp.disconnectCode ? `${label} (${whatsApp.disconnectCode})` : label;
 };
 
+const asDate = value => {
+	if (!Number.isFinite(value) || value <= 0) return null;
+	const milliseconds = value < 1e12 ? value * 1000 : value;
+	const date = new Date(milliseconds);
+	return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const getZapoAccountType = health =>
+	health?.accountInfo?.type === "business"
+		? "business"
+		: "personal";
+
+const getZapoHealthPresentation = health => {
+	const capping = health?.messageCapping;
+	const rawTotal = capping?.totalQuota;
+	const used = capping?.usedQuota;
+	const configuredLimit =
+		health?.messageCappingConfig?.enabled &&
+		Number.isFinite(health?.messageCappingConfig?.limit) &&
+		health.messageCappingConfig.limit > 0
+			? health.messageCappingConfig.limit
+			: null;
+	const isPersonalAccount = getZapoAccountType(health) === "personal";
+	const total =
+		Number.isFinite(rawTotal) && rawTotal >= 0
+			? rawTotal
+			: configuredLimit;
+	const usesConfiguredLimit =
+		!Number.isFinite(rawTotal) || rawTotal < 0
+			? Number.isFinite(configuredLimit)
+			: false;
+	const quotaNotReported =
+		(!Number.isFinite(rawTotal) || rawTotal < 0) &&
+		!Number.isFinite(configuredLimit);
+	const hasFiniteQuota = Number.isFinite(total) && total > 0;
+	const percentage =
+		hasFiniteQuota && Number.isFinite(used)
+			? Math.min(100, Math.max(0, Math.round((used / total) * 100)))
+			: 0;
+	const status = capping?.cappingStatus;
+	const hasCapping = Boolean(capping);
+	const hasReportedStatus =
+		typeof status === "string" && status.trim().length > 0;
+	const isDanger =
+		health?.reachoutTimelock?.isActive ||
+		status === "CAPPED" ||
+		status === "SECOND_WARNING" ||
+		percentage >= 90;
+	const isWarning =
+		!isDanger &&
+		(status === "FIRST_WARNING" || percentage >= 70);
+	const isHealthy =
+		!isDanger &&
+		!isWarning &&
+		hasReportedStatus &&
+		status === "NONE";
+
+	return {
+		total,
+		used,
+		remaining:
+			hasFiniteQuota && Number.isFinite(used)
+				? Math.max(0, total - used)
+				: null,
+		quotaNotReported,
+		usesConfiguredLimit,
+		cappingConfigured: health?.messageCappingConfig?.enabled ?? null,
+		isPersonalAccount,
+		hasFiniteQuota,
+		isPaused: Boolean(health?.reachoutTimelock?.isActive),
+		reportedStatus: hasReportedStatus ? status : null,
+		percentage,
+		tone: isDanger
+			? "danger"
+			: isWarning
+			? "warning"
+			: isHealthy
+			? "healthy"
+			: "neutral",
+		label: health?.reachoutTimelock?.isActive
+			? "paused"
+			: !hasCapping
+			? "unknown"
+			: status === "CAPPED"
+			? "capped"
+			: isDanger
+			? "risk"
+			: isWarning
+			? "warning"
+			: isHealthy
+			? "healthy"
+			: "unknown",
+		cycleEnd: asDate(capping?.cycleEndAt),
+		enforcementEnd: health?.reachoutTimelock?.isActive
+			? asDate(health.reachoutTimelock.enforcementEndsAt)
+			: null,
+	};
+};
+
 const Connections = () => {
 	const classes = useStyles();
 
 	const { whatsApps, loading } = useContext(WhatsAppsContext);
+	const [zapoHealthById, setZapoHealthById] = useState({});
 	const [whatsAppModalOpen, setWhatsAppModalOpen] = useState(false);
 	const [qrModalOpen, setQrModalOpen] = useState(false);
 	const [selectedWhatsApp, setSelectedWhatsApp] = useState(null);
@@ -354,6 +503,58 @@ const Connections = () => {
 	const [syncingId, setSyncingId] = useState(null);
 	const [syncMenuAnchor, setSyncMenuAnchor] = useState(null);
 	const [syncMenuWhatsAppId, setSyncMenuWhatsAppId] = useState(null);
+	const connectedZapoIds = useMemo(
+		() =>
+			whatsApps
+				.filter(item => item.provider === "zapo" && item.status === "CONNECTED")
+				.map(item => item.id),
+		[whatsApps]
+	);
+	const connectedZapoIdsKey = connectedZapoIds.join(",");
+
+	useEffect(() => {
+		if (!connectedZapoIdsKey) return undefined;
+		let active = true;
+
+		const refreshHealth = async () => {
+			const results = await Promise.allSettled(
+				connectedZapoIds.map(id => api.get(`/whatsapp/${id}/zapo-health`))
+			);
+			if (!active) return;
+			setZapoHealthById(current => {
+				const next = { ...current };
+				results.forEach((result, index) => {
+					if (result.status === "fulfilled") {
+						next[connectedZapoIds[index]] = result.value.data;
+					}
+				});
+				return next;
+			});
+		};
+
+		refreshHealth();
+		const interval = setInterval(refreshHealth, 5 * 60 * 1000);
+		return () => {
+			active = false;
+			clearInterval(interval);
+		};
+		// The key intentionally controls refreshes only when the connected set changes.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [connectedZapoIdsKey]);
+
+	useEffect(() => {
+		const socket = openSocket();
+		if (!socket) return undefined;
+		const handleZapoHealth = health => {
+			if (!health?.whatsappId) return;
+			setZapoHealthById(current => ({
+				...current,
+				[health.whatsappId]: health,
+			}));
+		};
+		socket.on("zapoHealth", handleZapoHealth);
+		return () => socket.off("zapoHealth", handleZapoHealth);
+	}, []);
 	const confirmationModalInitialState = {
 		action: "",
 		title: "",
@@ -896,6 +1097,22 @@ const Connections = () => {
 											</Box>
 										)}
 
+										{whatsApp.provider === "zapo" && (
+											<Box className={classes.detailItem}>
+												<AccountCircleOutlined className={classes.detailIcon} />
+												<span className={classes.detailLabel}>
+													{i18n.t("connections.accountType.label")}:
+												</span>
+												<span className={classes.detailValue}>
+													{i18n.t(
+														`connections.accountType.${getZapoAccountType(
+															zapoHealthById[whatsApp.id]
+														)}`
+													)}
+												</span>
+											</Box>
+										)}
+
 										<Box className={classes.detailItem}>
 											<Schedule className={classes.detailIcon} />
 											<span className={classes.detailLabel}>Actualizado:</span>
@@ -914,6 +1131,166 @@ const Connections = () => {
 												</Box>
 											)}
 									</Box>
+
+									{whatsApp.provider === "zapo" &&
+										whatsApp.status === "CONNECTED" && (() => {
+											const health = zapoHealthById[whatsApp.id];
+											if (!health) {
+												return (
+													<Box className={classes.zapoHealthBox}>
+														<Box className={classes.zapoHealthHeader}>
+															<Box className={classes.zapoHealthTitle}>
+																<ForumOutlined fontSize="small" />
+																{i18n.t("connections.zapoHealth.title")}
+															</Box>
+															<CircularProgress size={14} />
+														</Box>
+													</Box>
+												);
+											}
+											if (!health.available) {
+												return (
+													<Box className={classes.zapoHealthBox}>
+														<Box className={classes.zapoHealthHeader}>
+															<Box className={classes.zapoHealthTitle}>
+																<ForumOutlined fontSize="small" />
+																{i18n.t("connections.zapoHealth.title")}
+															</Box>
+															<span className={classes.zapoHealthWarning}>
+																{i18n.t("connections.zapoHealth.unavailable")}
+															</span>
+														</Box>
+													</Box>
+												);
+											}
+
+											const presentation = getZapoHealthPresentation(health);
+											const toneClass =
+												presentation.tone === "danger"
+													? classes.zapoHealthDanger
+													: presentation.tone === "warning"
+													? classes.zapoHealthWarning
+													: presentation.tone === "neutral"
+													? classes.zapoHealthNeutral
+													: classes.zapoHealthHealthy;
+											const barColor =
+												presentation.tone === "danger"
+													? "#d32f2f"
+													: presentation.tone === "warning"
+													? "#ed6c02"
+													: "#2e7d32";
+											let deadlineText;
+											if (presentation.enforcementEnd) {
+												deadlineText = `${i18n.t(
+													"connections.zapoHealth.pausedUntil"
+												)} ${format(presentation.enforcementEnd, "dd/MM HH:mm")}`;
+											} else if (presentation.isPaused) {
+												deadlineText = i18n.t(
+													"connections.zapoHealth.pausedNoEnd"
+												);
+											} else if (
+												presentation.quotaNotReported &&
+												presentation.cappingConfigured === false
+											) {
+												deadlineText = i18n.t(
+													"connections.zapoHealth.cappingDisabled"
+												);
+											} else if (
+												presentation.quotaNotReported &&
+												presentation.isPersonalAccount
+											) {
+												deadlineText = i18n.t(
+													"connections.zapoHealth.personalQuota"
+												);
+											} else if (presentation.quotaNotReported) {
+												deadlineText = i18n.t(
+													"connections.zapoHealth.quotaNotReported"
+												);
+											} else if (presentation.usesConfiguredLimit) {
+												deadlineText = i18n.t(
+													"connections.zapoHealth.configuredLimit"
+												);
+											} else if (presentation.cycleEnd) {
+												deadlineText = `${i18n.t(
+													"connections.zapoHealth.renews"
+												)} ${format(presentation.cycleEnd, "dd/MM HH:mm")}`;
+											} else {
+												deadlineText = i18n.t(
+													"connections.zapoHealth.serverManaged"
+												);
+											}
+											let availableText = "—";
+											if (Number.isFinite(presentation.remaining)) {
+												availableText = presentation.remaining;
+											} else if (presentation.quotaNotReported) {
+												availableText = i18n.t(
+													presentation.isPersonalAccount
+														? "connections.zapoHealth.notApplicable"
+														: "connections.zapoHealth.notReported"
+												);
+											}
+
+											return (
+												<Box className={classes.zapoHealthBox}>
+													<Box className={classes.zapoHealthHeader}>
+														<Box className={classes.zapoHealthTitle}>
+															<ForumOutlined fontSize="small" />
+															{i18n.t("connections.zapoHealth.title")}
+														</Box>
+														<span className={toneClass}>
+															{i18n.t(`connections.zapoHealth.status.${presentation.label}`)}
+														</span>
+													</Box>
+													<Box className={classes.zapoHealthNumbers}>
+														<span>
+															{i18n.t("connections.zapoHealth.used")}:{" "}
+															<strong>
+																{Number.isFinite(presentation.used)
+																	? presentation.used
+																	: "—"}
+																{" / "}
+																{Number.isFinite(presentation.total)
+																	? presentation.total
+																	: "—"}
+															</strong>
+														</span>
+														<span>
+															{i18n.t("connections.zapoHealth.available")}:{" "}
+															<strong>{availableText}</strong>
+														</span>
+													</Box>
+													{presentation.hasFiniteQuota && (
+														<LinearProgress
+															variant="determinate"
+															value={presentation.percentage}
+															sx={{
+																height: 7,
+																borderRadius: 4,
+																"& .MuiLinearProgress-bar": {
+																	backgroundColor: barColor,
+																	borderRadius: 4,
+																},
+															}}
+														/>
+													)}
+													<Box className={classes.zapoHealthMeta}>
+														{presentation.reportedStatus && (
+															<Box>
+																{i18n.t(
+																	"connections.zapoHealth.reportedStatus"
+																)}
+																: {presentation.reportedStatus}
+															</Box>
+														)}
+														<Box>
+															{deadlineText}
+															{health.stale &&
+																` · ${i18n.t("connections.zapoHealth.stale")}`}
+														</Box>
+													</Box>
+												</Box>
+											);
+										})()}
 
 									{/* Actions */}
 									<Box className={classes.connectionActions}>

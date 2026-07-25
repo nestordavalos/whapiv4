@@ -320,6 +320,7 @@ interface WebhookConfig {
 | `message_sent` | Outgoing message from agent/bot |
 | `message_ack` | Message delivery/read status change |
 | `connection_update` | WhatsApp connection status change |
+| `connection_health` | Zapo outreach health, quota or timelock change |
 | `ticket_created` | New ticket created |
 | `ticket_updated` | Ticket status/assignment changed |
 | `ticket_closed` | Ticket closed |

@@ -140,4 +140,11 @@ webhookApiRoutes.get(
   WebhookApiController.getConnectionStatus
 );
 
+// Obtener salud de alcance de una conexión Zapo
+webhookApiRoutes.get(
+  "/connections/:connectionId/health",
+  isAuthApi,
+  WebhookApiController.getConnectionHealth
+);
+
 export default webhookApiRoutes;

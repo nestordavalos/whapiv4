@@ -9,7 +9,6 @@ dist
 .whaileys_auth
 sequelizeData.json
 
-package-lock.json
 yarn.lock
 yarn-error.log
 

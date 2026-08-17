@@ -22,10 +22,12 @@ try {
 } catch (_error) {
 	backendFrameOrigin = undefined;
 }
-const setAppFramePolicy = res => {
+const setAppFramePolicy = (res, allowEmbedAncestors = false) => {
 	res.setHeader(
 		"Content-Security-Policy",
-		`frame-ancestors 'self'${backendFrameOrigin ? ` ${backendFrameOrigin}` : ""}`
+		allowEmbedAncestors
+			? "frame-ancestors *"
+			: `frame-ancestors 'self'${backendFrameOrigin ? ` ${backendFrameOrigin}` : ""}`
 	);
 };
 
@@ -61,7 +63,11 @@ app.use(express.static(distPath, {
 // Handle all routes by serving index.html (no cache for HTML)
 app.use((req, res) => {
 	res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-	setAppFramePolicy(res);
+	// The backend wrapper is the security boundary for embedded sessions: it
+	// restricts frame-ancestors to the origins configured in /settings and only
+	// then passes the credential to this inner frame. CSP checks every ancestor
+	// in a nested frame, so this route must also accept the authorized portal.
+	setAppFramePolicy(res, req.path.startsWith("/embed/session/"));
 	res.sendFile(path.join(distPath, "index.html"));
 });
 

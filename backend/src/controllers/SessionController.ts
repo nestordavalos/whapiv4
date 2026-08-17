@@ -6,6 +6,8 @@ import { SendRefreshToken } from "../helpers/SendRefreshToken";
 import { RefreshTokenService } from "../services/AuthServices/RefreshTokenService";
 import User from "../models/User";
 import { updateActivity, clearSession } from "../libs/sessionManager";
+import ShowUserService from "../services/UserServices/ShowUserService";
+import { SerializeUser } from "../helpers/SerializeUser";
 
 export const store = async (req: Request, res: Response): Promise<Response> => {
   const { email, password } = req.body;
@@ -55,4 +57,9 @@ export const remove = async (
   res.clearCookie("jrt");
 
   return res.send();
+};
+
+export const show = async (req: Request, res: Response): Promise<Response> => {
+  const user = await ShowUserService(req.user.id);
+  return res.json({ user: SerializeUser(user) });
 };

@@ -16,6 +16,9 @@ services:
       - DB_NAME=${MYSQL_DATABASE:-whapi}
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET env var is required}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET env var is required}
+      - EMBED_TOKEN_SECRET=${EMBED_TOKEN_SECRET:-}
+      - EMBED_ACCESS_TOKEN_TTL=${EMBED_ACCESS_TOKEN_TTL:-1h}
+      - EMBED_PUBLIC_URL=${EMBED_PUBLIC_URL:-}
       - BACKEND_URL=${BACKEND_URL:-http://localhost}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3333}
       - PROXY_PORT=${PROXY_PORT:-8080}
@@ -39,6 +42,7 @@ services:
     environment:
       - URL_BACKEND=backend:3333
       - REACT_APP_BACKEND_URL=${BACKEND_URL:-http://localhost}:${PROXY_PORT:-8080}/
+      - BACKEND_FRAME_ORIGIN=${BACKEND_URL:-http://localhost}:${PROXY_PORT:-8080}
       - FRONTEND_SERVER_NAME=${FRONTEND_SERVER_NAME}
       - BACKEND_SERVER_NAME=${BACKEND_SERVER_NAME}
     volumes:

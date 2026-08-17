@@ -63,6 +63,14 @@ function connectToSocket() {
     window.location.href = "/login";
   });
 
+  socket.on("embed:revoked", () => {
+    localStorage.removeItem("token");
+    const publicId = sessionStorage.getItem("embedPublicId");
+    if (publicId) {
+      window.location.href = `/embed/session/${encodeURIComponent(publicId)}`;
+    }
+  });
+
   return socket;
 }
 

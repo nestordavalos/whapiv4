@@ -1,5 +1,5 @@
 /* eslint-disable no-unexpected-multiline, no-empty */
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useContext, useRef } from "react";
 import openSocket from "../../services/socket-io";
 
 import makeStyles from '@mui/styles/makeStyles';
@@ -27,20 +27,29 @@ import { i18n } from "../../translate/i18n.js";
 import toastError from "../../errors/toastError";
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
+import { AuthContext } from "../../context/Auth/AuthContext";
+import EmbedSettings from "../../components/EmbedSettings";
 
 const useStyles = makeStyles(theme => ({
 	root: {
 		backgroundColor: theme.palette.background.default,
-		display: "flex",
-		alignItems: "center",
-		justifyContent: "center",
-		flexDirection: "column",
-		padding: theme.spacing(4),
-		minHeight: "100%",
+		width: "100%",
+		boxSizing: "border-box",
+		flex: 1,
+		minHeight: 0,
+		padding: theme.spacing(3),
+		overflowY: "auto",
+		overflowX: "hidden",
+		WebkitOverflowScrolling: "touch",
+		[theme.breakpoints.down('sm')]: {
+			padding: theme.spacing(1.5),
+		},
 	},
 	titlePaper: {
 		padding: theme.spacing(2, 4),
-		marginBottom: theme.spacing(3),
+		maxWidth: 1200,
+		width: "100%",
+		margin: `0 auto ${theme.spacing(3)}`,
 		borderRadius: 12,
 		border: `1px solid ${theme.palette.divider}`,
 		boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
@@ -52,11 +61,11 @@ const useStyles = makeStyles(theme => ({
 		fontSize: "1.5rem",
 	},
 	settingsContainer: {
-		maxWidth: 700,
+		maxWidth: 1200,
 		width: "100%",
+		margin: "0 auto",
 		[theme.breakpoints.down('md')]: {
 			maxWidth: "100%",
-			padding: theme.spacing(0, 1),
 		},
 	},
 	columnsWrapper: {
@@ -268,6 +277,7 @@ const Settings = () => {
 	const classes = useStyles();
 	const isMounted = useRef(true);
 	const migrationPollRef = useRef(null);
+	const { user } = useContext(AuthContext);
 
 	const [settings, setSettings] = useState([]);
 	
@@ -657,6 +667,8 @@ const Settings = () => {
 						</Tooltip>
 					</div>
 				</div>
+
+				{user?.profile?.toLowerCase() === "admin" && <EmbedSettings />}
 
 				{/* Storage Section - Only shows if external storage is configured */}
 				{storageStatus && storageStatus.type !== "local" && (

@@ -8,6 +8,7 @@ const mockGetLastActivity = jest.fn();
 const mockUpdateActivity = jest.fn();
 const mockIsExpired = jest.fn();
 const mockClearSession = jest.fn();
+const mockFindEmbedIntegration = jest.fn();
 
 jest.mock("../../../libs/sessionManager", () => ({
   getLastActivity: (...args: any[]) => mockGetLastActivity(...args),
@@ -22,6 +23,10 @@ jest.mock("../../../libs/socket", () => ({
 
 jest.mock("../../../models/User", () => ({
   findByPk: jest.fn()
+}));
+
+jest.mock("../../../models/EmbedIntegration", () => ({
+  findOne: (...args: any[]) => mockFindEmbedIntegration(...args)
 }));
 
 import isAuth from "../../../middleware/isAuth";
@@ -47,7 +52,9 @@ describe("isAuth middleware", () => {
     await expect(isAuth(req, buildRes() as Response, next)).rejects.toThrow(
       AppError
     );
-    await expect(isAuth(req, buildRes() as Response, next)).rejects.toMatchObject({
+    await expect(
+      isAuth(req, buildRes() as Response, next)
+    ).rejects.toMatchObject({
       statusCode: 401,
       message: "ERR_SESSION_EXPIRED"
     });
@@ -70,7 +77,9 @@ describe("isAuth middleware", () => {
   it("should throw 403 for an invalid / tampered token", async () => {
     const req = buildReq("invalid.token.value") as Request;
 
-    await expect(isAuth(req, buildRes() as Response, next)).rejects.toMatchObject({
+    await expect(
+      isAuth(req, buildRes() as Response, next)
+    ).rejects.toMatchObject({
       statusCode: 403
     });
     expect(next).not.toHaveBeenCalled();
@@ -87,7 +96,9 @@ describe("isAuth middleware", () => {
 
     const req = buildReq(token) as Request;
 
-    await expect(isAuth(req, buildRes() as Response, next)).rejects.toMatchObject({
+    await expect(
+      isAuth(req, buildRes() as Response, next)
+    ).rejects.toMatchObject({
       statusCode: 403
     });
   });
@@ -106,7 +117,9 @@ describe("isAuth middleware", () => {
     );
     const req = buildReq(token) as Request;
 
-    await expect(isAuth(req, buildRes() as Response, next)).rejects.toMatchObject({
+    await expect(
+      isAuth(req, buildRes() as Response, next)
+    ).rejects.toMatchObject({
       statusCode: 401,
       message: "ERR_SESSION_EXPIRED"
     });
@@ -124,5 +137,55 @@ describe("isAuth middleware", () => {
     await isAuth(req, buildRes() as Response, next);
 
     expect(mockUpdateActivity).toHaveBeenCalledWith(5);
+  });
+
+  it("accepts an active embedded session bound to its user and version", async () => {
+    mockFindEmbedIntegration.mockResolvedValue({ id: 9 });
+    const token = sign(
+      {
+        id: "5",
+        username: "embedded",
+        profile: "user",
+        embed: { publicId: "public-id", secretVersion: "version-1" }
+      },
+      authConfig.secret,
+      { expiresIn: "1h" }
+    );
+
+    await isAuth(buildReq(token) as Request, buildRes() as Response, next);
+
+    expect(mockFindEmbedIntegration).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          publicId: "public-id",
+          secretVersion: "version-1",
+          userId: 5,
+          enabled: true
+        })
+      })
+    );
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a revoked embedded session", async () => {
+    mockFindEmbedIntegration.mockResolvedValue(null);
+    const token = sign(
+      {
+        id: "5",
+        username: "embedded",
+        profile: "user",
+        embed: { publicId: "public-id", secretVersion: "old-version" }
+      },
+      authConfig.secret,
+      { expiresIn: "1h" }
+    );
+
+    await expect(
+      isAuth(buildReq(token) as Request, buildRes() as Response, next)
+    ).rejects.toMatchObject({
+      statusCode: 401,
+      message: "ERR_EMBED_SESSION_REVOKED"
+    });
+    expect(next).not.toHaveBeenCalled();
   });
 });

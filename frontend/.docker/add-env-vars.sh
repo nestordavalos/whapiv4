@@ -6,6 +6,7 @@ _writeFrontendEnvVars() {
 
 _writeNginxEnvVars() {
     dockerize -template /etc/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
+    dockerize -template /etc/nginx/sites.d/frontend.conf:/etc/nginx/sites.d/frontend.conf
 }
 
 _addSslConfig() {

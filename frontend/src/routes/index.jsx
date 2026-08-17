@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Switch } from "react-router-dom";
+import { BrowserRouter, Switch, Route as RouterRoute } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 
 import LoggedInLayout from "../layout";
@@ -18,6 +18,7 @@ import ApiDocs from "../pages/ApiDocs/";
 import ApiKey from "../pages/ApiKey/";
 import Tags from "../pages/Tags";
 import QueueIntegration from "../pages/QueueIntegration";
+import EmbedSession from "../pages/EmbedSession";
 
 import { AuthProvider } from "../context/Auth/AuthContext";
 import { WhatsAppsProvider } from "../context/WhatsApp/WhatsAppsContext";
@@ -28,6 +29,7 @@ const Routes = () => {
     <BrowserRouter>
       <AuthProvider>
         <Switch>
+          <RouterRoute exact path="/embed/session/:publicId" component={EmbedSession} />
           <Route exact path="/login" component={Login} />
           <Route exact path="/signup" component={Signup} />
           <WhatsAppsProvider>

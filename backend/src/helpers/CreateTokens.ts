@@ -14,6 +14,22 @@ export const createAccessToken = (user: User): string => {
   );
 };
 
+export const createEmbedAccessToken = (
+  user: User,
+  publicId: string,
+  secretVersion: string
+): string =>
+  sign(
+    {
+      username: user.name,
+      profile: user.profile,
+      id: user.id,
+      embed: { publicId, secretVersion }
+    },
+    authConfig.secret,
+    { expiresIn: process.env.EMBED_ACCESS_TOKEN_TTL || "1h" }
+  );
+
 export const createRefreshToken = (user: User): string => {
   const { refreshSecret, refreshExpiresIn } = authConfig;
 

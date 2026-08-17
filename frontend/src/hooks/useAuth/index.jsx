@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useHistory } from "react-router-dom";
 import openSocket from "../../services/socket-io";
 
@@ -16,6 +16,13 @@ const useAuth = () => {
         const reqInterceptor = useRef();
         const resInterceptor = useRef();
         const isMounted = useRef(true);
+
+	const restartEmbeddedSession = () => {
+		const publicId = sessionStorage.getItem("embedPublicId");
+		if (!publicId || window.location.pathname.startsWith("/embed/session/")) return false;
+		window.location.href = `/embed/session/${encodeURIComponent(publicId)}`;
+		return true;
+	};
 
         if (!reqInterceptor.current) {
                 reqInterceptor.current = api.interceptors.request.use(
@@ -38,6 +45,16 @@ const useAuth = () => {
                         response => response,
                         async error => {
                                 const originalRequest = error.config;
+								if (
+									error?.response?.status === 403 &&
+									sessionStorage.getItem("embedPublicId")
+								) {
+									localStorage.removeItem("token");
+									api.defaults.headers.Authorization = undefined;
+									if (isMounted.current) setIsAuth(false);
+									restartEmbeddedSession();
+									return Promise.reject(error);
+								}
                                 if (
                                         error?.response?.status === 403 &&
                                         !originalRequest._retry
@@ -62,6 +79,7 @@ const useAuth = () => {
                                                         setIsAuth(false);
                                                         setUser({});
                                                 }
+								if (restartEmbeddedSession()) return Promise.reject(refreshError);
                                                 return Promise.reject(refreshError);
                                         }
                                 }
@@ -69,6 +87,7 @@ const useAuth = () => {
                                         localStorage.removeItem("token");
                                         api.defaults.headers.Authorization = undefined;
                                         setIsAuth(false);
+								restartEmbeddedSession();
                                 }
                                 return Promise.reject(error);
                         }
@@ -88,9 +107,10 @@ const useAuth = () => {
                 (async () => {
                         if (token) {
                                 try {
-                                        const { data } = await api.post("/auth/refresh_token");
+                                        const parsedToken = JSON.parse(token);
+                                        api.defaults.headers.Authorization = `Bearer ${parsedToken}`;
+                                        const { data } = await api.get("/auth/me");
                                         if (isMounted.current) {
-                                                api.defaults.headers.Authorization = `Bearer ${data.token}`;
                                                 setIsAuth(true);
                                                 setUser(data.user);
                                         }
@@ -127,6 +147,7 @@ const useAuth = () => {
 
 		try {
 			const { data } = await api.post("/auth/login", userData);
+			sessionStorage.removeItem("embedPublicId");
 			localStorage.setItem("token", JSON.stringify(data.token));
 			api.defaults.headers.Authorization = `Bearer ${data.token}`;
 			setUser(data.user);
@@ -140,6 +161,15 @@ const useAuth = () => {
 		}
 	};
 
+	const handleEmbedLogin = useCallback(({ token, user: embeddedUser, next }) => {
+		localStorage.setItem("token", JSON.stringify(token));
+		api.defaults.headers.Authorization = `Bearer ${token}`;
+		setUser(embeddedUser);
+		setIsAuth(true);
+		setLoading(false);
+		history.replace(next || "/tickets");
+	}, [history]);
+
 	const handleLogout = async () => {
 		setLoading(true);
 
@@ -148,6 +178,7 @@ const useAuth = () => {
 			setIsAuth(false);
 			setUser({});
 			localStorage.removeItem("token");
+			sessionStorage.removeItem("embedPublicId");
 			api.defaults.headers.Authorization = undefined;
 			setLoading(false);
 			history.push("/login");
@@ -157,7 +188,7 @@ const useAuth = () => {
 		}
 	};
 
-	return { isAuth, user, loading, handleLogin, handleLogout };
+	return { isAuth, user, loading, handleLogin, handleEmbedLogin, handleLogout };
 };
 
 export default useAuth;

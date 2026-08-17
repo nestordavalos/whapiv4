@@ -6,6 +6,7 @@ import { logger } from "../utils/logger";
 import authConfig from "../config/auth";
 import User from "../models/User";
 import { updateActivity, clearSession } from "./sessionManager";
+import EmbedIntegration from "../models/EmbedIntegration";
 
 interface SocketTokenPayload {
   id: string;
@@ -13,6 +14,7 @@ interface SocketTokenPayload {
   profile: string;
   iat: number;
   exp: number;
+  embed?: { publicId: string; secretVersion: string };
 }
 
 let io: SocketIO;
@@ -54,6 +56,22 @@ export const initIO = (httpServer: Server): SocketIO => {
     if (!user) {
       socket.disconnect();
       return io;
+    }
+    if (tokenData.embed) {
+      const integration = await EmbedIntegration.findOne({
+        where: {
+          publicId: tokenData.embed.publicId,
+          secretVersion: tokenData.embed.secretVersion,
+          userId: user.id,
+          enabled: true
+        },
+        attributes: ["id"]
+      });
+      if (!integration) {
+        socket.disconnect();
+        return io;
+      }
+      socket.join(`embed:${tokenData.embed.publicId}`);
     }
     await user.update({ online: true });
     socket.join(String(user.id));

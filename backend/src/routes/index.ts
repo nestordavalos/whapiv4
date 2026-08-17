@@ -18,6 +18,7 @@ import dashboardRoutes from "./dashboardRoutes";
 import systemRoutes from "./systemRoutes";
 import queueIntegrationRoutes from "./queueIntegrationRoutes";
 import storageRoutes from "./storageRoutes";
+import embedIntegrationRoutes from "./embedIntegrationRoutes";
 
 const routes = Router();
 
@@ -39,5 +40,6 @@ routes.use(dashboardRoutes);
 routes.use(systemRoutes);
 routes.use(queueIntegrationRoutes);
 routes.use(storageRoutes);
+routes.use(embedIntegrationRoutes);
 
 export default routes;

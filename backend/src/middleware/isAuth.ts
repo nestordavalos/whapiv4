@@ -11,6 +11,7 @@ import {
 } from "../libs/sessionManager";
 import { getIO } from "../libs/socket";
 import User from "../models/User";
+import EmbedIntegration from "../models/EmbedIntegration";
 
 interface TokenPayload {
   id: string;
@@ -18,6 +19,7 @@ interface TokenPayload {
   profile: string;
   iat: number;
   exp: number;
+  embed?: { publicId: string; secretVersion: string };
 }
 
 const isAuth = async (
@@ -35,8 +37,20 @@ const isAuth = async (
 
   try {
     const decoded = verify(token, authConfig.secret);
-    const { id, profile, iat } = decoded as TokenPayload;
+    const { id, profile, iat, embed } = decoded as TokenPayload;
     const userId = Number(id);
+    if (embed) {
+      const integration = await EmbedIntegration.findOne({
+        where: {
+          publicId: embed.publicId,
+          secretVersion: embed.secretVersion,
+          userId,
+          enabled: true
+        },
+        attributes: ["id"]
+      });
+      if (!integration) throw new AppError("ERR_EMBED_SESSION_REVOKED", 401);
+    }
     const storedLastActivity = getLastActivity(userId);
     const iatMs = iat * 1000;
     const lastActivity =

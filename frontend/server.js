@@ -8,8 +8,26 @@ require('dotenv').config();
 
 // Security headers
 app.use(helmet({
-	contentSecurityPolicy: false, // CSP managed by meta tags in index.html
+	contentSecurityPolicy: false, // frame-ancestors is set on the app shell below
+	xFrameOptions: false,
 }));
+
+const configuredBackendUrl =
+	process.env.BACKEND_FRAME_ORIGIN ||
+	process.env.VITE_BACKEND_URL ||
+	process.env.REACT_APP_BACKEND_URL;
+let backendFrameOrigin;
+try {
+	backendFrameOrigin = configuredBackendUrl && new URL(configuredBackendUrl).origin;
+} catch (_error) {
+	backendFrameOrigin = undefined;
+}
+const setAppFramePolicy = res => {
+	res.setHeader(
+		"Content-Security-Policy",
+		`frame-ancestors 'self'${backendFrameOrigin ? ` ${backendFrameOrigin}` : ""}`
+	);
+};
 
 // Gzip compression
 app.use(compression());
@@ -31,6 +49,7 @@ app.use(express.static(distPath, {
 	setHeaders: (res, filePath) => {
 		if (noCacheFiles.has(path.basename(filePath))) {
 			res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+			if (path.basename(filePath) === "index.html") setAppFramePolicy(res);
 		} else if (filePath.startsWith(`${distPath}${path.sep}assets${path.sep}`)) {
 			res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
 		} else {
@@ -42,6 +61,7 @@ app.use(express.static(distPath, {
 // Handle all routes by serving index.html (no cache for HTML)
 app.use((req, res) => {
 	res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+	setAppFramePolicy(res);
 	res.sendFile(path.join(distPath, "index.html"));
 });
 

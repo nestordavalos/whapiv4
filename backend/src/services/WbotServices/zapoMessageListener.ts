@@ -76,6 +76,39 @@ const persistMedia = async (
 // unique in this application, so serialize just this small critical section.
 const pendingContacts = new Map<string, Promise<any>>();
 const pendingChats = new Map<string, Promise<void>>();
+const lidRepairTimers = new Map<number, NodeJS.Timeout>();
+
+const scheduleLidRepair = (whatsappId: number): void => {
+  if (lidRepairTimers.has(whatsappId)) return;
+
+  const timer = setTimeout(() => {
+    lidRepairTimers.delete(whatsappId);
+    import("../ContactServices/FixLidContactsService")
+      .then(({ default: fixLidContacts }) => fixLidContacts(whatsappId))
+      .then(result => {
+        if (result.totalLidContacts > 0) {
+          logger.info(
+            {
+              whatsappId,
+              resolved: result.resolved,
+              merged: result.merged,
+              failed: result.failed,
+              total: result.totalLidContacts
+            },
+            "Repaired contacts after delayed Zapo LID mapping"
+          );
+        }
+      })
+      .catch(err =>
+        logger.warn(
+          { whatsappId, err },
+          "Could not repair contacts after delayed Zapo LID mapping"
+        )
+      );
+  }, 15000);
+
+  lidRepairTimers.set(whatsappId, timer);
+};
 
 const findOrCreateContact = (data: any): Promise<any> => {
   const pending = pendingContacts.get(data.number);
@@ -295,6 +328,8 @@ const handleZapoMessageNow = async (
       ? participantPhoneJid || participantJid
       : storedDirectContact?.phoneNumber || directPhoneJid
   );
+  const hasUnresolvedLid =
+    !isGroup && remoteJid.endsWith("@lid") && number === jidUser(remoteJid);
   if (!number || (isGroup && !groupNumber)) return;
   const fromMe = Boolean(key.fromMe);
   const ownNumber = (current.number || "").replace(/\D/g, "");
@@ -490,6 +525,10 @@ const handleZapoMessageNow = async (
           profilePicUrl,
           whatsappId: whatsapp.id
         });
+
+  if (hasUnresolvedLid) {
+    scheduleLidRepair(whatsapp.id);
+  }
 
   // Keep the same behavior as whatsapp-web.js: a received vCard is rendered
   // as a contact card and its phone entries are available in the Contacts

@@ -1514,6 +1514,31 @@ export const initZapo = async (whatsapp: Whatsapp): Promise<ZapoSession> => {
       });
       logger.info({ whatsappId: whatsapp.id, number }, "Zapo session ready");
       refreshZapoHealth(whatsapp.id).catch(() => undefined);
+      setTimeout(() => {
+        import("../services/ContactServices/FixLidContactsService")
+          .then(({ default: fixLidContacts }) =>
+            fixLidContacts(whatsapp.id).then(result => {
+              if (result.totalLidContacts > 0) {
+                logger.info(
+                  {
+                    whatsappId: whatsapp.id,
+                    resolved: result.resolved,
+                    merged: result.merged,
+                    failed: result.failed,
+                    total: result.totalLidContacts
+                  },
+                  "Zapo LID contact repair complete"
+                );
+              }
+            })
+          )
+          .catch(err =>
+            logger.warn(
+              { whatsappId: whatsapp.id, err },
+              "Zapo LID contact repair failed"
+            )
+          );
+      }, 15000);
     } else {
       const wasResetting = resettingSessions.has(whatsapp.id);
       sessions.delete(whatsapp.id);

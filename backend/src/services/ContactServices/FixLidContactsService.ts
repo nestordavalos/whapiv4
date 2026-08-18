@@ -71,7 +71,16 @@ const FixLidContactsService = async (
     }
   });
 
-  const lidContacts = allContacts.filter(c => isLikelyLid(c.number));
+  const lidContacts = allContacts.filter(contact => {
+    const remoteLidNumber = contact.remoteJid?.endsWith("@lid")
+      ? contact.remoteJid.split("@")[0]
+      : null;
+
+    return (
+      isLikelyLid(contact.number) ||
+      (remoteLidNumber !== null && remoteLidNumber === contact.number)
+    );
+  });
   result.totalLidContacts = lidContacts.length;
 
   if (lidContacts.length === 0) {
@@ -87,15 +96,18 @@ const FixLidContactsService = async (
 
   for (const contact of lidContacts) {
     try {
+      const lidNumber = contact.remoteJid?.endsWith("@lid")
+        ? contact.remoteJid.split("@")[0]
+        : contact.number;
       const zapoContact =
         activeWhatsapp?.provider === "zapo"
-          ? await getZapoStoredContact(activeWhatsapp.id, contact.number)
+          ? await getZapoStoredContact(activeWhatsapp.id, lidNumber)
           : null;
       const resolvedPhone = zapoContact?.phoneNumber
         ? zapoContact.phoneNumber.split("@")[0]
         : activeWhatsapp?.provider === "zapo"
         ? null
-        : await resolvePhoneFromLid(wbot, contact.number);
+        : await resolvePhoneFromLid(wbot, lidNumber);
 
       if (!resolvedPhone) {
         result.failed++;

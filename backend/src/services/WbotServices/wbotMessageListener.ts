@@ -92,8 +92,13 @@ const verifyContact = async (
 
   if (isLid) {
     // Priority 1: The library's Contact.number (comes from ContactMethods.getUserid)
-    // often already has the real phone number even for LID contacts
-    if (msgContact.number && !isLikelyLid(String(msgContact.number))) {
+    // often already has the real phone number even for LID contacts. A LID can
+    // also be 15 digits, so it must differ from the LID JID before accepting it.
+    if (
+      msgContact.number &&
+      String(msgContact.number) !== msgContact.id.user &&
+      !isLikelyLid(String(msgContact.number))
+    ) {
       logger.info(
         `[verifyContact] LID ${contactNumber} → using msgContact.number: ${msgContact.number}`
       );
@@ -121,6 +126,7 @@ const verifyContact = async (
     number: contactNumber,
     profilePicUrl: profilePicUrl || "/default-profile.png",
     isGroup: msgContact.isGroup,
+    remoteJid: isLid ? `${msgContact.id.user}@${msgContact.id.server}` : undefined,
     whatsappId
   };
 
